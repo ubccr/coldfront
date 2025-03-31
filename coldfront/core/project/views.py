@@ -722,9 +722,9 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
         if save_form:
             project_obj.save()
 
-        logger.info(
-            f'User {self.request.user.username} updated a project (project pk={project_obj.pk})'
-        )
+        message = f'User {self.request.user.username} updated a project (project pk={project_obj.pk})'
+        send_message(message)
+        logger.info(message)
         return super().form_valid(form)
 
     def get_success_url(self):
