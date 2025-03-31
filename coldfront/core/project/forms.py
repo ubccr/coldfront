@@ -111,13 +111,17 @@ class ProjectReviewEmailForm(forms.Form):
         widget=forms.Textarea
     )
 
-    def __init__(self, pk, *args, **kwargs):
+    def __init__(self, pk, user, *args, **kwargs):
         super().__init__(*args, **kwargs)
         project_review_obj = get_object_or_404(ProjectReview, pk=int(pk))
-        self.fields['email_body'].initial = 'Dear {} {} \n{}'.format(
-            project_review_obj.project.pi.first_name, project_review_obj.project.pi.last_name, EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL)
-        self.fields['cc'].initial = ', '.join(
-            [EMAIL_DIRECTOR_EMAIL_ADDRESS] + EMAIL_ADMIN_LIST)
+        self.fields['email_body'].initial = EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL.format(
+            first_name=user.first_name, project_name=project_review_obj.project.title
+        )
+        cc_list = [project_review_obj.project.pi.email, user.email]
+        if project_review_obj.project.pi == project_review_obj.project.requestor:
+            cc_list.remove(project_review_obj.project.pi.email)
+        self.fields['cc'].initial = ', '.join(cc_list)
+
 
 class ProjectAttributeAddForm(forms.ModelForm):    
     class Meta:

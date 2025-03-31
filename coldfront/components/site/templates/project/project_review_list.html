@@ -73,7 +73,7 @@ Project Review List
           <th scope="col">Expires On</th>
           <th scope="col">PI</th>
           <th scope="col">Project Updates</th>
-          <th scope="col">Allocation Renewals</th>
+          <th scope="col">Contacted</th>
           <th scope="col">Project Review Actions</th>
         </tr>
       </thead>
@@ -85,15 +85,11 @@ Project Review List
             <td>{{ project_review.project.end_date|date:"M. d, Y" }}</td>
             <td>{{ project_review.project.pi.first_name }} {{ project_review.project.pi.last_name }} ({{ project_review.project.pi.username }})</td>
             <td>{{ project_review.project_updates|truncatechars:50 }}</td>
-            <td>
-              {% if project_review.allocation_renewals %}
-                {% for allocation_pk in project_review.allocation_renewals|split:"," %}
-                  <a target="_target" href="{% url 'allocation-detail' allocation_pk %}">{{ allocation_pk }}</a>
-                {% endfor %}
-              {% else %}
-                No renewals
-              {% endif %}
-            </td>
+            {% if project_review.status.name == 'Contacted By Admin' %}
+              <td><span class="badge badge-success"><i class="fas fa-check-circle fa-lg"></i></i></span></td>
+            {% else %}
+              <td></td>
+            {% endif %}
             <td class="text-nowrap">
               <a href="{% url 'project-review-approve' project_review.pk %}" class="btn btn-success mr-1">Approve</a>
               <a href="{% url 'project-review-deny' project_review.pk %}" class="btn btn-danger mr-1">Deny</a>

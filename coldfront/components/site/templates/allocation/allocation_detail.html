@@ -338,10 +338,6 @@ Allocation Detail
   </div>
 {% endif %}
 
-{% if display_estimated_cost and allocation.get_parent_resource.name == 'Slate-Project' %}
-  {% include "storage/slate_project/estimated_cost_div.html" %}
-{% endif %}
-
 {% if allocation.get_parent_resource.name == 'REALLMs' %}
   {% include "service/reallms/reallms_api_key_div.html" %}
 {% endif %}
