@@ -97,6 +97,9 @@ The following settings are ColdFront specific settings related to the core appli
 | ONDEMAND_URL                           | The URL to your Open OnDemand installation     |
 | LOGIN_FAIL_MESSAGE                     | Custom message when user fails to login. Here you can paint a custom link to your user account portal |
 | ENABLE_SU                              | Enable administrators to login as other users. Default True |
+| RESEARCH_OUTPUT_ENABLE                 | Enable or disable research outputs. Default True |
+| GRANT_ENABLE                           | Enable or disable grants. Default True           |
+| PUBLICATION_ENABLE                     | Enable or disable publications. Default True     |
 
 
 ### Database settings
@@ -142,7 +145,7 @@ disabled:
 | EMAIL_ADMINS_ON_ALLOCATION_EXPIRE | Setting this to True will send a daily email notification to administrators with a list of allocations that have expired that day. |
 
 ### Plugin settings
-For more info on [ColdFront plugins](../../plugin/existing_plugins/) (Django apps)
+For more info on [ColdFront plugins](plugin/existing_plugins.md) (Django apps)
 
 #### LDAP Auth
 
@@ -151,6 +154,10 @@ For more info on [ColdFront plugins](../../plugin/existing_plugins/) (Django app
     ```
     $ pip install ldap3 django_auth_ldap
     ```
+
+    This uses `django_auth_ldap` therefore ldaps cert paths will be taken from
+    global OS ldap config, `/etc/{ldap,openldap}/ldap.conf` and within `TLS_CACERT`
+
 
 | Name                        | Description                             |
 | :---------------------------|:----------------------------------------|
@@ -161,6 +168,7 @@ For more info on [ColdFront plugins](../../plugin/existing_plugins/) (Django app
 | AUTH_LDAP_BIND_PASSWORD     | The password to use AUTH_LDAP_BIND_DN   |
 | AUTH_LDAP_USER_SEARCH_BASE  | User search base dn                     |
 | AUTH_LDAP_GROUP_SEARCH_BASE | Group search base dn                    |
+| AUTH_COLDFRONT_LDAP_SEARCH_SCOPE | The search scope for Coldfront authentication. Options: SUBTREE or default (ONELEVEL)   |
 | AUTH_LDAP_MIRROR_GROUPS     | Enable/disable mirroring of groups. Default True  |
 | AUTH_LDAP_BIND_AS_AUTHENTICATING_USER     | Authentication will leave the LDAP connection bound as the authenticating user, rather than forcing it to re-bind. Default False    |
 
@@ -171,6 +179,11 @@ For more info on [ColdFront plugins](../../plugin/existing_plugins/) (Django app
     ```
     $ pip install mozilla_django_oidc
     ```
+!!! warning "SESSION\_COOKIE\_SAMESITE"
+
+    mozilla_django_oidc uses cookies to store state in an anonymous session during the
+    authentication process. You must use `SESSION_COOKIE_SAMESITE="Lax"` in your
+    settings for authentication to work correctly.
 
 | Name                           | Description                          |
 | :------------------------------|:-------------------------------------|
