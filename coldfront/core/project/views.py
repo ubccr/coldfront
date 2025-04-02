@@ -1828,7 +1828,7 @@ class ProjectReviewCompleteView(LoginRequiredMixin, UserPassesTestMixin, View):
         return HttpResponseRedirect(reverse('project-review-list'))
 
 
-class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
+class ProjectReviewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     form_class = ProjectReviewEmailForm
     template_name = 'project/project_review_email.html'
     login_url = "/"
