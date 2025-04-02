@@ -722,9 +722,12 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
         if save_form:
             project_obj.save()
 
-        message = f'User {self.request.user.username} updated a project (project pk={project_obj.pk})'
-        send_message(message)
-        logger.info(message)
+        if SLACK_MESSAGING_ENABLED:
+            url = f'{get_domain_url(self.request)}{reverse("project-detail", kwargs={"pk": project_obj.pk})}'
+            send_message(
+                f'Project "{project_obj.title}" with id {project_obj.pk} was updated. You can view \
+                    it here: {url}')
+        logger.info(f'User {self.request.user.username} updated a project (project pk={project_obj.pk})')
         return super().form_valid(form)
 
     def get_success_url(self):
