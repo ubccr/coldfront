@@ -2,6 +2,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import TemplateView
 from django.http import HttpResponse, HttpRequest
 
+from django_q.tasks import async_task
+
 from coldfront.plugins.qumulo.services.allocation_service import AllocationService
 from coldfront.core.allocation.models import Allocation
 
@@ -22,8 +24,18 @@ class UserAccessManagementView(LoginRequiredMixin, TemplateView):
 
         for allocation in allocations:
             if len(ro_users) > 0:
-                AllocationService.set_access_users("ro", ro_users, allocation)
+                async_task(
+                    AllocationService.add_access_users,
+                    "ro",
+                    ro_users,
+                    allocation,
+                )
             if len(rw_users) > 0:
-                AllocationService.set_access_users("rw", rw_users, allocation)
+                async_task(
+                    AllocationService.add_access_users,
+                    "rw",
+                    rw_users,
+                    allocation,
+                )
 
         return HttpResponse()

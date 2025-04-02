@@ -1,3 +1,3 @@
-tbody.table-options-tbody > tr.checked {
+table.options-table > tbody.table-tbody > tr.checked {
   background: lightblue;
 }

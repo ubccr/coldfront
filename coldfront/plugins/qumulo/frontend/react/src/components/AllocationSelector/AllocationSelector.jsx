@@ -172,10 +172,12 @@ function AllocationSelector({
     <div className="table-responsive">
       <p className="form-label">Selected {label}:</p>
       <Table
+        className="selected-table"
         columns={columns}
         rows={renderRows(selectedAllocations.sort((a, b) => a.id - b.id))}
         headers={plainHeaders}
       />
+      <p className="form-label">{label}:</p>
       <PageSelector
         totalPages={totalPages}
         currentPage={queryState.page}
@@ -183,9 +185,8 @@ function AllocationSelector({
           queryDispatch({ action: "page", key: "page", value })
         }
       />
-
-      <p className="form-label">{label}:</p>
       <Table
+        className="options-table"
         columns={columns}
         rows={renderRows(allocations)}
         headers={[checkAllHeader, ...inputHeaders]}

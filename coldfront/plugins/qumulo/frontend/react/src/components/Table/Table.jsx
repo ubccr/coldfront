@@ -1,10 +1,10 @@
-function Table({ rows, headers }) {
+function Table({ rows, headers, className = "" }) {
   return (
-    <table className="table table-sm">
+    <table className={`${className} table table-sm`}>
       <thead>
         <tr>{headers}</tr>
       </thead>
-      <tbody className="table-values-tbody">{rows}</tbody>
+      <tbody className="table-tbody">{rows}</tbody>
     </table>
   );
 }

@@ -46,6 +46,10 @@ function UserAccessManagement() {
   return (
     <>
       <h2>User Access Management</h2>
+      <p>
+        Selected users will be added to the selected allocations. Existing users
+        will not be removed.
+      </p>
       <hr />
       <UserSelector
         name="rw-user-selector"
@@ -75,7 +79,7 @@ function UserAccessManagement() {
         </button>
       </div>
       <GenericModal
-        title="Update Sumbitted"
+        title="Update Submitted"
         text="Permissions changes have been submitted and will be applied shortly."
         onClose={() => window.location.reload()}
         show={renderModal}

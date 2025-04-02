@@ -55,7 +55,7 @@ function UserSelector({ name, users, setUsers, label, errorMessage }) {
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
         ></textarea>
-        <div className="btn-group align-self-start">
+        <div className="btn-group-vertical align-self-start">
           <button
             id={`${name}-add-button`}
             type="button"

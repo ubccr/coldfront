@@ -269,11 +269,34 @@ class AllocationService:
 
     @staticmethod
     def set_access_users(
-        access_key: str, access_users: list[str], storage_allocation: Allocation
+        access_key: str,
+        access_users: list[str],
+        storage_allocation: Allocation,
     ):
+        AllocationService.add_access_users(access_key, access_users, storage_allocation)
 
         active_directory_api = ActiveDirectoryAPI()
 
+        access_allocation = AclAllocations.get_access_allocation(
+            storage_allocation, access_key
+        )
+        allocation_users = AllocationUser.objects.filter(allocation=access_allocation)
+        allocation_usernames = [
+            allocation_user.user.username for allocation_user in allocation_users
+        ]
+        users_to_remove = set(allocation_usernames) - set(access_users)
+
+        for allocation_username in users_to_remove:
+            allocation_users.get(user__username=allocation_username).delete()
+            active_directory_api.remove_member_from_group(
+                allocation_username,
+                access_allocation.get_attribute("storage_acl_name"),
+            )
+
+    @staticmethod
+    def add_access_users(
+        access_key: str, access_users: list[str], storage_allocation: Allocation
+    ):
         access_allocation = AclAllocations.get_access_allocation(
             storage_allocation, access_key
         )
@@ -288,11 +311,3 @@ class AllocationService:
         async_task(
             addMembersToADGroup, users_to_add, access_allocation, create_group_time
         )
-
-        users_to_remove = set(allocation_usernames) - set(access_users)
-        for allocation_username in users_to_remove:
-            allocation_users.get(user__username=allocation_username).delete()
-            active_directory_api.remove_member_from_group(
-                allocation_username,
-                access_allocation.get_attribute("storage_acl_name"),
-            )
