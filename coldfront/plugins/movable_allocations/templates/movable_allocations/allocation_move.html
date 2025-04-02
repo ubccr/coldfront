@@ -10,17 +10,16 @@ Move Allocation
 
 
 {% block content %}
-<h2>Move Allocation to a Different Project</h2>
+<h2>Move {{ allocation.get_parent_resource.name }} Allocation to a Different Project</h2>
 <hr>
 
 <p>
-  You can move an allocation from this project to another you own as long as the other project does
-  not reach any limits, i.e. the maximum allowed for this resource the project can have. NOTE: Users
-  will also be moved over within the allocation. Any users missing from the project will
-  automatically be added to it. If there are users you do not want included in the move then remove
-  them from the allocation first. If this is a compute allocation then when you move it over to the
-  other project you will be given a new slurm account to use. For storage allocations this will not
-  affect how you access your storage.
+  You can move an allocation from this project to another you own as long as the other project's
+  restrictions are not met, i.e. max allocations allowed for this resource in the project. <strong>
+  Users in the allocation are also moved over and anyone missing from the destination project are
+  automatically added to it. If there are users you do not want included in the move then remove
+  them from the allocation first.</strong> Compute allocations being moved will be given a new slurm
+  account. Storage allocation file system access will not be effected.
 </p>
 
 <form action="{% url 'move-allocation' allocation.pk %}" method="post">
