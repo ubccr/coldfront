@@ -1,0 +1,38 @@
+<div id="academic_analytics_inner">
+  <div class="card mb-3">
+    <div class="card-header">
+      <h3 class="card-title">Publications:</h3>
+    </div>
+    <div class="card-body">
+      <p>Please select any publications that resulted from research done with this project.</p>
+      <div id="publication_search_spinner" class="text-center">
+        <div class="alert alert-info text-center"><i class="fas fa-sync fa-spin fa-fw" aria-hidden="true"></i> Searching</div>
+      </div>
+      <div id="academics_analytics_form"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  $.ajax({
+    url: "{% url 'get-academic-analytics-publications' %}",
+    method: 'GET',
+    data: {
+      csrfmiddlewaretoken: '{{ csrf_token }}',
+      project_pk: '{{ project_pk }}'
+    },
+    success: function(data) {
+      $('#publication_search_spinner').html('');
+      $('#academics_analytics_form').html(data);
+    },
+    error: function(data) {
+      $('#publication_search_spinner').html('');
+      $('#academics_analytics_form').html(
+        '<div class="alert alert-warning">\
+          <i class="fas fa-info-circle" aria-hidden="true"></i> \
+          Error getting publication information.\
+        </div>'
+      );
+    }
+  })
+</script>

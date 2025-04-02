@@ -1,0 +1,5 @@
+Greetings {{ center_name }} user,
+
+{{ announcement }}
+
+{{ signature }}

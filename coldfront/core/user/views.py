@@ -21,6 +21,8 @@ from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.mail import send_email_template
 
 logger = logging.getLogger(__name__)
+
+DISPLAY_USER_SLATE_PROJECTS = import_from_settings('DISPLAY_USER_SLATE_PROJECTS', False)
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 if EMAIL_ENABLED:
     EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings(
@@ -61,6 +63,8 @@ class UserProfile(TemplateView):
             [group.name for group in viewed_user.groups.all()])
         context['group_list'] = group_list
         context['viewed_user'] = viewed_user
+        context['viewed_username'] = {'viewed_username': viewed_user.username}
+        context['DISPLAY_USER_SLATE_PROJECTS'] = DISPLAY_USER_SLATE_PROJECTS
         return context
 
 
@@ -103,6 +107,7 @@ class UserProjectsManagersView(ListView):
         ongoing_project_statuses = (
             'New',
             'Active',
+            'Review Pending',
         )
 
         qs = ProjectUser.objects.filter(
@@ -200,6 +205,11 @@ class UserUpgradeAccount(LoginRequiredMixin, UserPassesTestMixin, View):
             messages.error(request, 'Your account has already been upgraded')
             return HttpResponseRedirect(reverse('user-profile'))
 
+        # if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+        #     if request.user.userprofile.title not in ['Faculty', 'Staff', 'Graduate', ]:
+        #         messages.error(request, 'You cannot be a PI')
+        #         return HttpResponseRedirect(reverse('user-profile'))
+
         return super().dispatch(request, *args, **kwargs)
 
     def post(self, request):
@@ -260,7 +270,7 @@ class UserListAllocations(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
 
         for project in Project.objects.filter(pi=self.request.user):
             for allocation in project.allocation_set.filter(status__name='Active'):
-                for allocation_user in allocation.allocationuser_set.filter(status__name='Active').order_by('user__username'):
+                for allocation_user in allocation.allocationuser_set.filter(status__name__in=['Active', 'Invited', 'Pending', 'Disabled', 'Retired']).order_by('user__username'):
                     if allocation_user.user not in user_dict:
                         user_dict[allocation_user.user] = []
 

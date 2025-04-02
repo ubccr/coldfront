@@ -1,0 +1,17 @@
+<span id="{{ id }}_username_validation_results" class="{% if not username_exists %}in{% else %}{% endif %}valid-feedback">
+  <strong>{{ message }}</strong>
+</span>
+{% if username_exists %}
+  <div id="{{ id }}_results">
+    <br>
+    <div class="card">
+      <div class="card-header">
+        <strong>Details</strong>
+      </div>
+      <div class="card-body">
+        <p><strong>Name:</strong> {{ name }}</p>
+        <p><strong>Email:</strong> {{ email }}</p>
+      </div>
+    </div>
+  </div>
+{% endif %}

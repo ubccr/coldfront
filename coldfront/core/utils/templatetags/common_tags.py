@@ -1,3 +1,5 @@
+import json
+
 from django import template
 from django.conf import settings
 from django.utils.safestring import mark_safe
@@ -14,6 +16,7 @@ def settings_value(name):
         'CENTER_NAME',
         'CENTER_HELP_URL',
         'EMAIL_PROJECT_REVIEW_CONTACT',
+        'EMAIL_TICKET_SYSTEM_ADDRESS',
     ]
     return mark_safe(getattr(settings, name, '') if name in allowed_names else '')
 
@@ -56,4 +59,29 @@ def get_value_from_dict(dict_data, key):
     usage example {{ your_dict|get_value_from_dict:your_key }}
     """
     if key:
+        if type(dict_data) == str:
+            dict_data = json.loads(dict_data)
         return dict_data.get(key)
+
+
+@register.filter
+def split(string, char):
+    return string.split(char)
+
+
+@register.filter
+def change_sign(int):
+    return -int
+
+
+@register.filter
+def divide(int, divisor):
+    return int // divisor
+
+@register.filter
+def template_exists(value):
+    try:
+        template.loader.get_template(value)
+        return True
+    except template.TemplateDoesNotExist:
+        return False

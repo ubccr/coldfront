@@ -1,0 +1,8 @@
+Dear {{center_name}} user,
+
+User {{ user }} has been added to allocation {{ allocation }} in project "{{ project }}".
+Allocation URL:
+{{ url }}
+
+Thank you
+{{ signature }}

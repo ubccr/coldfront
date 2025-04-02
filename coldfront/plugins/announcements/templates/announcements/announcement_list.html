@@ -1,0 +1,98 @@
+{% if announcements %}
+  {% for announcement in announcements %}
+    <div class="card">
+      <div class="card-header container">
+        {% if perms.announcements.view_announcement %}
+          <span id="id_read_count_{{ announcement.pk }}"
+            id="id_views"
+            title="Views"
+            class="badge badge-secondary position-absolute"
+            style="border-top-right-radius: 0px; border-bottom-left-radius: 0px; top: 0; left: 0;">
+              {{announcement.viewed_by.count}}
+          </span>
+        {% endif %}
+        {% if announcement.pinned %}
+          <span
+            id="id_pinned"
+            title="Pinned by an admin"
+            class="badge position-absolute p-1"
+            style="color: #990000; right: 0; top: 0;">
+            <i class="fas fa-thumbtack"></i>
+          </span>
+        {% endif %}
+          <span id="id_is_read_{{ announcement.pk }}" class="position-absolute" style="right: 20px; top: 16px;">
+            {% if not request.user in announcement.viewed_by.all %}
+              <a title="Mark as read" type="button" href="#"><i class="far fa-check-circle"></i></a>
+            {% else %}
+              <i title="Marked as read" style="color: green; " class="fa fa-check"></i>
+            {% endif %}
+          </span>
+          <h3 class="m-0" style="max-width: 97%;">
+            {{ announcement.title }}
+          </h3>
+      </div>
+      <div class="card-body">
+        {{ announcement.body|linebreaks }}
+        <hr>
+        {% for category in announcement.categories.all %} 
+          <span class="badge badge-pill badge-danger">{{ category }}</span>
+        {% endfor %}
+      </div>
+      <div class="card-footer container">
+        <div class="row h-100 justify-content-center align-items-center" style="max-height: 33.6px;">
+          <div class="col-9">
+            Created: {{ announcement.created }}
+            {% if not announcement.created == announcement.modified %}
+              | Updated: {{ announcement.modified }}
+            {% endif %}
+          </div>
+          <div class="col-3">
+            {% if announcement.details_url %}
+              <a target="_blank" href="{{ announcement.details_url }}" class="btn btn-secondary float-right" type="button">
+                <i class="fas fa-external-link-alt" aria-hidden="true"></i> More Details
+              </a>
+            {% endif %}
+            {% if perms.announcements.change_announcement and announcement.author == request.user %}
+              <a href="{% url 'announcement-update' pk=announcement.pk %}" class="btn btn-primary float-right mr-1" type="button">Update</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    <hr>
+  {% endfor %}
+
+  <div class="pagination d-inline">
+    <span class="step-links">
+      <div class="row">
+        <div class="col">
+          {% if page_obj.has_previous %}
+            <div class="text-left">
+              <button id="pagination" class="btn btn-secondary" value="1">&laquo; first</button>
+              <button id="pagination" class="btn btn-secondary" value="{{ page_obj.previous_page_number }}">previous</button>
+            </div>
+          {% endif %}
+        </div>
+        <div class="col">
+          <div class="text-center">
+            <span class="current">
+              Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+            </span>
+          </div>
+        </div>
+        <div class="col">
+          <div class="text-right">
+            {% if page_obj.has_next %}
+              <button id="pagination" class="btn btn-secondary" value="{{ page_obj.next_page_number }}">next</button>
+              <button id="pagination" class="btn btn-secondary" value="{{ page_obj.paginator.num_pages }}">last &raquo;</button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </span>
+  </div>
+{% else %}
+  <div class="alert alert-secondary">
+    No announcements to display!
+  </div>
+{% endif %}

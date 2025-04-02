@@ -1,0 +1,96 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+{% load humanize %}
+
+
+{% block title %}
+Grants Report
+{% endblock %}
+
+
+{% block content %}
+<!-- Start Project Grants -->
+<div class="card">
+  <div class="card-header">
+    <h4 class="d-inline"><i class="fas fa-trophy" aria-hidden="true"></i> Grants</h4>
+    <button type="submit" form="download_form" class="btn btn-success float-right"><i class="fas fa-download" aria-hidden="true"></i> Export to CSV</button>
+  </div>
+  <div class="card-body">
+    {% if formset %}
+    <form id="download_form" action="{% url 'grant-report' %}" method="post">
+      {% csrf_token %}
+      <div class="table-responsive">
+        <table id="grants-table" class="table table-hover table-sm">
+          <thead>
+            <tr>
+              <th scope="col"><input type="checkbox" class="check" id="selectAll"></th>
+              <th scope="col">Grant Title</th>
+              <th scope="col">Project PI</th>
+              <th scope="col">Faculty Role</th>
+              <th scope="col">Grant PI</th>
+              <th scope="col">Total Amount Awarded</th>
+              <th scope="col">Funding Agency</th>
+              <th scope="col">Grant Number</th>
+              <th scope="col">Start Date</th>
+              <th scope="col">End Date</th>
+              <th scope="col">Percent Credit</th>
+              <th scope="col">Direct Funding</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for form in formset %}
+              <tr>
+                <td>{{ form.selected }}</td>
+                <td style="min-width: 400px">{{ form.title.value }}</td>
+                <td class="text-nowrap"><a href="{% url 'project-detail' form.project_pk.value %}">{{ form.pi_first_name.value }} {{ form.pi_last_name.value }}</a></td>
+                <td class="text-nowrap">{{ form.role.value }}</td>
+                <td class="text-nowrap">{{ form.grant_pi.value }}</td>
+                <td class="text-nowrap">{{ form.total_amount_awarded.value|floatformat:2|intcomma }}</td>
+                <td class="text-nowrap">{{ form.funding_agency.value }}</td>
+                <td class="text-nowrap">{{ form.grant_number.value }}</td>
+                <td class="text-nowrap">{{ form.grant_start.value|date:"M. d, Y" }}</td>
+                <td class="text-nowrap">{{ form.grant_end.value|date:"M. d, Y" }}</td>
+                <td>{{ form.percent_credit.value|floatformat:2|intcomma }}</td>
+                <td>{{ form.direct_funding.value|floatformat:2|intcomma }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {{ formset.management_form }}
+    </form>
+    {% else %}
+      <div class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> There are no grants to display.</div>
+    {% endif %}
+  </div>
+</div>
+<!-- End Project Grants -->
+
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active")
+  $("#navbar-admin").addClass("active")
+  $("#navbar-director").addClass("active")
+  $("#navbar-grant-report").addClass("active")
+  $(document).ready(function() {
+    $('#grants-table').DataTable({
+      "iDisplayLength": 50,
+      "bSortClasses": false,
+      "order": [[ 5, "desc" ]],
+      "columnDefs": [{ 'orderable': false, 'targets': 0 }],
+      "aaSorting": [[1, 'asc']] 
+    });
+  });
+
+  $("#selectAll").click(function () {
+    $("input[name^='grantdownloadform-']").prop('checked', $(this).prop('checked'));
+  });
+
+  $("input[name^='grantdownloadform-']").click(function (ele) {
+    var id = $(this).attr('id');
+    if (id != "selectAll") {
+      $("#selectAll").prop('checked', false);
+    }
+  });
+</script>
+{% endblock %}

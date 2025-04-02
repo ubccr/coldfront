@@ -21,21 +21,34 @@ GRANT_ENABLE = ENV.bool('GRANT_ENABLE', default=True)
 PUBLICATION_ENABLE = ENV.bool('PUBLICATION_ENABLE', default=True)
 
 #------------------------------------------------------------------------------
-# Enable Project Review
+# Project related
 #------------------------------------------------------------------------------
 PROJECT_ENABLE_PROJECT_REVIEW = ENV.bool('PROJECT_ENABLE_PROJECT_REVIEW', default=True)
+PROJECT_DEFAULT_PROJECT_LENGTH = ENV.int('PROJECT_DEFAULT_PROJECT_LENGTH', default=365)
+PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING = ENV.int('PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING', default=60)
+PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING = ENV.int('PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING', default=30)
+PROJECT_END_DATE_CARRYOVER_DAYS = ENV.int('PROJECT_END_DATE_CARRYOVER_DAYS', default=90)
+PROJECT_PI_ELIGIBLE_ADS_GROUPS = ENV.str('PROJECT_PI_ELIGIBLE_ADS_GROUPS', default=[])
+PROJECT_ENABLE_PERMISSIONS_PER_TYPE = ENV.bool('PROJECT_ENABLE_PERMISSIONS_PER_TYPE', default=False)
+PROJECT_PERMISSIONS_PER_TYPE = ENV.dict('PROJECT_PERMISSIONS_PER_TYPE', default={})
 
 #------------------------------------------------------------------------------
 # Allocation related
 #------------------------------------------------------------------------------
-ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT = ENV.bool('ALLOCATION_ENABLE_CHANGE_REQUESTS', default=True)
+ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT = ENV.bool('ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT', default=True)
 ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS = ENV.list('ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS', cast=int, default=[30, 60, 90])
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = ENV.bool('ALLOCATION_ENABLE_ALLOCATION_RENEWAL', default=True)
 ALLOCATION_FUNCS_ON_EXPIRE = ['coldfront.core.allocation.utils.test_allocation_function', ]
+ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING = ENV.int('ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING', default=60)
+ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING = ENV.int('ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING', default=30)
+#------------------------------------------------------------------------------
+# Resource related
+#------------------------------------------------------------------------------
+RESOURCE_ENABLE_ACCOUNT_CHECKING = ENV.bool('RESOURCE_ENABLE_ACCOUNT_CHECKING', default=True)
+RESOURCE_ACCOUNTS = ENV.dict('RESOURCE_ACCOUNTS', default={})
 
 # This is in days
 ALLOCATION_DEFAULT_ALLOCATION_LENGTH = ENV.int('ALLOCATION_DEFAULT_ALLOCATION_LENGTH', default=365)
-
 
 #------------------------------------------------------------------------------
 # Allow user to select account name for allocation
@@ -66,6 +79,12 @@ INVOICE_ENABLED = ENV.bool('INVOICE_ENABLED', default=True)
 INVOICE_DEFAULT_STATUS = ENV.str('INVOICE_DEFAULT_STATUS', default='New')
 
 #------------------------------------------------------------------------------
+# Slack messaging integration
+#------------------------------------------------------------------------------
+SLACK_MESSAGING_ENABLED = ENV.bool('SLACK_MESSAGING_ENABLED', default=False)
+SLACK_WEBHOOK_URL = ENV.str('SLACK_WEBHOOK_URL', default='')
+
+#------------------------------------------------------------------------------
 # Enable Open OnDemand integration
 #------------------------------------------------------------------------------
 ONDEMAND_URL = ENV.str('ONDEMAND_URL', default=None)
@@ -75,7 +94,7 @@ ONDEMAND_URL = ENV.str('ONDEMAND_URL', default=None)
 #------------------------------------------------------------------------------
 LOGIN_FAIL_MESSAGE = ENV.str('LOGIN_FAIL_MESSAGE', '')
 
-EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL = """
+EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL =  ENV.str('EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL', """
 You recently applied for renewal of your account, however, to date you have not entered any publication nor grant info in the ColdFront system. I am reluctant to approve your renewal without understanding why. If there are no relevant publications or grants yet, then please let me know. If there are, then I would appreciate it if you would take the time to enter the data (I have done it myself and it took about 15 minutes). We use this information to help make the case to the university for continued investment in our department and it is therefore important that faculty enter the data when appropriate. Please email xxx-helpexample.com if you need technical assistance.
 
 As always, I am available to discuss any of this.
@@ -86,7 +105,8 @@ Director
 
 xxx@example.edu
 Phone: (xxx) xxx-xxx
-"""
+""",
+multiline=True)
 
 ACCOUNT_CREATION_TEXT = '''University faculty can submit a help ticket to request an account.
 Please see <a href="#">instructions on our website</a>. Staff, students, and external collaborators must

@@ -1,0 +1,2 @@
+A request for renewal for an allocation in project "{{project_title}}" with id {{project_id}} has been received for {{pi}} - {{resource}}. Please review the allocation renewal request:
+{{url}}

@@ -1,0 +1,91 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Allocation User Detail
+{% endblock %}
+
+
+{% block content %}
+<h2>Allocation User Detail</h2>
+
+<h3>Allocation: {{allocation_obj.get_parent_resource.name}}</h3>
+<hr>
+
+<form action="{% url 'allocation-user-detail' allocation_obj.pk allocation_user_obj.pk %}" method="post">
+  {% csrf_token %}
+  <div class="card">
+    <div class="card-header">
+      <i class="fas fa-user" aria-hidden="true"></i> User Detail
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table">
+          <tr>
+            <th scope="row">Username:</th>
+            <td>{{allocation_user_obj.user.username}}</td>
+          </tr>
+          <tr>
+            <th scope="row">First Name:</th>
+            <td>{{allocation_user_obj.user.first_name}}</td>
+          </tr>
+          <tr>
+            <th scope="row">Last Name:</th>
+            <td>{{allocation_user_obj.user.last_name}}</td>
+          </tr>
+          <tr>
+            <th scope="row">Email:</th>
+            <td>{{allocation_user_obj.user.email}}</td>
+          </tr>
+          <tr>
+            <th scope="row">Status:</th>
+            <td>{{allocation_user_obj.status.name}}</td>
+          </tr>
+          {% if allocation_user_roles_enabled %}
+            {% if can_update %}
+              <tr>
+                <th scope="row">Role:</th>
+                <td>
+                  {{allocation_user_update_form.role}}
+                </td>
+              </tr>
+            {% else %}
+              <tr>
+                <th scope="row">Role:</th>
+                <td>{{allocation_user_obj.role}}</td>
+              </tr>
+            {% endif %}
+          {% endif %}
+        </table>
+      </div>
+    </div> 
+    <div class="card-footer">
+      {% if can_update and allocation_user_roles_enabled%}
+        <button type="submit" class="btn btn-primary">Update</button>
+      {% endif %}
+      <a class="btn btn-secondary" href="{% url 'allocation-detail' allocation_obj.pk %}" role="button">Back to Allocation</a>
+    </div>
+  </div>
+</form>
+
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-project-menu").addClass("active");
+
+  $('document').ready(function() {
+    if ($("#id_role option:selected").text() == 'Group') {
+      $("#id_role option:not(:selected)").prop('disabled', true);
+    } else {
+      var options = $("#id_role option");
+      for (let i = 0; i < options.length; i++) {
+        if (options[i].text == 'Group') {
+          options[i].disabled = true;
+        }
+      }
+    }
+  })
+</script>
+
+{% endblock%}

@@ -1,0 +1,58 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}
+Remove Allocation
+{% endblock %}
+
+{% block content %}
+<h2>Request to Remove Allocation</h2>
+{% if is_admin %}
+  <div class="alert alert-warning" role="alert">
+    <i class="fa fa-exclamation-circle"></i>
+    This allocation will be removed immediately.
+  </div>
+{% endif %}
+
+<div class="card mb-3">
+  <div class="card-header">
+    <h4>
+      <strong>{{ allocation.get_parent_resource }}</strong>
+    </h4>
+  </div>
+  <div class="card-body">
+    <div class="card-text">
+      {% for attribute in attributes %}
+        <p class="card-text"><strong>{{ attribute.allocation_attribute_type.name }}:</strong> {{ attribute.value }}</p>
+      {% endfor %}
+      <p class="card-text">
+        <strong>Users:</strong>
+        {{ users }}
+      </p>
+      <p class="card-text"><strong>Start Date:</strong> {{ allocation.start_date }}</p>
+      <p class="card-text"><strong>End Date:</strong> {{ allocation.end_date }}</p>
+      <p class="card-text"><strong>Status:</strong> {{ allocation.status }}</p>
+    </div>
+  </div>
+</div>
+
+<div class="alert alert-danger" role="alert">
+  <form method="post">{% csrf_token %}
+    <p>
+      Are you sure you want to request to remove this allocation? Anything associated with it will be deleted
+      and everyone in it will lose access to its resource if it is approved. If this is a storage allocation you
+      will need to remove all of the data in it in order for the directory to be deleted. Removing an allocation
+      cannot be undone!
+    </p>
+    <input class="btn btn-danger" type="submit" value="Yes" />
+    <a class="btn btn-secondary" href="{% url 'allocation-detail' allocation.pk %}" role="button">Cancel</a>
+  </form>
+</div>
+
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-project-menu").addClass("active");
+  $("#navbar-allocation").addClass("active");
+</script>
+{% endblock %}

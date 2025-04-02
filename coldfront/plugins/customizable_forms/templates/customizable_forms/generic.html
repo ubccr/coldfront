@@ -1,0 +1,78 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}
+Request New Allocation
+{% endblock %}
+
+{% block content %}
+<style>
+  label:not(.custom-control-label) {
+    font-weight: bold;
+  }
+  .horizontal-radio li {
+    display: inline-block;
+    margin-right: 10px;
+  }
+</style>
+
+<h2>Request New {{ resource_obj.name }} Allocation <br><small>Project: {{ project_obj.title }}</small></h2>
+<hr>
+
+<form method="post">
+  {% csrf_token %}
+  {% for field in form %}
+    {{ field|as_crispy_field }}
+  {% endfor %}
+  <input class="btn btn-primary" type="submit" value="Submit" />
+  {% if after_project_creation == 'true' %}
+    <a
+     class="btn btn-secondary"
+     href="{% url 'custom-allocation-create' project_obj.pk %}?after_project_creation=true"
+     role="button">Back to Resource Selection
+    </a>
+  {% else %}
+    <a
+     class="btn btn-secondary"
+     href="{% url 'custom-allocation-create' project_obj.pk %}"
+     role="button">Back to Resource Selection
+    </a>
+  {% endif %}
+	
+  <br>
+</form>
+
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-project-menu").addClass("active");
+
+  $(document).ready(function () {
+    var radios = $("[type=radio]").parent();
+    for (var i = 0; i < radios.length; i++) {
+      radios[i].className = "custom-control custom-radio custom-control-inline";
+    }
+
+    $(
+      '<br>\
+      <div class="custom-control custom-checkbox">\
+      <input id="selectAll" class="custom-control-input" type="checkbox">\
+      <label class="custom-control-label" for="selectAll">\
+      <strong>Select All Users</strong>\
+      </label>\
+      </div>'
+    ).insertAfter($("#div_id_users > label"))
+
+    $("#selectAll").click(function () {
+      $("input[name^='users']").prop('checked', $(this).prop('checked'));
+    });
+
+    $("input[name^='users']").click(function (ele) {
+      var id = $(this).attr('id');
+      if (id != "selectAll") {
+        $("#selectAll").prop('checked', false);
+      }
+    });
+  })
+</script>
+{% endblock content %}

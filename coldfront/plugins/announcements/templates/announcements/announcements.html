@@ -1,0 +1,180 @@
+{% extends "common/base.html" %}
+{% load common_tags %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Announcements
+{% endblock %}
+
+
+{% block content %}
+<h2 class="d-inline">Announcements</h2>
+{% if perms.announcements.add_announcement %}
+  <a class="btn btn-primary float-right ml-1" type="button" href="{% url 'announcement-create' %}">New Announcement</a>
+{% endif %}
+<a class="btn btn-primary float-right" type="button" href="{% url 'announcement-read' %}">Mark all as read</a>
+</div>
+<hr>
+
+<form id="filter_form" method="GET" action="{% url 'announcement-filter' %}" autocomplete="off">
+  <div class="mb-3" id="category_filter_accordion">
+    <div class="card">
+      <div class="card-header">
+        <a id="expand_category_filter_button" href="#collapse_category_filter" role="button" class="card-link collapsed" data-toggle="collapse" aria-expanded="false">
+          <i id="search_plus_minus_1" class="fas fa-search-plus"></i>
+          Filter Announcements
+          <i id="plus_minus_1" class="fas fa-plus float-right"></i>
+        </a>
+      </div>
+      <div id="collapse_category_filter" class="collapse" data-parent="#category_filter_accordion">
+        <div class="card-body">
+          <div id="div_id_title" class="form-group">
+            <label for="id_title" class="">
+              {{ filter_form.title.label }}
+            </label>
+            <div class="input-group mb-3">
+              <input type="text" name="title" maxlength="100" class="textinput form-control" id="id_title">
+              <div class="input-group-append">
+                <button id="id_search_title_button" class="btn btn-secondary" type="submit">Search Title</button>
+              </div>
+            </div>
+          </div>
+          {{ filter_form.categories|as_crispy_field }}
+          {% include 'announcements/selection.html' with label='Categories' name='categories' selection=categories %}
+        </div>
+        <div class="card-footer">
+          <button id="id_reset_title_button" class="btn btn-secondary" type="reset">Reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+<hr>
+
+<div id="announcement_list"></div>
+
+<script>
+  var categories = {{ categories|safe }};
+
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-announcements").addClass("active");
+
+  function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie != '') {
+      var cookies = document.cookie.split(';');
+      for (var i = 0; i < cookies.length; i++) {
+        var cookie = jQuery.trim(cookies[i]);
+        // Does this cookie string begin with the name we want?
+        if (cookie.substring(0, name.length + 1) == (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  function setUpCategories() {
+    $('#div_id_categories').hide();
+    $('[id^=id_categories_] a').click(function (e) {
+      e.preventDefault();
+      var span = e.target;
+      if (span.localName !== 'span') {
+        return;
+      }
+      var id = span.parentElement.id;
+      id_split = id.split('_')
+      id = id_split[id_split.length - 1];
+      if ($(span).hasClass('badge-danger')) {
+        $(span).removeClass('badge-danger');
+        $(span).addClass('badge-secondary');
+        $('#id_categories option[value="' + id +'"]').prop('selected', '');
+      } else {
+        $(span).removeClass('badge-secondary');
+        $(span).addClass('badge-danger');
+        $('#id_categories option[value="' + id +'"]').prop('selected', 'true');
+      }
+      $('#filter_form').submit();
+    })
+  }
+
+  function getAnnouncements(page) {
+    var form = $('#filter_form');
+    var data = form.serialize()
+    if (page) {
+      data = 'page=' + page + '&' + data;
+    }
+    $.ajax({
+      headers: { 'X-CSRFToken': getCookie('csrftoken') },
+      type: form.attr('method'),
+      url: form.attr('action'),
+      data: data,
+      success: function (data) {
+        $('#announcement_list').html(data);
+
+        $('[id=pagination]').on('click', function(e) {
+          getAnnouncements(e.target.value);
+        });
+
+        $("[id^=id_is_read_]").has('a').click(function (e) {
+          e.preventDefault();
+          var id = e.currentTarget.id.split('_').pop()
+
+          if ($('#id_read_count_' + id).length > 0) {
+            $('#id_read_count_' + id).html(
+              parseInt($('#id_read_count_' + id).text()) + 1
+            );
+          }
+
+          $('#id_is_read_' + id).html(
+            '<i title="Marked as read" style="color: green; " class="fa fa-check"></i>'
+          );
+          $.ajax({
+            headers: { 'X-CSRFToken': getCookie('csrftoken') },
+            type: "POST",
+            url: "{% url 'announcement-read' %}",
+            data: {
+              pk: id
+            },
+            success: function (data) {
+              $('#navbar-announcements-unread').html(data);
+            }
+          });
+          $('#id_is_read_' + id).off('click');
+        });
+      }
+    });
+  }
+
+  $(document).ready(function() {
+    setUpCategories();
+    getAnnouncements();
+
+    $('#filter_form').on('reset', function(e) {
+
+      setTimeout(function() {
+        var to_reset = $('[id^=id_categories_] .badge-danger')
+        to_reset.removeClass('badge-danger');
+        to_reset.addClass('badge-secondary');
+        $('#filter_form').submit();
+      });
+    })
+
+    $('#filter_form').on('submit', function(e) {
+      e.preventDefault();
+      getAnnouncements();
+    })
+
+    $("#expand_category_filter_button").click(function() {
+      $('#collapse_category_filter').collapse();
+      search_icon = $("#search_plus_minus_1");
+      search_icon.toggleClass("fa-search-plus fa-search-minus")
+      icon = $("#plus_minus_1");
+      icon.toggleClass("fa-plus fa-minus");
+    });
+  })
+</script>
+{% endblock %}

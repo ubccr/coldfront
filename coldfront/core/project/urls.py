@@ -24,5 +24,12 @@ urlpatterns = [
     path('<int:pk>/project-attribute-create/', project_views.ProjectAttributeCreateView.as_view(), name='project-attribute-create'),
     path('<int:pk>/project-attribute-delete/', project_views.ProjectAttributeDeleteView.as_view(), name='project-attribute-delete'),
     path('<int:pk>/project-attribute-update/<int:project_attribute_pk>', project_views.ProjectAttributeUpdateView.as_view(), name='project-attribute-update'),
-
+    path('project-request/<int:pk>/email', project_views.ProjectRequestEmailView.as_view(),name='project-request-email'),
+    path('<int:pk>/project-activate-request/', project_views.ProjectActivateRequestView.as_view(),name="project-activate-request"),
+    path('<int:pk>/project-deny-request/', project_views.ProjectDenyRequestView.as_view(),name="project-deny-request"),
+    path('project-review-approve/<int:pk>/', project_views.ProjectReviewApproveView.as_view(),name='project-review-approve'),
+    path('project-review-deny/<int:pk>/', project_views.ProjectReviewDenyView.as_view(),name='project-review-deny'),
+    path('project-review-info/<int:pk>/', project_views.ProjectReviewInfoView.as_view(),name='project-review-info'),
+    path('denied/', project_views.ProjectDeniedListView.as_view(), name='project-denied-list'),
+    path('<int:pk>/projectnote/add',project_views.ProjectNoteCreateView.as_view(), name='project-note-add'),
 ]

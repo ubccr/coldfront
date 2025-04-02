@@ -1,0 +1,44 @@
+{% extends "common/base.html" %}
+{% load static %}
+{% load common_tags %}
+
+
+{% block title %}
+Log In
+{% endblock %}
+
+
+{% block content %}
+<div class="col-sm-6 offset-sm-3">
+  {% if form.errors %}
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+      {% autoescape off %} {% settings_value 'LOGIN_FAIL_MESSAGE' %} {% endautoescape %}
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+  {% endif %}
+
+  <div class="card border-primary">
+    <div class="card-header bg-primary text-white">
+      <h2 class="h5"><i class="fas fa-lock" aria-hidden="true"></i> Log In</h2>
+    </div>
+    <div class="card-body">
+      {% include "user/login_form.html" %} 
+      {% if 'mozilla_django_oidc' in EXTRA_APPS %}
+        <hr/>
+        <p class="text-center"><strong>OR</strong></p>
+
+        <a class="btn btn-primary btn-block" role="button" href="{% url 'oidc_authentication_init' %}?next={{request.GET.next}}">
+          <i class="fab fa-openid" aria-hidden="true"></i> Log in via OpenID Connect
+        </a> 
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-login").addClass("active");
+</script>
+{% endblock %}

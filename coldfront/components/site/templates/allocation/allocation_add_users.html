@@ -1,0 +1,118 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+
+
+{% block title %}
+Add Users to Allocation
+{% endblock %}
+
+
+{% block content %}
+<h2>Add users to allocation for project: {{allocation.project.title}}</h2>
+<hr>
+
+{% if formset %}
+  <div class="card border-light">
+    <div class="card-body">
+      <form action="{% url 'allocation-add-users' allocation.pk %}" method="post">
+        {% csrf_token %}
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th>
+                  <input type="checkbox" class="check" id="selectAll">
+                </th>
+                <th scope="col">
+                  <a href="#" data-toggle="popover" title="Info" data-trigger="hover" data-content="Hover over an icon to see a user's account status for this resource">
+                    <span class="badge badge-info"><i class="fas fa-question-circle"></i></span><span class="sr-only">Hover over an icon to see a user's account status for this resource</span>
+                  </a>
+                </th>
+                <th scope="col">#</th>
+                <th scope="col">Username</th>
+                <th scope="col">First Name</th>
+                <th scope="col">Last Name</th>
+                <th scope="col">Email</th>
+                {% if allocation_user_roles_enabled %}
+                  <th scope="col">Role</th>
+                {% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for form in formset %}
+                <tr>
+                  <td>{{ form.selected }}</td>
+                  <td>
+                    {% if account_results|get_value_from_dict:form.username.value == 'no_account' %}
+                      <a href="#" data-toggle="popover" title="Cannot Add" data-trigger="hover" data-content="No IU account">
+                        <span class="badge badge-danger"><i class="fas fa-times-circle"></i></span><span class="sr-only">No IU account</span>
+                      </a>
+                    {% elif account_results|get_value_from_dict:form.username.value == 'no_resource_account' %}
+                      <a href="#" data-toggle="popover" title="Cannot Add" data-trigger="hover" data-content="No {{ allocation.get_parent_resource.name }} account">
+                        <span class="badge badge-danger"><i class="fas fa-times-circle"></i></span><span class="sr-only">No {{ allocation.get_parent_resource.name }} account</span>
+                      </a>
+                    {% elif account_results|get_value_from_dict:form.username.value in 'has_account, has_resource_account' %}
+                      <a href="#" data-toggle="popover" title="Can Add" data-trigger="hover" data-content="Has an account">
+                        <span class="badge badge-success"><i class="fas fa-check-circle"></i></span><span class="sr-only">Has an account</span>
+                      </a>
+                    {% else %}
+                      <a href="#" data-toggle="popover" title="Can Add" data-trigger="hover" data-content="No account required">
+                        <span class="badge badge-secondary"><i class="fas fa-minus-circle"></i></span><span class="sr-only">No account required</span>
+                      </a>
+                    {% endif %}
+                  </td>
+                  <td>{{ forloop.counter }}</td>
+                  <td>{{ form.username.value }}</td>
+                  <td>{{ form.first_name.value }}</td>
+                  <td>{{ form.last_name.value }}</td>
+                  <td>{{ form.email.value }}</td>
+                  {% if allocation_user_roles_enabled %}
+                    <td>{{ form.role }}</td>
+                  {% endif %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <div class="alert alert-info">
+            <i class="fas fa-question-circle" aria-hidden="true"></i>
+            Users with the <span class="badge badge-success"><i class="fas fa-check-circle"></i></span> icon can be added to the allocation.
+            Users with the <span class="badge badge-danger"><i class="fas fa-times-circle"></i></span> icon cannot be added; hover 
+            over the icon to see why.
+          </div>
+        </div>
+        {{ formset.management_form }}
+        <div>
+          <button type="submit" class="btn btn-primary"><i class="fas
+              fa-user-plus"></i> Add Selected Users to Allocation</button>
+          <a class="btn btn-secondary" href="{% url 'allocation-detail' allocation.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i>
+            Back to Allocation</a>
+          <br>
+        </div>
+      </form>
+    </div>
+  </div>
+{% else %}
+  <a class="btn btn-secondary mb-3" href="{% url 'allocation-detail' allocation.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Allocation</a>
+  <div class="alert alert-info">
+    All users in project are already in this allocation!
+  </div>
+{% endif %}
+
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-project-menu").addClass("active");
+
+  $("#selectAll").click(function () {
+    $("input[name^='userform-']").not(':disabled').prop('checked', $(this).prop('checked'));
+  });
+
+  $("input[name^='userform-']").click(function (ele) {
+    var id = $(this).attr('id');
+    if ( id != "selectAll") {
+      $("#selectAll").prop('checked', false);
+    }
+  });
+</script>
+{% endblock %}

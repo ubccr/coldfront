@@ -43,7 +43,7 @@ Allocation Review New and Pending Requests
         {% for allocation in allocation_list %}
           <tr>
             <td>{{allocation.pk}}</td>
-            <td>{{allocation_renewal_dates|get_value_from_dict:allocation.pk|default:allocation.created|date:"M. d, Y"}}</td>
+            <td>{{ allocation.created|date:"M. d, Y" }}</td>
             <td><a href="{% url 'project-detail' allocation.project.pk %}">{{allocation.project.title|truncatechars:50}}</a></td>
             <td>{{allocation.project.pi.first_name}} {{allocation.project.pi.last_name}}
               ({{allocation.project.pi.username}})</td>

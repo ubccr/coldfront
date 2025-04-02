@@ -1,0 +1,69 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load crispy_forms_filters %}
+{% load static %}
+{% load i18n %}
+{% load common_tags %}
+
+{% block title %}
+Create Announcement
+{% endblock %}
+
+
+{% block content %}
+<h2>Create Announcement</h2>
+<hr>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form.title|as_crispy_field }}
+  {{ form.body|as_crispy_field }}
+  {{ form.details_url|as_crispy_field }} 
+  {{ form.categories|as_crispy_field }}
+  {{ form.mailing_lists|as_crispy_field }}
+
+  {% include 'announcements/selection.html' with label='Categories' name='categories' selection=categories %}
+  {% include 'announcements/selection.html' with label='Mailing Lists' name='mailing_lists' selection=mailing_lists %}
+
+  {{ form.pinned|as_crispy_field }}
+
+  <hr>
+  <div class="float-right">
+    <input class="btn btn-primary" type="submit" value="Create" />
+    <a class="btn btn-secondary" href="{% url 'announcement-list' %}" role="button">Cancel</a>
+  </div>
+</form>
+
+<script>
+  var categories = {{ categories|safe }};
+  var mailing_lists = {{ mailing_lists|safe }};
+
+  function setUpSelections(selection) {
+    $('#div_id_' + selection).hide();
+    $('[id^=id_' + selection + '_] a').click(function (e) {
+      e.preventDefault();
+      var span = e.target;
+      if (span.localName !== 'span') {
+        return;
+      }
+      var id = span.parentElement.id;
+      id = id[id.length - 1];
+      if ($(span).hasClass('badge-danger')) {
+        $(span).removeClass('badge-danger');
+        $(span).addClass('badge-secondary');
+        $('#id_' + selection + ' option[value="' + id +'"]').prop('selected', '');
+      } else {
+        $(span).removeClass('badge-secondary');
+        $(span).addClass('badge-danger');
+        $('#id_' + selection + ' option[value="' + id +'"]').prop('selected', 'true');
+      }
+      $('#filter_form').submit();
+    })
+  }
+
+  $(document).ready(function() {
+    setUpSelections('categories')
+    setUpSelections('mailing_lists')
+  })
+</script>
+{% endblock %}

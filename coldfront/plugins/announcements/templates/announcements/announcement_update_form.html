@@ -1,0 +1,82 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load crispy_forms_filters %}
+{% load static %}
+{% load i18n %}
+{% load common_tags %}
+
+{% block title %}
+Create Announcement
+{% endblock %}
+
+
+{% block content %}
+<h2>Create Announcement</h2>
+<hr>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form.title|as_crispy_field }}
+  {{ form.body|as_crispy_field }}
+  {{ form.details_url|as_crispy_field }}
+  {{ form.categories|as_crispy_field }}
+  {{ form.mailing_lists|as_crispy_field }}
+  {{ form.status|as_crispy_field }}
+
+  {% include 'announcements/selection.html' with label='Categories' name='categories' selection=categories initial_selected=initial_categories_selected %}
+  {% include 'announcements/selection.html' with label='Mailing Lists' name='mailing_lists' selection=mailing_lists initial_selected=initial_mailing_lists_selected %}
+
+  {{ form.pinned|as_crispy_field }}
+
+  <hr>
+  <div class="float-right">
+    <button type="submit" value="update" class="btn btn-primary">Update</button>
+    <button type="submit" value="remove" class="btn btn-danger confirm-remove">Remove</button>
+    <a class="btn btn-secondary" href="{% url 'announcement-list' %}" role="button">Cancel</a>
+  </div>
+</form>
+
+<script>
+  var categories = {{ categories|safe }};
+  var mailing_lists = {{ mailing_lists|safe }};
+
+  function setUpSelections(selection) {
+    $('#div_id_' + selection).hide();
+    $('[id^=id_' + selection + '_] a').click(function (e) {
+      e.preventDefault();
+      var span = e.target;
+      if (span.localName !== 'span') {
+        return;
+      }
+      var id = span.parentElement.id;
+      id_split = id.split('_')
+      id = id_split[id_split.length - 1];
+      if ($(span).hasClass('badge-danger')) {
+        $(span).removeClass('badge-danger');
+        $(span).addClass('badge-secondary');
+        $('#id_' + selection + ' option[value="' + id +'"]').prop('selected', '');
+      } else {
+        $(span).removeClass('badge-secondary');
+        $(span).addClass('badge-danger');
+        $('#id_' + selection + ' option[value="' + id +'"]').prop('selected', 'true');
+      }
+      $('#filter_form').submit();
+    })
+  }
+
+  $(document).ready(function() {
+    $('#div_id_status').hide();
+    setUpSelections('categories');
+    setUpSelections('mailing_lists');
+
+    $(document).on('click', '.confirm-remove', function(){
+      confirmation = confirm('Are you sure you want to remove this announcement?');
+      if (confirmation) {
+        $('#id_status option:selected').prop('selected', '');
+        $('#id_status option:contains("Removed")').prop('selected', true);
+      }
+      return confirmation;
+    })
+  })
+</script>
+{% endblock %}

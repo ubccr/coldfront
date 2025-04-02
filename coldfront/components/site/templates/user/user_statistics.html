@@ -1,0 +1,53 @@
+{% load static %}
+{% if has_stats %}
+  <div id="chartSlateStorageAllocated" style="min-height: 270px;"></div>
+  <div>
+    {% for column in allocated_slate_storage_chart_data.columns %}
+      {% if column.0 != 'Remaining' %}
+        <a id="{{column.0}}" type="hidden" href="{% url 'allocation-detail' column.0 %}" target="_blank"></a>
+      {% endif %}
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="alert alert-info">There are no statistics to display!</p>
+{% endif %}
+
+<script>
+  var allocated_slate_storage_chart_data = {{ allocated_slate_storage_chart_data | safe }}
+
+  $(document).ready(function () {
+    drawAllocatedSlateStorageChart();
+  })
+
+  function onClickAllocatedSlateStorageChart (d, i) {
+    if (d.name === 'Remaining') {
+        return;
+    }
+    $('#' + d.id)[0].click()
+  }
+
+  function drawAllocatedSlateStorageChart() {
+    allocated_slate_storage_chart_data['onclick'] = onClickAllocatedSlateStorageChart;
+    var chart = c3.generate({
+      bindto: '#chartSlateStorageAllocated',
+      title: {
+        text: 'Allocated Slate Storage'
+      },
+      data: allocated_slate_storage_chart_data,
+      pie: {
+        label: {
+          format: function(value, ratio, id) {
+            return value + 'TB';
+          },
+        },
+      },
+      tooltip: {
+        format: {
+          value: function (value, ratio, id) {
+            return value + 'TB';
+          },
+        },
+      },
+    })
+  }
+</script>

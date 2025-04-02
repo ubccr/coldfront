@@ -1,0 +1,21 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+
+
+{% block title %}
+Request New Allocation
+{% endblock %}
+
+
+{% block content %}
+<h2>Add account names that can be associated with allocations</h2>
+
+<form method="post">
+  {% csrf_token %}
+  {{form |crispy}}
+  <input class="btn btn-primary" type="submit" value="Submit" />
+  <a class="btn btn-secondary" href="{% url 'allocation-account-list' %}" role="button">Cancel</a><br>
+</form>
+{% endblock %}

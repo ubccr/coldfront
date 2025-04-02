@@ -1,11 +1,24 @@
 from datetime import datetime
+import logging
 
+from django.conf import settings
 from django.contrib.auth.models import Group, User
 from django.core.exceptions import ValidationError
 from django.db import models
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
+from coldfront.core.utils.common import import_from_settings
 import coldfront.core.attribute_expansion as attribute_expansion
+
+from coldfront.plugins.ldap_user_info.utils import get_user_info, get_users_info
+
+logger = logging.getLogger(__name__)
+
+RESOURCE_ENABLE_ACCOUNT_CHECKING = import_from_settings(
+    'RESOURCE_ENABLE_ACCOUNT_CHECKING', True
+)
+RESOURCE_ACCOUNTS = import_from_settings('RESOURCE_ACCOUNTS', {})
+
 
 class AttributeType(TimeStampedModel):
     """ An attribute type indicates the data type of the attribute. Examples include Date, Float, Int, Text, and Yes/No. 
@@ -81,6 +94,7 @@ class ResourceAttributeType(TimeStampedModel):
 
     attribute_type = models.ForeignKey(AttributeType, on_delete=models.CASCADE)
     name = models.CharField(max_length=128)
+    description = models.TextField(blank=True, null=True)
     is_required = models.BooleanField(default=False)
     is_unique_per_resource = models.BooleanField(default=False)
     is_value_unique = models.BooleanField(default=False)
@@ -122,6 +136,10 @@ class Resource(TimeStampedModel):
     is_public = models.BooleanField(default=True)
     is_allocatable = models.BooleanField(default=True)
     requires_payment = models.BooleanField(default=False)
+    requires_user_roles = models.BooleanField(default=False)
+    review_groups = models.ManyToManyField(
+        Group, blank=True, related_name='review_groups_resource_set'
+    )
     allowed_groups = models.ManyToManyField(Group, blank=True)
     allowed_users = models.ManyToManyField(User, blank=True)
     linked_resources = models.ManyToManyField('self', blank=True)
@@ -221,7 +239,90 @@ class Resource(TimeStampedModel):
         if ondemand:
             return ondemand.value
         return None
-            
+    
+    def check_users_accounts(self, usernames):
+        results = {}
+        if not 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+            for username in usernames:
+                results[username] = {'exists': True, 'reason': 'not_enabled'}
+            return results
+
+        users_accounts = get_users_info(usernames, ['memberOf'])
+        for username in usernames:
+            result = self.check_user_account(username, users_accounts)
+            results[username] = result
+
+        return results
+    
+    def check_accounts(self, accounts):
+        """Checks if an account exists for the resource by comparing the provided list
+
+        Params:
+            accounts: What accounts to check
+
+        Returns:
+            dict(exists: bool - If the require account exists, reason: str - Why the account was found/not found)
+        """
+        resource = self.get_attribute('check_user_account')
+        if resource is None:
+            return {'exists': True, 'reason': 'not_required'}
+
+        if accounts[0] == '':
+            return {'exists': False, 'reason': 'no_account'}
+
+        resource_acc = RESOURCE_ACCOUNTS.get(resource) 
+        if not resource_acc:
+            return {'exists': True, 'reason': 'has_account'}
+
+        if resource_acc in accounts:
+            return {'exists': True, 'reason': 'has_resource_account'}
+
+        return {'exists': False, 'reason': 'no_resource_account'}
+
+    def check_user_account(self, username, users_accounts=None):
+        """Checks if an account exists for the resource by running an LDAP query
+
+        Params:
+            username: Username to check
+            ldap_conn: LDAP connection to grab the accounts from
+
+        Returns:
+            dict(exists: bool - If the require account exists, reason: str - Why the account was found/not found)
+        """
+        if not RESOURCE_ENABLE_ACCOUNT_CHECKING:
+            return {'exists': True, 'reason': 'not_enabled'}
+
+        if not 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+            return {'exists': True, 'reason': 'not_enabled'}
+
+        resource = self.get_attribute('check_user_account')
+        if resource is None:
+            return {'exists': True, 'reason': 'not_required'}
+
+        if users_accounts is None:
+            accounts = get_user_info(username, ['memberOf']).get('memberOf')
+        else:
+            accounts = users_accounts.get(username).get('memberOf')
+
+        if accounts[0] == '':
+            return {'exists': False, 'reason': 'no_account'}
+
+        resource_acc = RESOURCE_ACCOUNTS.get(resource)    
+        if not resource_acc:
+            return {'exists': True, 'reason': 'has_account'}
+
+        if resource_acc in accounts:
+            return {'exists': True, 'reason': 'has_resource_account'}
+
+        return {'exists': False, 'reason': 'no_resource_account'}
+    
+    def get_assigned_account(self):
+        resource = self.get_attribute('check_user_account')
+        if resource is None:
+            return 'not_required'
+
+        return RESOURCE_ACCOUNTS.get(resource, '')
+
     def __str__(self):
         return '%s (%s)' % (self.name, self.resource_type.name)
 
@@ -240,31 +341,45 @@ class ResourceAttribute(TimeStampedModel):
     resource_attribute_type = models.ForeignKey(
         ResourceAttributeType, on_delete=models.CASCADE)
     resource = models.ForeignKey(Resource, on_delete=models.CASCADE)
-    value = models.TextField()
+    value = models.TextField(blank=True)
+    is_required = models.BooleanField(default=False)
+    check_if_username_exists = models.BooleanField(default=False)
+    resource_account_is_required = models.BooleanField(default=False)
     history = HistoricalRecords()
 
     def clean(self):
         """ Validates the resource and raises errors if the resource is invalid. """
         expected_value_type = self.resource_attribute_type.attribute_type.name.strip()
-
-        if expected_value_type == "Int" and not self.value.isdigit():
+        if expected_value_type == "Int" and not self.value.isdigit() and self.value != "":
             raise ValidationError(
-                'Invalid Value "%s". Value must be an integer.' % (self.value))
-        elif expected_value_type == "Active/Inactive" and self.value not in ["Active", "Inactive"]:
+                'Invalid Value "%s". Value must be an integer.' % (self.value)
+            )
+        elif expected_value_type == "Active/Inactive" and self.value not in ["Active", "Inactive", ""]:
             raise ValidationError(
-                'Invalid Value "%s". Allowed inputs are "Active" or "Inactive".' % (self.value))
-        elif expected_value_type == "Public/Private" and self.value not in ["Public", "Private"]:
+                'Invalid Value "%s". Allowed inputs are "Active" or "Inactive".' % (self.value)
+            )
+        elif expected_value_type == "Public/Private" and self.value not in ["Public", "Private", ""]:
             raise ValidationError(
-                'Invalid Value "%s". Allowed inputs are "Public" or "Private".' % (self.value))
-        elif expected_value_type == "Date":
+                'Invalid Value "%s". Allowed inputs are "Public" or "Private".' % (self.value)
+            )
+        elif expected_value_type == "Yes/No" and self.value not in ["Yes", "No", ""]:
+            raise ValidationError(
+                'Invalid Value "%s". Allowed inputs are "Yes" or "No".' % (self.value)
+            )
+        elif expected_value_type == "True/False" and self.value not in ["True", "False", ""]:
+            raise ValidationError(
+                'Invalid Value "%s". Allowed inputs are "True" or "False".' % (self.value)
+            )
+        elif expected_value_type == "Date" and not self.value == "":
             try:
                 datetime.strptime(self.value.strip(), "%m/%d/%Y")
             except ValueError:
                 raise ValidationError(
-                    'Invalid Value "%s". Date must be in format MM/DD/YYYY' % (self.value))
+                    'Invalid Value "%s". Date must be in format MM/DD/YYYY' % (self.value)
+                )
 
     def __str__(self):
-        return '%s: %s (%s)' % (self.resource_attribute_type, self.value, self.resource)
+        return '%s (%s)' % (self.resource_attribute_type, self.resource_attribute_type.attribute_type.name)
 
     def typed_value(self):
         """

@@ -7,8 +7,14 @@ class UserProfile(models.Model):
 
     Attributes:
         is_pi (bool): indicates whether or not the user is a PI
-        user (User): represents the Django User model    
+        user (User): represents the Django User model
+        department (str): the department the user is in
+        division (str): the department code
+        title (str): the user's status
     """
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     is_pi = models.BooleanField(default=False)
+    department = models.CharField(max_length=100, default='')
+    division = models.CharField(max_length=100, default='')
+    title = models.CharField(max_length=30, default='')

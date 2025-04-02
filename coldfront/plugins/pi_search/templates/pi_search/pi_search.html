@@ -1,0 +1,87 @@
+{% load crispy_forms_tags %}
+
+<div class="mb-3">
+  <div class="card">
+    <div class="card-header">
+      <h3>PI Search</h3>
+    </div>
+    <div class="card-body">
+      <p>
+        You can use the PI Search function to search for a project your PI is in and request to be added to it.
+      </p>
+      <form id="pi_search_form" method="post">
+        {{ form|crispy }}
+        <input id="pi_search_submit" type="submit" class="btn btn-primary" value="Search">
+        <input id="pi_search_reset" type="reset" class="btn btn-secondary" value="Clear">
+      </form>
+      <br>
+      <div class="row">
+        <div class="col" id="search_results">
+          <hr>
+          <div class="card border-light">
+            <div class="card-body">
+              <div id="search_results_inner"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  var pi_last_searched = '';
+
+  $(document).ready(function () {
+    $('#search_results').hide()
+
+    $('#pi_search_form').on('reset', function() {
+      $('#search_results').hide()
+    })
+
+    $('#pi_search_form').on('submit', function(event) {
+      event.preventDefault();
+      var pi_username = $('#id_pi_search').val();
+
+      if (pi_last_searched === pi_username) {
+        $('#search_results').show();
+        return;
+      }
+      pi_last_searched = pi_username
+      
+      if (pi_username === '') {
+        $('#search_results').hide();
+        return;
+      }
+
+      $('#search_results').show();
+      $('#search_results_inner').html(
+        '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Searching...'
+      );
+      $('#search_results_inner').prop('disabled', true);
+      $('#search_results_inner').blur()
+      data = {
+        pi_username: pi_username,
+        csrfmiddlewaretoken: "{{ csrf_token }}",
+      }
+      $.ajax({
+        url: "{% url 'pi-search-results' %}",
+        type: "POST",
+        data: data,
+        success: function(data) {
+          $('#search_results').show();
+          $('#search_results_inner').html(data);
+        },
+        error: function(xhr, errmsg, err) {
+          if (xhr.status == 403 || xhr.status == 401) {
+            $('#search_results_inner').html("<div class='alert alert-danger'>Your session expired. Please login again. <a href='#' class='close'>&times;</a></div>");
+          } else {
+            $('#search_results_inner').html("<div class='alert alert-danger'>Oops! We have encountered an error: " + errmsg +
+              " <a href='#' class='close'>&times;</a></div>");
+          }
+          console.log(xhr.status + ": " + xhr.responseText);
+        }
+      });
+    });
+  });
+</script>

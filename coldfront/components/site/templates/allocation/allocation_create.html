@@ -1,0 +1,558 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+
+
+{% block title %}
+Request New Allocation
+{% endblock %}
+
+
+{% block content %}
+<h2>Request New Allocation <br><small>Project: {{ project.title }}</small></h2>
+<hr>
+
+<p class="text-justify">The following {% settings_value 'CENTER_NAME' %}
+  resources are available to request for this project. If you need access to
+  more than one of these, please submit a separate allocation request for each
+  resource. For each request you must fill out all required fields.</p>
+
+<form method="post" class="bootstrap">
+  {% crispy form %}
+
+  <div id="eula-div" style="display: none;">
+    <textarea style="display:none;min-width:100%" id="eula"  rows="15"></textarea>
+    <br>
+    <p class="font-weight-bold">By clicking submit you agree to the Terms and Conditions.</p>
+  </div>
+</form>
+
+<!-- Medium modal -->
+<div id="id_resource_description_modal" class="modal fade bd-example-modal-md" tabindex="-1" role="dialog" aria-labelledby="id_resource_description_label" aria-hidden="true">
+  <div class="modal-dialog modal-md">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="id_resource_description_label">Resource Description</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p id="id_resource_description"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Large modal -->
+<div id="Modal" class="modal fade bd-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Add New Account Name</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="error_div"></div>
+        *No spaces in account name
+        <form id="allocation_account_form">
+          {{AllocationAccountForm |crispy}}
+          <button id="myFormSubmit" class="btn btn-primary" type="submit">Submit</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+    <button type="button" class="btn btn-primary">Send message</button>
+  </div>
+</div>
+
+<!-- Data Best Practices Modal -->
+<div id="id_data_best_practices_modal" class="modal fade bd-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="id_data_best_practices_modal_label" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="id_data_best_practices_label">Data Management Ideas and Best Practices</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="card mb-3">
+          <div class="card-header">
+            <h4 class="card-title">General Info</h4>
+          </div>
+          <div class="card-body">
+            <ul>
+              <li>Store files that naturally group by lab, project, category, date, experiment, meeting, etc…</li>
+              <li>Separate ongoing work from completed work.</li>
+              <li>Organize files so that it’s easy to delete or archive large numbers of files when they are no longer actively worked on or needed.</li>
+              <li>Consider using a group account and or a security group when sharing and storing data with others.</li>
+              <li>
+                Review IU's <a href="https://securemyresearch.iu.edu/" target="_blank" rel="noopener noreferrer">Secure My Research</a> for information on data handling best practices.
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="card mb-3">
+          <div class="card-header">
+            <h4 class="card-title">For Filenames</h4>
+          </div>
+          <div class="card-body">
+            <ul>
+              <li>Use consistent file naming conventions and ensure all users of the storage adhere to those conventions.</li>
+              <li>Use a coded naming convention to keep file names, directory names, and subsequently path names as short as possible.</li>
+              <li>Use a file naming scheme that includes the date as the preface of the file to naturally organize files by date. This can be useful when the file name may be the same.</li>
+              <li>Pattern: [YYYY][MM][DD][HR][MIN]-</li>
+              <li>Example: 20201017-team-meeting-notes.txt</li>
+              <li>Example: 20210721-expr14-run5.dat</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card mb-3">
+          <div class="card-header">
+            <h4 class="card-title">For Directory Name</h4>
+          </div>
+          <div class="card-body">
+            <ul>
+              <li>Use directories and sub-directories to organize your data/files.</li>
+              <li>Organize directories by date, with the intention to keep X number of months or years.</li>
+              <li>Use an index file within a directory to explain the contents of the directory.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h4 class="card-title">Things to Avoid</h4>
+          </div>
+          <div class="card-body">
+            <ul>
+              <li>Avoid saving unused, unneeded data/files.</li>
+              <li>Avoid overfilling directories.</li>
+              <li>Avoid directories with a single file.</li>
+              <li>Avoid lengthy file names, directory names, and pathnames. Many storage systems have limits to their length.</li>
+              <li>Avoid spaces in directory and file names. Some search programs can struggle with spaces in names plus it can make coding more difficult.</li>
+              <li>Avoid special characters or Unicode in directory and filenames. Not all storage systems recognize Unicode.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  var resource_descriptions = {{ resource_descriptions | safe }};
+  var resources_with_accounts = {{ resources_with_accounts | safe }};
+  var resources_with_eula = {{ resources_with_eula | safe }};
+  var resources_requiring_user_accounts = {{ resources_requiring_user_accounts | safe }};
+
+  var resource_special_attributes = {{ resource_special_attributes | safe }}
+  var resource_form = {{ resource_form | safe }}
+  var request_user_username = {{ request_user_username | safe }}
+
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-project-menu").addClass("active");
+
+  $(document).ready(function () {
+    moveRadioSelectErrors();
+
+    $('#div_id_is_grand_challenge').hide();
+    $('#div_id_grand_challenge_program').hide();
+
+    $('#div_id_justification').hide();
+
+    var resource_label = $('label[for="id_resource"]');
+    resource_label.html(
+      'Resource<span class="asteriskField">*</span>\
+      <a\
+      href="#"\
+      data-toggle="modal"\
+      data-target="#id_resource_description_modal"\
+      >\
+        <i class="fas fa-info-circle" aria-hidden="true"></i>\
+      </a>'
+    )
+
+    // By default we will have the use_indefinitely div placed just after the end_date label on the form.
+    $('#div_id_end_date label').after( function () {
+      var label = $('label[for="id_use_indefinitely"]');
+
+      // Clone the use_indefinitely div so we can delete the old one so there are no duplicates.
+      var use_indefinitely_clone = $('#div_id_use_indefinitely').clone()
+      $('#div_id_use_indefinitely').remove()
+      return use_indefinitely_clone
+    });
+    $('#id_use_indefinitely').change(function (e) {
+      if (e.target.checked) {
+        $('#id_end_date').prop('disabled', true);
+        $('#div_id_end_date button').prop('disabled', true);
+        $('#id_end_date').val('')
+      } else {
+        $('#id_end_date').prop('disabled', false);
+        $('#div_id_end_date button').prop('disabled', false);
+      }
+    });
+
+    if ($('#id_use_indefinitely').is(':checked')) {
+      $('#id_end_date').prop('disabled', true);
+      $('#div_id_end_date button').prop('disabled', true);
+      $('#id_end_date').val('')
+    }
+
+    // Add button for date picker on date fields.
+    var date = new Date();
+    var currentYear = date.getFullYear();
+    $(".datepicker")
+      .wrap('<div class="input-group">')
+      .flatpickr({
+        changeMonth: true,
+        changeYear: true,
+        yearRange: currentYear + ':' + (currentYear + 5),
+        showOn: "button",
+        buttonText: "Select Date"
+      })
+      .next("button")
+      .addClass("btn btn-secondary")
+
+    $('#div_id_justification').after(
+      '<p id="posit_connect_link"> Please visit <a href="https://kb.iu.edu/d/bgto" target="_blank">this kb article</a> \
+      for more information about this service.</p>'
+    );
+
+    $('#div_id_justification').after(
+      '<p id="user_account_info">You must first have an account on this resource to gain access to its partitions. \
+      To create an account, go to \
+      <a href="https://access.iu.edu/Accounts/Create" target = "_blank">Create Additional Accounts.</a></p>'
+    );
+
+    $('#div_id_store_ephi').append(
+      '<p id="id_ephi_info">If you use the Slate-Project file system for storing electronic protected health \
+      information (ePHI), please note that <strong>you and/or the Principal Investigator (PI) \
+      are responsible for the privacy and security of data and for compliance with applicable \
+      federal and state laws/regulations and institutional policies.</strong> \
+      IU\'s HIPPA policies include the appropriate Institutional Review Board (IRB) approvals and \
+      a Data Management Plan. Be advised that, while we provide technical and physical controls \
+      against the unauthorized release of data in accordance with HIPAA, responsibility for \
+      administrative controls (including granting access and terminating access, providing \
+      training, creating user polices, etc.) rests with you and/or the PI. \
+      We strongly recommend that you review <a href="https://kb.iu.edu/d/ayzb" target="_blank">At \
+      IU, how do I get help securely processing, storing, and sharing HIPAA-regulated data?</a> \
+      for guidance on securely processing, storing, and sharing ePHI or HIPAA data. If you have \
+      further questions, please contact us.</p>'
+    )
+
+    $('#div_id_users').before(
+      '\
+      <div id="div_id_sda_information" aria-live="polite" tabindex="0" class="">\
+        <p>To keep up to date with the features, functions, and best practices of the SDA, please review these IU Knowledge Base Articles:</p>\
+        <ul>\
+        <li>About the SDA:  <a href="https://kb.iu.edu/d/aiyi" target="_blank" rel="noopener noreferrer">https://kb.iu.edu/d/aiyi</a></li>\
+        <li>About data stored on the SDA:  <a href="https://kb.iu.edu/d/aiyk" target="_blank" rel="noopener noreferrer">https://kb.iu.edu/d/aiyk</a></li>\
+        <li>Access the SDA at IU:  <a href="https://kb.iu.edu/d/aiyr" target="_blank" rel="noopener noreferrer">https://kb.iu.edu/d/aiyr</a></li>\
+        <li>Best Uses for an IU SDA account: <a href="https://kb.iu.edu/d/ahyi" target="_blank" rel="noopener noreferrer">https://kb.iu.edu/d/ahyi</a></li>\
+        <li>Types of sensitive institutional data appropriate for the SDA:  <a href="https://kb.iu.edu/d/bcpd" target="_blank" rel="noopener noreferrer">https://kb.iu.edu/d/bcpd</a></li>\
+        <li>About Protected Health Information:  <a href="https://kb.iu.edu/d/bdtx" target="_blank" rel="noopener noreferrer">https://kb.iu.edu/d/bdtx</a></li>\
+        <li>Your Responsibilities for Protecting PHI:  <a href="https://kb.iu.edu/d/ayzm" target="_blank" rel="noopener noreferrer">https://kb.iu.edu/d/ayzm</a></li>\
+        <li>Recommended tools for encrypting data:  <a href="https://kb.iu.edu/d/ayzi" target="_blank" rel="noopener noreferrer">https://kb.iu.edu/d/ayzi</a></li>\
+        </ul>\
+      </div>\
+      '
+    );
+    $('div_id_sad_information').show();
+
+    if ($('input[type=radio][name=store_ephi]:checked').val() === 'Yes') {
+      $('#id_ephi_info').show();
+    } else {
+      $('#id_ephi_info').hide();
+    }
+    $('input[type=radio][name=store_ephi]').change(function (e) {
+      if (e.target.value === "Yes") {
+        $('#id_ephi_info').show();
+      } else {
+        $('#id_ephi_info').hide();
+      }
+    })
+
+    $('#id_storage_space').change(function (e) {
+      var resource_text = $("#id_resource option:selected").text();
+      var resource_name = resource_text.slice(0, resource_text.indexOf('(') - 1)
+      if (resource_name === 'Slate-Project') {
+        if (e.target.value > 15) {
+          $('#div_id_account_number').show()
+        } else {
+          $('#div_id_account_number').hide()
+        }
+      }
+    })
+
+    // Set up license term handler function.
+    $('#div_id_total_cost').hide();
+    $('#id_license_term').change(function (e) {
+      handleLicenseTermSelection($('#id_license_term option:selected').val());
+    })
+
+    label = $('label[for="id_license_term"]')
+    label.html('<strong>License Term*</strong>')
+    label = $('label[for="id_total_cost"]')
+    label.html('<strong>Total Cost*</strong>')
+
+    $(
+      '<br>\
+       <div class="custom-control custom-checkbox">\
+       <input id="selectAll" class="custom-control-input" type="checkbox">\
+       <label class="custom-control-label" for="selectAll">\
+       <strong>Select All Users</strong>\
+       </label>\
+       </div>'
+    ).insertAfter($("#div_id_users > label"))
+    $("#id_resource").trigger('change');
+
+    $("#selectAll").click(function () {
+      $("input[name^='users']").prop('checked', $(this).prop('checked'));
+    });
+
+    $("input[name^='users']").click(function (ele) {
+      var id = $(this).attr('id');
+      if (id != "selectAll") {
+        $("#selectAll").prop('checked', false);
+      }
+    });
+  });
+
+  function moveRadioSelectErrors() {
+    // Remove error indentation.
+    radioErrors = $('div[class^="w-100"]')
+    radioErrors.removeClass('custom-control')
+  }
+
+  function enableUserSelection() {
+    $('#selectAll').prop('disabled', false);
+    $('input[name="users"]').prop('disabled', false);
+  }
+
+  function disableUserSelection() {
+    $('#selectAll').prop('disabled', true);
+    $('#selectAll').prop('checked', false);
+    $('input[name="users"]').prop('checked', false);
+    $('input[name="users"]').prop('disabled', true);
+  }
+
+  function checkDate(end_month, end_day) {
+    let [month, date, year] = new Date().toLocaleDateString("en-US").split("/");
+    var licenseEndDate = new Date(year, end_month, end_day);
+    var currentDate = new Date(year, month - 1, date);
+    var thresholdDate = new Date(year, 4, 1);
+
+    if (currentDate > licenseEndDate) {
+      licenseEndDate.setFullYear(licenseEndDate.getFullYear() + 1);
+      thresholdDate.setFullYear(thresholdDate.getFullYear() + 1);
+    }
+
+    return currentDate > thresholdDate;
+  }
+
+  function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie != '') {
+      var cookies = document.cookie.split(';');
+      for (var i = 0; i < cookies.length; i++) {
+        var cookie = jQuery.trim(cookies[i]);
+        // Does this cookie string begin with the name we want?
+        if (cookie.substring(0, name.length + 1) == (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+  $('#modal_link').on("click", function () {
+    $('#Modal').modal('show');
+  });
+  $(function () {
+    $('#myFormSubmit').click(function (e) {
+      e.preventDefault();
+      $(function () {
+
+        var new_account_name = $('#allocation_account_form').serializeArray()[0].value.trim();
+        $('#id_allocation_account').prepend('<option value="' + new_account_name + '">' + new_account_name + '</option>');
+        $('#id_allocation_account option[value=' + new_account_name + ']').prop('selected', true);
+        $.ajax({
+          headers: { 'X-CSRFToken': getCookie('csrftoken') },
+          type: "POST",
+          url: "/allocation/add-allocation-account/",
+          data: {
+            name: new_account_name,
+          }, // data sent with the post request
+          success: function (json) {
+            console.log(json);
+            $('#allocation_account_form')[0].reset();
+            $('#Modal').modal('toggle');
+            $('#error_div').html('<div></div>');
+          },
+          error: function (xhr, errmsg, err) {
+            $('#error_div').html('<div class="alert alert-danger" role="alert">' + jQuery.parseJSON(xhr.responseText)["name"] + '</div>');
+            console.log(xhr);
+            console.log(errmsg);
+            console.log(err);
+          }
+        });
+      });
+    });
+  });
+
+  function handleLicenseTermSelection(optionSelected) {
+    var prorated_cost = parseInt($('#id_prorated_cost').val());
+    if (optionSelected === "current") {
+        $('#id_total_cost').val(prorated_cost);
+        $('#div_id_cost').hide();
+        $('#div_id_total_cost').hide()
+      } else if (optionSelected === "current_and_next_year") {
+        $('#id_total_cost').val(prorated_cost + parseInt($('#id_cost').val()));
+        $('#div_id_cost').show();
+        $('#div_id_total_cost').show();
+      }
+  }
+
+  $("#id_resource").change(function () {
+    var resource_id = $("#id_resource option:selected").val();
+    var resource_text = $("#id_resource option:selected").text();
+    var resource_name = resource_text.slice(0, resource_text.indexOf('(') - 1)
+
+    var description = $('#id_resource_description');
+    description.html(resource_descriptions[resource_id])
+    if (resource_name === 'SDA Group Account' || resource_name === 'Geode-Project')
+    {
+      $('#div_id_sda_information').show()
+    } else {
+      $('#div_id_sda_information').hide()
+    }
+
+    if (resource_name === 'Posit Connect')
+    {
+      $('#posit_connect_link').show();
+    } else {
+      $('#posit_connect_link').hide();
+    }
+
+    if (resources_requiring_user_accounts.includes(parseInt(resource_id)))
+    {
+      $('#user_account_info').show();
+    } else {
+      $('#user_account_info').hide();
+    }
+
+    // These are for prorated resources
+    $('#div_id_license_term').hide();
+    $('#div_id_total_cost').hide();
+
+    for (let i = 0; i < resource_form.length; i++) {
+      const field_set = resource_form[i];
+      const keys = Object.keys(field_set)
+      const field_key = keys[0]
+      const field = field_set[field_key];
+      const label = field_set[keys[1]];
+      const type = field_set[keys[2]];
+      id = 'id_' + [field_key];
+      if (type === 'radio') {
+        if (label[resource_id]) {
+          var html_label = $('label[for="' + id + '_0"][class=""]')
+          html_label.html(label[resource_id]);
+            // Do not reset the value if the user has already entered one (relevent if the form errors
+            // after submission because not all the required values were given).
+          if ($('input[type=radio][name=' + field_key + ']:checked').val() === undefined) {
+              $('input[type=radio][name=' + field_key + ']').val([field[resource_id]]);
+          }
+            $('#div_' + id).show();
+        } else {
+          $('#div_' + id).hide();
+        }
+        continue
+      } else if (type === 'checkbox') {
+        if (label[resource_id]) {
+          var html_label = $('label[for="' + id + '"]')
+          html_label.html(label[resource_id]);
+          if ($('input[type=checkbox][name=' + field_key + ']:checked').val() === undefined){
+              $('input[type=checkbox][name=' + field_key + ']').val([field[resource_id]]);
+          }
+          $('#div_' + id).show();
+        } else {
+          $('#div_' + id).hide();
+        }
+
+        if (field_key === 'use_indefinitely') {
+          if ($('input[type=checkbox][name=use_indefinitely]:checked').val()) {
+            $('#id_end_date').prop('disabled', true);
+            $('#div_id_end_date button').prop('disabled', true);
+            $('#id_end_date').val('')
+          }
+        }
+        continue
+      } else if (type === 'int') {
+        if (label[resource_id]) {
+          var html_label = $('label[for="' + id + '"]');
+          html_label.html(label[resource_id])
+
+          if (field_key === 'cost') {
+            $('#' + id).val(field[resource_id]);
+            $('#id_total_cost').val(field[resource_id]);
+            $('#div_' + id).show();
+          } else if (field_key === 'prorated_cost') {
+            // If a resource has a prorated cost then we need to hide the actual cost.
+            $('#' + id).val(field[resource_id]);
+            $('#id_total_cost').val(field[resource_id]);
+            $('#div_' + id).show();
+            $('#div_id_cost').hide();
+          } else {
+            if ($('#' + id).val() === '') {
+              $('#' + id).val(field[resource_id])
+            }
+            $('#div_' + id).show();
+          }
+        } else {
+          $('#div_' + id).hide();
+        }
+        continue
+      }
+
+      if (label[resource_id]) {
+        var html_label = $('label[for="' + id + '"]');
+        html_label.html(label[resource_id]);
+        if ($('#' + id).val().length < 1) {
+          $('#' + id).val(field[resource_id]);
+        }
+        $('#div_' + id).show();
+      } else {
+        $('#div_' + id).hide();
+      }
+    }
+
+    if (resource_name === 'Slate-Project') {
+        if ($('#id_storage_space').val() <= 15) {
+          $('#div_id_account_number').hide();
+        }
+    }
+
+    if (resources_with_accounts.includes(parseInt(resource_id))) {
+      $('#div_id_allocation_account').show();
+    } else {
+      $('#div_id_allocation_account').hide();
+    }
+
+    if (resources_with_eula[resource_id]) {
+      $('#eula').text(resources_with_eula[resource_id])
+      $('#eula-div').show();
+      $('#eula').show();
+    } else {
+      $('#eula').hide();
+      $('#eula-div').hide();
+    }
+  });
+</script>
+{% endblock %}

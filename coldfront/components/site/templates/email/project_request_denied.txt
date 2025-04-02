@@ -1,0 +1,8 @@
+Dear {{ center_name }} user,
+
+Your project request for "{{ project_title }}" has been denied. The likely reason is that it was a duplicate.
+If it was not a duplicate or if we have not been in touch with you about this already, 
+please contact {{ help_email }} to us to let us know.
+
+Thank you,
+{{ signature }}

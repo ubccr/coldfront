@@ -1,0 +1,3 @@
+A new allocation removal has been requested in project "{{project.title}}" with id {{project.pk}} for {{pi}} - {{resource}}. Please review the allocation:
+{{url}}
+Requestor: {{requestor.first_name}} {{requestor.last_name}} ({{requestor.username}})

@@ -1,0 +1,226 @@
+.fakeimg {
+  height: 77px;
+  background: #E2E2E2;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+main {
+    padding-top: 40px;
+    padding-bottom: 40px;
+}
+
+.banner-name {
+  padding-top: 25px;
+}
+
+.banner-logo {
+  margin-top: 5px;
+  max-height: 75px !important;
+  margin-bottom: 5px;
+}
+
+body > main > form > div.alert.alert-block.alert-danger > ul > li {
+  list-style: none;
+  margin-top: 14px;
+}
+
+body > main > div > div.card.border-primary > div.card-body > form > div.alert.alert-block.alert-danger > ul > li {
+  list-style: none;
+  margin-top: 14px;
+  
+}
+
+/*
+ * These were copied from django-hijack https://github.com/arteria/django-hijack
+ *
+ */
+ .hijacked-warning {
+  background-size: 50px 50px;
+  background-color: #ffe761;
+  color: #000;
+  background-image: -webkit-linear-gradient(-45deg, rgba(0, 0, 0, .04) 25%, transparent 25%, transparent 50%, rgba(0, 0, 0, .04) 50%, rgba(0, 0, 0, .04) 75%, transparent 75%, transparent);
+  background-image: -moz-linear-gradient(-45deg, rgba(0, 0, 0, .04) 25%, transparent 25%, transparent 50%, rgba(0, 0, 0, .04) 50%, rgba(0, 0, 0, .04) 75%, transparent 75%, transparent);
+  background-image: linear-gradient(135deg, rgba(0, 0, 0, .04) 25%, transparent 25%, transparent 50%, rgba(0, 0, 0, .04) 50%, rgba(0, 0, 0, .04) 75%, transparent 75%, transparent);
+  margin-bottom:0;
+}
+
+.hijacked-warning-controls,
+.hijacked-warning-controls form {
+	display: inline;
+}
+
+.django-hijack-button-default {
+	-moz-box-shadow:inset 0px 1px 0px 0px #ffffff;
+	-webkit-box-shadow:inset 0px 1px 0px 0px #ffffff;
+	box-shadow:inset 0px 1px 0px 0px #ffffff;
+	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #ffffff), color-stop(1, #f6f6f6));
+	background:-moz-linear-gradient(top, #ffffff 5%, #f6f6f6 100%);
+	background:-webkit-linear-gradient(top, #ffffff 5%, #f6f6f6 100%);
+	background:-o-linear-gradient(top, #ffffff 5%, #f6f6f6 100%);
+	background:-ms-linear-gradient(top, #ffffff 5%, #f6f6f6 100%);
+	background:linear-gradient(to bottom, #ffffff 5%, #f6f6f6 100%);
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffff', endColorstr='#f6f6f6',GradientType=0);
+	background-color:#ffffff;
+	-moz-border-radius:6px;
+	-webkit-border-radius:6px;
+	border-radius:6px;
+	border:1px solid #dcdcdc;
+	display:inline-block;
+	cursor:pointer;
+	color:#666666;
+	font-family:Arial;
+	font-size:11px;
+	font-weight:bold;
+	padding:3px 12px;
+	text-decoration:none;
+	text-shadow:0px 1px 0px #ffffff;
+}
+.django-hijack-button-default:hover {
+	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #f6f6f6), color-stop(1, #ffffff));
+	background:-moz-linear-gradient(top, #f6f6f6 5%, #ffffff 100%);
+	background:-webkit-linear-gradient(top, #f6f6f6 5%, #ffffff 100%);
+	background:-o-linear-gradient(top, #f6f6f6 5%, #ffffff 100%);
+	background:-ms-linear-gradient(top, #f6f6f6 5%, #ffffff 100%);
+	background:linear-gradient(to bottom, #f6f6f6 5%, #ffffff 100%);
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#f6f6f6', endColorstr='#ffffff',GradientType=0);
+	background-color:#f6f6f6;
+}
+.django-hijack-button-default:active {
+	position:relative;
+	top:1px;
+}
+
+.form-control[readonly]{background-color:#ffffff;opacity:1}
+
+.bg-primary {
+  background-color: #990000 !important;
+}
+
+.border-primary {
+  border-color: #990000 !important;
+}
+
+.btn-primary {
+  background-color: #006298;
+  border-color: #006298;
+}
+
+.btn-primary:disabled {
+  background-color: #006298;
+  border-color: #006298;
+  pointer-events: none;
+}
+
+.btn-primary:hover {
+  background-color: #01426A;
+  border-color: #01426A;
+}
+
+/* .btn-info {
+  background-color: #005c54;
+  border-color: #006161;
+}
+
+.btn-info:hover {
+  background-color: #005b6b;
+  border-color: #004d4d;
+} */
+
+.badge-success {
+  background-color: #008216;
+  border-color: #008216;
+}
+
+.btn-success {
+  background-color: #008216;
+  border-color: #008216;
+}
+
+.btn-success:hover {
+  background-color: #006611;
+  border-color: #006611;
+}
+
+.badge-danger {
+  background-color: #990000;
+  border-color: #990000;
+}
+
+.btn-danger {
+  background-color: #990000;
+  border-color: #990000;
+}
+
+.btn-danger:hover {
+  background-color: #7c0000;
+  border-color: #7c0000;
+}
+
+.text-primary {
+  color: #006298 !important;
+}
+
+/* .text-info {
+  color: #004d4d !important;
+} */
+
+.text-success {
+  color: #008216 !important;
+}
+
+.text-warning {
+  color: #a35a00 !important;
+}
+
+.text-danger {
+  color: #990000 !important;
+}
+
+.page-link {
+  color: #006298;
+}
+
+.page-link:hover {
+  color: #01426A;
+}
+
+.page-item.active .page-link {
+  background-color: #006298;
+  border-color: #01426A;
+}
+
+.alert-warning {
+  color: black;
+  background-color: #FDF7E7;
+  border-color: #F5BB17;
+}
+
+.alert-info {
+  color: black;
+  background-color: #E9F6FC;
+  border-color: #49AFC7;
+}
+
+.alert-success {
+  color: black;
+  background-color: #DDF4EA;
+  border-color: #009933;
+}
+
+.alert-danger {
+  color: black;
+  background-color: #FDEEE8;
+  border-color: #F25B19;
+}
+
+a {
+  color: #006298;
+}
+
+a:hover {
+  color: #01426A;
+}

@@ -1,0 +1,73 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+
+
+{% block title %}
+Allocation Review Pending Removal Requests
+{% endblock %}
+
+
+{% block content %}
+<h2>Allocation Removal Requests</h2>
+
+<hr>
+
+<p class="text-justify"> 
+  For each allocation removal request below, there is the option to approve the allocation removal request and to view the allocation's detail page.
+</p>
+
+{% if allocation_removal_list %}
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th scope="col">#</th>
+          <th scope="col">Project Title</th>
+          <th scope="col">PI</th>
+          <th scope="col">Requestor</th>
+          <th scope="col">Resource</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for allocation_removal in allocation_removal_list %}
+          <tr>
+            <td>{{ allocation_removal.pk }}</td>
+            <td>
+              <a href="{% url 'project-detail' allocation_removal.allocation.project.pk %}">
+                {{allocation_removal.allocation.project.title|truncatechars:50}}
+              </a>
+            </td>
+            <td>
+              {{allocation_removal.project_pi.first_name}} {{allocation_removal.project_pi.last_name}}
+              ({{allocation_removal.project_pi.username}})
+            </td>
+            <td>
+              {{allocation_removal.requestor.first_name}} {{allocation_removal.requestor.last_name}}
+              ({{allocation_removal.requestor.username}})
+            </td>
+            <td>{{allocation_removal.allocation.get_parent_resource}}</td>
+            <td class="text-nowrap">
+              <a href="{% url 'allocation_removal_requests:allocation-approve-removal-request' allocation_removal.pk %}" class="btn btn-success mr-1">Approve</a>
+              <a href="{% url 'allocation_removal_requests:allocation-deny-removal-request' allocation_removal.pk %}" class="btn btn-danger mr-1">Deny</a>
+              <a href="{% url 'allocation-detail' allocation_removal.allocation.pk %}" class="btn btn-secondary mr-1">Details</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="alert alert-info">
+    No new allocation removal requests!
+  </div>
+{% endif %}
+
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-admin").addClass("active");
+  $("#navbar-allocation-removal-requests").addClass("active");
+</script>
+{% endblock %}

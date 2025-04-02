@@ -1,0 +1,85 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+
+
+{% block title %}
+Allocation Review New and Pending Change Requests
+{% endblock %}
+
+
+{% block content %}
+<h2>Allocation Change Requests</h2>
+
+<hr>
+
+<p class="text-justify"> 
+  For each allocation change request below, there is the option to activate the allocation request and to view the allocation change's detail page.
+  If a change request is only for an extension to the allocation, they can be approved on this page. However if the change request includes changes to
+  the allocation's attributes, the request must be reviewed and acted upon in its detail page.
+</p>
+
+{% if allocation_change_list %}
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th scope="col">#</th>
+          <th scope="col">Requested</th>
+          <th scope="col">Project Title</th>
+          <th scope="col">PI</th>
+          <th scope="col">Resource</th>
+          <th scope="col">Extension</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for change in allocation_change_list %}
+          <tr>
+            <td>{{change.pk}}</td>
+            <td>{{ change.created|date:"M. d, Y" }}</td>
+            <td><a href="{% url 'project-detail' change.allocation.project.pk %}">{{change.allocation.project.title|truncatechars:50}}</a></td>
+            <td>{{change.allocation.project.pi.first_name}} {{change.allocation.project.pi.last_name}}
+              ({{change.allocation.project.pi.username}})</td>
+            <td>{{change.allocation.get_parent_resource}}</td>
+            <td>
+              {% if change.end_date_extension == 0 %}
+              {% else %} {{change.end_date_extension}} days
+              {% endif %}
+            </td>
+            <td class="text-nowrap">
+                <form method="post" action="{% url 'allocation-change-detail' change.pk %}">
+              {% if change.allocationattributechangerequest_set.all %}
+                <button class="btn btn-success mr-1" aria-disabled="true" 
+                style="
+                      cursor: not-allowed;
+                      opacity: 0.6;
+                      pointer-events: none;">
+                      Approve
+                </button>
+              {% else %}
+                  {% csrf_token %}
+                  <input type="hidden" name="end_date_extension" value="{{ change.end_date_extension }}" />
+                  <button type="submit" name="action" value="approve" class="btn btn-success mr-1">Approve</button>
+              {% endif %}
+                <a href="{% url 'allocation-change-detail' change.pk %}" class="btn btn-primary mr-1">Details</a>
+                </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="alert alert-info">
+    No new or pending allocation change requests!
+  </div>
+{% endif %}
+
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-admin").addClass("active");
+  $("#navbar-allocation-change-requests").addClass("active");
+</script>
+{% endblock %}

@@ -1,3 +1,5 @@
+import logging
+
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -13,6 +15,9 @@ from django.views.generic.edit import CreateView
 
 from coldfront.core.resource.forms import ResourceAttributeCreateForm, ResourceSearchForm, ResourceAttributeDeleteForm
 from coldfront.core.resource.models import Resource, ResourceAttribute
+from coldfront.core.utils.groups import check_if_groups_in_review_groups
+
+logger = logging.getLogger(__name__)
 
 
 class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -22,7 +27,25 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        return True
+
+        if self.request.user.is_superuser:
+            return True
+        
+        resource_obj = get_object_or_404(Resource, pk=self.kwargs.get('pk'))
+        if resource_obj.is_allocatable:
+            return True
+
+        group_exists = check_if_groups_in_review_groups(
+            resource_obj.review_groups.all(),
+            self.request.user.groups.all(),
+            'view_resource'
+        )
+        if group_exists:
+            return True
+
+        messages.error(
+            self.request, 'You do not have permission to view this resource\'s attributes.'
+        )
 
     def get_child_resources(self, resource_obj):
         child_resources = [resource for resource in resource_obj.resource_set.all(
@@ -70,9 +93,10 @@ class ResourceAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Creat
 
         if self.request.user.is_superuser:
             return True
-        else:
-            messages.error(
-                self.request, 'You do not have permission to add resource attributes.')
+
+        messages.error(
+            self.request, 'You do not have permission to add this resource\'s attributes.'
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -95,6 +119,10 @@ class ResourceAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Creat
         return form
 
     def get_success_url(self):
+        logger.info(
+            f'Admin {self.request.user.username} created a {self.object.resource.name} resource '
+            f'attribute (resource pk={self.kwargs.get("pk")})'
+        )
         return reverse('resource-detail', kwargs={'pk': self.kwargs.get('pk')})
 
 
@@ -105,9 +133,10 @@ class ResourceAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Templ
         """ UserPassesTestMixin Tests"""
         if self.request.user.is_superuser:
             return True
-        else:
-            messages.error(
-                self.request, 'You do not have permission to delete resource attributes.')
+
+        messages.error(
+            self.request, 'You do not have permission to delete this resource\'s attributes.'
+        )
 
     def get_resource_attributes_to_delete(self, resource_obj):
 
@@ -169,6 +198,11 @@ class ResourceAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Templ
 
             messages.success(request, 'Deleted {} attributes from resource.'.format(
                 attributes_deleted_count))
+            
+            logger.info(
+                f'Admin {self.request.user.username} deleted {attributes_deleted_count} '
+                f'attribute(s) from the {resource_obj.name} resource (resource pk={resource_obj.pk})'
+            )
         else:
             for error in formset.errors:
                 messages.error(request, error)
@@ -206,7 +240,10 @@ class ResourceListView(LoginRequiredMixin, ListView):
                 else:
                     resources = Resource.objects.all().order_by(order_by)
             else:
-                resources = Resource.objects.all().order_by(order_by)
+                if self.request.user.is_staff:
+                    resources = Resource.objects.all().order_by(order_by)
+                else:
+                    resources = Resource.objects.filter(is_allocatable=True).order_by(order_by)
 
             if data.get('show_allocatable_resources'):
                 resources = resources.filter(is_allocatable=True)
@@ -255,7 +292,10 @@ class ResourceListView(LoginRequiredMixin, ListView):
                 else:
                     resources = Resource.objects.all().order_by(order_by)
             else:
-                resources = Resource.objects.all().order_by(order_by)
+                if self.request.user.is_staff:
+                    resources = Resource.objects.all().order_by(order_by)
+                else:
+                    resources = Resource.objects.filter(is_allocatable=True).order_by(order_by)
         return resources.distinct()
 
     def get_context_data(self, **kwargs):

@@ -8,8 +8,8 @@ from django.views.generic import TemplateView
 
 import coldfront.core.portal.views as portal_views
 
-admin.site.site_header = 'ColdFront Administration'
-admin.site.site_title = 'ColdFront Administration'
+admin.site.site_header = 'RT Projects Administration'
+admin.site.site_title = 'RT Projects Administration'
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -32,6 +32,30 @@ if settings.PUBLICATION_ENABLE:
 
 if settings.RESEARCH_OUTPUT_ENABLE:
     urlpatterns.append(path('research-output/', include('coldfront.core.research_output.urls')))
+
+if 'coldfront_custom_resources' in settings.INSTALLED_APPS: 
+    urlpatterns.append(path('custom_resources/', include('coldfront_custom_resources.urls')))
+
+if 'coldfront.plugins.announcements' in settings.INSTALLED_APPS:
+    urlpatterns.append(path('announcements/', include('coldfront.plugins.announcements.urls')))
+
+if 'coldfront.plugins.allocation_removal_requests' in settings.INSTALLED_APPS:
+    urlpatterns.append(path('allocation_removal_requests/', include('coldfront.plugins.allocation_removal_requests.urls')))
+
+if 'coldfront.plugins.pi_search' in settings.INSTALLED_APPS:
+    urlpatterns.append(path('pi_search_function/', include('coldfront.plugins.pi_search.urls')))
+
+if 'coldfront.plugins.customizable_forms' in settings.INSTALLED_APPS:
+    urlpatterns.append(path('allocation/', include('coldfront.plugins.customizable_forms.urls')))
+
+if 'coldfront.plugins.academic_analytics' in settings.INSTALLED_APPS:
+    urlpatterns.append(path('academic-analytics/', include('coldfront.plugins.academic_analytics.urls')))
+
+if 'coldfront.plugins.advanced_search' in settings.INSTALLED_APPS:
+    urlpatterns.append(path('advanced_search/', include('coldfront.plugins.advanced_search.urls')))
+
+if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+    urlpatterns.append(path('ldap_user_info/', include('coldfront.plugins.ldap_user_info.urls')))
 
 if 'coldfront.plugins.iquota' in settings.INSTALLED_APPS:
     urlpatterns.append(path('iquota/', include('coldfront.plugins.iquota.urls')))

@@ -1,0 +1,58 @@
+{% load static %}
+<div class="row">
+  <div class="col">
+    <div id="projectTypes" style="min-height: 270px;"></div>
+  </div>
+  <div class="col">
+    <div id="projectUsers" style="min-height: 270px;"></div>
+  </div>
+</div>
+
+<script>
+  var project_type_chart_data = {{ project_type_chart_data | safe }}
+  var project_user_chart_data = {{ project_user_chart_data | safe }}
+
+  $(document).ready(function () {
+    drawProjectTypes();
+    drawProjectUsers();
+  });
+
+  function drawProjectTypes() {
+    data = {
+      columns: project_type_chart_data['columns'],
+      type: project_type_chart_data['type'],
+      colors: project_type_chart_data['colors'],
+    }
+    var chart = c3.generate({
+      bindto: '#projectTypes',
+      data: project_type_chart_data,
+      donut: {
+        title: "Project Types"
+      },
+      legend: {
+        item: {
+          onclick: function(id) { }
+        }
+      }
+    });
+
+    return chart;
+  }
+
+  function drawProjectUsers() {
+    var chart = c3.generate({
+      bindto: '#projectUsers',
+      data: project_user_chart_data,
+      donut: {
+        title: "Project Users"
+      },
+      legend: {
+        item: {
+          onclick: function(id) { }
+        }
+      }
+    })
+
+    return chart;
+  }
+</script>

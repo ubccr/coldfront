@@ -1,0 +1,31 @@
+<div id="pi_search_inner"></div>
+<script>
+  $(document).ready(function() {
+    $.ajax({
+      url: "{% url 'pi-search' %}",
+      method: "POST",
+      data: {
+        csrfmiddlewaretoken: "{{ csrf_token }}",
+      },
+      success: function(data) {
+        $('#pi_search_inner').html(data);
+      },
+      error: function(data) {
+        $('#pi_search_inner').html(
+          '<div class="card mb-3">\
+            <div class="card-header">\
+              <i class="fas fa-info" aria-hidden="true"></i>\
+              PI Search\
+            </div>\
+            <div class="card-body">\
+              <div class="alert alert-warning">\
+                <i class="fas fa-info-circle" aria-hidden="true"></i>\
+                Error loading the project PI search function\
+              </div>\
+            </div>\
+            </div>'
+        );
+      },
+    });
+  })
+</script>

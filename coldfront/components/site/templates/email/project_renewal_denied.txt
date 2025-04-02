@@ -1,0 +1,12 @@
+Dear {{ center_name }} user,
+
+Your project review for "{{ project_title }}" has been denied. You can view your project here: {{ project_url }}
+
+Any active allocations you have in this project will continue to be active until their end date.
+
+We will be in touch to follow up with you about this, if we haven't already. 
+
+If you have any questions please email us at {{ help_email }}
+
+Thank you,
+{{signature}}

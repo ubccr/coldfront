@@ -1,0 +1,141 @@
+{% extends "common/base.html" %} 
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Create Project
+{% endblock %}
+
+
+{% block content %}
+  RT Projects is designed for labs, groups, and classes. If your group already has an existing project then you should
+  contact your PI about adding you to your groups project instead. Limiting projects to groups helps prevent user
+  access fragmentation and simplifies your PI's project management.
+  <hr>
+ <form method="post">
+  {% csrf_token %}
+  {{ form|as_crispy_errors }}
+  {{ form.title|as_crispy_field }}
+  {{ form.description|as_crispy_field }}
+  {{ form.pi_username|as_crispy_field }}
+  <div class="mb-3" id="pi_search_accordion" style="display: none;">
+    <p>
+      This PI already has active projects. Please take a look and see if you can join one instead of creating a new one.
+      Joining an existing project can reduce the number of project's your PI has to manage.
+    </p>
+    <div class="card">
+      <div class="card-header">
+        <a id="expand_pi_button" href="#collapse_pi" role="button" class="card-link" data-toggle="collapse">
+          Current Active Projects
+          <i id="plus_minus_1" class="fas fa-plus float-right"></i>
+        </a>
+      </div>
+      <div id="collapse_pi" class="collapse" data-parent="#pi_search_accordion">
+        <div class="card-body">
+          <div class="row">
+            <div class="col" id="search_results">
+              <div class="card border-light">
+                <div class="card-body">
+                  <div id="search_results_inner"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {{ form.type|as_crispy_field }}
+  <p id="div_id_class_info" class="alert alert-info" role="alert">
+    <i class="fas fa-info-circle" aria-hidden="true"></i>
+    If you are a student you should contact your PI about creating a project for the class themselves
+    and adding all of the students who need access to it. Doing so will reduce the number of projects 
+    to manage for a single class.
+  </p>
+  {{ form.class_number|as_crispy_field }}
+
+  <input class="btn btn-primary" type="submit" value="Submit and Continue" />
+  <a class="btn btn-secondary" href="{% url 'project-list' %}" role="button">Cancel</a>
+</form>
+
+<script>
+  var pi_search_url = '{{ pi_search_url | safe }}';
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-project-menu").addClass("active");
+
+  function displayPIProjects(pi_username) {
+    if (pi_search_url.length === 0) {
+      return;
+    }
+
+    data = {
+      pi_username: pi_username,
+      csrfmiddlewaretoken: "{{ csrf_token }}",
+    }
+    $.ajax({
+      url: pi_search_url,
+      type: "POST",
+      data: data,
+      success: function(data) {
+        $('#search_results_inner').html(data);
+        if ($('#pi_project_results').length > 0) {
+          $('#pi_search_accordion').show();
+        } else {
+          $('#pi_search_accordion').hide();
+        }
+      },
+      error: function(xhr, errmsg, err) {
+        $('#pi_search_accordion').hide();
+        console.log(xhr.status + ": " + xhr.responseText);
+      }
+    });
+  }
+
+  $(document).ready(function() {
+    $("#id_field_of_science").select2();
+
+    class_name_label = $('label[for="id_class_number"]')
+    class_name_label.html('Class Number*')
+
+    var type_text = $("#id_type option:selected").text();
+    if (type_text === "Class") {
+      $("#div_id_class_number").show();
+      $("#id_class_number").attr('required', true);
+      $("#div_id_class_info").show();
+    } else {
+      $("#id_class_number").attr('required', false);
+      $("#div_id_class_number").hide();
+      $("#div_id_class_info").hide();
+    }
+
+    pi_username = $("#id_pi_username").val()
+    if (pi_username.length > 0 ) {
+      displayPIProjects(pi_username);
+    }
+
+    $("#id_pi_username").change(function (e) {
+      displayPIProjects(e.target.value);
+    });
+
+    $("#expand_pi_button").click(function() {
+    $('#collapse_pi').collapse();
+      icon = $("#plus_minus_1");
+      icon.toggleClass("fa-plus fa-minus");
+    });
+  })
+
+  $("#id_type").change(function () {
+    var type_text = $("#id_type option:selected").text();
+    if (type_text === "Class") {
+      $("#div_id_class_number").show();
+      $("#id_class_number").attr('required', true);
+      $("#div_id_class_info").show();
+    } else {
+      $("#id_class_number").attr('required', false);
+      $("#div_id_class_number").hide();
+      $("#div_id_class_info").hide();
+    }
+  })
+</script>
+{% endblock %}

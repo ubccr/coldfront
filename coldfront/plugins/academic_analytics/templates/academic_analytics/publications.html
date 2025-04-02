@@ -1,0 +1,81 @@
+
+{% if publication_formset %}
+  <form id="academic_analytics_form" method="post">
+    {% csrf_token %}
+    <div class="table-responsive">
+      <table class="table table-bordered table-sm">
+        <thead>
+          <tr>
+            <td scope="col"><strong>Add</strong></td>
+            <td scope="col"><strong>Title</strong></td>
+            <td scope="col"><strong>Authors</strong></td>
+            <td scope="col"><strong>Journal</strong></td>
+          </tr>
+        </thead>
+        <tbody>
+          {% for form in publication_formset %}
+            <tr>
+              <td class="text-center">{{ form.add }}</td>
+              <td>{{ form.title.value }}</td>
+              <td>{{ form.author.value|truncatechars:100 }}</td>
+              <td>{{ form.journal.value }}</td>
+            </tr>
+          {% endfor %}
+          <input value="{{ project_pk }}" type="number" name="project_pk" readonly hidden>
+        </tbody>
+      </table>
+    </div>
+    {{ publication_formset.management_form }}
+    <button id="add_publications_btn" class="btn btn-primary" role="button" type="submit">
+      Add Publications
+    </button>
+  </form>
+  <div id="academics_analytics_form_info"></div>
+{% else %}
+  <div class="alert alert-info">
+    <i class="fas fa-info-circle" aria-hidden="true"></i>
+    No publications found!
+  </div>
+{% endif %}
+
+<script>
+  var academic_analytics_form = $('#academic_analytics_form');
+  academic_analytics_form.submit(function () {
+    $('#academics_analytics_form_info').html('');
+    $('#add_publications_btn').html(
+      '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Adding Publications...'
+    );
+    $('#add_publications_btn').prop('disabled', true);
+    $('#add_publications_btn').blur();
+    $.ajax({
+      url: "{% url 'get-academic-analytics-publications' %}",
+      method: "POST",
+      data: academic_analytics_form.serialize(),
+      success: function (data) {
+        $("#academics_analytics_form").html(data);
+        $("#academics_analytics_form_info").html(
+          '<br>\
+          <div class="alert alert-success">\
+            <i class="fas fa-info-circle" aria-hidden="true"></i> \
+            Added publications.\
+          </div>'
+        );
+      },
+      error: function(data) {
+        $("#add_publications_btn").html(
+          '<input class="btn btn-primary" type="submit" value="Add Publications" />'
+        );
+        $("#academics_analytics_form_info").html(
+          '<br>\
+          <div class="alert alert-warning">\
+            <i class="fas fa-info-circle" aria-hidden="true"></i> \
+            Error adding publications.\
+          </div>'
+        );
+      }
+    });
+    return false;
+  });
+
+    
+</script>

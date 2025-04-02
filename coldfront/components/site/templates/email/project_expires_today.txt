@@ -1,0 +1,12 @@
+Dear {{ center_name }} user,
+
+Your project "{{ project_title }}" on RT Projects expires today. Once expired you will no longer be able to edit your project.
+This project has no allocations in it and is not providing access to any of RT's resources. If you do not need this project to
+give you access to RT's resources then it is recommended to let it expire.
+
+If you are not the PI or a manager in this project you are receiving this notice as a courtesy.
+
+If you have any questions please email us at {{ help_email }}
+
+Thank you,
+{{ signature }}

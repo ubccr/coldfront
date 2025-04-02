@@ -1,0 +1,74 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+
+{% block title %}
+Allocation User Request Info
+{% endblock %}
+
+{% block content %}
+<h2>Allocation User Request Info</h2>
+
+<div class="card mb-3">
+  <div class="card-header">
+    <h3>{{ request_info.allocation_user.user.first_name }} {{ request_info.allocation_user.user.last_name }}</h3>
+  </div>
+  <div class="card-body">
+    <div class="table-reponsive">
+      <table class="table table-bordered table-sm">
+        <tr>
+          <th scope="row" class="text-nowrap">Requestor:</th>
+          <td>
+            {{ request_info.requestor_user.first_name }}
+            {{ request_info.requestor_user.last_name }}
+            ({{ request_info.requestor_user.username }})
+          </td>
+        </tr>
+        <tr>
+          <th scope="row" class="text-nowrap">Requested User:</th>
+          <td>
+            {{ request_info.allocation_user.user.first_name }}
+            {{ request_info.allocation_user.user.last_name }}
+            ({{ request_info.allocation_user.user.username }})
+          </td>
+        </tr>
+        <tr>
+          <th scope="row" class="text-nowrap">Status:</th>
+          <td>
+            {{ request_info.allocation_user.status.name }}
+          </td>
+        </tr>
+        <tr>
+          <th scope="row" class="text-nowrap">Project:</th>
+          <td>
+            <a target="_blank" href="{% url 'project-detail' request_info.allocation_user.allocation.project.pk %}">
+              {{ request_info.allocation_user.allocation.project.title }}
+            </a>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row" class="text-nowrap">Allocation:</th>
+          <td>
+            <a target="_blank" href="{% url 'allocation-detail' request_info.allocation_user.allocation.pk %}">
+              {{ request_info.allocation_user.allocation.get_parent_resource }}
+            </a>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row" class="text-nowrap">Date Created:</th>
+          <td>
+            {{ request_info.created|date:"M. d, Y" }}
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+  <div class="card-footer text-right">
+    <a href="{% url 'allocation-user-approve-request' request_info.pk %}" class="btn btn-success mr-1">Approve</a>
+    <a href="{% url 'allocation-user-deny-request' request_info.pk %}" class="btn btn-danger mr-1">Deny</a>
+    <a href="{% url 'allocation-user-request-list' %}" class="btn btn-secondary mr-1">Back</a>
+  </div>
+</div>
+
+{% endblock %}

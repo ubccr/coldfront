@@ -3,8 +3,10 @@ from django.core.management.base import BaseCommand
 from coldfront.core.allocation.models import (AttributeType,
                                               AllocationAttributeType,
                                               AllocationStatusChoice,
+                                              AllocationUserStatusChoice,
+                                              AllocationUserRequestStatusChoice,
                                               AllocationChangeStatusChoice,
-                                              AllocationUserStatusChoice)
+                                              AllocationUserRoleChoice)
 
 
 class Command(BaseCommand):
@@ -12,21 +14,33 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
 
-        for attribute_type in ('Date', 'Float', 'Int', 'Text', 'Yes/No', 'No',
-            'Attribute Expanded Text'):
+        for attribute_type in ('Date', 'Float', 'Int', 'Text', 'Yes/No',
+            'Attribute Expanded Text', 'True/False'):
             AttributeType.objects.get_or_create(name=attribute_type)
 
         for choice in ('Active', 'Denied', 'Expired',
                        'New', 'Paid', 'Payment Pending',
                        'Payment Requested', 'Payment Declined',
-                       'Renewal Requested', 'Revoked', 'Unpaid',):
+                       'Renewal Requested', 'Revoked', 'Unpaid',
+                       'Billing Information Submitted',):
             AllocationStatusChoice.objects.get_or_create(name=choice)
 
         for choice in ('Pending', 'Approved', 'Denied',):
             AllocationChangeStatusChoice.objects.get_or_create(name=choice)
 
-        for choice in ('Active', 'Error', 'Removed', ):
+        for choice in ('Active', 'Error', 'Removed', 'Pending - Add', 'Pending - Remove',
+                       'Invited', 'Pending', 'Disabled', 'Retired'):
             AllocationUserStatusChoice.objects.get_or_create(name=choice)
+
+        for choice in ('Approved', 'Pending', 'Denied', ):
+            AllocationUserRequestStatusChoice.objects.get_or_create(name=choice)
+
+        for choice, is_user_default, is_manager_default in (
+            ('read/write', True, True),
+            ('read only', False, False)
+        ):
+            AllocationUserRoleChoice.objects.get_or_create(
+                name=choice, is_user_default=is_user_default, is_manager_default=is_manager_default)
 
         for name, attribute_type, has_usage, is_private in (
             ('Cloud Account Name', 'Text', False, False),
@@ -52,6 +66,15 @@ class Command(BaseCommand):
             ('Storage_Group_Name', 'Text', False, False),
             ('SupportersQOS', 'Yes/No', False, False),
             ('SupportersQOSExpireDate', 'Date', False, False),
+            ('Account Number', 'Text', False, False),
+            ('Use Type', 'Text', False, True),
+            ('Will Exceed Limits', 'Yes/No', False, True),
+            ('Allocated Quantity', 'Int', False, False),
+            ('Center Identifier', 'Text', False, True),
+            ('GID', 'Int', False, True),
+            ('LDAP Group', 'Text', False, True),
+            ('SMB Enabled', 'Yes/No', False, False),
+            ('Slate-Project Directory', 'Text', False, False),
         ):
             AllocationAttributeType.objects.get_or_create(name=name, attribute_type=AttributeType.objects.get(
                 name=attribute_type), has_usage=has_usage, is_private=is_private)

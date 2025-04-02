@@ -1,0 +1,63 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}
+Delete Allocation Invoice Note
+{% endblock %}
+
+
+{% block content %}
+<h3>Delete invoice notes for allocation to {{allocation.get_resources_as_string}} for PI
+  {{allocation.project.pi.username}}</h3>
+<hr>
+
+<div class="card border-light">
+  <div class="card-body">
+    <form action="{% url 'allocation-delete-invoice-note' allocation.pk %}" method="post">
+      {% csrf_token %}
+      <div class="table-responsive">
+        <table class="table table-sm table-hover">
+          <thead>
+            <tr>
+              <th>
+                <input type="checkbox" class="check" id="selectAll">
+              </th>
+              <th scope="col">Note</th>
+              <th scope="col">Author</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for form in formset %}
+              <tr>
+                <td>{{ form.selected }}</td>
+                <td>{{ form.note.value }}</td>
+                <td>{{ form.author.value }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {{ formset.management_form }}
+      <div>
+        <button type="submit" class="btn btn-danger">Delete</button>
+        <a class="btn btn-secondary" href="{% url 'allocation-invoice-detail' allocation.pk %}" role="button"><i
+            class="fas fa-long-arrow-left" aria-hidden="true"></i> Cancel</a>
+        <br>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  $("#selectAll").click(function () {
+    $("input[name^='noteform-']").prop('checked', $(this).prop('checked'));
+  });
+  $("input[name^='noteform-']").click(function (ele) {
+    var id = $(this).attr('id');
+    if (id != "selectAll") {
+      $("#selectAll").prop('checked', false);
+    }
+  });
+</script>
+{% endblock %}

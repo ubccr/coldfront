@@ -131,7 +131,8 @@ class SlurmCluster(SlurmBase):
         """Add accounts from a ColdFront Allocation model to SlurmCluster"""
         name = allocation.get_attribute(SLURM_ACCOUNT_ATTRIBUTE_NAME)
         if not name:
-            name = 'root'
+            return
+            # name = 'root'
 
         logger.debug("Adding allocation name=%s specs=%s user_specs=%s", name, specs, user_specs)
         account = self.accounts.get(name, SlurmAccount(name))

@@ -1,0 +1,8 @@
+Dear {{center_name}} user,
+
+User {{ user }} has been removed from allocation {{ allocation }} in project {{ project }}.
+Allocation URL:
+{{ url }}
+
+Thank you
+{{ signature }}

@@ -12,7 +12,11 @@ from coldfront.core.project.models import (Project, ProjectAdminComment,
                                             ProjectAttribute,
                                             ProjectAttributeType,
                                             AttributeType,
-                                            ProjectAttributeUsage)
+                                            ProjectAttributeUsage,
+                                            ProjectTypeChoice,
+                                            ProjectReviewStatusChoice,
+                                            ProjectAdminAction,
+                                            ProjectDescriptionRecord)
 
 
 @admin.register(ProjectStatusChoice)
@@ -32,7 +36,7 @@ class ProjectUserStatusChoiceAdmin(admin.ModelAdmin):
 
 @admin.register(ProjectUser)
 class ProjectUserAdmin(SimpleHistoryAdmin):
-    fields_change = ('user', 'project', 'role', 'status', 'created', 'modified', )
+    fields_change = ('user', 'project', 'role', 'enable_notifications', 'status', 'created', 'modified', )
     readonly_fields_change = ('user', 'project', 'created', 'modified', )
     list_display = ('pk', 'project_title', 'PI', 'User', 'role', 'status',
                     'created', 'modified',)
@@ -75,6 +79,9 @@ class ProjectUserInline(admin.TabularInline):
     fields = ['user', 'project', 'role', 'status', 'enable_notifications', ]
     readonly_fields = ['user', 'project', ]
     extra = 0
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related('user', 'project', 'role', 'status')
 
 
 class ProjectAdminCommentInline(admin.TabularInline):
@@ -241,16 +248,34 @@ class ProjectAttributeUsageAdmin(SimpleHistoryAdmin):
     def project_pi(self, obj):
         return obj.project_attribute.project.pi.username
 
+
+class ProjectReviewInline(admin.TabularInline):
+    model = ProjectReview
+    fields = ['status', 'project_updates', 'allocation_renewals', 'created', ]
+    readonly_fields = ['status', 'project_updates', 'allocation_renewals', 'created', ]
+    extra = 0
+
+
+class ProjectAdminActionInline(admin.TabularInline):
+    model = ProjectAdminAction
+    fields = ['user', 'action', 'created', ]
+    readonly_fields = ['user', 'action', 'created']
+    can_delete = False
+    extra = 0
+
+
 @admin.register(Project)
 class ProjectAdmin(SimpleHistoryAdmin):
-    fields_change = ('title', 'pi', 'description', 'status', 'requires_review', 'force_review', 'created', 'modified', )
+    fields_change = ('title', 'pi', 'requestor', 'description', 'slurm_account_name', 'private', 'type', 'class_number', 
+                     'status', 'requires_review', 'force_review', 'max_managers', 'created', 'end_date', 'modified', )
     readonly_fields_change = ('created', 'modified', )
-    list_display = ('pk', 'title', 'PI', 'created', 'modified', 'status')
+    list_display = ('pk', 'title', 'PI', 'created', 'modified', 'end_date', 'type', 'status')
     search_fields = ['pi__username', 'projectuser__user__username',
                      'projectuser__user__last_name', 'projectuser__user__last_name', 'title']
-    list_filter = ('status', 'force_review')
-    inlines = [ProjectUserInline, ProjectAdminCommentInline, ProjectUserMessageInline, ProjectAttributeInLine]
-    raw_id_fields = ['pi', ]
+    list_filter = ('status', 'force_review', 'type')
+    inlines = [ProjectUserInline, ProjectReviewInline, ProjectAdminCommentInline,
+               ProjectUserMessageInline, ProjectAdminActionInline]
+    raw_id_fields = ['pi', 'requestor', ]
 
     def PI(self, obj):
         return '{} {} ({})'.format(obj.pi.first_name, obj.pi.last_name, obj.pi.username)
@@ -273,7 +298,13 @@ class ProjectAdmin(SimpleHistoryAdmin):
             # We are adding an object
             return []
         else:
-            return super().get_inline_instances(request)
+            inline_instances = super().get_inline_instances(request)
+            project_user_inline = inline_instances[0]
+            if obj and obj.projectuser_set.all().count() > 200:
+                setattr(project_user_inline, 'readonly_fields', ['user', 'project', 'role', 'status', 'enable_notifications', ])
+                setattr(project_user_inline, 'can_delete', False)
+                inline_instances[0] = project_user_inline
+            return inline_instances
 
     def save_formset(self, request, form, formset, change):
         if formset.model in [ProjectAdminComment, ProjectUserMessage]:
@@ -287,10 +318,53 @@ class ProjectAdmin(SimpleHistoryAdmin):
 
 @admin.register(ProjectReview)
 class ProjectReviewAdmin(SimpleHistoryAdmin):
-    list_display = ('pk', 'project', 'PI', 'reason_for_not_updating_project', 'created', 'status')
+    list_display = ('pk', 'project', 'PI', 'allocation_renewals', 'project_updates', 'created', 'status')
     search_fields = ['project__pi__username', 'project__pi__first_name', 'project__pi__last_name',]
     list_filter = ('status', )
 
     def PI(self, obj):
         return '{} {} ({})'.format(obj.project.pi.first_name, obj.project.pi.last_name, obj.project.pi.username)
 
+
+@admin.register(ProjectTypeChoice)
+class ProjectTypeChoiceAdmin(admin.ModelAdmin):
+    list_display = ('name',)
+
+
+@admin.register(ProjectReviewStatusChoice)
+class ProjectReviewStatusChoiceAdmin(admin.ModelAdmin):
+    list_display = ('name',)
+
+
+@admin.register(ProjectAdminAction)
+class ProjectAdminActionAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'user', 'project_pk', 'project_title', 'action', 'created', )
+    fields_change = ('user', 'project', 'action', 'modified', 'created', )
+    readonly_fields_change = ('modified', 'created', )
+    raw_id_fields = ('user', 'project', )
+
+    def project_pk(self, obj):
+        return obj.project.pk
+
+    def project_title(self, obj):
+        return obj.project.title
+    
+    def get_fields(self, request, obj):
+        if obj is None:
+            return super().get_fields(request)
+        else:
+            return self.fields_change
+
+    def get_readonly_fields(self, request, obj):
+        if obj is None:
+            # We are adding an object
+            return super().get_readonly_fields(request)
+        else:
+            return self.readonly_fields_change
+
+
+@admin.register(ProjectDescriptionRecord)
+class ProjectDescriptionRecordAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'project', 'user', 'created')
+    readonly_fields = ('project', 'user', 'description')
+    list_filter = ('project', )
