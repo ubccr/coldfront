@@ -103,7 +103,9 @@ Move Allocation
           <div id="id_new_project_info"></div>
         </div>
         <div class="card-footer">
-          <button id="id_submit" class="btn btn-primary float-right confirm-move" type="submit">Move Into</button>
+          <button id="id_submit" class="btn btn-primary float-right confirm-move" type="submit">
+            <i class="fas fa-angle-double-right"></i>  Move Into
+          </button>
         </div>
       </div>
     </div>
@@ -112,7 +114,14 @@ Move Allocation
 
 <script>
   $(document).on('click', '.confirm-move', function () {
-    return confirm('Are you sure you want to move this allocation? All of the users in this allocation will be added to the destination project if they do not exist already.');
+    var confirmation = confirm('Are you sure you want to move this allocation? All of the users in this allocation will be added to the destination project if they do not exist already.');
+    if (!confirmation) {
+      return confirmation
+    }
+    $('#id_submit').html(
+      '<i class="fas fa-sync fa-spin fa-fw" aria-hidden="true"></i> Moving allocation...'
+    );
+    return confirmation
   })
   $(document).ready(function () {
     $('#id_new_project').addClass('form-control')
