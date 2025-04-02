@@ -1764,7 +1764,7 @@ class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['project_review_list'] = ProjectReview.objects.filter(
-            status__name__in=['Pending', 'COntacted By Admin', ])
+            status__name__in=['Pending', 'Contacted By Admin', ])
         projects = Project.objects.filter(
             status__name__in=['Waiting For Admin Approval', 'Contacted By Admin', ]
         )
