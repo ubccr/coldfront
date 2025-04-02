@@ -248,6 +248,8 @@ class AllocationMoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             f"{origin_project_obj.pk} to project {destination_project_obj.pk}"
         )
 
+        messages.success(request, "Your allocation was successfully moved.")
+
         return HttpResponseRedirect(reverse("allocation-detail", kwargs={"pk": pk}))
 
 
