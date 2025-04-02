@@ -9,10 +9,11 @@ from django.urls import reverse
 from django.views.generic import TemplateView
 
 from coldfront.core.allocation.utils import create_admin_action
+from coldfront.core.project.utils import generate_slurm_account_name
 from coldfront.core.utils.common import get_domain_url
 from coldfront.core.utils.mail import send_allocation_customer_email, send_allocation_admin_email
 from coldfront.core.utils.groups import check_if_groups_in_review_groups
-from coldfront.core.allocation.models import Allocation, AllocationUserNote
+from coldfront.core.allocation.models import Allocation, AllocationAttribute, AllocationUserNote
 from coldfront.core.project.models import (
     Project,
     ProjectUser,
@@ -140,6 +141,13 @@ class AllocationMoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         allocation_obj.project = destination_project_obj
         allocation_obj.save()
+
+        slurm_account_obj = AllocationAttribute.objects.filter(
+            allocation_attribute_type__name="slurm_account_name"
+        ).first()
+        if slurm_account_obj:
+            slurm_account_obj.value = generate_slurm_account_name(allocation_obj.project)
+            slurm_account_obj.save()
 
         project_user_active_status = ProjectUserStatusChoice.objects.get(name="Active")
         project_users_removed_status = ProjectUserStatusChoice.objects.get(name="Removed")
