@@ -107,7 +107,10 @@ Move Allocation
           <div id="id_destination_project_info"></div>
         </div>
         <div class="card-footer">
-          <button id="id_submit" class="btn btn-primary float-right confirm-move" type="submit">
+          <a href="{% url 'allocation-detail' allocation.pk %}" class="btn btn-secondary float-right">
+            Cancel
+          </a>
+          <button id="id_submit" class="btn btn-primary float-right confirm-move mr-1" type="submit">
             <i class="fas fa-angle-double-right"></i>  Move Into
           </button>
         </div>
