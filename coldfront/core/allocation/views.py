@@ -340,6 +340,9 @@ class AllocationEULAView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             if 'accepted_eula' in action:
                 allocation_user_obj.status = AllocationUserStatusChoice.objects.get(name='Active')
                 messages.success(self.request, "EULA Accepted!")
+                if (allocation_obj.status == AllocationStatusChoice.objects.get(name='Active')):
+                    allocation_activate_user.send(sender=self.__class__,
+                                                allocation_user_pk=allocation_user_obj.pk)
             elif action == 'declined_eula':
                 allocation_user_obj.status = AllocationUserStatusChoice.objects.get(name='DeclinedEULA')
                 messages.warning(self.request, "You did not agree to the EULA and were removed from the allocation. To access this allocation, your PI will have to re-add you.")
