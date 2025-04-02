@@ -5,6 +5,7 @@ from django.conf import settings
 from django.core.mail import EmailMessage, send_mail
 from django.template.loader import render_to_string
 from django.urls import reverse
+from django.contrib.auth.models import User
 
 from coldfront.core.utils.common import import_from_settings
 
@@ -84,31 +85,51 @@ def build_link(url_path, domain_url=''):
         domain_url = CENTER_BASE_URL
     return f'{domain_url}{url_path}'
 
-def send_admin_email_template(subject, template_name, template_context):
+def send_admin_email_template(subject, template_name, template_context, receiver_list=None):
     """Helper function for sending admin emails using a template
     """
-    send_email_template(subject, template_name, template_context, EMAIL_SENDER, [EMAIL_TICKET_SYSTEM_ADDRESS, ])
+    if receiver_list==None:
+        receiver_list = [EMAIL_TICKET_SYSTEM_ADDRESS, ]
+    send_email_template(subject, template_name, template_context, EMAIL_SENDER, receiver_list)
+
 
 def send_allocation_admin_email(allocation_obj, subject, template_name, url_path='', domain_url=''):
-    """Send allocation admin emails
+    """Send allocation admin emails to approvers whose schools match the allocation's project school.
     """
     if not url_path:
         url_path = reverse('allocation-request-list')
 
     url = build_link(url_path, domain_url=domain_url)
-    pi_name = f'{allocation_obj.project.pi.first_name} {allocation_obj.project.pi.last_name} ({allocation_obj.project.pi.username})'
+    pi = allocation_obj.project.pi
+    pi_name = f'{pi.first_name} {pi.last_name} ({pi.username})'
     resource_name = allocation_obj.get_parent_resource
+    project_school = allocation_obj.project.school
 
     ctx = email_template_context()
     ctx['pi'] = pi_name
     ctx['resource'] = resource_name
     ctx['url'] = url
 
-    send_admin_email_template(
-        f'{subject}: {pi_name} - {resource_name}',
-        template_name,
-        ctx,
-    )
+    # Get all approvers whose schools include this project's school
+    approvers = User.objects.filter(
+        userprofile__approver_profile__schools=project_school,
+        is_active=True
+    ).distinct()
+
+    # Extract valid email addresses
+    recipient_list = [approver.email for approver in approvers if approver.email]
+
+    if recipient_list:
+        send_admin_email_template(
+            f'{subject}: {pi_name} - {resource_name}',
+            template_name,
+            ctx,
+            receiver_list=recipient_list  # Send only to matched approvers
+        )
+        logger.debug(f'Sent admin allocation email to approvers: {recipient_list}')
+    else:
+        logger.warning(f'No approvers found for school "{project_school}" to send allocation email.')
+
 
 def send_allocation_customer_email(allocation_obj, subject, template_name, url_path='', domain_url=''):
     """Send allocation customer emails
