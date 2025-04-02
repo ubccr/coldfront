@@ -5,7 +5,7 @@ from coldfront.core.project.models import Project
 
 
 class AllocationMoveForm(forms.Form):
-    new_project = forms.ModelChoiceField(queryset=None)
+    destination_project = forms.ModelChoiceField(queryset=None)
     users = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, required=False)
 
     def __init__(self, request_user, project_pk, *args, **kwargs):
@@ -14,7 +14,7 @@ class AllocationMoveForm(forms.Form):
         if request_user == project_obj.pi:
             project_objs = Project.objects.filter(pi=request_user)
         project_objs = Project.objects.filter(status__name="Active").exclude(pk=project_obj.pk)
-        self.fields["new_project"].queryset = project_objs
+        self.fields["destination_project"].queryset = project_objs
         user_query_set = (
             project_obj.projectuser_set.select_related("user")
             .filter(

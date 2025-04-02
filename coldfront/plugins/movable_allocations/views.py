@@ -113,7 +113,7 @@ class AllocationMoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 messages.error(request, error)
             return HttpResponseRedirect(reverse("move-allocation", kwargs={"pk": pk}))
 
-        destination_project_obj = form.cleaned_data.get("new_project")
+        destination_project_obj = form.cleaned_data.get("destination_project")
         if check_over_allocation_limit(
             allocation_obj,
             destination_project_obj.allocation_set.filter(

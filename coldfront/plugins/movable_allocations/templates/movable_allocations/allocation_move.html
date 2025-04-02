@@ -28,7 +28,7 @@ Move Allocation
     <div class="col">
       <div class="card">
         <div class="card-header">
-          <h3>Current Project</h3>
+          <h3>Current</h3>
         </div>
         <div class="card-body">
           <fieldset>
@@ -89,17 +89,17 @@ Move Allocation
         <div class="card-header">
           <div class="row">
             <div class="col">
-              <label for="id_new_project">
-                <h3 class="m-0">{{ form.new_project.label|title }}</h3>
+              <label for="id_destination_project">
+                <h3 class="m-0">Destination</h3>
               </label>
             </div>
             <div class="col">
-              {{ form.new_project }}
+              {{ form.destination_project }}
             </div>
           </div>
         </div>
         <div class="card-body">
-          <div id="id_new_project_info"></div>
+          <div id="id_destination_project_info"></div>
         </div>
         <div class="card-footer">
           <button id="id_submit" class="btn btn-primary float-right confirm-move" type="submit">
@@ -123,21 +123,21 @@ Move Allocation
     return confirmation
   })
   $(document).ready(function () {
-    $('#id_new_project').addClass('form-control')
-    $('#id_new_project').change(function (e) {
-      var project_pk = $("#id_new_project option:selected").val();
+    $('#id_destination_project').addClass('form-control')
+    $('#id_destination_project').change(function (e) {
+      var project_pk = $("#id_destination_project option:selected").val();
       if (!project_pk) {
-        $('#id_new_project_info').html('')
+        $('#id_destination_project_info').html('')
         return;
       }
 
-      $('#id_new_project_info').html(
+      $('#id_destination_project_info').html(
         '<i class="fas fa-sync fa-spin fa-fw" aria-hidden="true"></i> Grabbing project information...'
       );
       $.ajax({
         url: `project-info/${project_pk}`,
         success: function (data) {
-          $('#id_new_project_info').html(data)
+          $('#id_destination_project_info').html(data)
           var not_moveable = $('#id_not_moveable');
           console.log(not_moveable.length);
           if (not_moveable.length) {
@@ -147,7 +147,7 @@ Move Allocation
           }
         },
         error: function (data) {
-          $('#id_new_project_info').html(
+          $('#id_destination_project_info').html(
             `<div class="alert alert-danger m-0">
               <i class="fa fa-info-circle" aria-hidden="true"></i> An error has occured.
             </div>`
@@ -155,7 +155,7 @@ Move Allocation
         }
       })
     })
-    $('#id_new_project_info')
+    $('#id_destination_project_info')
   })
 </script>
 
