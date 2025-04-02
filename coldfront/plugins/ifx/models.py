@@ -9,6 +9,7 @@ from django.db import models, connection
 from django.contrib.auth import get_user_model
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.conf import settings
 from coldfront.core.allocation.models import AllocationUser
 from coldfront.core.resource.models import Resource
 from coldfront.core.project.models import Project
@@ -135,7 +136,9 @@ def resource_post_save(sender, instance, **kwargs):
             product_resource = ProductResource.objects.get(resource=instance)
         except ProductResource.DoesNotExist:
             # Need to create a Product and ProductResource for this Resource
-            products = FiineAPI.listProducts(product_name=instance.name)
+            products = []
+            if not settings.FIINELESS:
+                products = FiineAPI.listProducts(product_name=instance.name)
             facility = Facility.objects.get(name='Research Computing Storage')
             if not products:
                 product = create_new_product(product_name=instance.name, product_description=instance.name, facility=facility)
