@@ -32,7 +32,12 @@ Move Allocation
         </div>
         <div class="card-body">
           <fieldset>
-            <legend><strong><u>Project Info</u></strong></legend>
+            <legend>
+              <strong><u>Project Info</u></strong>
+              <a href="{% url 'project-detail' allocation.project.pk %}" target="_blank">
+                <i class="fas fa-external-link-alt" aria-hidden="true"></i>
+              </a>
+            </legend>
             <p><strong>ID:</strong> {{ allocation.project.pk }}</p>
             <p><strong>Title:</strong> {{ allocation.project.title }}</p>
             <p><strong>Project Description:</strong> {{ allocation.project.description }}</p>
