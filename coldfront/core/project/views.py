@@ -750,7 +750,8 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                                 allocation=allocation,
                                 user=user_obj,
                                 status=user_status_choice)
-                        allocation_activate_user.send(sender=self.__class__,
+                        if (user_status_choice == allocation_user_active_status_choice):
+                            allocation_activate_user.send(sender=self.__class__,
                                                       allocation_user_pk=allocation_user_obj.pk)
 
             messages.success(
