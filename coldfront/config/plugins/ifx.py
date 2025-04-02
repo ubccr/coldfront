@@ -45,3 +45,4 @@ IFXREPORT_URL_ROOT = f'{MEDIA_URL}reports'
 # Class to be used for rebalancing
 REBALANCER_CLASS = 'coldfront.plugins.ifx.calculator.ColdfrontRebalance'
 
+FIINELESS = os.environ.get('FIINELESS', 'FALSE').upper() == 'TRUE'
