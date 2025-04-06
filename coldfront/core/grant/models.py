@@ -54,19 +54,6 @@ class MoneyField(models.IntegerField):
         value = super().to_python(value)
         return value
         
-class PercentField(models.CharField):
-    validators = [
-        RegexValidator(r'^[\d,.]{1,6}\%*$',
-                        'Enter only digits, decimals, percent symbols, or spaces.',
-                        'Invalid input.')
-    ]
-    def to_python(self, value):
-        value = super().to_python(value)
-        if value:
-            value = value.replace(" ", "")
-            value = value.replace("%", "")
-        return value
-
 class Grant(TimeStampedModel):
     """ A grant is funding that a PI receives for their project.
     
@@ -113,7 +100,7 @@ class Grant(TimeStampedModel):
     other_award_number = models.CharField(max_length=255, blank=True)
     grant_start = models.DateField('Grant Start Date')
     grant_end = models.DateField('Grant End Date')
-    percent_credit = PercentField(max_length=100, validators=[MaxValueValidator(100)])
+    percent_credit = models.FloatField(validators=[MaxValueValidator(100.0)])
     direct_funding = MoneyField()
     total_amount_awarded = MoneyField()
     status = models.ForeignKey(GrantStatusChoice, on_delete=models.CASCADE)
