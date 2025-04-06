@@ -6,7 +6,9 @@ from coldfront.core.allocation.forms import AllocationForm
 from django.contrib.auth import get_user_model
 
 from coldfront.core.school.models import School
+from coldfront.core.utils.common import import_from_settings
 
+GENERAL_RESOURCE_NAME = import_from_settings('GENERAL_RESOURCE_NAME')
 
 class AllocationFormTest(TestCase):
     """Tests for AllocationForm resource restriction by school."""
@@ -48,7 +50,7 @@ class AllocationFormTest(TestCase):
         self.resource_uni = Resource.objects.create(
                 resource_type=cluster,
                 parent_resource=None,
-                name='University HPC',
+                name=GENERAL_RESOURCE_NAME,
                 description='General University HPC',
                 school=None,
                 is_available=True,

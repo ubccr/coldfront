@@ -80,7 +80,7 @@ ALLOCATION_ACCOUNT_ENABLED = import_from_settings(
 ALLOCATION_ACCOUNT_MAPPING = import_from_settings(
     'ALLOCATION_ACCOUNT_MAPPING', {})
 
-GENERAL_RESOURCE_NAME = "University HPC"
+GENERAL_RESOURCE_NAME = import_from_settings('GENERAL_RESOURCE_NAME')
 
 logger = logging.getLogger(__name__)
 
