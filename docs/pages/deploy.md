@@ -13,10 +13,10 @@ worker processes will run under this user account. Also, create a directory for
 installing ColdFront and related files.
 
 ```
-# useradd --system -m coldfront
-# mkdir /srv/coldfront
-# chown coldfront.coldfront /srv/coldfront
-# mkdir /etc/coldfront
+$ useradd --system -m coldfront
+$ mkdir /srv/coldfront
+$ chown coldfront.coldfront /srv/coldfront
+$ mkdir /etc/coldfront
 ```
 
 !!! note
@@ -25,14 +25,40 @@ installing ColdFront and related files.
     # yum/apt install nginx
     ```
 
-## Install ColdFront in a virtual environment
+## Install ColdFront
+
+ColdFront can be installed from PyPI using any of the following methods.
+ColdFront has a few optional dependencies that are used for enabling specific
+features:
+
+
+| extra         | Description            |
+| :-------------|:-----------------------|
+| ldap          |  ldap user search      |
+| oidc          |  OIDC logins           |
+| freeipa       |  freeipa plugin        |
+| iquota        |  iquota plugin         |
+| mysql         |  MySQL/MariaDB backend |
+| pg            |  PostgreSQL backend    |
+
+
+
+### Using uv (recommended)
 
 ```
-# cd /srv/coldfront
-# python3 -mvenv venv
-# source venv/bin/activate
-# pip install --upgrade pip
-# pip install coldfront
+$ uv tool install coldfront[ldap,freeipa,oidc]
+```
+
+### Using pip in a virtual environment
+
+```
+$ cd /srv/coldfront
+$ python3 -mvenv venv
+$ source venv/bin/activate
+$ pip install --upgrade pip
+
+# Adjust extras to suite your needs
+$ pip install coldfront[ldap,freeipa,oidc,pg]
 ```
 
 ## Configure ColdFront
@@ -82,17 +108,17 @@ Install your preferred database and set the connection details using
 the `DB_URL` variable as shown above.  
 
 !!! note "Note: Install python database drivers"
-    Be sure to install the database drivers associated with your db. For example:
+    Be sure to install the extra package options when installing ColdFront for your chosen database. For example:
     ```
-    $ source /srv/coldfront/venv/bin/activate
-    $ pip install mysqlclient
-    $ pip install psycopg2
+    # For mysql/mariadb
+    $ pip install coldfront[mysql]
+    # For postgresql
+    $ pip install coldfront[pg]
     ```
 
 ## Initializing the ColdFront database
 
 ```
-$ source /srv/coldfront/venv/bin/activate
 $ coldfront initial_setup
 Running migrations:
   Applying contenttypes.0001_initial... OK
@@ -112,7 +138,6 @@ Run the command below to create a new super user account with a secure
 password:
 
 ```
-$ source /srv/coldfront/venv/bin/activate
 $ coldfront createsuperuser
 ```
 
@@ -126,15 +151,7 @@ using nginx. For more information [see here](https://docs.djangoproject.com/en/3
 This command will deploy all static assets to the `STATIC_ROOT` path in the configuration step above.
 
 ```
-$ source /srv/coldfront/venv/bin/activate
 $ coldfront collectstatic
-```
-
-## Install Gunicorn
-
-```
-$ source /srv/coldfront/venv/bin/activate
-$ pip install gunicorn
 ```
 
 ## Create systemd unit file for ColdFront Gunicorn workers
@@ -158,16 +175,17 @@ WantedBy=multi-user.target
 ```
 
 !!! note
-    Adjust the number of workers for your site specific needs using the `--workers` flag above.
+    If using `uv tool` change the paths above accordingly.  Adjust the number
+    of workers for your site specific needs using the `--workers` flag above.
 
 ## Start/enable ColdFront Gunicorn workers
 
 ```
-# systemctl start gunicorn.service
-# systemctl enable gunicorn.service
+$ systemctl start gunicorn.service
+$ systemctl enable gunicorn.service
 
 # Check for any errors
-# systemctl status gunicorn.service
+$ systemctl status gunicorn.service
 ```
 
 ## Create systemd unit file for ColdFront qcluster scheduled tasks
@@ -193,14 +211,17 @@ ExecStart=/srv/coldfront/venv/bin/coldfront qcluster
 WantedBy=multi-user.target
 ```
 
+!!! note
+    If using `uv tool` change the paths above accordingly.
+
 ## Start/enable ColdFront qcluster
 
 ```
-# systemctl start coldfrontq.service
-# systemctl enable coldfrontq.service
+$ systemctl start coldfrontq.service
+$ systemctl enable coldfrontq.service
 
 # Check for any errors
-# systemctl status coldfrontq.service
+$ systemctl status coldfrontq.service
 ```
 ## Configure nginx
 
@@ -251,6 +272,6 @@ server {
 ## Start/enable nginx
 
 ```
-# systemctl restart nginx.service
-# systemctl enable nginx.service
+$ systemctl restart nginx.service
+$ systemctl enable nginx.service
 ```

@@ -55,11 +55,19 @@ sys.modules['fontawesome_free'] = __import__('fontawesome-free')
 INSTALLED_APPS += [
     'crispy_forms',
     'crispy_bootstrap4',
-    'sslserver',
     'django_q',
     'simple_history',
     'fontawesome_free',
 ]
+
+if DEBUG:
+    try:
+        import sslserver
+        INSTALLED_APPS += [
+            'sslserver',
+        ]
+    except ImportError:
+        pass
 
 # ColdFront Apps
 INSTALLED_APPS += [

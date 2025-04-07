@@ -17,7 +17,7 @@ Django users.
 
 ## Requirements
 
-- pip install mozilla-django-oidc
+- uv sync --extra oidc
 
 ## Usage
 ### Mokey/Hydra integration

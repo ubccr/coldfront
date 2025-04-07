@@ -36,9 +36,7 @@ ipaclient python library.
 
 ### Install required python packages
 
-- pip install django-q
-- pip install ipaclient
-- pip install dbus-python
+- uv sync --extra ldap --extra freeipa
 
 ### Update sssd.conf to enable infopipe
 
