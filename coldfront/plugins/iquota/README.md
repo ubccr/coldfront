@@ -12,7 +12,7 @@ to authenticate to the API and a valid keytab file is required.
 
 ## Requirements
 
-- pip install kerberos humanize requests
+- uv sync --extra iquota
 
 ## Usage
 

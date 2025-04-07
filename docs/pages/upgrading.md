@@ -3,6 +3,18 @@
 This document describes upgrading ColdFront. New releases of ColdFront may
 introduce breaking changes so please refer to this document before upgrading.
 
+## [v1.1.7](https://github.com/ubccr/coldfront/releases/tag/v1.1.7)
+
+This release upgrades to [django-q2](https://github.com/django-q2/django-q2)
+which requires database migrations. We also now use [uv](https://docs.astral.sh/uv/) 
+and highly recommend switching to this for deployments.
+
+After upgrading be sure to run any outstanding database migrations:
+
+```
+$ coldfront migrate
+```
+
 ## [v1.1.4](https://github.com/ubccr/coldfront/releases/tag/v1.1.4)
 
 This release includes a new Project Attribute feature which requires a database
