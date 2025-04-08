@@ -11,14 +11,12 @@ from coldfront.plugins.ifx.models import ProjectOrganization
 
 
 class UserAffiliationSerializer(serializers.ModelSerializer):
-    user = serializers.SlugRelatedField(slug_field='full_name', read_only=True)
     organization = serializers.SlugRelatedField(slug_field='ifxorg', read_only=True)
 
     class Meta:
         model = UserAffiliation
         fields = (
             'organization',
-            'user',
             'role',
             'active',
         )
@@ -39,8 +37,6 @@ class OrganizationSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    primary_affiliation = serializers.SlugRelatedField(slug_field='name', read_only=True)
-    affiliations = UserAffiliationSerializer(source='useraffiliation_set', many=True, read_only=True)
 
     class Meta:
         model = get_user_model()
@@ -53,8 +49,6 @@ class UserSerializer(serializers.ModelSerializer):
             'is_staff',
             'date_joined',
             'last_update',
-            'primary_affiliation',
-            'affiliations',
         )
 
 
