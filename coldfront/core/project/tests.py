@@ -11,11 +11,13 @@ from coldfront.core.test_helpers.factories import (
     ProjectStatusChoiceFactory,
     ProjectAttributeTypeFactory,
     PAttributeTypeFactory,
+    ProjectUserRoleChoiceFactory,
+    ProjectUserStatusChoiceFactory,
 )
 from coldfront.core.project.models import (
     Project,
     ProjectAttribute,
-    ProjectAttributeType,
+    ProjectAttributeType, ProjectUser, ProjectPermission,
 )
 
 logging.disable(logging.CRITICAL)
@@ -164,6 +166,29 @@ class TestProject(TestCase):
         with self.assertRaises(Project.DoesNotExist):
             Project.objects.get(pk=project_obj.pk)
         self.assertEqual(0, len(Project.objects.all()))
+
+
+    def test_project_manager_assignment(self):
+        # Step 1: Save the project
+        project = self.data.unsaved_object
+        project.save()
+
+        # Step 2: Create a user to act as the manager
+        manager_user = UserFactory(username='project_manager')
+        manager_role = ProjectUserRoleChoiceFactory(name="Manager")
+        active_status = ProjectUserStatusChoiceFactory(name="Active")
+
+        # Step 4: Assign the user as a manager to the project
+        ProjectUser.objects.create(
+            project=project,
+            user=manager_user,
+            role=manager_role,
+            status=active_status
+        )
+
+        # Step 5: Assert that the manager has the MANAGER permission
+        permissions = project.user_permissions(manager_user)
+        self.assertIn(ProjectPermission.MANAGER, permissions)
 
 
 class TestProjectAttribute(TestCase):
