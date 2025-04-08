@@ -35,7 +35,7 @@ class TestGrant(TestCase):
             'funding_agency': grantFundingAgency,
             'grant_start':start_date,
             'grant_end':end_date,
-            'percent_credit':'20.0',
+            'percent_credit': 20.0,
             'direct_funding': 200000,
             'total_amount_awarded': 1000000,
             'status': grantStatusChoice

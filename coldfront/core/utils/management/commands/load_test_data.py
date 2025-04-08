@@ -22,8 +22,11 @@ from coldfront.core.resource.models import (Resource, ResourceAttribute,
                                             ResourceAttributeType,
                                             ResourceType)
 from coldfront.core.user.management.commands.load_approver_schools import load_approver_schools
+from coldfront.core.utils.common import import_from_settings
+GENERAL_RESOURCE_NAME = import_from_settings('GENERAL_RESOURCE_NAME')
 
 base_dir = settings.BASE_DIR
+
 
 # first, last
 Users = ['Carl	Gray',  # PI#1
@@ -94,7 +97,7 @@ dois = [
 resources = [
 
     # Generic University Cluster
-    ('Cluster', None, 'University HPC',
+    ('Cluster', None, GENERAL_RESOURCE_NAME,
      'University Academic Cluster', None, True, True, True),
 
     # Generic
@@ -352,7 +355,7 @@ class Command(BaseCommand):
         )
 
         allocation_obj.resources.add(
-            Resource.objects.get(name='University HPC'))
+            Resource.objects.get(name=GENERAL_RESOURCE_NAME))
         allocation_obj.save()
 
         allocation_attribute_type_obj = AllocationAttributeType.objects.get(
@@ -541,7 +544,7 @@ class Command(BaseCommand):
         )
 
         allocation_obj.resources.add(
-            Resource.objects.get(name='University HPC'))
+            Resource.objects.get(name=GENERAL_RESOURCE_NAME))
         allocation_obj.save()
 
         allocation_attribute_type_obj = AllocationAttributeType.objects.get(

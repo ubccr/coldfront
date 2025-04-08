@@ -14,6 +14,11 @@ CENTER_PROJECT_RENEWAL_HELP_URL = ENV.str('CENTER_PROJECT_RENEWAL_HELP_URL', def
 CENTER_BASE_URL = ENV.str('CENTER_BASE_URL', default='')
 
 #------------------------------------------------------------------------------
+# Default HPC resource configuration
+#------------------------------------------------------------------------------
+GENERAL_RESOURCE_NAME = ENV.str("GENERAL_RESOURCE_NAME", default="University HPC")
+
+#------------------------------------------------------------------------------
 # Enable Research Outputs, Grants, Publications
 #------------------------------------------------------------------------------
 RESEARCH_OUTPUT_ENABLE = ENV.bool('RESEARCH_OUTPUT_ENABLE', default=True)
