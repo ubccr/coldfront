@@ -1,3 +1,5 @@
+from coldfront.core.project.models import ProjectUserRoleChoice, ProjectUser, ProjectUserStatusChoice
+
 from coldfront.core.allocation.models import Allocation, AllocationStatusChoice
 from coldfront.core.test_helpers.factories import SchoolFactory, ProjectStatusChoiceFactory, \
     ProjectFactory, UserFactory, ResourceFactory
@@ -86,3 +88,33 @@ class SendAllocationAdminEmailTests(TestCase):
                 send_allocation_admin_email(self.allocation, 'Test Subject', 'template.txt')
 
         mock_send.assert_not_called()
+
+    @patch('coldfront.core.utils.mail.send_admin_email_template')
+    def test_send_allocation_admin_email_includes_project_manager(self, mock_send):
+        # Create and assign a project manager
+        manager_email = 'manager@example.com'
+        manager_user = UserFactory(username='manager1', email=manager_email)
+
+        role = ProjectUserRoleChoice.objects.create(name='Manager')
+        status = ProjectUserStatusChoice.objects.create(name='Active')
+
+        ProjectUser.objects.create(
+            user=manager_user,
+            project=self.project,
+            role=role,
+            status=status
+        )
+
+        mock_link = 'https://example.com'
+
+        with patch('coldfront.core.utils.mail.build_link', return_value=mock_link):
+            with patch('coldfront.core.utils.mail.email_template_context', return_value={}):
+                send_allocation_admin_email(self.allocation, 'Test Subject', 'template.txt')
+
+        # Ensure email was sent
+        mock_send.assert_called_once()
+        _, call_kwargs = mock_send.call_args
+        recipients = call_kwargs.get('receiver_list')
+
+        self.assertIn(self.approver_mail, recipients)
+        self.assertIn(manager_email, recipients)

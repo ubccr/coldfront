@@ -119,6 +119,18 @@ def send_allocation_admin_email(allocation_obj, subject, template_name, url_path
     # Extract valid email addresses
     recipient_list = [approver.email for approver in approvers if approver.email]
 
+    # Get project managers for the allocation's project
+    project_managers = allocation_obj.project.projectuser_set.filter(
+        role__name='Manager',
+        status__name__in=['Active', 'New'],
+        user__is_active=True
+    ).select_related('user')
+
+    # Add manager emails
+    for project_user in project_managers:
+        if project_user.user.email:
+            recipient_list.append(project_user.user.email)
+
     if recipient_list:
         send_admin_email_template(
             f'{subject}: {pi_name} - {resource_name}',
