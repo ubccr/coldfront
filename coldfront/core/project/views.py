@@ -1,5 +1,4 @@
 import datetime
-from pipes import Template
 import pprint
 import django
 import logging 
