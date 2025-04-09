@@ -22,6 +22,7 @@ from coldfront.core.resource.forms import (
     ResourceAttributeCreateForm,
     ResourceSearchForm,
     ResourceAttributeDeleteForm,
+    ResourceAttributeUpdateForm,
     ResourceAllocationUpdateForm,
 )
 from coldfront.core.allocation.models import AllocationAttributeType, AllocationAttribute
@@ -179,6 +180,12 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             except ObjectDoesNotExist:
                 owner = owner
         context['owner'] = owner
+        if 'Compute Node' in resource_obj.resource_type.name:
+            owner_attribute_list = list(filter(lambda attribute: attribute.resource_attribute_type.name.lower() in ['owner'], attributes))
+            owner_attribute_value = ''
+            if len(owner_attribute_list) == 1:
+                owner_attribute_value = owner_attribute_list[0].value
+            context['owner_set'] = bool(owner_attribute_value)
 
         context['allocations'] = allocations
         context['resource'] = resource_obj
@@ -237,6 +244,85 @@ class ResourceAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Creat
 
     def get_success_url(self):
         return reverse('resource-detail', kwargs={'pk': self.kwargs.get('pk')})
+
+
+class ResourceAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'resource_resourceattribute_edit.html'
+
+    def test_func(self):
+        """UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+        err = 'You do not have permission to edit resource attributes.'
+        messages.error(self.request, err)
+        return False
+
+    def get_formset_initial_data(self, resource_attributes):
+        edit_attributes_formset_initial_data = []
+        if resource_attributes:
+            for attribute in resource_attributes:
+                edit_attributes_formset_initial_data.append(
+                    {
+                        'resource_attribute_type_name': attribute.resource_attribute_type.name,
+                        'value': attribute.value,
+                    }
+                )
+        return edit_attributes_formset_initial_data
+
+    def get_context_data(self, resource_obj):
+        context = {}
+        resource_attributes = resource_obj.resourceattribute_set.all()
+        if resource_attributes:
+            ResourceAttributeUpdateFormSet = formset_factory(
+                ResourceAttributeUpdateForm,
+                max_num=len(resource_attributes),
+                extra=0
+            )
+            edit_attributes_formset_initial_data = self.get_formset_initial_data(resource_attributes)
+            formset = ResourceAttributeUpdateFormSet(
+                initial=edit_attributes_formset_initial_data,
+                prefix='attributesform'
+            )
+            context['formset'] = formset
+        context['resource'] = resource_obj
+        return context
+
+    def get(self, request, *args, **kwargs):
+        resource_obj = get_object_or_404(Resource, pk=self.kwargs.get('pk'))
+        context = self.get_context_data(resource_obj)
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        resource_obj = get_object_or_404(Resource, pk=pk)
+        resource_attributes = resource_obj.resourceattribute_set.all()
+        edit_attributes_formset_initial_data = self.get_formset_initial_data(resource_attributes)
+        logger.warning(f'initial_data {edit_attributes_formset_initial_data}')
+
+        ResourceAttributeUpdateFormSet = formset_factory(
+            ResourceAttributeUpdateForm,
+            max_num=len(resource_attributes),
+            extra=0
+        )
+        formset = ResourceAttributeUpdateFormSet(
+            request.POST,
+            initial=edit_attributes_formset_initial_data,
+            prefix='attributesform'
+        )
+        if formset.is_valid():
+            for form in formset.forms:
+                attribute_name = form.cleaned_data.get('resource_attribute_type_name')
+                attribute_value = form.cleaned_data.get('value')
+                resource_attribute = [attribute for attribute in resource_attributes if attribute.resource_attribute_type.name == attribute_name][0]
+                resource_attribute.value = attribute_value
+                resource_attribute.save()
+            messages.success(request, 'Resource attributes update complete.')
+            return HttpResponseRedirect(reverse('resource-attributes-edit', kwargs={'pk': pk}))
+        else:
+            messages.error(request, 'Errors encountered, changes not saved. Check the form for details')
+            context = self.get_context_data(resource_obj)
+            context['formset'] = formset
+            return render(request, self.template_name, context)
 
 
 class ResourceAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
