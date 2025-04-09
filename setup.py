@@ -47,7 +47,7 @@ setup(
         'factory-boy==3.3.0',
         'Faker==24.1.0',
         'fontawesome-free==5.15.4',
-        'FormEncode==2.1.0',
+        'FormEncode==2.1.1',
         'future==1.0.0',
         'humanize==4.9.0',
         'idna==3.6',
