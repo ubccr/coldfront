@@ -506,5 +506,5 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated, IsAdminUser]
 
     def get_queryset(self):
-        queryset = get_user_model().objects.all().prefetch_related('useraffiliation_set')
+        queryset = get_user_model().objects.all()
         return queryset
