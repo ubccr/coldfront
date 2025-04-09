@@ -62,6 +62,15 @@ class ResourceListViewTest(ResourceViewBaseTest):
         utils.page_contains_for_user(self, self.pi_user, self.url, 'View retired resources')
         utils.page_contains_for_user(self, self.admin_user, self.url, 'View retired resources')
 
+    def test_archive_resources_dont_show(self):
+        ResourceFactory(name="archived_resource", resource_type__name='Compute Node', is_available=False)
+        ResourceFactory(name="archived_resource2", resource_type__name='Compute Node', is_available=False)
+        ResourceFactory(name="active_resource", resource_type__name='Compute Node')
+        utils.page_contains_for_user(self, self.pi_user, self.url, 'active_resource')
+        utils.page_does_not_contain_for_user(self, self.pi_user, self.url, 'archived_resource')
+        utils.page_does_not_contain_for_user(self, self.pi_user, self.url, 'archived_resource2')
+
+
 
 class ResourceArchivedListViewTest(ResourceViewBaseTest):
     """Tests for ResourceArchivedListView"""

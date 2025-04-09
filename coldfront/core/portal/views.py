@@ -19,6 +19,7 @@ from coldfront.core.resource.models import Resource, ResourceAttribute
 from coldfront.config.env import ENV
 from coldfront.core.department.models import Department, DepartmentMember
 from coldfront.core.utils.common import import_from_settings
+from pandas.io.clipboard import is_available
 
 if ENV.bool('PLUGIN_SFTOCF', default=False):
     from coldfront.plugins.sftocf.utils import StarFishRedash, STARFISH_SERVER
@@ -87,7 +88,7 @@ def home(request):
             resource_attribute_type__name='Owner',
             value__in=project_title_list
         )]
-        resource_list = Resource.objects.filter(Q(allowed_users=request.user) | Q(pk__in=owned_resources)).distinct()
+        resource_list = Resource.objects.filter(Q(allowed_users=request.user) | Q(pk__in=owned_resources)).filter(is_available=True).distinct()
         context['resource_list'] = resource_list
         context['department_list'] = department_list
         context['project_list'] = project_list
