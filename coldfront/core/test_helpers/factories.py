@@ -36,6 +36,8 @@ from coldfront.core.allocation.models import (
 from coldfront.core.grant.models import GrantFundingAgency, GrantStatusChoice
 from coldfront.core.publication.models import PublicationSource
 
+from coldfront.core.allocation.models import AttributeType
+from coldfront.core.resource.models import ResourceAttribute, ResourceAttributeType
 
 ### Default values and Faker provider setup ###
 
@@ -212,7 +214,29 @@ class ResourceFactory(DjangoModelFactory):
     description = factory.Faker('sentence')
     resource_type = SubFactory(ResourceTypeFactory)
 
+class AttributeTypeFactory(DjangoModelFactory):
+    class Meta:
+        model = AttributeType
 
+    name = factory.Faker("word")
+
+class ResourceAttributeTypeFactory(DjangoModelFactory):
+    class Meta:
+        model = ResourceAttributeType
+
+    attribute_type = factory.SubFactory(AttributeTypeFactory)
+    name = factory.Faker("word")
+    is_required = factory.Faker("boolean")
+    is_unique_per_resource = factory.Faker("boolean")
+    is_value_unique = factory.Faker("boolean")
+
+class ResourceAttributeFactory(DjangoModelFactory):
+    class Meta:
+        model = ResourceAttribute
+        django_get_or_create = ('resource', 'resource_attribute_type')
+
+    value = 'admin_lab'
+    resource = factory.SubFactory(ResourceFactory)
 
 ### Allocation factories ###
 
