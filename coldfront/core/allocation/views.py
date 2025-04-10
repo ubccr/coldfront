@@ -54,7 +54,8 @@ from coldfront.core.allocation.signals import (allocation_new,
                                                allocation_activate_user,
                                                allocation_disable,
                                                allocation_remove_user,
-                                               allocation_change_approved,)
+                                               allocation_change_approved,
+                                               allocation_attribute_changed)
 from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
                                              get_user_resources)
 from coldfront.core.project.models import (Project, ProjectUser, ProjectPermission,
@@ -1621,6 +1622,11 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                 for attribute_change in attribute_change_list:
                     attribute_change.allocation_attribute.value = attribute_change.new_value
                     attribute_change.allocation_attribute.save()
+                    allocation_attribute_changed.send(
+                        sender=self.__class__,
+                        attribute_pk=attribute_change.allocation_attribute.pk,
+                        allocation_pk=attribute_change.allocation.pk,
+                    )
 
             messages.success(request, 'Allocation change request to {} has been APPROVED for {} {} ({})'.format(
                 allocation_change_obj.allocation.get_parent_resource,
@@ -1886,14 +1892,14 @@ class AllocationAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, FormV
     def post(self, request, *args, **kwargs):
         attribute_changes_to_make = set()
 
-        pk = self.kwargs.get('pk')
+        pk = self.kwargs.get("pk")
         allocation_obj = get_object_or_404(Allocation, pk=pk)
 
         allocation_attributes_to_change = self.get_allocation_attributes_to_change(
             allocation_obj
         )
         error_redirect = HttpResponseRedirect(
-            reverse('allocation-attribute-edit', kwargs={'pk': pk})
+            reverse("allocation-attribute-edit", kwargs={"pk": pk})
         )
 
         if allocation_attributes_to_change:
@@ -1904,25 +1910,25 @@ class AllocationAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, FormV
             formset = formset(
                 request.POST,
                 initial=allocation_attributes_to_change,
-                prefix='attributeform',
+                prefix="attributeform",
             )
 
             if not formset.is_valid():
                 attribute_errors = ""
                 for error in formset.errors:
                     if error:
-                        attribute_errors += error.get('__all__')
+                        attribute_errors += error.get("__all__")
                 messages.error(request, attribute_errors)
                 return error_redirect
 
             for entry in formset:
                 formset_data = entry.cleaned_data
 
-                value = formset_data.get('value')
+                value = formset_data.get("value")
 
                 if value != "":
                     allocation_attribute = AllocationAttribute.objects.get(
-                        pk=formset_data.get('attribute_pk')
+                        pk=formset_data.get("attribute_pk")
                     )
                     if allocation_attribute.value != value:
                         attribute_changes_to_make.add((allocation_attribute, value))
@@ -1930,8 +1936,13 @@ class AllocationAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, FormV
             for allocation_attribute, value in attribute_changes_to_make:
                 allocation_attribute.value = value
                 allocation_attribute.save()
+                allocation_attribute_changed.send(
+                    sender=self.__class__,
+                    attribute_pk=allocation_attribute.pk,
+                    allocation_pk=pk,
+                )
 
-        return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
+        return HttpResponseRedirect(reverse("allocation-detail", kwargs={"pk": pk}))
 
 
 class AllocationChangeDeleteAttributeView(LoginRequiredMixin, UserPassesTestMixin, View):
