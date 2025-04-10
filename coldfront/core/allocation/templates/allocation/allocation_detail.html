@@ -179,6 +179,9 @@ Allocation Detail
       <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Allocation Attributes</h3>
       <div class="float-right">
         {% if request.user.is_superuser %}
+          <a class="btn btn-info" href="{% url 'allocation-attribute-edit' allocation.pk %}" role="button">
+            <i class="fas fa-edit" aria-hidden="true"></i> Edit Allocation Attributes
+          </a>
           <a class="btn btn-success" href="{% url 'allocation-attribute-add' allocation.pk %}" role="button">
             <i class="fas fa-plus" aria-hidden="true"></i> Add Allocation Attribute
           </a>
@@ -263,7 +266,6 @@ Allocation Detail
                   {% else %}
                     <td class="text-info">{{ change_request.status.name }}</td>
                   {% endif %}
-                  </td>
                   {% if change_request.notes %}
                     <td>{{change_request.notes}}</td>
                   {% else %}

@@ -29,6 +29,7 @@ from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationChangeNoteForm,
                                              AllocationAttributeChangeForm,
                                              AllocationAttributeUpdateForm,
+                                             AllocationAttributeEditForm,
                                              AllocationForm,
                                              AllocationInvoiceNoteDeleteForm,
                                              AllocationInvoiceUpdateForm,
@@ -1826,6 +1827,109 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                                     'email/new_allocation_change_request.txt',
                                     url_path=reverse('allocation-change-list'),
                                     domain_url=get_domain_url(self.request))
+        return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
+
+
+class AllocationAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, FormView):
+    formset_class = AllocationAttributeEditForm
+    template_name = 'allocation/allocation_attribute_edit.html'
+
+    def test_func(self):
+        """UserPassesTestMixin Tests"""
+        user = self.request.user
+        if user.is_superuser or user.is_staff:
+            return True
+
+        messages.error(
+            self.request,
+            'You do not have permission to edit this allocation\'s attributes.'
+        )
+
+        return False
+
+    def get_allocation_attributes_to_change(self, allocation_obj):
+        attributes_to_change = allocation_obj.allocationattribute_set.all()
+
+        attributes_to_change = [
+            {
+                'attribute_pk': attribute.pk,
+                'name': attribute.allocation_attribute_type.name,
+                'value': attribute.value,
+             }
+            for attribute in attributes_to_change
+        ]
+
+        return attributes_to_change
+
+    def get(self, request, *args, **kwargs):
+        context = {}
+        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get("pk"))
+        allocation_attributes_to_change = self.get_allocation_attributes_to_change(
+            allocation_obj
+        )
+
+        if allocation_attributes_to_change:
+            formset = formset_factory(
+                self.formset_class,
+                max_num=len(allocation_attributes_to_change),
+            )
+            formset = formset(
+                initial=allocation_attributes_to_change,
+                prefix="attributeform",
+            )
+            context["formset"] = formset
+        context["allocation"] = allocation_obj
+        context["attributes"] = allocation_attributes_to_change
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        attribute_changes_to_make = set()
+
+        pk = self.kwargs.get('pk')
+        allocation_obj = get_object_or_404(Allocation, pk=pk)
+
+        allocation_attributes_to_change = self.get_allocation_attributes_to_change(
+            allocation_obj
+        )
+        error_redirect = HttpResponseRedirect(
+            reverse('allocation-attribute-edit', kwargs={'pk': pk})
+        )
+
+        if allocation_attributes_to_change:
+            formset = formset_factory(
+                self.formset_class,
+                max_num=len(allocation_attributes_to_change),
+            )
+            formset = formset(
+                request.POST,
+                initial=allocation_attributes_to_change,
+                prefix='attributeform',
+            )
+
+            if not formset.is_valid():
+                attribute_errors = ""
+                for error in formset.errors:
+                    if error:
+                        attribute_errors += error.get('__all__')
+                messages.error(request, attribute_errors)
+                return error_redirect
+
+            for entry in formset:
+                formset_data = entry.cleaned_data
+
+                value = formset_data.get('value')
+
+                if value != "":
+                    allocation_attribute = AllocationAttribute.objects.get(
+                        pk=formset_data.get('attribute_pk')
+                    )
+                    if allocation_attribute.value != value:
+                        attribute_changes_to_make.add((allocation_attribute, value))
+
+            for allocation_attribute, value in attribute_changes_to_make:
+                allocation_attribute.value = value
+                allocation_attribute.save()
+
         return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
 
