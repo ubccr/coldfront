@@ -23,17 +23,16 @@ from django.views import View
 from django.views.generic import ListView, TemplateView
 from django.views.generic.edit import CreateView, FormView, UpdateView
 
-from coldfront.config.core import ALLOCATION_EULA_ENABLE
 from coldfront.core.allocation.forms import (
     AllocationAccountForm,
     AllocationAddUserForm,
-    AllocationAttributeChangeForm,
     AllocationAttributeCreateForm,
     AllocationAttributeDeleteForm,
-    AllocationAttributeUpdateForm,
-    AllocationAttributeEditForm,
     AllocationChangeForm,
     AllocationChangeNoteForm,
+    AllocationAttributeChangeForm,
+    AllocationAttributeUpdateForm,
+    AllocationAttributeEditForm,
     AllocationForm,
     AllocationInvoiceNoteDeleteForm,
     AllocationInvoiceUpdateForm,
@@ -44,29 +43,30 @@ from coldfront.core.allocation.forms import (
 )
 from coldfront.core.allocation.models import (
     Allocation,
+    AllocationPermission,
     AllocationAccount,
     AllocationAttribute,
-    AllocationAttributeChangeRequest,
     AllocationAttributeType,
     AllocationChangeRequest,
     AllocationChangeStatusChoice,
-    AllocationPermission,
+    AllocationAttributeChangeRequest,
     AllocationStatusChoice,
     AllocationUser,
     AllocationUserNote,
     AllocationUserStatusChoice,
 )
 from coldfront.core.allocation.signals import (
+    allocation_new,
     allocation_activate,
     allocation_activate_user,
-    allocation_change_approved,
-    allocation_change_created,
     allocation_disable,
-    allocation_new,
     allocation_remove_user,
+    allocation_change_created,
+    allocation_change_approved,
+    allocation_attribute_changed,
 )
 from coldfront.core.allocation.utils import generate_guauge_data_from_usage, get_user_resources
-from coldfront.core.project.models import Project, ProjectPermission, ProjectUser, ProjectUserStatusChoice
+from coldfront.core.project.models import Project, ProjectUser, ProjectPermission, ProjectUserStatusChoice
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import (
@@ -1892,6 +1892,11 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                 for attribute_change in attribute_change_list:
                     attribute_change.allocation_attribute.value = attribute_change.new_value
                     attribute_change.allocation_attribute.save()
+                    allocation_attribute_changed.send(
+                        sender=self.__class__,
+                        attribute_pk=attribute_change.allocation_attribute.pk,
+                        allocation_pk=attribute_change.allocation.pk,
+                    )
 
             messages.success(
                 request,
@@ -2208,6 +2213,11 @@ class AllocationAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, FormV
             for allocation_attribute, value in attribute_changes_to_make:
                 allocation_attribute.value = value
                 allocation_attribute.save()
+                allocation_attribute_changed.send(
+                    sender=self.__class__,
+                    attribute_pk=allocation_attribute.pk,
+                    allocation_pk=pk,
+                )
 
         return HttpResponseRedirect(reverse("allocation-detail", kwargs={"pk": pk}))
 
