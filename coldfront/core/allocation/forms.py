@@ -229,6 +229,7 @@ class AllocationAttributeUpdateForm(forms.Form):
 class AllocationAttributeEditForm(forms.Form):
     attribute_pk = forms.IntegerField(required=False, disabled=True)
     name = forms.CharField(max_length=150, required=False, disabled=True)
+    orig_value = forms.CharField(max_length=150, required=False, disabled=True)
     value = forms.CharField(max_length=150, required=False, disabled=False)
 
     def __init__(self, *args, **kwargs):
