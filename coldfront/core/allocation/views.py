@@ -1854,6 +1854,7 @@ class AllocationAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, FormV
             {
                 'attribute_pk': attribute.pk,
                 'name': attribute.allocation_attribute_type.name,
+                'orig_value': attribute.value,
                 'value': attribute.value,
              }
             for attribute in attributes_to_change
