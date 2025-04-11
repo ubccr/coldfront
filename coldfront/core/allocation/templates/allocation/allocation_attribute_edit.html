@@ -65,10 +65,11 @@
   $(document).ready(function() {
     {% for form in formset %}
     $("#{{form.value.auto_id}}").on("input", function(){
-      if ($(this).val() != "{{form.orig_value.value}}") {
-        $("#change-indicator-{{form.attribute_pk.value}}").removeClass("d-none");
+      let change_indicator = $("#change-indicator-{{form.attribute_pk.value}}");
+      if ($(this).val() != "{{form.orig_value.value|escapejs}}") {
+        change_indicator.removeClass("d-none");
       } else {
-        $("#change-indicator-{{form.attribute_pk.value}}").addClass("d-none");
+        change_indicator.addClass("d-none");
       }
     });
     $("#{{form.value.auto_id}}").trigger("input");
