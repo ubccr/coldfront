@@ -5,12 +5,13 @@ import logging
 from decimal import Decimal
 from datetime import datetime
 from django.utils import timezone
-from django.db import models, connection
+from django.db import models, connection, transaction
 from django.contrib.auth import get_user_model
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.conf import settings
-from coldfront.core.allocation.models import AllocationUser
+from rest_framework.exceptions import ValidationError
+from coldfront.core.allocation.models import AllocationUser, Allocation
 from coldfront.core.resource.models import Resource
 from coldfront.core.project.models import Project
 from ifxbilling.models import ProductUsage, Product, Facility
@@ -65,6 +66,21 @@ class ProductResource(models.Model):
         Product,
         on_delete=models.CASCADE
     )
+
+class ProductAllocation(models.Model):
+    '''
+    Link between Allocations and Products
+    '''
+    allocation = models.ForeignKey(
+        Allocation,
+        on_delete=models.CASCADE
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE
+    )
+    def __str__(self):
+        return f'{self.allocation} - {self.product}'
 
 def allocation_user_to_allocation_product_usage(allocation_user, product, overwrite=False, year=None, month=None):
     '''
@@ -125,6 +141,91 @@ def allocation_user_to_allocation_product_usage(allocation_user, product, overwr
     product_usage, created = ProductUsage.objects.get_or_create(**product_usage_data)
     aupu = AllocationUserProductUsage.objects.create(allocation_user=allocation_user.history.first(), product_usage=product_usage)
     return aupu
+
+def update_allocation_product(allocation):
+    '''
+    For the given Allocation, create a Product and ProductAllocation if they don't exist
+    or update the existing Product.
+
+    The Resource is set as a parent of the Product.
+    '''
+    if allocation.resources.count() != 1:
+        logger.error(f'Allocation {allocation} has more than one resource')
+        return
+    resource = allocation.resources.first()
+    if resource.resource_type.name == "Storage":
+        with transaction.atomic():
+            tb_str = allocation.get_attribute(name='Storage Quota (TB)')
+            dir_str = allocation.get_attribute(name='Subdirectory')
+            if dir_str:
+                dir_str = f' at {dir_str}'
+            else:
+                dir_str = ''
+            product_name = f'{tb_str} TB of {resource.name}{dir_str}'
+            product_description = product_name
+            facility = Facility.objects.get(name='Research Computing Storage')
+            resource_product = resource.productresource_set.first().product
+            allocation_organization = None
+            try:
+                allocation_organization = allocation.project.projectorganization_set.first().organization
+            except Exception as e:
+                logger.error(f'Allocation {allocation} has no project organization set')
+                raise e
+            try:
+                pa = ProductAllocation.objects.get(allocation=allocation)
+                product = pa.product
+                fiine_product = FiineAPI.readProduct(product_number=product.product_number)
+                fiine_product.product_name = product_name
+                fiine_product.product_description = product_description
+                fiine_product.facility = facility.name
+                fiine_product.parent = {
+                    'product_number': resource_product.product_number,
+                }
+                fiine_product.product_organization = {
+                    'ifxorg': allocation_organization.ifxorg,
+                }
+                fiine_product.billing_calculator = 'coldfront.plugins.ifx.calculator.NewColdfrontBillingCalculator'
+                fiine_product.product_category = 'Storage Allocation'
+                fiine_product.object_code_category = 'Technical Services'
+                fiine_product_dict = fiine_product.to_dict()
+                fiine_product_dict.pop('product_number')
+                updated_fiine_product = FiineAPI.updateProduct(product_number=product.product_number, **fiine_product_dict)
+                for field in ['product_name', 'product_description', 'object_code_category']:
+                    setattr(product, field, getattr(updated_fiine_product, field))
+                product.facility = facility
+                product.product_organization = allocation_organization
+                product.parent = resource_product
+                product.save()
+            except ProductAllocation.DoesNotExist:
+                pa = ProductAllocation(allocation=allocation)
+                product = create_new_product(
+                    product_name=product_name,
+                    product_description=product_description,
+                    facility=facility,
+                    parent=resource_product,
+                    product_organization=allocation_organization,
+                    object_code_category='Technical Services',
+                    billing_calculator='coldfront.plugins.ifx.calculator.NewColdfrontBillingCalculator',
+                    product_category='Storage Allocation',
+                )
+                pa.product = product
+                pa.save()
+            except ValidationError as e:
+                logger.error(f'Validation error creating product for allocation {allocation}: {e}')
+            except Exception as e:
+                logger.error(f'Error creating product for allocation {allocation}: {e}')
+                raise
+
+def allocation_post_save(sender, instance, **kwargs):
+    '''
+    Create a Product, ProductAllocation for each Allocation
+    '''
+    if not kwargs.get('raw'):
+        try:
+            update_allocation_product(instance)
+        except Exception as e:
+            logger.error(f'Error creating product for allocation {instance}: {e}')
+
 
 @receiver(post_save, sender=Resource)
 def resource_post_save(sender, instance, **kwargs):
