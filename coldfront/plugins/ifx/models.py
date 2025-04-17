@@ -131,7 +131,7 @@ def resource_post_save(sender, instance, **kwargs):
     '''
     Ensure that there is a Product for each Resource
     '''
-    if not kwargs.get('raw') and not instance.resource_type.name in ["Storage Tier", "Cluster", "Cluster Partition"]:
+    if not kwargs.get('raw') and not instance.resource_type.name in ["Storage Tier", "Cluster", "Cluster Partition", "Compute Node"]:
         try:
             product_resource = ProductResource.objects.get(resource=instance)
         except ProductResource.DoesNotExist:
@@ -147,6 +147,7 @@ def resource_post_save(sender, instance, **kwargs):
                 fiine_product.pop('object_code_category')
                 fiine_product['facility'] = facility
                 fiine_product['billing_calculator'] = 'coldfront.plugins.ifx.calculator.NewColdfrontBillingCalculator'
+                fiine_product['billable'] = instance.requires_payment
                 (product, created) = Product.objects.get_or_create(**fiine_product)
             product_resource = ProductResource.objects.create(product=product, resource=instance)
 
