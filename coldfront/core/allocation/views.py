@@ -2577,6 +2577,7 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         ]
 
         email_vars = {
+            'allocation': allocation_obj,
             'justification': justification,
             'user': self.request.user,
             'nese': nese,
