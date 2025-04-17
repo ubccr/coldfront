@@ -1,14 +1,12 @@
 import logging
-import os
 import re
 from functools import reduce
-from cProfile import Profile
 from django.utils import timezone
 
 from django.core.management.base import BaseCommand
 from simple_history.utils import bulk_update_with_history, bulk_create_with_history
 
-from coldfront.core.resource.models import ResourceType, ResourceAttribute, ResourceAttributeType, AttributeType, Resource
+from coldfront.core.resource.models import ResourceType, ResourceAttribute, ResourceAttributeType, Resource
 from coldfront.core.project.models import Project
 from coldfront.plugins.slurm.utils import slurm_get_nodes_info
 
@@ -34,17 +32,8 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("-e", "--environment", help="Environment, use dev to simulate output")
-        parser.add_argument('--profile', action='store_true', default=False)
 
     def handle(self, *args, **options):
-        if options.get('profile', False):
-            profiler = Profile()
-            profiler.runcall(self._handle, *args, **options)
-            profiler.print_stats()
-        else:
-            self._handle(*args, **options)
-
-    def _handle(self, *args, **options):
         def calculate_gpu_count(gres_value):
             if 'null' in gres_value:
                 return 0
@@ -68,19 +57,10 @@ class Command(BaseCommand):
                 return'FASRC'
             return owner_name
 
-        def get_cluster():
-            return Resource.objects.get(resource_type__name='Cluster')
-
-
-        env = options['environment']  or 'production'
-        if 'dev' in env:
-            output = self.get_output_from_file(os.path.join(os.getcwd(), 'coldfront/plugins/slurm/management/commands/sinfo.txt'))
-        else:
-            output = slurm_get_nodes_info()
-        logger.debug(f'Running on {env} mode')
+        output = slurm_get_nodes_info()
         modify_history_date = timezone.now()
         project_list = Project.objects.all()
-        current_cluster = get_cluster()
+        current_cluster = Resource.objects.get(resource_type__name='Cluster')
         compute_node = ResourceType.objects.get(name='Compute Node')
         attribute_type_name_list = ['GPU Count', 'Core Count', 'Features', 'Owner', 'ServiceEnd']
         partition_resource_type = ResourceType.objects.get(name='Cluster Partition')
@@ -89,7 +69,8 @@ class Command(BaseCommand):
         features_attribute_type = ResourceAttributeType.objects.get(name='Features')
         owner_attribute_type = ResourceAttributeType.objects.get(name='Owner')
         service_end_attribute_type = ResourceAttributeType.objects.get(name='ServiceEnd')
-        existing_resource_attributes = list(ResourceAttribute.objects.filter(
+        existing_resource_attributes = list(
+            ResourceAttribute.objects.filter(
                 resource_attribute_type__name__in=attribute_type_name_list,
                 resource__resource_type__name='Compute Node'
             ).values_list('pk', 'resource__name', 'resource_attribute_type__name')
@@ -102,7 +83,7 @@ class Command(BaseCommand):
         bulk_update_resource = []
         processed_resource_attribute = []
         for row in output:
-            new_resource, compute_node_created_created = Resource.objects.get_or_create(
+            new_resource, compute_node_created = Resource.objects.get_or_create(
                 name=row['nodelist'],
                 defaults={
                     'is_allocatable':False,
@@ -112,7 +93,7 @@ class Command(BaseCommand):
             )
             Resource.objects.get_or_create(name=row['partition'], defaults={'resource_type':partition_resource_type})
 
-            gpu_count =  ResourceAttribute(resource_attribute_type=gpu_count_attribute_type, resource=new_resource, value=calculate_gpu_count(row['gres']))
+            gpu_count = ResourceAttribute(resource_attribute_type=gpu_count_attribute_type, resource=new_resource, value=calculate_gpu_count(row['gres']))
             gpu_count_key = f"{row['nodelist']} {gpu_count_attribute_type.name}"
             if gpu_count_key in existing_resource_attributes_check:
                 gpu_count.pk = existing_resource_attributes_pk_map[gpu_count_key]
@@ -142,7 +123,11 @@ class Command(BaseCommand):
                     bulk_create_resource_attribute.append(features)
                     processed_resource_attribute.append(features_key)
 
-            owner = ResourceAttribute(resource_attribute_type=owner_attribute_type, resource=new_resource, value=calculate_owner_value(project_list, row))
+            owner = ResourceAttribute(
+                resource_attribute_type=owner_attribute_type,
+                resource=new_resource,
+                value=calculate_owner_value(project_list, row)
+            )
             owner_key = f"{row['nodelist']} {owner_attribute_type.name}"
             if owner_key in existing_resource_attributes_check:
                 owner.pk = existing_resource_attributes_pk_map[owner_key]
