@@ -60,7 +60,7 @@ class Command(BaseCommand):
         output = slurm_get_nodes_info()
         modify_history_date = timezone.now()
         project_list = Project.objects.all()
-        current_cluster = Resource.objects.get(resource_type__name='Cluster')
+        current_cluster = Resource.objects.get(name='FASRC Cluster')
         compute_node = ResourceType.objects.get(name='Compute Node')
         attribute_type_name_list = ['GPU Count', 'Core Count', 'Features', 'Owner', 'ServiceEnd']
         partition_resource_type = ResourceType.objects.get(name='Cluster Partition')
@@ -86,12 +86,20 @@ class Command(BaseCommand):
             new_resource, compute_node_created = Resource.objects.get_or_create(
                 name=row['nodelist'],
                 defaults={
-                    'is_allocatable':False,
-                    'resource_type':compute_node,
-                    'parent_resource':current_cluster
+                    'is_allocatable': False,
+                    'resource_type': compute_node,
+                    'parent_resource': current_cluster,
+                    'description': f"{row['nodelist']} node on {current_cluster.name}",
                 }
             )
-            Resource.objects.get_or_create(name=row['partition'], defaults={'resource_type':partition_resource_type})
+            Resource.objects.get_or_create(
+                name=row['partition'],
+                resource_type=partition_resource_type,
+                defaults={
+                    'parent_resource': current_cluster,
+                    'description': f"{row['partition']} partition on {current_cluster.name}",
+                }
+            )
 
             gpu_count = ResourceAttribute(resource_attribute_type=gpu_count_attribute_type, resource=new_resource, value=calculate_gpu_count(row['gres']))
             gpu_count_key = f"{row['nodelist']} {gpu_count_attribute_type.name}"
