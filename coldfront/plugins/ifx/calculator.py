@@ -166,9 +166,9 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
                                     if self.verbosity == self.LOUD:
                                         logger.exception(e)
                             else:
-                                errors.append(f'Allocation {allocation} is not a storage allocation.  Skipping.')
+                                logger.info(f'Allocation {allocation} is not a storage allocation.  Skipping.')
                         else:
-                            errors.append(f'Allocation {allocation} has more than one resource.')
+                            logger.info(f'Allocation {allocation} has more than one resource.')
         else:
             errors.append(f'Organization {organization.slug} is not a Harvard organization.')
         return (successes, errors)
