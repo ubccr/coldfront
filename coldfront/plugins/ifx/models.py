@@ -164,6 +164,9 @@ def update_allocation_product(allocation):
             product_name = f'{tb_str} TB of {resource.name}{dir_str}'
             product_description = product_name
             facility = Facility.objects.get(name='Research Computing Storage')
+            billing_calculator = 'coldfront.plugins.ifx.calculator.NewColdfrontBillingCalculator'
+            product_category = 'Storage Allocation'
+            object_code_category = 'Technical Services'
             resource_product = resource.productresource_set.first().product
             allocation_organization = None
             try:
@@ -174,30 +177,38 @@ def update_allocation_product(allocation):
             try:
                 pa = ProductAllocation.objects.get(allocation=allocation)
                 product = pa.product
-                fiine_product = FiineAPI.readProduct(product_number=product.product_number)
-                fiine_product.product_name = product_name
-                fiine_product.product_description = product_description
-                fiine_product.facility = facility.name
-                fiine_product.parent = {
-                    'product_number': resource_product.product_number,
-                }
-                fiine_product.product_organization = {
-                    'ifxorg': allocation_organization.ifxorg,
-                }
-                fiine_product.billing_calculator = 'coldfront.plugins.ifx.calculator.NewColdfrontBillingCalculator'
-                fiine_product.product_category = 'Storage Allocation'
-                fiine_product.object_code_category = 'Technical Services'
-                fiine_product_dict = fiine_product.to_dict()
-                fiine_product_dict.pop('product_number')
-                updated_fiine_product = FiineAPI.updateProduct(product_number=product.product_number, **fiine_product_dict)
-                for field in ['product_name', 'product_description', 'object_code_category']:
-                    setattr(product, field, getattr(updated_fiine_product, field))
+                if not hasattr(settings, 'FIINELESS') or not settings.FIINELESS:
+                    fiine_product = FiineAPI.readProduct(product_number=product.product_number)
+                    fiine_product.product_name = product_name
+                    fiine_product.product_description = product_description
+                    fiine_product.facility = facility.name
+                    fiine_product.parent = {
+                        'product_number': resource_product.product_number,
+                    }
+                    fiine_product.product_organization = {
+                        'ifxorg': allocation_organization.ifxorg,
+                    }
+                    fiine_product.billing_calculator = billing_calculator
+                    fiine_product.product_category = product_category
+                    fiine_product.object_code_category = object_code_category
+                    fiine_product_dict = fiine_product.to_dict()
+                    fiine_product_dict.pop('product_number')
+                    updated_fiine_product = FiineAPI.updateProduct(product_number=product.product_number, **fiine_product_dict)
+                    for field in ['product_name', 'product_description', 'object_code_category']:
+                        setattr(product, field, getattr(updated_fiine_product, field))
+                else:
+                    product.product_name = product_name
+                    product.product_description = product_description
+                    product.object_code_category = object_code_category
+                    product.billing_calculator = billing_calculator
+                    product.product_category = product_category
                 product.facility = facility
                 product.product_organization = allocation_organization
                 product.parent = resource_product
                 product.save()
             except ProductAllocation.DoesNotExist:
                 pa = ProductAllocation(allocation=allocation)
+                # Create a new Product.  create_new_product method knows about FIINELESS
                 product = create_new_product(
                     product_name=product_name,
                     product_description=product_description,
