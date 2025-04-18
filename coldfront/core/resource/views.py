@@ -14,6 +14,7 @@ from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.views.generic import TemplateView
 from django.views.generic.edit import CreateView
+from django.core.exceptions import ObjectDoesNotExist
 
 from coldfront.core.utils.views import ColdfrontListView
 from coldfront.core.resource.models import Resource, ResourceAttribute
@@ -23,13 +24,12 @@ from coldfront.core.resource.forms import (
     ResourceAttributeDeleteForm,
     ResourceAllocationUpdateForm,
 )
-from coldfront.core.allocation.models import AllocationStatusChoice, AllocationAttributeType, AllocationAttribute
+from coldfront.core.allocation.models import AllocationAttributeType, AllocationAttribute
 from coldfront.core.allocation.signals import allocation_raw_share_edit
 
 from coldfront.plugins.slurm.utils import SlurmError
 
-from coldfront.core.project.models import ProjectUser, Project
-from pandas.io.clipboard import is_available
+from coldfront.core.project.models import Project
 
 logger = logging.getLogger(__name__)
 
@@ -171,6 +171,14 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 if allocation.usage:
                     allocation_total['usage'] += allocation.usage
             context['allocation_total'] = allocation_total
+
+        owner = resource_obj.owner
+        if owner != None:
+            try:
+                owner = Project.objects.get(title=owner).pk
+            except ObjectDoesNotExist:
+                owner = owner
+        context['owner'] = owner
 
         context['allocations'] = allocations
         context['resource'] = resource_obj
