@@ -6,9 +6,6 @@ from coldfront.core.test_helpers.factories import setup_models, ProjectFactory, 
 from coldfront.core.resource.models import AttributeType
 
 UTIL_FIXTURES = ['coldfront/core/test_helpers/test_data/test_fixtures/ifx.json']
-RESOURCE_FIXTURES = [
-    "coldfront/core/test_helpers/test_data/test_fixtures/resource.json",
-]
 
 class PortalViewTest(TestCase):
     """Base class for portal view tests
@@ -33,7 +30,6 @@ class CenterSummaryTest(PortalViewTest):
 
 
 class HomePageTest(PortalViewTest):
-    fixtures = RESOURCE_FIXTURES
 
     def test_pi_home_page(self):
         """check that the pi home page displays properly with the existing database
