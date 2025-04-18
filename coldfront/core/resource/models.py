@@ -202,7 +202,7 @@ class Resource(TimeStampedModel):
             str: the status of the resource
         """
         try:
-            return ResourceAttribute.objects.get(resource=self, resource_attribute_type__attribute='Owner').value
+            return ResourceAttribute.objects.get(resource=self, resource_attribute_type__name='Owner').value
         except ObjectDoesNotExist:
             return None
 
@@ -213,8 +213,10 @@ class Resource(TimeStampedModel):
         Returns:
             str: the status of the resource
         """
-
-        return ResourceAttribute.objects.get(resource=self, resource_attribute_type__attribute='Status').value
+        try:
+            return ResourceAttribute.objects.get(resource=self, resource_attribute_type__name='Status').value
+        except ObjectDoesNotExist:
+            return None
 
     @property
     def expiry(self):
