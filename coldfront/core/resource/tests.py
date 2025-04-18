@@ -90,7 +90,6 @@ class ResourceArchivedListViewTest(ResourceViewBaseTest):
         utils.page_does_not_contain_for_user(self, self.pi_user, search_url, 'active_resource')
         search_url = f'{self.url}?resource_name=archived_resource2'
         utils.page_contains_for_user(self, self.pi_user, search_url, 'archived_resource2')
-        utils.page_does_not_contain_for_user(self, self.pi_user, search_url, 'archived_resource')
         utils.page_does_not_contain_for_user(self, self.pi_user, search_url, 'active_resource')
 
 
