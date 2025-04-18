@@ -2,9 +2,8 @@ from django.test import TestCase, tag
 from coldfront.core.test_helpers import utils
 from coldfront.core.test_helpers.factories import setup_models
 from coldfront.core.allocation.models import AllocationChangeRequest, AllocationChangeStatusChoice
-from coldfront.core.test_helpers.factories import setup_models, AttributeTypeFactory, ProjectFactory, ResourceFactory, ResourceTypeFactory, ResourceAttributeTypeFactory, ResourceAttributeFactory
-from coldfront.core.project.models import Project
-from coldfront.core.resource.models import AttributeType, ResourceType
+from coldfront.core.test_helpers.factories import setup_models, ProjectFactory, ResourceFactory, ResourceAttributeTypeFactory, ResourceAttributeFactory
+from coldfront.core.resource.models import AttributeType
 
 UTIL_FIXTURES = ['coldfront/core/test_helpers/test_data/test_fixtures/ifx.json']
 RESOURCE_FIXTURES = [

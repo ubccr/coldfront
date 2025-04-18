@@ -5,7 +5,6 @@ from django.conf import settings
 from django.contrib.auth.models import Group
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from model_utils.fields import AutoLastModifiedField
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 

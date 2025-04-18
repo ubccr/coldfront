@@ -1,20 +1,13 @@
-from boto3 import resource
-from django.db.models import Q
 from django.test import TestCase
 
 from coldfront.core.test_helpers import utils
-from coldfront.core.test_helpers.factories import setup_models, AttributeTypeFactory, ProjectFactory, ResourceFactory, ResourceTypeFactory, ResourceAttributeTypeFactory, ResourceAttributeFactory
-from coldfront.core.project.models import Project
-from coldfront.core.resource.models import AttributeType, ResourceType
+from coldfront.core.test_helpers.factories import setup_models, ProjectFactory, ResourceFactory, ResourceAttributeTypeFactory, ResourceAttributeFactory
+from coldfront.core.resource.models import AttributeType
 
 
 UTIL_FIXTURES = [
     "coldfront/core/test_helpers/test_data/test_fixtures/ifx.json",
 ]
-RESOURCE_FIXTURES = [
-    "coldfront/core/test_helpers/test_data/test_fixtures/resource.json",
-]
-
 
 BACKEND = "django.contrib.auth.backends.ModelBackend"
 
@@ -38,7 +31,6 @@ class ResourceViewBaseTest(TestCase):
 
 class ResourceListViewTest(ResourceViewBaseTest):
     """Tests for ResourceListView"""
-    fixtures = RESOURCE_FIXTURES
 
     def setUp(self):
         self.client.force_login(self.pi_user, backend=BACKEND)
@@ -74,7 +66,6 @@ class ResourceListViewTest(ResourceViewBaseTest):
 
 class ResourceArchivedListViewTest(ResourceViewBaseTest):
     """Tests for ResourceArchivedListView"""
-    fixtures = RESOURCE_FIXTURES
 
     def setUp(self):
         self.client.force_login(self.pi_user, backend=BACKEND)

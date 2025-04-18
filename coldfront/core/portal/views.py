@@ -19,7 +19,6 @@ from coldfront.core.resource.models import Resource, ResourceAttribute
 from coldfront.config.env import ENV
 from coldfront.core.department.models import Department, DepartmentMember
 from coldfront.core.utils.common import import_from_settings
-from pandas.io.clipboard import is_available
 
 if ENV.bool('PLUGIN_SFTOCF', default=False):
     from coldfront.plugins.sftocf.utils import StarFishRedash, STARFISH_SERVER
