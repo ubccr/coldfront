@@ -12,7 +12,11 @@ Resource Detail
 
 {% block content %}
 
-
+{% if resource.is_available == False %}
+  <div class="alert alert-warning" role="alert">
+    This is a retired resource! You cannot make any changes.
+  </div>
+{% endif %}
 <div class="mb-3">
   <h2>Resource Detail</h2>
   <hr>
@@ -73,6 +77,20 @@ Resource Detail
             {% endif %}
           </td>
         </tr>
+        {% if owner != None %}
+          <tr>
+            <th scope="row" class="text-nowrap">Owner:</th>
+            <td>
+              {% if owner|stringformat:"s" == owner %}
+	        {{ owner }}
+	      {% else %}
+                <a href="{% url 'project-detail' owner %}">
+	          {{ resource.owner }}
+                </a>
+	      {% endif %}
+            </td>
+          </tr>
+        {% endif %}
       </table>
     </div>
   </div>
