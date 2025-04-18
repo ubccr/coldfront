@@ -2,6 +2,7 @@
 Models for ifxbilling plugin
 '''
 import logging
+import json
 from decimal import Decimal
 from datetime import datetime
 from django.utils import timezone
@@ -10,15 +11,16 @@ from django.contrib.auth import get_user_model
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.conf import settings
+from fiine.client import API as FiineAPI
+from fiine.client import ApiException
 from coldfront.core.allocation.models import AllocationUser
 from coldfront.core.resource.models import Resource
 from coldfront.core.project.models import Project
 from ifxbilling.models import ProductUsage, Product, Facility
 from ifxbilling.fiine import create_new_product
 from ifxuser.models import Organization
-from fiine.client import API as FiineAPI
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('ifx')
 
 
 class ProjectOrganization(models.Model):
@@ -131,24 +133,37 @@ def resource_post_save(sender, instance, **kwargs):
     '''
     Ensure that there is a Product for each Resource
     '''
-    if not kwargs.get('raw') and not instance.resource_type.name in ["Storage Tier", "Cluster", "Cluster Partition"]:
+    if not kwargs.get('raw') and not instance.resource_type.name in ["Storage Tier"] and instance.requires_payment:
         try:
             product_resource = ProductResource.objects.get(resource=instance)
         except ProductResource.DoesNotExist:
             # Need to create a Product and ProductResource for this Resource
             products = []
-            if not settings.FIINELESS:
-                products = FiineAPI.listProducts(product_name=instance.name)
-            facility = Facility.objects.get(name='Research Computing Storage')
-            if not products:
-                product = create_new_product(product_name=instance.name, product_description=instance.name, facility=facility)
-            else:
-                fiine_product = products[0].to_dict()
-                fiine_product.pop('object_code_category')
-                fiine_product['facility'] = facility
-                fiine_product['billing_calculator'] = 'coldfront.plugins.ifx.calculator.NewColdfrontBillingCalculator'
-                (product, created) = Product.objects.get_or_create(**fiine_product)
-            product_resource = ProductResource.objects.create(product=product, resource=instance)
+            try:
+                if not settings.FIINELESS:
+                    products = FiineAPI.listProducts(product_name=instance.name)
+                facility = Facility.objects.get(name='Research Computing Storage')
+                if not products:
+                    product = create_new_product(product_name=instance.name, product_description=instance.name, facility=facility)
+                else:
+                    fiine_product = products[0].to_dict()
+                    fiine_product.pop('object_code_category')
+                    fiine_product['facility'] = facility
+                    fiine_product['billing_calculator'] = 'coldfront.plugins.ifx.calculator.NewColdfrontBillingCalculator'
+                    (product, created) = Product.objects.get_or_create(**fiine_product)
+                product_resource = ProductResource.objects.create(product=product, resource=instance)
+            except ApiException as e:
+                if e.status == 400:
+                    msg = json.loads(e.body)
+                if 'Duplicate' in str(e):
+                    msg = 'Duplicate entry in Fiine'
+                if e.status == 401:
+                    msg = 'Unauthorized'
+                logger.error(f'Error creating Product for Resource {instance}: {msg}')
+                raise Exception(msg) from e
+            except Exception as e:
+                logger.error(f'Error creating Product for Resource {instance}: {e}')
+                raise
 
 class SuUser(get_user_model()):
     '''
