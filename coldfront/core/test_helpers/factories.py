@@ -218,7 +218,7 @@ class ResourceFactory(DjangoModelFactory):
 
 class RAttributeTypeFactory(DjangoModelFactory):
     class Meta:
-        model = PAttributeType
+        model = RAttributeType
         # django_get_or_create = ('name',)
     name = factory.Faker('Int')
 
