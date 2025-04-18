@@ -196,6 +196,18 @@ class Resource(TimeStampedModel):
         return None
 
     @property
+    def owner(self):
+        """
+        Returns:
+            str: the status of the resource
+        """
+        try:
+            return ResourceAttribute.objects.get(resource=self, resource_attribute_type__attribute='Owner').value
+        except ObjectDoesNotExist:
+            return None
+
+
+    @property
     def status(self):
         """
         Returns:
