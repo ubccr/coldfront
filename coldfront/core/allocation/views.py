@@ -493,6 +493,25 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 'You need to create an account name. Create it by clicking the link under the "Allocation account" field.'))
             return self.form_invalid(form)
 
+        allocation_limit_objs = resource_obj.resourceattribute_set.filter(
+            resource_attribute_type__name='allocation_limit').first()
+        if allocation_limit_objs:
+            allocation_limit = int(allocation_limit_objs.value)
+            allocation_count = project_obj.allocation_set.filter(
+                resources=resource_obj,
+                status__name__in=[
+                    'Active', 'New',
+                    'Renewal Requested',
+                    'Paid',
+                    'Payment Pending',
+                    'Payment Requested'
+                ]
+            ).count()
+            if allocation_count >= allocation_limit:
+                form.add_error(None, format_html(
+                    'Your project is at the allocation limit allowed for this resource.'))
+                return self.form_invalid(form)
+
         usernames = form_data.get('users')
         usernames.append(project_obj.pi.username)
         usernames = list(set(usernames))
