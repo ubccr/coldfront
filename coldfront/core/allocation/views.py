@@ -53,6 +53,7 @@ from coldfront.core.allocation.signals import (allocation_new,
                                                allocation_activate_user,
                                                allocation_disable,
                                                allocation_remove_user,
+                                               allocation_change_created,
                                                allocation_change_approved,)
 from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
                                              get_user_resources)
@@ -1839,6 +1840,12 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 )
 
         messages.success(request, 'Allocation change request successfully submitted.')
+
+        allocation_change_created.send(
+            sender=self.__class__,
+            allocation_pk=allocation_obj.pk,
+            allocation_change_pk=allocation_change_request_obj.pk,)
+        
 
         send_allocation_admin_email(allocation_obj,
                                     'New Allocation Change Request',
