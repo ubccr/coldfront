@@ -18,6 +18,9 @@ coldfront.db
 *.code-workspace
 .vscode
 db.json
-.env
 .devcontainer/*
 .bin/*
+docker-clean.bat
+script-export-coldfront/clusters
+script-export-coldfront/ldapserver
+script-export-coldfront/storage

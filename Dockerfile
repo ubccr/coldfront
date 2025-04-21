@@ -1,18 +1,26 @@
-FROM python:3.8
+FROM python:3.9-slim-bullseye
+
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
+    && apt-get install -y netcat \
+    && apt-get install -y default-libmysqlclient-dev build-essential \
+    && apt-get install -y libldap2-dev libsasl2-dev \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /usr/src/app
+RUN pip3 config --user set global.progress_bar off
+
+WORKDIR /opt
 COPY requirements.txt ./
-RUN pip3 install -r requirements.txt
+RUN pip3 install --upgrade pip
+RUN pip3 install -r /opt/requirements.txt
 COPY . .
-
-RUN python3 ./manage.py initial_setup
-RUN python3 ./manage.py load_test_data
-
-ENV DEBUG=True
+RUN python3 setup.py build
+RUN python3 setup.py install
+RUN pip3 install /opt
+ENV DEBUG="True"
 
 EXPOSE 8000
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+
+
+CMD [ "/opt/entrypoint.sh" ]

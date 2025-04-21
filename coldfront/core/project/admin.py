@@ -104,8 +104,10 @@ class AttributeTypeAdmin(admin.ModelAdmin):
 
 @admin.register(ProjectAttributeType)
 class ProjectAttributeTypeAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'name', 'attribute_type', 'has_usage', 'is_private')
+    list_display = ('pk', 'name', 'attribute_type', 'has_usage', 'is_private', 'is_changeable', 'is_default')
 
+    class Media:
+        js = ('custom/project_attribute_type.js',)
 
 class ProjectAttributeUsageInline(admin.TabularInline):
     model = ProjectAttributeUsage

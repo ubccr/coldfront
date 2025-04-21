@@ -21,7 +21,8 @@ ROOT_URLCONF = 'coldfront.config.urls'
 SECRET_KEY = ENV.str('SECRET_KEY', default='')
 if len(SECRET_KEY) == 0:
     SECRET_KEY = get_random_secret_key()
-
+    
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 #------------------------------------------------------------------------------
 # Locale settings
 #------------------------------------------------------------------------------
@@ -98,8 +99,14 @@ AUTHENTICATION_BACKENDS = []
 # Django Q
 #------------------------------------------------------------------------------
 Q_CLUSTER = {
+    'name': ENV.str('Q_CLUSTER_NAME', default='coldfront'),
     'timeout': ENV.int('Q_CLUSTER_TIMEOUT', default=120),
     'retry': ENV.int('Q_CLUSTER_RETRY', default=120),
+    'redis': {
+        'host': ENV.str('REDIS_HOST', default='127.0.0.1'),
+        'port': ENV.int('REDIS_PORT', default=6379),
+        'db': ENV.int('REDIS_DB', default=0),
+    },    
 }
 
 

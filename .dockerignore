@@ -1,0 +1,9 @@
+venv/
+*.pyc
+__pycache__/
+coldfront.db
+coldfront.egg-info
+.gitignore
+script-export-coldfront/
+nginx/
+docs/
