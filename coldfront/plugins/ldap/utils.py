@@ -400,6 +400,7 @@ def collect_update_project_status_membership():
     # collect commonly used db objects
     projectuser_role_user = ProjectUserRoleChoice.objects.get(name='User')
     projectuserstatus_active = ProjectUserStatusChoice.objects.get(name='Active')
+    project_active_status = ProjectStatusChoice.objects.get(name='Active')
     projectusers_to_remove = []
 
     active_projects = Project.objects.filter(
@@ -447,6 +448,14 @@ def collect_update_project_status_membership():
     for group in active_pi_groups:
 
         ad_users_not_added, remove_projuser_names = group.compare_active_members_projectusers()
+        # run check on Projects in active_pi_groups, activate if inactive
+        active_pi_group_projs_statuschange = Project.objects.filter(
+            pk__in=[g.project.pk for g in active_pi_groups],
+            status__name__not='Active'
+        )
+        active_pi_group_projs_statuschange.update(status=project_active_status)
+
+
 
         # handle any AD users not in Coldfront
         if ad_users_not_added:
