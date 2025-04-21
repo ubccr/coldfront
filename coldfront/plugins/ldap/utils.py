@@ -414,13 +414,8 @@ def collect_update_project_status_membership():
     ]
 
     active_pi_groups, inactive_pi_groups = remove_inactive_disabled_managers(groupusercollections)
-    projects_to_deactivate = [g.project for g in inactive_pi_groups]
-    Project.objects.bulk_update(
-        [
-            Project(id=p.pk, status=ProjectStatusChoice.objects.get(name='Inactive'))
-            for p in projects_to_deactivate
-        ], ['status']
-    )
+    projects_to_deactivate = Project.objects.filter(pk__in=[g.project.pk for g in inactive_pi_groups])
+    projects_to_deactivate.update(status=ProjectStatusChoice.objects.get(name='Archived'))
     logger.debug('projects_to_deactivate %s', projects_to_deactivate)
     if projects_to_deactivate:
         pis_to_deactivate = ProjectUser.objects.filter(
@@ -447,10 +442,7 @@ def collect_update_project_status_membership():
     if pis_mislabeled:
         logger.info('Project PIs with incorrect labeling: %s',
             [(pi.project.title, pi.user.username) for pi in pis_mislabeled])
-        ProjectUser.objects.bulk_update([
-            ProjectUser(id=pi.id, role=projectuser_role_pi)
-            for pi in pis_mislabeled
-        ], ['role'])
+        pis_mislabeled.update(role=projectuser_role_pi)
 
     for group in active_pi_groups:
 
@@ -487,7 +479,7 @@ def collect_update_project_status_membership():
                 )
             # create new entries for all new ProjectUsers
             missing_projectusers = present_project_ifxusers.exclude(
-                id__in=[pu.user.pk for pu in present_projectusers]
+                pk__in=[pu.user.pk for pu in present_projectusers]
             )
             logger.debug("missing_projectusers - ifxusers in present_project_ifxusers who are not ")
             ProjectUser.objects.bulk_create([
@@ -508,10 +500,8 @@ def collect_update_project_status_membership():
     ### update status of projectUsers slated for removal ###
     # change ProjectUser status to Removed
     projectuserstatus_removed = ProjectUserStatusChoice.objects.get(name='Removed')
-    ProjectUser.objects.bulk_update([
-        ProjectUser(id=pu.id, status=projectuserstatus_removed)
-        for pu in projectusers_to_remove
-    ], ['status'])
+    projectusers_to_remove_queryset = ProjectUser.objects.filter(pk__in=[pu.pk for pu in projectusers_to_remove])
+    projectusers_to_remove_queryset.update(status=projectuserstatus_removed)
     logger.info('changing status of these ProjectUsers to "Removed":%s',
                 [{"uname":pu.user.username, "lab": pu.project.title} for pu in projectusers_to_remove])
 
