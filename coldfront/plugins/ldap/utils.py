@@ -428,6 +428,25 @@ def collect_update_project_status_membership():
         logger.info('deactivated projects and pis: %s',
             [(pi.project.title, pi.user.username) for pi in pis_to_deactivate])
 
+    ### identify projects for which PIs have changed ###
+    projects_with_changed_pis = Project.objects.filter(
+        pk__in=[g.project.pk for g in active_pi_groups]
+    ).exclude(
+        reduce(operator.or_,
+            ((
+                Q(title=group.project.title) &
+                Q(pi__username=group.pi['sAMAccountName'][0])
+                for group in active_pi_groups
+            ))
+        )
+    )
+    for project in projects_with_changed_pis:
+        matching_group = next(g for g in active_pi_groups if g.project == project)
+        logger.info("changing pi for %s from %s to %s", project.title, project.pi.username, matching_group.pi['sAMAccountName'][0])
+        project.pi = get_user_model().objects.get(username=matching_group.pi['sAMAccountName'][0])
+        project.save()
+
+
     ### identify PIs with incorrect roles and change their status ###
     projectuser_role_pi = ProjectUserRoleChoice.objects.get(name='PI')
 
@@ -441,21 +460,20 @@ def collect_update_project_status_membership():
     )
 
     if pis_mislabeled:
-        logger.info('Project PIs with incorrect labeling: %s',
+        logger.info('Project PI ProjectUsers with incorrect labeling: %s',
             [(pi.project.title, pi.user.username) for pi in pis_mislabeled])
         pis_mislabeled.update(role=projectuser_role_pi)
 
+    ### run check on Projects in active_pi_groups, activate if inactive ###
+    active_pi_group_projs_statuschange = Project.objects.filter(
+        pk__in=[g.project.pk for g in active_pi_groups]).exclude(
+        status=project_active_status
+    )
+    logger.info("projects to reactivate: %s", [p.title for p in active_pi_group_projs_statuschange])
+    active_pi_group_projs_statuschange.update(status=project_active_status)
     for group in active_pi_groups:
 
         ad_users_not_added, remove_projuser_names = group.compare_active_members_projectusers()
-        # run check on Projects in active_pi_groups, activate if inactive
-        active_pi_group_projs_statuschange = Project.objects.filter(
-            pk__in=[g.project.pk for g in active_pi_groups],
-            status__name__not='Active'
-        )
-        active_pi_group_projs_statuschange.update(status=project_active_status)
-
-
 
         # handle any AD users not in Coldfront
         if ad_users_not_added:
