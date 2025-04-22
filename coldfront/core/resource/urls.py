@@ -14,4 +14,6 @@ urlpatterns = [
          resource_views.ResourceAttributeDeleteView.as_view(), name='resource-attribute-delete'),
     path('<int:pk>/resourceallocations/edit', resource_views.ResourceAllocationsEditView.as_view(),
          name='resource-allocations-edit'),
+    path('<int:pk>/resourceattributes/edit', resource_views.ResourceAttributeEditView.as_view(),
+         name='resource-attributes-edit'),
 ]

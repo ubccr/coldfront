@@ -28,6 +28,11 @@ Resource Detail
   </div>
 
   <div class="card-body">
+    {% if request.user.is_superuser and owner != None and owner == '' %}
+      <div class="alert alert-info" role="alert">
+        <i class="fas fa-info-circle" aria-hidden="true"></i> No owner has been set for this resource! Change this by editing the Owner value in the Resource Attributes table.
+      </div>
+    {% endif %}
     {% csrf_token %}
     <div class="table-responsive">
       <table class="table table-bordered table-sm">
@@ -117,6 +122,9 @@ Resource Detail
         {% if request.user.is_superuser %}
           <a class="btn btn-success" href="{% url 'resource-attribute-add' resource.pk %}" role="button">
             <i class="fas fa-plus" aria-hidden="true"></i> Add Resource Attribute
+          </a>
+          <a class="btn btn-danger" href="{% url 'resource-attributes-edit' resource.pk %}" role="button">
+            <i class="fas fa-edit" aria-hidden="true"></i> Edit Resource Attributes
           </a>
           <a class="btn btn-danger" href="{% url 'resource-attribute-delete' resource.pk %}" role="button">
             <i class="fas fa-minus" aria-hidden="true"></i> Delete Resource Attributes
