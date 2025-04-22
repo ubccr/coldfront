@@ -60,7 +60,7 @@ from coldfront.core.project.models import (Project, ProjectUser, ProjectPermissi
                                            ProjectUserStatusChoice)
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import get_domain_url, import_from_settings
-from coldfront.core.utils.mail import send_allocation_admin_email, send_allocation_customer_email
+from coldfront.core.utils.mail import send_allocation_admin_email, send_allocation_customer_email, send_email_template, build_link
 
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
     'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True)
@@ -229,7 +229,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                 allocation_activate_user.send(
                     sender=self.__class__, allocation_user_pk=allocation_user.pk)
 
-            send_allocation_customer_email(allocation_obj, 'Allocation Activated', 'email/allocation_activated.txt', domain_url=get_domain_url(self.request))
+            # send_allocation_customer_email(allocation_obj, 'Allocation Activated', 'email/allocation_activated.txt', domain_url=get_domain_url(self.request))
             if action != 'auto-approve':
                 messages.success(request, 'Allocation Activated!')
 
@@ -247,10 +247,10 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                     allocation_remove_user.send(
                         sender=self.__class__, allocation_user_pk=allocation_user.pk)
             if allocation_obj.status.name == 'Denied':
-                send_allocation_customer_email(allocation_obj, 'Allocation Denied', 'email/allocation_denied.txt', domain_url=get_domain_url(self.request))
+                # send_allocation_customer_email(allocation_obj, 'Allocation Denied', 'email/allocation_denied.txt', domain_url=get_domain_url(self.request))
                 messages.success(request, 'Allocation Denied!')
             elif allocation_obj.status.name == 'Revoked':
-                send_allocation_customer_email(allocation_obj, 'Allocation Revoked', 'email/allocation_revoked.txt', domain_url=get_domain_url(self.request))
+                # send_allocation_customer_email(allocation_obj, 'Allocation Revoked', 'email/allocation_revoked.txt', domain_url=get_domain_url(self.request))
                 messages.success(request, 'Allocation Revoked!')
             else:
                 messages.success(request, 'Allocation updated!')
@@ -540,12 +540,12 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             AllocationUser.objects.create(allocation=allocation_obj, user=user,
                                             status=allocation_user_active_status)
 
-        send_allocation_admin_email(
-            allocation_obj,
-            'New Allocation Request',
-            'email/new_allocation_request.txt',
-            domain_url=get_domain_url(self.request)
-        )
+        # send_allocation_admin_email(
+        #     allocation_obj,
+        #     'New Allocation Request',
+        #     'email/new_allocation_request.txt',
+        #     domain_url=get_domain_url(self.request)
+        # )
         allocation_new.send(sender=self.__class__,
                             allocation_pk=allocation_obj.pk)
         return super().form_valid(form)
@@ -1083,7 +1083,7 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
                         project_user_obj.status = project_user_remove_status_choice
                         project_user_obj.save()
 
-            send_allocation_admin_email(allocation_obj, 'Allocation Renewed', 'email/allocation_renewed.txt', domain_url=get_domain_url(self.request))
+            # send_allocation_admin_email(allocation_obj, 'Allocation Renewed', 'email/allocation_renewed.txt', domain_url=get_domain_url(self.request))
             messages.success(request, 'Allocation renewed successfully')
         else:
             if not formset.is_valid():
@@ -1535,10 +1535,10 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                 allocation_change_obj.allocation.project.pi.username)
             )
 
-            send_allocation_customer_email(allocation_change_obj.allocation,
-                                           'Allocation Change Denied',
-                                           'email/allocation_change_denied.txt',
-                                           domain_url=get_domain_url(self.request))
+            # send_allocation_customer_email(allocation_change_obj.allocation,
+            #                                'Allocation Change Denied',
+            #                                'email/allocation_change_denied.txt',
+            #                                domain_url=get_domain_url(self.request))
 
             return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
 
@@ -1622,10 +1622,10 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                 allocation_pk=allocation_change_obj.allocation.pk,
                 allocation_change_pk=allocation_change_obj.pk,)
 
-            send_allocation_customer_email(allocation_change_obj.allocation,
-                                           'Allocation Change Approved',
-                                           'email/allocation_change_approved.txt',
-                                           domain_url=get_domain_url(self.request))
+            # send_allocation_customer_email(allocation_change_obj.allocation,
+            #                                'Allocation Change Approved',
+            #                                'email/allocation_change_approved.txt',
+            #                                domain_url=get_domain_url(self.request))
 
         return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
 
@@ -1809,12 +1809,27 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 )
 
         messages.success(request, 'Allocation change request successfully submitted.')
+        
+        pi = allocation_obj.project.pi.get_full_name()
+        resource = allocation_obj.get_parent_resource
+        
+        url_path=reverse('allocation-change-list')
+        url = build_link(url_path, domain_url=get_domain_url(self.request))
+        
+        EMAIL_SENDER = import_from_settings("EMAIL_SENDER")
+        EMAIL_USER_SUPPORT = import_from_settings("EMAIL_USER_SUPPORT")
+        
+        
+        
+        send_email_template('New Allocation Change Request', 'email/new_allocation_change_request.txt', 
+                            {'pi': pi, 'resource': resource, 'url': url}, 
+                            EMAIL_SENDER, [EMAIL_USER_SUPPORT])
 
-        send_allocation_admin_email(allocation_obj,
-                                    'New Allocation Change Request',
-                                    'email/new_allocation_change_request.txt',
-                                    url_path=reverse('allocation-change-list'),
-                                    domain_url=get_domain_url(self.request))
+        # send_allocation_admin_email(allocation_obj,
+        #                             'New Allocation Change Request',
+        #                             'email/new_allocation_change_request.txt',
+        #                             url_path=reverse('allocation-change-list'),
+        #                             domain_url=get_domain_url(self.request))
         return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
 

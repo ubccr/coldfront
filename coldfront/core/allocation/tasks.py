@@ -101,7 +101,11 @@ def send_expiry_emails():
 
                             if allocation.project.title not in projectdict:
                                 projectdict[allocation.project.title] = (project_url, allocation.project.pi.username,)
-                            
+                                
+        #WASHU RIS OVERIDE
+        email_receiver_list = ["ris-appeng@gowustl.onmicrosoft.com"]
+        #END WASHU RIS OVERIDE
+                                    
         if email_receiver_list:
 
             send_email_template(f'Your access to {CENTER_NAME}\'s resources is expiring soon',
@@ -182,28 +186,28 @@ def send_expiry_emails():
                             
         if email_receiver_list:
 
-            send_email_template('Your access to resource(s) have expired',
-                        'email/allocation_expired.txt',
-                        template_context,
-                        EMAIL_SENDER,
-                        email_receiver_list
-                        ) 
+            # send_email_template('Your access to resource(s) have expired',
+            #             'email/allocation_expired.txt',
+            #             template_context,
+            #             EMAIL_SENDER,
+            #             email_receiver_list
+            #             ) 
 
             logger.debug(f'Allocation(s) expired email sent to user {user}.')
 
-    if EMAIL_ADMINS_ON_ALLOCATION_EXPIRE:
+    # if EMAIL_ADMINS_ON_ALLOCATION_EXPIRE:
 
-        if admin_projectdict:
+        # if admin_projectdict:
 
-            admin_template_context = {
-                'project_dict': admin_projectdict,
-                'allocation_dict': admin_allocationdict,
-                'signature': EMAIL_SIGNATURE
-            }  
+            # admin_template_context = {
+            #     'project_dict': admin_projectdict,
+            #     'allocation_dict': admin_allocationdict,
+            #     'signature': EMAIL_SIGNATURE
+            # }  
             
-            send_email_template('Allocation(s) have expired',
-                                'email/admin_allocation_expired.txt',
-                                admin_template_context,
-                                EMAIL_SENDER,
-                                [EMAIL_ADMIN_LIST,]
-                                )
+            # send_email_template('Allocation(s) have expired',
+            #                     'email/admin_allocation_expired.txt',
+            #                     admin_template_context,
+            #                     EMAIL_SENDER,
+            #                     [EMAIL_ADMIN_LIST,]
+            #                     )

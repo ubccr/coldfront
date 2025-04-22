@@ -36,13 +36,6 @@ def allocation_email_recipients(allocation_obj):
 def send_email(subject, body, sender, receiver_list, cc=[]):
     """Helper function for sending emails"""
 
-    # TEMPORARY: only sends emails to app-eng while we get a picture of the email system
-    body = f"Original Recipients: {receiver_list}\n\nCC'dL {cc}\n\n{body}"
-
-    receiver_list = ["ris-appeng@gowustl.onmicrosoft.com"]
-    cc = []
-    # END TEMPORARY
-
     if not EMAIL_ENABLED:
         return
 
@@ -117,7 +110,6 @@ def send_admin_email_template(subject, template_name, template_context):
         ],
     )
 
-
 def send_allocation_admin_email(
     allocation_obj, subject, template_name, url_path="", domain_url=""
 ):
@@ -175,7 +167,6 @@ def send_acl_reset_email(task_object):
         "storage_name"
     )
     recipients = [task_object.args[0]]
-    recipients.extend(allocation_email_recipients(task_object.args[1]))
     if task_object.success:
         send_email_template(
             f"Sucessful ACL Reset for Allocation {allocation_name}",

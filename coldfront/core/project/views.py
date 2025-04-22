@@ -1020,30 +1020,30 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         project_review_form = ProjectReviewForm(project_obj.pk, request.POST)
 
-        project_review_status_choice = ProjectReviewStatusChoice.objects.get(
-            name='Pending')
+        # project_review_status_choice = ProjectReviewStatusChoice.objects.get(
+        #     name='Pending')
 
         if project_review_form.is_valid():
-            form_data = project_review_form.cleaned_data
-            project_review_obj = ProjectReview.objects.create(
-                project=project_obj,
-                reason_for_not_updating_project=form_data.get('reason'),
-                status=project_review_status_choice)
+            # form_data = project_review_form.cleaned_data
+            # project_review_obj = ProjectReview.objects.create(
+            #     project=project_obj,
+            #     reason_for_not_updating_project=form_data.get('reason'),
+            #     status=project_review_status_choice)
 
             project_obj.force_review = False
             project_obj.save()
 
-            domain_url = get_domain_url(self.request)
-            url = '{}{}'.format(domain_url, reverse('project-review-list'))
+            # domain_url = get_domain_url(self.request)
+            # url = '{}{}'.format(domain_url, reverse('project-review-list'))
 
-            if EMAIL_ENABLED:
-                send_email_template(
-                    'New project review has been submitted',
-                    'email/new_project_review.txt',
-                    {'url': url},
-                    EMAIL_SENDER,
-                    [EMAIL_DIRECTOR_EMAIL_ADDRESS, ]
-                )
+            # if EMAIL_ENABLED:
+            #     send_email_template(
+            #         'New project review has been submitted',
+            #         'email/new_project_review.txt',
+            #         {'url': url},
+            #         EMAIL_SENDER,
+            #         [EMAIL_DIRECTOR_EMAIL_ADDRESS, ]
+            #     )
 
             messages.success(request, 'Project reviewed successfully.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
@@ -1140,30 +1140,30 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         return form_class(self.kwargs.get('pk'), **self.get_form_kwargs())
 
     def form_valid(self, form):
-        pk = self.kwargs.get('pk')
-        project_review_obj = get_object_or_404(ProjectReview, pk=pk)
-        form_data = form.cleaned_data
+        # pk = self.kwargs.get('pk')
+        # project_review_obj = get_object_or_404(ProjectReview, pk=pk)
+        # form_data = form.cleaned_data
 
-        receiver_list = [project_review_obj.project.pi.email]
-        cc = form_data.get('cc').strip()
-        if cc:
-            cc = cc.split(',')
-        else:
-            cc = []
+        # receiver_list = [project_review_obj.project.pi.email]
+        # cc = form_data.get('cc').strip()
+        # if cc:
+        #     cc = cc.split(',')
+        # else:
+        #     cc = []
 
-        send_email(
-            'Request for more information',
-            form_data.get('email_body'),
-            EMAIL_DIRECTOR_EMAIL_ADDRESS,
-            receiver_list,
-            cc
-        )
+        # send_email(
+        #     'Request for more information',
+        #     form_data.get('email_body'),
+        #     EMAIL_DIRECTOR_EMAIL_ADDRESS,
+        #     receiver_list,
+        #     cc
+        # )
 
-        messages.success(self.request, 'Email sent to {} {} ({})'.format(
-            project_review_obj.project.pi.first_name,
-            project_review_obj.project.pi.last_name,
-            project_review_obj.project.pi.username)
-        )
+        # messages.success(self.request, 'Email sent to {} {} ({})'.format(
+        #     project_review_obj.project.pi.first_name,
+        #     project_review_obj.project.pi.last_name,
+        #     project_review_obj.project.pi.username)
+        # )
         return super().form_valid(form)
 
     def get_success_url(self):

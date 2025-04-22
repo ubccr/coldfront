@@ -203,14 +203,14 @@ class UserUpgradeAccount(LoginRequiredMixin, UserPassesTestMixin, View):
         return super().dispatch(request, *args, **kwargs)
 
     def post(self, request):
-        if EMAIL_ENABLED:
-            send_email_template(
-                'Upgrade Account Request',
-                'email/upgrade_account_request.txt',
-                {'user': request.user},
-                request.user.email,
-                [EMAIL_TICKET_SYSTEM_ADDRESS]
-            )
+        # if EMAIL_ENABLED:
+        #     send_email_template(
+        #         'Upgrade Account Request',
+        #         'email/upgrade_account_request.txt',
+        #         {'user': request.user},
+        #         request.user.email,
+        #         [EMAIL_TICKET_SYSTEM_ADDRESS]
+        #     )
 
         messages.success(request, 'Your request has been sent')
         return HttpResponseRedirect(reverse('user-profile'))
