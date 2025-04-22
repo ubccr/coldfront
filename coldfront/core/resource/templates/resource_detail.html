@@ -28,7 +28,7 @@ Resource Detail
   </div>
 
   <div class="card-body">
-    {% if request.user.is_superuser and not owner_set%}
+    {% if request.user.is_superuser and owner != None and owner == '' %}
       <div class="alert alert-info" role="alert">
         <i class="fas fa-info-circle" aria-hidden="true"></i> No owner has been set for this resource! Change this by editing the Owner value in the Resource Attributes table.
       </div>

@@ -180,12 +180,6 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             except ObjectDoesNotExist:
                 owner = owner
         context['owner'] = owner
-        if 'Compute Node' in resource_obj.resource_type.name:
-            owner_attribute_list = list(filter(lambda attribute: attribute.resource_attribute_type.name.lower() in ['owner'], attributes))
-            owner_attribute_value = ''
-            if len(owner_attribute_list) == 1:
-                owner_attribute_value = owner_attribute_list[0].value
-            context['owner_set'] = bool(owner_attribute_value)
 
         context['allocations'] = allocations
         context['resource'] = resource_obj
