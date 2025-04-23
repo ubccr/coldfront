@@ -36,13 +36,14 @@ class Command(BaseCommand):
         allocations = [
             a for a in
             Allocation.objects.filter(
-                resources__name__in=searched_resources, status__name='Active')
-            if not a.path
+                resources__resource_type__name='Storage', status__name='Active')
+            if not a.path and any(v in a.resources.first().name for v in searched_resources)
         ]
         for allocation in allocations:
             lab = allocation.project.title
             resource = allocation.get_parent_resource
             volume = resource.name.split('/')[0]
+            print(allocation.pk, lab, volume)
             matched_paths = [
                 entry for entry in data
                 if entry['group_name'].lower() == lab
