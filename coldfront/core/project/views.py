@@ -192,17 +192,6 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         allocations = self.object.allocation_set.exclude(status__name='Merged').prefetch_related('resources').order_by('-pk')
         allocation_history_records = self.return_status_change_records(allocations)
 
-        if not self.request.user.is_superuser and not self.request.user.has_perm(
-            'allocation.can_view_all_allocations'
-        ):
-            if self.object.status.name in ['Active', 'New']:
-                allocations = allocations.filter(
-                    Q(project__projectuser__user=self.request.user)
-                )
-                # if not self.object.has_perm(self.request.user, ProjectPermission.DATA_MANAGER):
-                #     allocations = allocations.filter(
-                #         Q(allocationuser__user=self.request.user)
-                #     )
         allocations = allocations.filter(
             status__name__in=['Active', 'Paid', 'Ready for Review','Payment Requested']
         ).distinct().order_by('-end_date')
