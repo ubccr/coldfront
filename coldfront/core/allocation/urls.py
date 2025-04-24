@@ -1,6 +1,8 @@
 from django.urls import path
 
 import coldfront.core.allocation.views as allocation_views
+from coldfront.config.core import ALLOCATION_EULA_ENABLE
+
 
 urlpatterns = [
     path('', allocation_views.AllocationListView.as_view(), name='allocation-list'),
@@ -45,3 +47,7 @@ urlpatterns = [
     path('allocation-account-list/', allocation_views.AllocationAccountListView.as_view(),
          name='allocation-account-list'),
 ]
+
+if ALLOCATION_EULA_ENABLE:
+     urlpatterns.append(path('<int:pk>/review-eula', allocation_views.AllocationEULAView.as_view(),
+         name='allocation-review-eula'))

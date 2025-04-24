@@ -1,0 +1,6 @@
+Dear {{center_name}} user,
+
+You have been added to the allocation for {{resource}}. To enable access to this resource, agree to the EULA at {{url}}.
+
+Thank you,
+{{signature}}

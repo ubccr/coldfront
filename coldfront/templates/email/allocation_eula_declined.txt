@@ -1,0 +1,6 @@
+Dear {{allocation_user}},
+
+This is a notice that you have declined the EULA for the resource {{resource}}. As a result, this resource will not be available to you.
+
+Thank you,
+{{signature}}

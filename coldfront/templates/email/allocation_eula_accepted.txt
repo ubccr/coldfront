@@ -1,0 +1,12 @@
+Dear {{allocation_user}},
+
+This is a confirmation that you have agreed to the EULA for the resource {{resource}}. The EULA is available for review at {{url}}.
+
+{% if eula %}
+The EULA is included below for your records:
+
+{{eula}}
+
+{% endif %}
+Thank you,
+{{signature}}
