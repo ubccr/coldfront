@@ -89,14 +89,28 @@ def send_expiring_mails():
             is_active=True
         ).distinct()
 
-        # Build the recipient list (approvers + PI)
+        # Build the recipient list (approvers + PI + project manager(s))
         recipient_emails = set()
+
+        # Add approvers
         for approver in approvers:
             if approver.email:
                 recipient_emails.add(approver.email)
 
+        # Add PI
         if allocation.project.pi and allocation.project.pi.email:
             recipient_emails.add(allocation.project.pi.email)
+
+        # Add project manager(s)
+        manager_users = allocation.project.projectuser_set.filter(
+            role__name='Manager',
+            status__name__in=['Active', 'New'],
+            user__is_active=True
+        ).select_related('user')
+
+        for project_user in manager_users:
+            if project_user.user.email:
+                recipient_emails.add(project_user.user.email)
 
         for email in recipient_emails:
             if email not in recipient_to_allocations:
@@ -175,15 +189,28 @@ def send_expired_mails():
             is_active=True
         ).distinct()
 
-        # Collect all intended recipients (approvers + PI)
+        # Build the recipient list (approvers + PI + project manager(s))
         recipient_emails = set()
 
+        # Add approvers
         for approver in approvers:
             if approver.email:
                 recipient_emails.add(approver.email)
 
+        # Add PI
         if allocation.project.pi and allocation.project.pi.email:
             recipient_emails.add(allocation.project.pi.email)
+
+        # Add project manager(s)
+        manager_users = allocation.project.projectuser_set.filter(
+            role__name='Manager',
+            status__name__in=['Active', 'New'],
+            user__is_active=True
+        ).select_related('user')
+
+        for project_user in manager_users:
+            if project_user.user.email:
+                recipient_emails.add(project_user.user.email)
 
         for email in recipient_emails:
             if email not in recipient_to_allocations:

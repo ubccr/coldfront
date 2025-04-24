@@ -1,3 +1,4 @@
+from coldfront.core.project.models import ProjectUserRoleChoice, ProjectUser, ProjectUserStatusChoice
 from django.test import TestCase
 from django.utils import timezone
 from unittest.mock import patch
@@ -143,6 +144,38 @@ class SendExpiringMailsTest(TestCase):
         self.assertIn(self.approver_mail, recipients)
         self.assertNotIn(self.other_approver_mail, recipients)
 
+    @patch('coldfront.core.allocation.tasks.send_email_template')
+    @patch('coldfront.core.allocation.tasks.EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS', new=[3])
+    def test_project_manager_receives_email(self, mock_send_email):
+        # Create a project manager
+        manager_email = 'manager@example.com'
+        manager_user = UserFactory(username='manager1', email=manager_email)
+
+        # Assign 'Manager' role and 'Active' status to the user
+        manager_role = ProjectUserRoleChoice.objects.create(name='Manager')
+        active_status = ProjectUserStatusChoice.objects.create(name='Active')
+
+        ProjectUser.objects.create(
+            user=manager_user,
+            project=self.project,
+            role=manager_role,
+            status=active_status
+        )
+
+        # Send notification emails
+        send_expiring_mails()
+
+        # Extract recipient emails
+        recipients = []
+        for call in mock_send_email.call_args_list:
+            args, kwargs = call
+            recipients += args[-1]  # recipient email(s)
+
+        self.assertIn(manager_email, recipients)
+        self.assertIn(self.approver_mail, recipients)
+        self.assertIn(self.pi.email, recipients)
+
+
 class SendExpiredMailsTest(TestCase):
     def setUp(self):
         self.today = timezone.now().date()
@@ -264,3 +297,34 @@ class SendExpiredMailsTest(TestCase):
 
         subjects = [call.args[0] for call in mock_send_email.call_args_list]
         self.assertIn('Allocation(s) have expired', subjects)
+
+    @patch('coldfront.core.allocation.tasks.send_email_template')
+    @patch('coldfront.core.allocation.tasks.EMAIL_ADMINS_ON_ALLOCATION_EXPIRE', new=True)
+    def test_project_manager_receives_email(self, mock_send_email):
+        # Create a project manager
+        manager_email = 'manager@example.com'
+        manager_user = UserFactory(username='manager1', email=manager_email)
+
+        # Assign 'Manager' role and 'Active' status to the user
+        manager_role = ProjectUserRoleChoice.objects.create(name='Manager')
+        active_status = ProjectUserStatusChoice.objects.create(name='Active')
+
+        ProjectUser.objects.create(
+            user=manager_user,
+            project=self.project,
+            role=manager_role,
+            status=active_status
+        )
+
+        # Send notification emails
+        send_expired_mails()
+
+        # Extract recipient emails
+        recipients = []
+        for call in mock_send_email.call_args_list:
+            args, kwargs = call
+            recipients += args[-1]  # recipient email(s)
+
+        self.assertIn(manager_email, recipients)
+        self.assertIn(self.approver_mail, recipients)
+        self.assertIn(self.pi.email, recipients)
