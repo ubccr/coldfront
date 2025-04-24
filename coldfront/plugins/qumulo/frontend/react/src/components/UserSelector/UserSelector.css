@@ -13,7 +13,7 @@ li.multi-select-lookup > button.remove-list-item-button {
 }
 
 li.multi-select-lookup.selected {
-    background: blue;
+    background: #007bff;
     color: white
 }
 
@@ -21,4 +21,21 @@ li.multi-select-lookup.selected > button.remove-list-item-button {
     visibility: visible;
     background-color: white;
     color: blue;
+}
+
+@keyframes shake {
+    0% { transform: translate(1px, 0px) rotate(0deg); }
+    20% { transform: translate(3px, 0px) rotate(0deg); }
+    40% { transform: translate(1px, 0px) rotate(0deg); }
+    60% { transform: translate(-1px, 0px) rotate(0deg); }
+    80% { transform: translate(-3px, 0px) rotate(0deg); }
+    100% { transform: translate(-1px, 0px) rotate(0deg); }
+}
+
+li.multi-select-lookup > p.invalid-user {
+    display: flex;
+    justify-content: flex-end;
+    animation: shake .25s;
+
+    animation-iteration-count: 2;
 }

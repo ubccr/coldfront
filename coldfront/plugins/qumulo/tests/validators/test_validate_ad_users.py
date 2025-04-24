@@ -14,7 +14,9 @@ class TestValidateAdUsers(TestCase):
         self.mock_active_directory = self.patcher.start()
 
         self.mock_get_user = MagicMock()
+        self.mock_get_members = MagicMock()
         self.mock_active_directory.return_value.get_user = self.mock_get_user
+        self.mock_active_directory.return_value.get_members = self.mock_get_members
 
         return super().setUp()
 
@@ -30,11 +32,13 @@ class TestValidateAdUsers(TestCase):
             self.fail("Failed to validate empty list")
 
     def test_validates_a_single_user(self):
-        self.mock_get_user.return_value = {
-            "dn": "user_dn",
-            "attributes": {"other_attr": "value"},
-        }
         user = "userkey"
+        self.mock_get_members.return_value = [
+            {
+                "dn": "user_dn",
+                "attributes": {"other_attr": "value", "sAMAccountName": user},
+            }
+        ]
 
         try:
             validate_ad_users([user])
@@ -47,7 +51,7 @@ class TestValidateAdUsers(TestCase):
             self.fail("Failed to validate a single user")
 
     def test_fails_for_a_user(self):
-        self.mock_get_user.side_effect = ValueError("foo")
+        self.mock_get_members.return_value = []
         user = "userkey"
 
         with self.assertRaises(ValidationError) as context_manager:
@@ -68,33 +72,35 @@ class TestValidateAdUsers(TestCase):
         self.assertEquals(context_manager.exception.code, "invalid")
 
     def test_validates_multiple_users(self):
-        self.mock_get_user.return_value = {
-            "dn": "user_dn",
-            "attributes": {"other_attr": "value"},
-        }
         users = ["userkey", "userkey2", "userkey3"]
+
+        self.mock_get_members.return_value = list(
+            map(
+                lambda user: {
+                    "dn": "user_dn",
+                    "attributes": {"other_attr": "value", "sAMAccountName": user},
+                },
+                users,
+            )
+        )
 
         try:
             validate_ad_users(users)
         except ValidationError:
             self.fail("Failed to validate multiple users")
-        calls = list(map(lambda user: call(user), users))
-        self.mock_get_user.assert_has_calls(calls)
 
     def test_notify_multiple_failed_users(self):
-        def mock_side_effect(user):
-            if user == "userkey2":
-                return {
-                    "dn": "user_dn",
-                    "attributes": {"other_attr": "value"},
-                }
-            raise ValueError("Invalid user:".format(user))
-
-        self.mock_get_user.side_effect = mock_side_effect
         users = ["userkey", "userkey2", "userkey3"]
+        self.mock_get_members.return_value = [
+            {
+                "dn": "user_dn",
+                "attributes": {"other_attr": "value", "sAMAccountName": users[1]},
+            }
+        ]
 
         with self.assertRaises(ValidationError) as context_manager:
             validate_ad_users(users)
 
         self.assertIn(users[0], context_manager.exception)
+        self.assertNotIn(users[1], context_manager.exception)
         self.assertIn(users[2], context_manager.exception)

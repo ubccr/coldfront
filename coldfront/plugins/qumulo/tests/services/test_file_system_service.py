@@ -25,7 +25,7 @@ class TestFileSystemService(TestCase):
 
         self.mock_file_system_response_unsuccessful = {}
 
-        self.expected_result_unsuccessful =  {
+        self.expected_result_unsuccessful = {
             "total_size": None,
             "free_size": None,
             "snapshot_size": None,

@@ -13,8 +13,6 @@ from coldfront.core.user.models import UserProfile
 from coldfront.plugins.qumulo.utils.aces_manager import AcesManager
 from coldfront.plugins.qumulo.utils.qumulo_api import QumuloAPI
 
-from ldap3.core.exceptions import LDAPException
-
 from pathlib import PurePath
 
 import copy

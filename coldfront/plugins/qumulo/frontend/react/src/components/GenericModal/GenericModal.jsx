@@ -1,12 +1,8 @@
 import { useEffect } from "react";
 
-function GenericModal({ title, text, onAction, actionTest, onClose, show }) {
+function GenericModal({ title, text, onAction, actionTest, onClose }) {
   return (
-    <div
-      className="modal"
-      style={{ display: show ? "block" : "none" }}
-      role="dialog"
-    >
+    <div className="modal" style={{ display: "block" }} role="dialog">
       <div className="modal-dialog" role="document">
         <div className="modal-content">
           <div className="modal-header">

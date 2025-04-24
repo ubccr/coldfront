@@ -27,7 +27,6 @@ from coldfront.plugins.qumulo.tasks import (
     ingest_quotas_with_daily_usage,
 )
 from coldfront.plugins.qumulo.utils.acl_allocations import AclAllocations
-from coldfront.plugins.qumulo.views.allocation_view import AllocationView
 from coldfront.plugins.qumulo import tasks as qumulo_api
 
 from coldfront.core.allocation.models import (
@@ -48,6 +47,7 @@ from ldap3.core.exceptions import LDAPInvalidDnError
 
 import datetime
 import os
+from copy import deepcopy
 
 
 @patch("coldfront.plugins.qumulo.tasks.QumuloAPI")
@@ -282,7 +282,6 @@ class TestStorageAllocationStatuses(TestCase):
 
 @patch("coldfront.plugins.qumulo.services.allocation_service.async_task")
 @patch("coldfront.plugins.qumulo.services.allocation_service.ActiveDirectoryAPI")
-@patch("coldfront.plugins.qumulo.tasks.async_task")
 @patch("coldfront.plugins.qumulo.tasks.ActiveDirectoryAPI")
 class TestAddMembersToADGroup(TestCase):
     def setUp(self) -> None:
@@ -316,32 +315,9 @@ class TestAddMembersToADGroup(TestCase):
 
         return super().setUp()
 
-    def test_function_ends_on_empty_list(
+    def test_checks_single_user(
         self,
         mock_active_directory_api: MagicMock,
-        mock_async_task: MagicMock,
-        mock_allocation_view_AD: MagicMock,
-        mock_allocation_view_async_task: MagicMock,
-    ):
-        wustlkeys = []
-        self.form_data["ro_users"] = wustlkeys
-
-        allocation = self.create_allocation(user=self.user, form_data=self.form_data)[
-            "allocation"
-        ]
-        acl_allocation = AclAllocations.get_access_allocation(
-            storage_allocation=allocation, resource_name="ro"
-        )
-
-        try:
-            addMembersToADGroup([], acl_allocation, datetime.datetime.now())
-        except Exception as e:
-            self.fail("Function failed with exception: " + e)
-
-    def test_checks_first_user_in_list(
-        self,
-        mock_active_directory_api: MagicMock,
-        mock_async_task: MagicMock,
         mock_allocation_view_AD: MagicMock,
         mock_allocation_view_async_task: MagicMock,
     ):
@@ -360,69 +336,16 @@ class TestAddMembersToADGroup(TestCase):
 
         addMembersToADGroup(wustlkeys, acl_allocation, datetime.datetime.now())
 
-        active_directory_instance.get_member.assert_called_once_with(wustlkeys[0])
-
-    def test_adds_new_task_with_sliced_list(
-        self,
-        mock_active_directory_api: MagicMock,
-        mock_async_task: MagicMock,
-        mock_allocation_view_AD: MagicMock,
-        mock_allocation_view_async_task: MagicMock,
-    ):
-        wustlkeys = ["foo", "bar"]
-        self.form_data["rw_users"] = wustlkeys
-
-        mock_user_response = {
-            "dn": "user_dn",
-            "attributes": {
-                "objectClass": ["top", "person", "organizationalPerson", "user"]
-            },
-        }
-        active_directory_instance = MagicMock()
-        active_directory_instance.get_member.return_value = mock_user_response
-        active_directory_instance.add_ad_user
-        mock_active_directory_api.return_value = active_directory_instance
-
-        allocation = self.create_allocation(user=self.user, form_data=self.form_data)[
-            "allocation"
-        ]
-        acl_allocation = AclAllocations.get_access_allocation(
-            storage_allocation=allocation, resource_name="rw"
-        )
-
-        datetime_now = datetime.datetime.now()
-        addMembersToADGroup(wustlkeys, acl_allocation, datetime_now)
-
-        mock_async_task.assert_called_once()
-        self.assertTupleEqual(
-            mock_async_task.call_args[0],
-            (
-                addMembersToADGroup,
-                ["bar"],
-                acl_allocation,
-                datetime_now,
-                [],
-                [
-                    {
-                        "wustlkey": wustlkeys[0],
-                        "dn": mock_user_response["dn"],
-                        "is_group": False,
-                    }
-                ],
-            ),
-        )
+        active_directory_instance.get_members.assert_called_once_with(wustlkeys)
 
     def test_appends_bad_user_list_on_invalid_user(
         self,
         mock_active_directory_api: MagicMock,
-        mock_async_task: MagicMock,
         mock_allocation_view_AD: MagicMock,
         mock_allocation_view_async_task: MagicMock,
     ):
         active_directory_instance = MagicMock()
-        active_directory_instance.get_member.side_effect = ValueError(
-            "Invalid wustlkey"
-        )
+        active_directory_instance.get_members.return_value = []
         mock_active_directory_api.return_value = active_directory_instance
 
         wustlkeys = ["foo", "bar"]
@@ -436,29 +359,37 @@ class TestAddMembersToADGroup(TestCase):
         )
 
         datetime_now = datetime.datetime.now()
-        addMembersToADGroup(wustlkeys, acl_allocation, datetime_now)
 
-        mock_async_task.assert_called_once()
-        self.assertTupleEqual(
-            mock_async_task.call_args[0],
-            (addMembersToADGroup, ["bar"], acl_allocation, datetime_now, ["foo"], []),
-        )
+        with patch(
+            "coldfront.plugins.qumulo.tasks.__add_members_and_handle_errors"
+        ) as mock_add_members_and_handle_errors:
+            addMembersToADGroup(wustlkeys, acl_allocation, datetime_now)
+
+            mock_add_members_and_handle_errors.assert_called_once_with(
+                wustlkeys,
+                acl_allocation,
+                datetime_now,
+                [],
+                ["foo", "bar"],
+            )
 
     def test_appends_good_user_list_on_valid_user(
         self,
         mock_active_directory_api: MagicMock,
-        mock_async_task: MagicMock,
         mock_allocation_view_AD: MagicMock,
         mock_allocation_view_async_task: MagicMock,
     ):
-        mock_user_response = {
-            "dn": "user_dn",
-            "attributes": {
-                "objectClass": ["top", "person", "organizationalPerson", "user"]
-            },
-        }
+        mock_user_response = [
+            {
+                "dn": "user_dn",
+                "attributes": {
+                    "objectClass": ["top", "person", "organizationalPerson", "user"],
+                    "sAMAccountName": "foo",
+                },
+            }
+        ]
         active_directory_instance = MagicMock()
-        active_directory_instance.get_member.return_value = mock_user_response
+        active_directory_instance.get_members.return_value = mock_user_response
         mock_active_directory_api.return_value = active_directory_instance
 
         wustlkeys = ["foo", "bar"]
@@ -472,43 +403,46 @@ class TestAddMembersToADGroup(TestCase):
         )
 
         datetime_now = datetime.datetime.now()
-        addMembersToADGroup(wustlkeys, acl_allocation, datetime_now)
 
-        mock_async_task.assert_called_once()
-        self.assertTupleEqual(
-            mock_async_task.call_args[0],
-            (
-                addMembersToADGroup,
-                ["bar"],
+        with patch(
+            "coldfront.plugins.qumulo.tasks.__add_members_and_handle_errors"
+        ) as mock_add_members_and_handle_errors:
+            addMembersToADGroup(wustlkeys, acl_allocation, datetime_now)
+
+            mock_add_members_and_handle_errors.assert_called_once_with(
+                ["foo", "bar"],
                 acl_allocation,
                 datetime_now,
-                [],
                 [
                     {
                         "wustlkey": wustlkeys[0],
-                        "dn": mock_user_response["dn"],
+                        "dn": mock_user_response[0]["dn"],
                         "is_group": False,
                     }
                 ],
-            ),
-        )
+                ["bar"],
+            )
 
     def test_appends_good_group_with_is_group(
         self,
         mock_active_directory_api: MagicMock,
-        mock_async_task: MagicMock,
         mock_allocation_view_AD: MagicMock,
         mock_allocation_view_async_task: MagicMock,
     ):
-        mock_user_response = {
-            "dn": "user_dn",
-            "attributes": {"objectClass": ["top", "group"]},
-        }
+        mock_user_response = [
+            {
+                "dn": "user_dn",
+                "attributes": {
+                    "objectClass": ["top", "group"],
+                    "sAMAccountName": "foo",
+                },
+            },
+        ]
         active_directory_instance = MagicMock()
-        active_directory_instance.get_member.return_value = mock_user_response
+        active_directory_instance.get_members.return_value = mock_user_response
         mock_active_directory_api.return_value = active_directory_instance
 
-        wustlkeys = ["foo", "bar"]
+        wustlkeys = ["foo"]
         self.form_data["rw_users"] = wustlkeys
 
         allocation = self.create_allocation(user=self.user, form_data=self.form_data)[
@@ -519,26 +453,25 @@ class TestAddMembersToADGroup(TestCase):
         )
 
         datetime_now = datetime.datetime.now()
-        addMembersToADGroup(wustlkeys, acl_allocation, datetime_now)
 
-        mock_async_task.assert_called_once()
-        self.assertTupleEqual(
-            mock_async_task.call_args[0],
-            (
-                addMembersToADGroup,
-                ["bar"],
+        with patch(
+            "coldfront.plugins.qumulo.tasks.__add_members_and_handle_errors"
+        ) as mock_add_members_and_handle_errors:
+            addMembersToADGroup(wustlkeys, acl_allocation, datetime_now)
+
+            mock_add_members_and_handle_errors.assert_called_once_with(
+                wustlkeys,
                 acl_allocation,
                 datetime_now,
-                [],
                 [
                     {
                         "wustlkey": wustlkeys[0],
-                        "dn": mock_user_response["dn"],
+                        "dn": mock_user_response[0]["dn"],
                         "is_group": True,
                     }
                 ],
+                [],
             ),
-        )
 
     @patch("coldfront.plugins.qumulo.tasks.send_email_template")
     def test_sends_notifications_on_bad_users(
@@ -547,7 +480,6 @@ class TestAddMembersToADGroup(TestCase):
         mock_active_directory_api: MagicMock,
         mock_allocation_view_AD: MagicMock,
         mock_allocation_view_async_task: MagicMock,
-        mock_async_task,
     ):
         wustlkeys = ["foo", "bar"]
         self.form_data["rw_users"] = wustlkeys
@@ -559,26 +491,31 @@ class TestAddMembersToADGroup(TestCase):
             storage_allocation=allocation, resource_name="rw"
         )
 
-        addMembersToADGroup([], acl_allocation, datetime.datetime.now(), wustlkeys)
+        mock_active_directory_api.return_value.get_members.return_value = []
+        addMembersToADGroup(wustlkeys, acl_allocation, datetime.datetime.now())
 
         mock_send_email_template.assert_called_once()
 
-    def __get_member_mock(self, account_name: str, good_users: list[str]) -> dict:
+    def __get_members_mock(self, wustlkeys: str, good_keys: list[str]) -> list[dict]:
         mock_member_response = {
             "dn": "user_dn",
             "attributes": {
                 "objectClass": ["top", "person", "organizationalPerson", "user"]
             },
         }
-        if account_name in good_users:
-            return mock_member_response
-        else:
-            raise ValueError("Invalid wustlkey")
+
+        return_list = []
+
+        for key in good_keys:
+            member = deepcopy(mock_member_response)
+            member["attributes"]["sAMAccountName"] = key
+            return_list.append(member)
+
+        return return_list
 
     def test_does_not_add_bad_users_to_group(
         self,
         mock_active_directory_api: MagicMock,
-        mock_async_task: MagicMock,
         mock_allocation_view_AD: MagicMock,
         mock_allocation_view_async_task: MagicMock,
     ):
@@ -603,18 +540,16 @@ class TestAddMembersToADGroup(TestCase):
     def test_ads_good_users_to_allocation(
         self,
         mock_active_directory_api: MagicMock,
-        mock_async_task: MagicMock,
         mock_allocation_service_AD: MagicMock,
         mock_allocation_service_async_task: MagicMock,
     ):
-        mock_async_task.side_effect = lambda *args: args[0](*args[1:])
 
         wustlkeys = ["foo", "bar", "baz", "bah"]
         good_keys = wustlkeys[0:2]
 
         active_directory_instance = MagicMock()
-        active_directory_instance.get_member.side_effect = (
-            lambda username: self.__get_member_mock(username, good_keys)
+        active_directory_instance.get_members.side_effect = (
+            lambda wustlkeys: self.__get_members_mock(wustlkeys, good_keys)
         )
         mock_active_directory_api.return_value = active_directory_instance
 
@@ -628,7 +563,7 @@ class TestAddMembersToADGroup(TestCase):
             storage_allocation=base_allocation, resource_name="rw"
         )
 
-        addMembersToADGroup(wustlkeys, acl_allocation, datetime.datetime.now(), [])
+        addMembersToADGroup(wustlkeys, acl_allocation, datetime.datetime.now())
         allocation_users = list(
             map(
                 lambda allocation_user: allocation_user.user.username,
@@ -640,21 +575,24 @@ class TestAddMembersToADGroup(TestCase):
     def test_ads_good_group_user_with_group_flag(
         self,
         mock_active_directory_api: MagicMock,
-        mock_async_task: MagicMock,
         mock_allocation_view_AD: MagicMock,
         mock_allocation_view_async_task: MagicMock,
     ):
-        mock_async_task.side_effect = lambda *args: args[0](*args[1:])
 
         wustlkeys = ["foo"]
         good_keys = wustlkeys[0:1]
 
         active_directory_instance = MagicMock()
-        mock_member_response = {
-            "dn": "user_dn",
-            "attributes": {"objectClass": ["top", "group"]},
-        }
-        active_directory_instance.get_member.return_value = mock_member_response
+        mock_member_response = [
+            {
+                "dn": "user_dn",
+                "attributes": {
+                    "objectClass": ["top", "group"],
+                    "sAMAccountName": "foo",
+                },
+            }
+        ]
+        active_directory_instance.get_members.return_value = mock_member_response
         mock_active_directory_api.return_value = active_directory_instance
 
         form_data = self.form_data
@@ -667,7 +605,7 @@ class TestAddMembersToADGroup(TestCase):
             storage_allocation=base_allocation, resource_name="rw"
         )
 
-        addMembersToADGroup(wustlkeys, acl_allocation, datetime.datetime.now(), [])
+        addMembersToADGroup(wustlkeys, acl_allocation, datetime.datetime.now())
         allocation_users = list(
             map(
                 lambda allocation_user: allocation_user.user.username,
@@ -688,7 +626,6 @@ class TestAddMembersToADGroup(TestCase):
     def test_adds_users_to_group_when_done(
         self,
         mock_active_directory_api: MagicMock,
-        mock_async_task: MagicMock,
         mock_allocation_service_AD: MagicMock,
         mock_allocation_service_async_task: MagicMock,
     ):
@@ -697,6 +634,16 @@ class TestAddMembersToADGroup(TestCase):
 
         wustlkeys = ["foo"]
         self.form_data["rw_users"] = wustlkeys
+
+        active_directory_instance.get_members.return_value = [
+            {
+                "dn": "user_dn",
+                "attributes": {
+                    "objectClass": ["top", "person", "organizationalPerson", "user"],
+                    "sAMAccountName": "foo",
+                },
+            }
+        ]
 
         allocation = self.create_allocation(user=self.user, form_data=self.form_data)[
             "allocation"
@@ -707,15 +654,13 @@ class TestAddMembersToADGroup(TestCase):
         group_name = acl_allocation.get_attribute("storage_acl_name")
 
         addMembersToADGroup(
-            [],
+            wustlkeys,
             acl_allocation,
             datetime.datetime.now(),
-            [],
-            [{"wustlkey": wustlkeys[0], "dn": "foo", "is_group": False}],
         )
 
         active_directory_instance.add_members_to_ad_group.assert_called_once_with(
-            ["foo"], group_name
+            ["user_dn"], group_name
         )
 
     @patch("coldfront.plugins.qumulo.tasks.send_email_template")
@@ -723,7 +668,6 @@ class TestAddMembersToADGroup(TestCase):
         self,
         mock_send_email_template: MagicMock,
         mock_active_directory_api: MagicMock,
-        mock_async_task: MagicMock,
         mock_allocation_view_AD: MagicMock,
         mock_allocation_view_async_task: MagicMock,
     ):
@@ -747,12 +691,19 @@ class TestAddMembersToADGroup(TestCase):
         self.user.groups.add(ris_group[0].id)
         self.user.save()
 
+        active_directory_instance.get_members.return_value = list(
+            map(
+                lambda wustlkey: {
+                    "dn": "foo",
+                    "attributes": {"objectClass": [], "sAMAccountName": wustlkey},
+                },
+                wustlkeys,
+            )
+        )
         addMembersToADGroup(
-            [],
+            wustlkeys,
             acl_allocation,
             datetime.datetime.now(),
-            [],
-            [{"wustlkey": wustlkey, "dn": "foo"} for wustlkey in wustlkeys],
         )
 
         mock_send_email_template.assert_called_once_with(
@@ -770,7 +721,6 @@ class TestAddMembersToADGroup(TestCase):
         mock_active_directory_api: MagicMock,
         mock_allocation_view_AD: MagicMock,
         mock_allocation_view_async_task: MagicMock,
-        mock_async_task,
     ):
         wustlkeys = ["foo", "bar"]
         self.form_data["rw_users"] = wustlkeys
@@ -786,7 +736,8 @@ class TestAddMembersToADGroup(TestCase):
         self.user.groups.add(ris_group[0].id)
         self.user.save()
 
-        addMembersToADGroup([], acl_allocation, datetime.datetime.now(), wustlkeys)
+        mock_active_directory_api.return_value.get_members.return_value = []
+        addMembersToADGroup(wustlkeys, acl_allocation, datetime.datetime.now())
 
         mock_send_email_template.assert_called_once_with(
             subject="Users not found in Storage Allocation",

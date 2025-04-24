@@ -2,18 +2,30 @@ import { useState } from "react";
 
 import "./UserSelector.css";
 
-function UserSelector({ name, users, setUsers, label, errorMessage }) {
+function UserSelector({
+  name,
+  users,
+  setUsers,
+  getInvalidUsers = async () => [],
+  label,
+  errorMessage,
+}) {
   const [inputText, setInputText] = useState("");
   const [selectedUsers, setSelectedUsers] = useState([]);
+  const [invalidUsers, setInvalidUsers] = useState([]);
 
-  const handleAddButtonClick = (event) => {
+  const handleAddButtonClick = async (event) => {
     const values = inputText
       .split(",")
       .map((value) => value.trim())
       .filter((value) => value.length);
 
-    setUsers([...users, ...values]);
+    const newUsers = [...users, ...values];
+    setUsers(newUsers);
     setInputText("");
+
+    const invalidUsers = await getInvalidUsers(newUsers);
+    setInvalidUsers(invalidUsers);
   };
 
   const handleRemoveButtonClick = (event) => {
@@ -21,19 +33,16 @@ function UserSelector({ name, users, setUsers, label, errorMessage }) {
     setSelectedUsers([]);
   };
 
-  const onListItemClick = (event) => {
-    const listItemElement = event.target;
-
-    if (selectedUsers.includes(listItemElement.textContent)) {
-      setSelectedUsers(
-        selectedUsers.filter((user) => user !== listItemElement.textContent)
-      );
+  const onListItemClick = (key) => {
+    if (selectedUsers.includes(key)) {
+      setSelectedUsers(selectedUsers.filter((user) => user !== key));
     } else {
-      setSelectedUsers([...selectedUsers, listItemElement.textContent]);
+      setSelectedUsers([...selectedUsers, key]);
     }
   };
 
   const isSelected = (user) => (selectedUsers.includes(user) ? "selected" : "");
+  const isInvalid = (user) => invalidUsers.includes(user);
 
   return (
     <>
@@ -82,10 +91,13 @@ function UserSelector({ name, users, setUsers, label, errorMessage }) {
               className={`multi-select-lookup list-group-item d-flex flex-row justify-content-between ${isSelected(
                 user
               )}`}
-              onClick={onListItemClick}
+              onClick={() => onListItemClick(user)}
               key={user}
             >
               {user}
+              {isInvalid(user) && (
+                <p className="invalid-feedback invalid-user">Invalid User</p>
+              )}
             </li>
           ))}
         </ul>

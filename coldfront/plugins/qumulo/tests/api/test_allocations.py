@@ -1,5 +1,5 @@
 from django.test import TestCase
-from django.http import HttpRequest, QueryDict
+from django.http import HttpRequest
 
 from unittest.mock import patch
 

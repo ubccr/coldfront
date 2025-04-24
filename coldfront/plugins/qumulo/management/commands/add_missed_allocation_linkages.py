@@ -1,4 +1,9 @@
-from coldfront.core.allocation.models import AllocationAttributeType, AttributeType, AllocationLinkage, Allocation
+from coldfront.core.allocation.models import (
+    AllocationAttributeType,
+    AttributeType,
+    AllocationLinkage,
+    Allocation,
+)
 
 from django.core.management.base import BaseCommand
 
@@ -13,7 +18,7 @@ class Command(BaseCommand):
 
         parent_to_children_map = {
             "1": ["4"],
-            '16': ["19"],
+            "16": ["19"],
         }
 
         for parent, children in parent_to_children_map.items():

@@ -20,11 +20,15 @@ from datetime import date
 
 
 def validate_ad_users(ad_users: list[str]):
+    active_directory_api = ActiveDirectoryAPI()
+
     bad_users = []
 
-    for user in ad_users:
+    gotten_users = active_directory_api.get_members(ad_users)
+    gotten_user_names = [user["attributes"]["sAMAccountName"] for user in gotten_users]
 
-        if not _ad_user_validation_helper(user):
+    for user in ad_users:
+        if user not in gotten_user_names:
             bad_users.append(user)
 
     if len(bad_users) > 0:
@@ -124,7 +128,7 @@ def validate_parent_directory(value: str):
 
 
 def validate_single_ad_user(ad_user: str):
-    if not _ad_user_validation_helper(ad_user):
+    if not __ad_user_validation_helper(ad_user):
         raise ValidationError(
             message="This WUSTL Key could not be validated", code="invalid"
         )
@@ -192,7 +196,7 @@ def validate_prepaid_start_date(prepaid_billing_date: date):
     return
 
 
-def _ad_user_validation_helper(ad_user: str) -> bool:
+def __ad_user_validation_helper(ad_user: str) -> bool:
     active_directory_api = ActiveDirectoryAPI()
 
     try:

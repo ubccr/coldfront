@@ -22,6 +22,7 @@ from coldfront.core.allocation.models import (
     AllocationChangeStatusChoice,
 )
 
+
 @patch("coldfront.plugins.qumulo.views.allocation_view.FileSystemService")
 @patch("coldfront.plugins.qumulo.views.update_allocation_view.async_task")
 @patch("coldfront.plugins.qumulo.views.update_allocation_view.ActiveDirectoryAPI")

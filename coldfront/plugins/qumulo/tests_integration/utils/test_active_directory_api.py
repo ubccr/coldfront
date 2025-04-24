@@ -1,6 +1,8 @@
 from django.test import TestCase, tag
 from coldfront.plugins.qumulo.utils.active_directory_api import ActiveDirectoryAPI
 
+import pprint
+
 
 class TestActiveDirectoryAPI(TestCase):
     def setUp(self) -> None:
@@ -30,6 +32,23 @@ class TestActiveDirectoryAPI(TestCase):
         user = self.ad_api.get_user(self.test_wustlkey)
 
         self.assertIn("Harter", user["dn"])
+
+    @tag("integration")
+    def test_get_users(self):
+        good_users = ["harterj", "jprewitt"]
+        bad_users = ["baduser"]
+
+        users = good_users + bad_users
+
+        gotten_users = self.ad_api.get_users(users)
+
+        self.assertEqual(len(gotten_users), 2)
+
+        for good_user in good_users:
+            self.assertIn(
+                good_user,
+                [user["attributes"]["sAMAccountName"] for user in gotten_users],
+            )
 
     @tag("integration")
     def test_get_member(self):
