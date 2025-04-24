@@ -13,7 +13,9 @@ from coldfront.core.project.models import (Project, ProjectAdminComment,
                                             ProjectAttributeType,
                                             AttributeType,
                                             ProjectAttributeUsage)
+from coldfront.core.utils.common import import_from_settings
 
+PROJECT_CODE = import_from_settings('PROJECT_CODE', False)
 
 @admin.register(ProjectStatusChoice)
 class ProjectStatusChoiceAdmin(admin.ModelAdmin):
@@ -274,6 +276,14 @@ class ProjectAdmin(SimpleHistoryAdmin):
             return []
         else:
             return super().get_inline_instances(request)
+
+    def get_list_display(self, request):
+        if PROJECT_CODE:
+            list_display = list(self.list_display)
+            list_display.insert(1, 'project_code')
+            return tuple(list_display)
+
+        return self.list_display
 
     def save_formset(self, request, form, formset, change):
         if formset.model in [ProjectAdminComment, ProjectUserMessage]:

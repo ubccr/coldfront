@@ -76,7 +76,11 @@ Project List
       <tbody>
         {% for project in project_list %}
           <tr>
-            <td><a href="/project/{{project.id}}/">{{ project.id }}</a></td>
+            {% if project.project_code %}
+                <td><a href="/project/{{project.id}}/">{{ project.project_code }}</a></td>
+            {% else %}
+                <td><a href="/project/{{project.id}}/">{{ project.id }}</a></td>
+            {% endif %}
             <td>{{ project.pi.username }}</td>
             <td style="text-align: justify; text-justify: inter-word;">{{ project.title }}</td>
             <td>{{ project.field_of_science.description }}</td>
