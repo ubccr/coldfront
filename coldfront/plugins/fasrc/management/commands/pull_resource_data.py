@@ -86,7 +86,7 @@ class Command(BaseCommand):
                     'used_tb': isilon_used_tb,
                 }
                 update_resource_attr_types_from_dict(resource, attr_pairs)
-            elif 'Tier 0' in resource.parent_resource.name:
+            elif resource.parent_resource and 'Tier 0' in resource.parent_resource.name:
                 pass
             else:
                 try:
