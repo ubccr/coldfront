@@ -228,6 +228,11 @@ class ProjectListView(LoginRequiredMixin, ListView):
                     Q(projectuser__status__name='Active')
                 ).order_by(order_by)
 
+            # Project Title
+            if data.get('title'):
+                projects = projects.filter(
+                    title__icontains=data.get('title'))
+
             # Last Name
             if data.get('last_name'):
                 projects = projects.filter(
@@ -245,6 +250,11 @@ class ProjectListView(LoginRequiredMixin, ListView):
             if data.get('field_of_science'):
                 projects = projects.filter(
                     field_of_science__description__icontains=data.get('field_of_science'))
+
+            # Status
+            if data.get('status'):
+                projects = projects.filter(
+                    status__in=data.get('status'))
 
         else:
             projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
