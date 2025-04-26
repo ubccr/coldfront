@@ -55,22 +55,21 @@ class Command(BaseCommand):
                     "url": f"https://coldfront.rc.fas.harvard.edu/allocation/{allocation.pk}"
                 })
                 continue
-            if len(matched_paths) > 1:
-                other_allocations = Allocation.objects.filter(
-                    resources__name__contains=volume,
-                    project__title=lab
-                ).exclude(pk=allocation.pk)
-                other_allocations_paths = [a.path for a in other_allocations]
-                matched_paths = [
-                    entry for entry in matched_paths if entry['path'] not in other_allocations_paths
-                ]
-                if len(matched_paths) != 1:
-                    errors.append({
-                        "lab":lab, "allocation":allocation,
-                        "issue": "multiple_results", "results": matched_paths,
-                        "url": f"https://coldfront.rc.fas.harvard.edu/allocation/{allocation.pk}"
-                    })
-                    continue
+            other_allocations = Allocation.objects.filter(
+                resources__name__contains=volume,
+                project__title=lab
+            ).exclude(pk=allocation.pk)
+            other_allocations_paths = [a.path for a in other_allocations]
+            matched_paths = [
+                entry for entry in matched_paths if entry['path'] not in other_allocations_paths
+            ]
+            if len(matched_paths) != 1:
+                errors.append({
+                    "lab":lab, "allocation":allocation,
+                    "issue": "multiple_results", "results": matched_paths,
+                    "url": f"https://coldfront.rc.fas.harvard.edu/allocation/{allocation.pk}"
+                })
+                continue
             subdir_value = matched_paths[0]['path']
             allocation.allocationattribute_set.update_or_create(
                 allocation_attribute_type_id=8, defaults={'value': subdir_value}
