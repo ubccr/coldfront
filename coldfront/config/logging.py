@@ -1,4 +1,5 @@
 from django.contrib.messages import constants as messages
+from coldfront.config.env import ENV
 
 #------------------------------------------------------------------------------
 # ColdFront logging config
@@ -12,27 +13,34 @@ MESSAGE_TAGS = {
     messages.ERROR: 'danger',
 }
 
+FILE_ENABLE = ENV.bool('FILE_ENABLE', default=False)
+LOG_LEVEL = ENV.str('LOG_LEVEL', default="INFO")
+LOG_LEVEL_LDAP = ENV.str('LOG_LEVEL_LDAP', default=LOG_LEVEL)
+LOGGING_FILE = ENV.str('LOGGING_FILE', default="/tmp/debug.log")
+LOGGING_VERSION = ENV.int('LOGGING_VERSION', default=1)
+
+
 LOGGING = {
-    'version': 1,
+    'version': LOGGING_VERSION,
     'disable_existing_loggers': False,
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
         },
-        # 'file': {
-        #     'class': 'logging.FileHandler',
-        #     'filename': '/tmp/debug.log',
-        # },
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': LOGGING_FILE,
+        },
     },
     'loggers': {
         'django_auth_ldap': {
-            'level': 'WARN',
+            'level': LOG_LEVEL_LDAP,
             # 'handlers': ['console', 'file'],
             'handlers': ['console', ],
         },
         'django': {
             'handlers': ['console'],
-            'level': 'INFO',
+            'level': LOG_LEVEL,
         },
     },
 }

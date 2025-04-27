@@ -119,6 +119,17 @@ DB_URL=psql://user:password@127.0.0.1:5432/database
 DB_URL=sqlite:////usr/share/coldfront/coldfront.db
 ```
 
+### Logging settings
+
+The following settings configure the logging settings for ColdFront and will help in debugging or viewing extra information if developing ColdFront:
+
+| Name                 | Description                          |
+| :--------------------|:-------------------------------------|
+| LOG_LEVEL               | The level to set logging to (DEBUG, INFO, WARNING, ERROR, CRITICAL)   |
+| LOG_LEVEL_LDAP               | The level to set logging to in LDAP (defaults to LOG_LEVEL if not set)   |
+| LOGGING_FILE              | The file to log to if set   |
+| LOGGING_VERSION              | The logging version (1 by default)   |
+
 
 ### Email settings
 
