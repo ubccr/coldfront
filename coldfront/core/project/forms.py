@@ -142,6 +142,9 @@ class ProjectAttributeAddForm(forms.ModelForm):
         super(ProjectAttributeAddForm, self).__init__(*args, **kwargs) 
         user =(kwargs.get('initial')).get('user')
         self.fields['proj_attr_type'].queryset = self.fields['proj_attr_type'].queryset.order_by(Lower('name'))
+        self.fields['doc'].required = False 
+        self.fields['value'].required = False 
+
         if not user.is_superuser:
             self.fields['proj_attr_type'].queryset = self.fields['proj_attr_type'].queryset.filter(is_private=False)
 
