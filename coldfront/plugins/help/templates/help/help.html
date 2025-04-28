@@ -1,0 +1,66 @@
+{% extends "common/base.html" %}
+{% load common_tags %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Contact Research Technologies
+{% endblock %}
+
+{% block header %}
+{% endblock %}
+
+{% block content %}
+
+<form method="post" action="{% url 'send_help_email' %}">
+    {% csrf_token %}
+    {{ form|crispy }}
+    <div class="form-group">
+        <label for="category">Choose an area to direct your question to: <span class="asteriskField">*</span></label>
+        <select id="category" name="category" class="form-control" required>
+            <option value="" selected="selected"></option>
+            {% for title in titles %}
+                <option value="{{ forloop.counter0 }}">{{ title }}</option>
+            {% endfor %}
+            <option value="{{ -1 }}">Other</option>
+        </select>
+    </div>
+
+    {% if request_user_info %}
+        <div>Name</div>
+        <span class="simple_name_1" style="width: 20%; padding-right: 15px;">
+            <input id="element_1_1" name="element_1_1" aria-required="true" type="text" class="element text " maxlength="255" size="12" value="" required="" aria-invalid="false">
+        </span>
+        <span class="simple_name_2">
+            <input id="element_1_2" name="element_1_2" type="text" class="element text " maxlength="255" size="18" value="" aria-required="true" required="" aria-invalid="false">
+        </span>
+        <br />
+        <label for="element_1_1" style="width: 140px">First<span class="asteriskField">*</span></label>
+        <label for="element_1_2">Last<span class="asteriskField">*</span></label>
+
+        <div class="form-group">
+            <label for="email">Email<span class="asteriskField">*</span></label>
+            <input type="text" id="email" name="email" class="form-control" required>
+        </div>
+    {% endif %}
+    <div class="form-group">
+        <label for="subject">Subject<span class="asteriskField">*</span></label>
+        <input type="text" id="subject" name="subject" class="form-control" required>
+    </div>
+
+    <div class="form-group">
+        <label for="message">Reason for contacting:<span class="asteriskField">*</span></label>
+        <textarea id="message" name="message" class="form-control" rows="5" required></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Send</button>
+</form>
+
+<script>
+    $(document).ready(function () {
+        document.getElementById('category').selectedIndex = {{ selected_index }};
+    });
+</script>
+
+{% endblock %}
+
