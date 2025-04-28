@@ -15,6 +15,7 @@ from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.utils.common import import_from_settings
 
 PROJECT_ENABLE_PROJECT_REVIEW = import_from_settings('PROJECT_ENABLE_PROJECT_REVIEW', False)
+PROJECT_TITLE_UNIQUE = import_from_settings('PROJECT_TITLE_UNIQUE', False)
 
 class ProjectPermission(Enum):
     """ A project permission stores the user, manager, pi, and update fields of a project. """
@@ -76,7 +77,7 @@ class Project(TimeStampedModel):
 We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!
         '''
 
-    title = models.CharField(max_length=255,)
+    title = models.CharField(max_length=255, unique=PROJECT_TITLE_UNIQUE,)
     pi = models.ForeignKey(User, on_delete=models.CASCADE,)
     description = models.TextField(
         default=DEFAULT_DESCRIPTION,

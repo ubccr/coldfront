@@ -87,6 +87,7 @@ The following settings are ColdFront specific settings related to the core appli
 | CENTER_PROJECT_RENEWAL_HELP_URL        | The URL of the article describing project renewals |
 | CENTER_BASE_URL                        | The base URL of your center.                   |
 | PROJECT_ENABLE_PROJECT_REVIEW          | Enable or disable project reviews. Default True|
+| PROJECT_TITLE_UNIQUE                   | Enable or disable unique constraint on project titles. Default False |
 | ALLOCATION_ENABLE_ALLOCATION_RENEWAL   | Enable or disable allocation renewals. Default True |
 | ALLOCATION_DEFAULT_ALLOCATION_LENGTH   | Default number of days an allocation is active for. Default 365 |
 | ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT | Enable or disable allocation change requests. Default True |
