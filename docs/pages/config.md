@@ -95,6 +95,7 @@ The following settings are ColdFront specific settings related to the core appli
 | ALLOCATION_RESOURCE_ORDERING           | Controls the ordering of parent resources for an allocation (if allocation has multiple resources).  Should be a list of field names suitable for Django QuerySet order_by method.  Default is ['-is_allocatable', 'name']; i.e. prefer Resources with is_allocatable field set, ordered by name of the Resource.|
 | INVOICE_ENABLED                        | Enable or disable invoices. Default True       |
 | ONDEMAND_URL                           | The URL to your Open OnDemand installation     |
+| GENERIC_SEARCH_FIELD                   | Switches from the current search field to a new "multipurpose" search field that will automatically search all current fields, plus more. Default False
 | LOGIN_FAIL_MESSAGE                     | Custom message when user fails to login. Here you can paint a custom link to your user account portal |
 | ENABLE_SU                              | Enable administrators to login as other users. Default True |
 | RESEARCH_OUTPUT_ENABLE                 | Enable or disable research outputs. Default True |

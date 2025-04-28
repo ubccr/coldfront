@@ -16,20 +16,24 @@ EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL = import_from_settings(
 EMAIL_ADMIN_LIST = import_from_settings('EMAIL_ADMIN_LIST', [])
 EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
     'EMAIL_DIRECTOR_EMAIL_ADDRESS', '')
-
+GENERIC_SEARCH_FIELD = import_from_settings('GENERIC_SEARCH_FIELD', False)
 
 class ProjectSearchForm(forms.Form):
     """ Search form for the Project list page.
     """
+    GENERIC_SEARCH = 'Search Value'
     LAST_NAME = 'Last Name'
     USERNAME = 'Username'
     FIELD_OF_SCIENCE = 'Field of Science'
 
-    last_name = forms.CharField(
-        label=LAST_NAME, max_length=100, required=False)
-    username = forms.CharField(label=USERNAME, max_length=100, required=False)
-    field_of_science = forms.CharField(
-        label=FIELD_OF_SCIENCE, max_length=100, required=False)
+    if GENERIC_SEARCH_FIELD:
+        generic = forms.CharField(label=GENERIC_SEARCH, max_length=100, required=False)
+    else:
+        last_name = forms.CharField(
+            label=LAST_NAME, max_length=100, required=False)
+        username = forms.CharField(label=USERNAME, max_length=100, required=False)
+        field_of_science = forms.CharField(
+            label=FIELD_OF_SCIENCE, max_length=100, required=False)
     show_all_projects = forms.BooleanField(initial=False, required=False)
 
 
