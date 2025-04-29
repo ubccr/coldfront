@@ -28,7 +28,7 @@ setup(
         'asgiref==3.7.2',
         'bibtexparser==1.4.1',
         'blessed==1.20.0',
-        'certifi==2024.2.2',
+        'certifi==2024.7.4',
         'chardet==5.2.0',
         'charset-normalizer==3.3.2',
         'Django==4.2.11',
