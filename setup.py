@@ -31,7 +31,7 @@ setup(
         'certifi==2024.2.2',
         'chardet==5.2.0',
         'charset-normalizer==3.3.2',
-        'Django==4.2.11',
+        'Django==4.2.20',
         'django-crispy-forms==2.1',
         'crispy-bootstrap4==2024.1',
         'django-environ==0.11.2',
