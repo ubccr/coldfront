@@ -173,7 +173,12 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context['allocation_changes_enabled'] = allocation_obj.is_changeable
 
         # Can the user update the project?
-        context['is_allowed_to_update_project'] = allocation_obj.project.has_perm(self.request.user, ProjectPermission.UPDATE, 'project.change_project')
+        is_allowed_to_update_project = allocation_obj.project.has_perm(self.request.user, ProjectPermission.UPDATE, 'change_project')
+        # If not is the user a part of a group that can update the allocation?
+        if not is_allowed_to_update_project:
+            is_allowed_to_update_project = allocation_obj.has_perm(self.request.user, AllocationPermission.MANAGER, 'change_allocation')
+
+        context['is_allowed_to_update_project'] = is_allowed_to_update_project
 
         context['allocation_user_roles_enabled'] = check_if_roles_are_enabled(allocation_obj)
         context['allocation_invoices'] = allocation_obj.allocationinvoice_set.all()

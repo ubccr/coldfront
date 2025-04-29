@@ -35,35 +35,31 @@ Allocation Detail
 
 <div class="card mb-3">
   <div class="card-header">
-    {% if is_allowed_to_update_project %}
-      <div class="row">
-        <div class="col">
-          <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>
-        </div>
-        <div class="col">
-          {% if allocation.is_changeable and allocation.status.name == 'Active' %}
-            <a class="btn btn-primary" href="{% url 'allocation-change' allocation.pk %}" role="button" style="float: right;">
-              Request Change
+    <div class="row">
+      <div class="col">
+        <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>
+      </div>
+      <div class="col">
+        {% if allocation.is_changeable and allocation.status.name == 'Active' and is_allowed_to_update_project %}
+          <a class="btn btn-primary" href="{% url 'allocation-change' allocation.pk %}" role="button" style="float: right;">
+            Request Change
+          </a>
+        {% endif %}
+        {% if allocation.status.name in 'Active, Billing Information Submitted' and allocation.get_parent_resource.name in ALLOCATION_REMOVAL_REQUESTS_ALLOWED and is_allowed_to_update_project %}
+          {% load allocation_removal_requests_tags %}
+          {% has_admin_perm allocation request.user 'can_remove_allocations' as has_perm %}
+          {% if has_perm %}
+            <a class="btn btn-primary mr-1" href="{% url 'allocation_removal_requests:allocation-remove' allocation.pk %}" role="button" style="float: right;">
+              Remove Allocation
+            </a>
+          {% else %}
+            <a class="btn btn-primary mr-1" href="{% url 'allocation_removal_requests:allocation-removal-request' allocation.pk %}" role="button" style="float: right;">
+              Request Removal
             </a>
           {% endif %}
-          {% if allocation.status.name in 'Active, Billing Information Submitted' and allocation.get_parent_resource.name in ALLOCATION_REMOVAL_REQUESTS_ALLOWED %}
-            {% load allocation_removal_requests_tags %}
-            {% has_admin_perm allocation request.user 'allocation_removal_requests.can_remove_allocations' as has_perm %}
-            {% if has_perm %}
-              <a class="btn btn-primary mr-1" href="{% url 'allocation_removal_requests:allocation-remove' allocation.pk %}" role="button" style="float: right;">
-                Remove Allocation
-              </a>
-            {% else %}
-              <a class="btn btn-primary mr-1" href="{% url 'allocation_removal_requests:allocation-removal-request' allocation.pk %}" role="button" style="float: right;">
-                Request Removal
-              </a>
-            {% endif %}
-          {% endif %}
-        </div>
+        {% endif %}
       </div>
-    {% else %}
-      <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>
-    {% endif %}
+    </div>
   </div>
   <div class="card-body">
     <form method="post">
