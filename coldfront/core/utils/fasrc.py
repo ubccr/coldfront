@@ -63,8 +63,9 @@ def select_one_project_allocation(project_obj, resource_obj, dirpath):
     resource_obj
     dirpath
     """
-    filter_vals = {'resources__id': resource_obj.id, "status__name__in": ['Active', 'Pending Deactivation']}
-    allocation_query = project_obj.allocation_set.filter(**filter_vals)
+    allocation_query = project_obj.allocation_set.filter(
+                    resources__id=resource_obj.id
+    ).exclude(status__name='Merged')
     if allocation_query.count() < 1:
         return None
     else:
@@ -75,7 +76,7 @@ def select_one_project_allocation(project_obj, resource_obj, dirpath):
         if len(allocations) == 1:
             return allocations[0]
         elif len(allocations) > 1:
-            print(allocations)
+            print(f'multiple allocations found for project/resource/path pairing: {allocations}, {allocations[0].path}')
             logger.exception('multiple allocations found for project/resource/path pairing: %s %s', allocations, allocations[0].path)
             raise Exception('multiple allocations found for project/resource/path pairing')
 
