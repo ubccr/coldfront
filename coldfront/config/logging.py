@@ -1,8 +1,11 @@
 from django.contrib.messages import constants as messages
+from coldfront.core.utils.common import import_from_settings
 
 # ------------------------------------------------------------------------------
 # ColdFront logging config
 # ------------------------------------------------------------------------------
+
+LOG_FILE = import_from_settings("COLDFRONT_DJANGO_LOG_FILE")
 
 MESSAGE_TAGS = {
     messages.DEBUG: "info",
@@ -19,10 +22,16 @@ LOGGING = {
         "console": {
             "class": "logging.StreamHandler",
         },
+        "file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOG_FILE,
+            "maxBytes": 1024 * 1024,
+            "backupCount": 3,
+        },
     },
     "loggers": {
         "django": {
-            "handlers": ["console"],
+            "handlers": ["console", "file"],
             "level": "INFO",
         },
     },
