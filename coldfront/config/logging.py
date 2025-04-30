@@ -18,12 +18,15 @@ MESSAGE_TAGS = {
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "root": {"level": "INFO", "handlers": ["file"]},
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
+            "level": "INFO",
         },
         "file": {
             "class": "logging.handlers.RotatingFileHandler",
+            "level": "INFO",
             "filename": LOG_FILE,
             "maxBytes": 1024 * 1024,
             "backupCount": 3,
