@@ -19,14 +19,22 @@ LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "root": {"level": "INFO", "handlers": ["file"]},
+    "formatters": {
+        "standard": {
+            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "style": "{",
+        },
+    },
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
             "level": "INFO",
+            "formatter": "standard",
         },
         "file": {
             "class": "logging.handlers.RotatingFileHandler",
             "level": "INFO",
+            "formatter": "standard",
             "filename": LOG_FILE,
             "maxBytes": 1024 * 1024,
             "backupCount": 3,
