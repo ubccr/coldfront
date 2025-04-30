@@ -4,9 +4,7 @@ from coldfront.config.env import ENV
 #  This enables searching for users via Keycloak
 # ----------------------------------------------------------------------------
 
-KEYCLOAK_BASE_URL = ENV.str(
-    "KEYCLOAK_BASE_URL", default="https://sso-test.hpc.nyu.edu/"
-)
+KEYCLOAK_BASE_URL = ENV.str("KEYCLOAK_BASE_URL", default="https://sso.hpc.nyu.edu/")
 
 KEYCLOAK_USERNAME = ENV.str("KEYCLOAK_USERNAME")
 KEYCLOAK_PASSWORD = ENV.str("KEYCLOAK_PASSWORD")
