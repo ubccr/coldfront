@@ -158,4 +158,4 @@ if os.path.isdir('/usr/share/coldfront/site/static'):
 
 # Logfile location
 COLDFRONT_DJANGO_LOG_FILE = ENV.str("COLDFRONT_DJANGO_LOG_FILE",
-                                    default="coldfront-django.log")
+                                    default="coldfront-django")
