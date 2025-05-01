@@ -11,7 +11,7 @@ try:
     HOSTNAME = socket.gethostname()
 except Exception:
     HOSTNAME = "-"
-LOG_FILE = f"{LOG_FILE_BASE}.{HOSTNAME}"
+LOG_FILE = f"{LOG_FILE_BASE}.{HOSTNAME}.log"
 
 MESSAGE_TAGS = {
     messages.DEBUG: "info",
