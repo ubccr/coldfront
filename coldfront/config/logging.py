@@ -1,11 +1,13 @@
 from django.contrib.messages import constants as messages
 from coldfront.core.utils.common import import_from_settings
+import socket
 
 # ------------------------------------------------------------------------------
 # ColdFront logging config
 # ------------------------------------------------------------------------------
 
 LOG_FILE = import_from_settings("COLDFRONT_DJANGO_LOG_FILE")
+HOSTNAME = socket.gethostname()
 
 MESSAGE_TAGS = {
     messages.DEBUG: "info",
@@ -21,7 +23,7 @@ LOGGING = {
     "root": {"level": "INFO", "handlers": ["file"]},
     "formatters": {
         "standard": {
-            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "format": "{levelname} {asctime} {HOSTNAME} {module} {process:d} {message}",
             "style": "{",
         },
     },
