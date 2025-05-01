@@ -98,10 +98,12 @@ AUTHENTICATION_BACKENDS = []
 # Django Q2
 #------------------------------------------------------------------------------
 Q_CLUSTER = {
-    'host': ENV.str('REDIS_HOSTNAME', default="localhost"),
-    'password': ENV.str('REDIS_PASSWORD', default="password"),
     'timeout': ENV.int('Q_CLUSTER_TIMEOUT', default=120),
     'retry': ENV.int('Q_CLUSTER_RETRY', default=120),
+    'redis': {
+        'host': ENV.str('REDIS_HOSTNAME', default="localhost"),
+        'password': ENV.str('REDIS_PASSWORD', default="password"),
+        },
 }
 
 
