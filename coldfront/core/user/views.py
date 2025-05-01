@@ -23,6 +23,7 @@ from coldfront.core.utils.mail import send_email_template
 logger = logging.getLogger(__name__)
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 if EMAIL_ENABLED:
+    EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
     EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings(
         'EMAIL_TICKET_SYSTEM_ADDRESS')
 
@@ -208,7 +209,7 @@ class UserUpgradeAccount(LoginRequiredMixin, UserPassesTestMixin, View):
                 'Upgrade Account Request',
                 'email/upgrade_account_request.txt',
                 {'user': request.user},
-                request.user.email,
+                EMAIL_SENDER,
                 [EMAIL_TICKET_SYSTEM_ADDRESS]
             )
 
