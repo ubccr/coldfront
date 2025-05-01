@@ -5,6 +5,7 @@ from coldfront.plugins.qumulo.views import (
     update_allocation_view,
     create_sub_allocation_view,
     allocation_table_view,
+    trigger_migrations_view,
     user_management_view,
 )
 from coldfront.plugins.qumulo.api.allocations import Allocations
@@ -28,6 +29,11 @@ urlpatterns = [
         "allocation-table-list",
         allocation_table_view.AllocationTableView.as_view(),
         name="allocation-table-list",
+    ),
+    path(
+        "trigger-migrations",
+        trigger_migrations_view.TriggerMigrationsView.as_view(),
+        name="trigger-migrations",
     ),
     path(
         "allocation-admin/user-access-management",

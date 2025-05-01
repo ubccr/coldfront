@@ -1,0 +1,6 @@
+The requested metadata migration for {{ itsm_service_provision_name }} was not successful. This could have happened because the allocation could not be found, 
+or one of the allocation attributes does not pass verification. Please see the errors below for more details.
+
+{{ exception_output }}
+
+Please try again or contact RIS Support.

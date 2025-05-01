@@ -22,54 +22,54 @@ class ItsmClient:
         )
 
     def get_fs1_allocation_by_fileset_name(self, fileset_name) -> str:
-        return self.__get_fs1_allocation_by("fileset_name", fileset_name)
+        return self._get_fs1_allocation_by("fileset_name", fileset_name)
 
     def get_fs1_allocation_by_fileset_alias(self, fileset_alias) -> str:
-        return self.__get_fs1_allocation_by("fileset_alias", fileset_alias)
+        return self._get_fs1_allocation_by("fileset_alias", fileset_alias)
 
     def get_fs1_allocation_by_storage_provision_name(
         self, storage_provision_name
     ) -> str:
-        return self.__get_fs1_allocation_by("name", storage_provision_name)
+        return self._get_fs1_allocation_by("name", storage_provision_name)
 
     # TODO is there a way to get the name of the environment such as prod, qa, or localhost?
-    def __is_itsm_localhost(self):
+    def _is_itsm_localhost(self):
         return self.host == "localhost"
 
-    def __get_fs1_allocation_by(self, fileset_key, fileset_value) -> str:
-        filtered_url = self.__get_filtered_url(fileset_key, fileset_value)
-        session = self.__get_session()
-        response = session.get(filtered_url, verify=self.__get_verify_certificate())
+    def _get_fs1_allocation_by(self, fileset_key, fileset_value) -> str:
+        filtered_url = self._get_filtered_url(fileset_key, fileset_value)
+        session = self._get_session()
+        response = session.get(filtered_url, verify=self._get_verify_certificate())
         response.raise_for_status()
 
         data = response.json().get("data")
         session.close()
         return data
 
-    def __get_filtered_url(self, fileset_key, fileset_value) -> str:
+    def _get_filtered_url(self, fileset_key, fileset_value) -> str:
         itsm_active_allocation_service_id = 1
         filters = f'filter={{"{fileset_key}":"{fileset_value}","status":"active","service_id":{itsm_active_allocation_service_id}}}'
         return f"{self.url}&{filters}"
 
-    def __get_session(self) -> requests.Session:
+    def _get_session(self) -> requests.Session:
         session = requests.Session()
-        session.auth = self.__get_session_authentication()
-        session.headers = self.__get_session_headers()
+        session.auth = self._get_session_authentication()
+        session.headers = self._get_session_headers()
         return session
 
-    def __get_session_headers(self) -> dict:
+    def _get_session_headers(self) -> dict:
         headers = {"content-type": "application/json"}
-        if self.__is_itsm_localhost():
+        if self._is_itsm_localhost():
             headers["x-remote-user"] = self.user
 
         return headers
 
-    def __get_session_authentication(self) -> Optional[tuple]:
-        if self.__is_itsm_localhost():
+    def _get_session_authentication(self) -> Optional[tuple]:
+        if self._is_itsm_localhost():
             return None
 
         return (self.user, self.password)
 
-    def __get_verify_certificate(self) -> Any:
+    def _get_verify_certificate(self) -> Any:
         # Unfortunately, the verify attribute could be a path where the certificate is located or bool
         return os.environ.get("RIS_CHAIN_CERTIFICATE") or True
