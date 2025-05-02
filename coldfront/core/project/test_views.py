@@ -194,9 +194,7 @@ class ProjectAttributeCreateTest(ProjectViewTestBase):
             'value': True,
             'project': self.project.pk
         })
-        self.assertFormError(
-            response, 'form', '', 'Invalid Value True. Value must be an int.'
-        )
+        self.assertContains(response, 'Invalid Value True. Value must be an int.')
 
 
 class ProjectAttributeUpdateTest(ProjectViewTestBase):

@@ -1,6 +1,7 @@
 from django.core.validators import (MaxLengthValidator, MaxValueValidator,
                                     MinLengthValidator)
 from django.db import models
+from django.core.exceptions import ValidationError
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 from django.core.validators import RegexValidator
@@ -74,6 +75,11 @@ class PercentField(models.CharField):
         if value:
             value = value.replace(" ", "")
             value = value.replace("%", "")
+            try:
+                if float(value) > 100:
+                    raise ValidationError("Percent credit should be less than 100")
+            except ValueError:
+                pass
         return value
 
 class Grant(TimeStampedModel):
