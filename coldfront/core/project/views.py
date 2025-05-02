@@ -11,7 +11,7 @@ from django import forms
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import user_passes_test, login_required
 from django.contrib.auth.models import User
-from coldfront.core.project.utils import generate_project_code
+from coldfront.core.project.utils import generate_project_code, add_automated_institution_choice
 from coldfront.core.utils.common import import_from_settings
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
@@ -82,6 +82,7 @@ PROJECT_CODE = import_from_settings('PROJECT_CODE', False)
 PROJECT_CODE_PADDING = import_from_settings('PROJECT_CODE_PADDING', False)
 
 logger = logging.getLogger(__name__)
+PROJECT_INSTITUTION_EMAIL_MAP = import_from_settings('PROJECT_INSTITUTION_EMAIL_MAP', False)
 
 class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     model = Project
@@ -186,6 +187,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['attributes_with_usage'] = attributes_with_usage
         context['project_users'] = project_users
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
+        context['PROJECT_INSTITUTION_EMAIL_MAP'] = PROJECT_INSTITUTION_EMAIL_MAP
 
         try:
             context['ondemand_url'] = settings.ONDEMAND_URL
@@ -291,6 +293,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
 
         context['filter_parameters'] = filter_parameters
         context['filter_parameters_with_order_by'] = filter_parameters_with_order_by
+        context['PROJECT_INSTITUTION_EMAIL_MAP'] = PROJECT_INSTITUTION_EMAIL_MAP
 
         project_list = context.get('project_list')
         paginator = Paginator(project_list, self.paginate_by)
@@ -496,6 +499,9 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
             '''
             project_obj.project_code = generate_project_code(PROJECT_CODE, project_obj.pk, PROJECT_CODE_PADDING or 0)
             project_obj.save(update_fields=["project_code"])
+
+        if PROJECT_INSTITUTION_EMAIL_MAP:
+            add_automated_institution_choice(project_obj, PROJECT_INSTITUTION_EMAIL_MAP)
 
         # project signals
         project_new.send(sender=self.__class__, project_obj=project_obj)
