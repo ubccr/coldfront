@@ -489,9 +489,6 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
             status=ProjectUserStatusChoice.objects.get(name='Active')
         )
 
-        # project signals
-        project_new.send(sender=self.__class__, project_obj=project_obj)
-
         if PROJECT_CODE:
             '''
             Set the ProjectCode object, if PROJECT_CODE is defined. 
@@ -499,6 +496,9 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
             '''
             project_obj.project_code = generate_project_code(PROJECT_CODE, project_obj.pk, PROJECT_CODE_PADDING or 0)
             project_obj.save(update_fields=["project_code"])
+
+        # project signals
+        project_new.send(sender=self.__class__, project_obj=project_obj)
 
         return super().form_valid(form)
 
