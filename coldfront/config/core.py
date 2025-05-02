@@ -26,6 +26,11 @@ PUBLICATION_ENABLE = ENV.bool('PUBLICATION_ENABLE', default=True)
 PROJECT_ENABLE_PROJECT_REVIEW = ENV.bool('PROJECT_ENABLE_PROJECT_REVIEW', default=True)
 
 #------------------------------------------------------------------------------
+# Enable EULA force agreement
+#------------------------------------------------------------------------------
+ALLOCATION_EULA_ENABLE = ENV.bool('ALLOCATION_EULA_ENABLE', default=False)
+
+#------------------------------------------------------------------------------
 # Allocation related
 #------------------------------------------------------------------------------
 ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT = ENV.bool('ALLOCATION_ENABLE_CHANGE_REQUESTS', default=True)
@@ -36,7 +41,6 @@ ALLOCATION_FUNCS_ON_EXPIRE = ['coldfront.core.allocation.utils.test_allocation_f
 # This is in days
 ALLOCATION_DEFAULT_ALLOCATION_LENGTH = ENV.int('ALLOCATION_DEFAULT_ALLOCATION_LENGTH', default=365)
 
-
 #------------------------------------------------------------------------------
 # Allow user to select account name for allocation
 #------------------------------------------------------------------------------
@@ -46,6 +50,7 @@ ALLOCATION_ACCOUNT_MAPPING = ENV.dict('ALLOCATION_ACCOUNT_MAPPING', default={})
 SETTINGS_EXPORT += [
     'ALLOCATION_ACCOUNT_ENABLED',
     'CENTER_HELP_URL',
+    'ALLOCATION_EULA_ENABLE',
     'RESEARCH_OUTPUT_ENABLE',
     'GRANT_ENABLE',
     'PUBLICATION_ENABLE',

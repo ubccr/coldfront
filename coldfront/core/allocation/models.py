@@ -29,7 +29,7 @@ ALLOCATION_RESOURCE_ORDERING = import_from_settings(
     ['-is_allocatable', 'name'])
 
 class AllocationPermission(Enum):
-    """ A project permission stores the user and manager fields of a project. """
+    """ An allocation permission stores the user and manager fields of a project. """
 
     USER = 'USER'
     MANAGER = 'MANAGER'
@@ -321,7 +321,7 @@ class Allocation(TimeStampedModel):
         if ProjectPermission.PI in project_perms or ProjectPermission.MANAGER in project_perms:
             return [AllocationPermission.USER, AllocationPermission.MANAGER]
 
-        if self.allocationuser_set.filter(user=user, status__name__in=['Active', 'New', ]).exists():
+        if self.allocationuser_set.filter(user=user, status__name__in=['Active', 'New', 'PendingEULA']).exists():
             return [AllocationPermission.USER]
 
         return []
@@ -341,6 +341,14 @@ class Allocation(TimeStampedModel):
 
     def __str__(self):
         return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)
+    
+    def get_eula(self):
+        if self.get_resources_as_list:
+            for res in self.get_resources_as_list:
+                if res.get_attribute(name='eula'):
+                    return res.get_attribute(name='eula')
+        else:
+            return None
 
 class AllocationAdminNote(TimeStampedModel):
     """ An allocation admin note is a note that an admin makes on an allocation.

@@ -60,9 +60,9 @@ Allocation Detail
                 {% for resource in allocation.get_resources_as_list %}
                   <a href="{% url 'resource-detail' resource.pk %}">{{ resource }}</a> <br>
                 {% endfor %}
-              {% else %}
-                None
-              {% endif %}
+            {% else %}
+              None
+            {% endif %}
             </td>
           </tr>
           {% if request.user.is_superuser %}
@@ -173,6 +173,41 @@ Allocation Detail
   </div>
 </div>
 
+{% if eulas %}
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> EULA Agreements </h3>
+  </div>
+  <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered table-sm">
+          <thead>
+            <tr>
+              <th scope="col">Resource</th>
+              <th scope="col">EULA</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <a href="{% url 'resource-detail' res %}">{{res_obj}}</a><br>
+              </td>
+              <td>
+                {{eulas}}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        {% if user_in_allocation %}
+          <div class="d-inline-flex">
+              <a href="{% url 'allocation-review-eula' allocation.pk %}">Review EULA Agreement</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
 {% if attributes or attributes_with_usage or request.user.is_superuser %}
   <div class="card mb-3">
     <div class="card-header">
@@ -234,6 +269,7 @@ Allocation Detail
   </div>
 {% endif %}
 
+{% if not user_is_pending %}
 <!-- Start Allocation Change Requests -->
 <div class="card mb-3">
   <div class="card-header">
@@ -322,7 +358,9 @@ Allocation Detail
               <td>{{ user.user.email }}</td>
               {% if user.status.name == 'Active' %}
                 <td class="text-success">{{ user.status.name }}</td>
-              {% elif user.status.name == 'Denied' or user.status.name == 'Error' %}
+              {% elif user.status.name == 'PendingEULA' %}
+                <td class="text-info">{{ user.status.name }}</td>
+              {% elif user.status.name == 'Denied' or user.status.name == 'Error' or user.status.name == 'DeclinedEULA' %}
                 <td class="text-danger">{{ user.status.name }}</td>
               {% else %}
                 <td class="text-info">{{ user.status.name }}</td>
@@ -380,6 +418,7 @@ Allocation Detail
     {% endif %}
   </div>
 </div>
+{% endif %}
 
 <script>
   $(document).ready(function () {

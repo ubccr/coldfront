@@ -69,8 +69,12 @@
             <td><a href="{% url 'allocation-detail' allocation.id %}"
                 class="btn btn-info btn-block">{{allocation.status}}</a></td>
             {% elif allocation.status.name == "Active" %}
-            <td><a href="{% url 'allocation-detail' allocation.id %}"
+              {% if user_status|get_value_by_index:forloop.counter0 == 'PendingEULA' %}
+              <td><a href="{% url 'allocation-review-eula' allocation.pk %}" class="btn btn-info btn-block">Review and Accept EULA to Activate</a> </td>
+              {% else %}
+              <td><a href="{% url 'allocation-detail' allocation.id %}"
                 class="btn btn-success btn-block">{{allocation.status}}</a></td>
+              {% endif %}
             {% else %}
             <td><a href="{% url 'allocation-detail' allocation.id %}"
                 class="btn btn-info btn-block">{{allocation.status}}</a></td>

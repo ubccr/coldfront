@@ -60,7 +60,7 @@ def send_email(subject, body, sender, receiver_list, cc=[]):
                      sender, ','.join(receiver_list), subject)
 
 
-def send_email_template(subject, template_name, template_context, sender, receiver_list):
+def send_email_template(subject, template_name, template_context, sender, receiver_list, cc = []):
     """Helper function for sending emails from a template
     """
     if not EMAIL_ENABLED:
@@ -68,7 +68,7 @@ def send_email_template(subject, template_name, template_context, sender, receiv
 
     body = render_to_string(template_name, template_context)
 
-    return send_email(subject, body, sender, receiver_list)
+    return send_email(subject, body, sender, receiver_list, cc = cc)
 
 def email_template_context():
     """Basic email template context used as base for all templates
@@ -134,4 +134,38 @@ def send_allocation_customer_email(allocation_obj, subject, template_name, url_p
         ctx,
         EMAIL_SENDER,
         email_receiver_list
+    )
+    
+def send_allocation_eula_customer_email(allocation_user, subject, template_name, url_path='', domain_url='', cc_managers=False, include_eula=False):
+    """Send allocation customer emails
+    """
+    
+    allocation_obj = allocation_user.allocation
+    if not url_path:
+        url_path = reverse('allocation-review-eula', kwargs={'pk': allocation_obj.pk})
+
+    url = build_link(url_path, domain_url=domain_url)
+    ctx = email_template_context()
+    ctx['resource'] = allocation_obj.get_parent_resource
+    ctx['url'] = url
+    ctx['allocation_user'] = "{} {} ({})".format(allocation_user.user.first_name, allocation_user.user.last_name, allocation_user.user.username)
+    if include_eula:
+        ctx['eula'] = allocation_obj.get_eula()
+    
+    email_receiver_list = [allocation_user.user.email]
+    email_cc_list = []
+    if cc_managers:
+        project_obj = allocation_obj.project
+        managers = project_obj.projectuser_set.filter(role__name='Manager', status__name='Active')
+        for manager in managers:
+            if manager.enable_notifications:
+                email_cc_list.append(manager.user.email)
+
+    send_email_template(
+        subject,
+        template_name,
+        ctx,
+        EMAIL_SENDER,
+        email_receiver_list,
+        cc=email_cc_list
     )
