@@ -72,45 +72,76 @@ class LocalUserSearch(UserSearch):
 
 
 class CombinedUserSearch:
-
     def __init__(self, user_search_string, search_by, usernames_names_to_exclude=[]):
-        self.USER_SEARCH_CLASSES = import_from_settings('ADDITIONAL_USER_SEARCH_CLASSES', [])
-        self.USER_SEARCH_CLASSES.insert(0, 'coldfront.core.user.utils.LocalUserSearch')
+        logger.info("Starting CombinedUserSearch initialization")
+        
+        self.USER_SEARCH_CLASSES = []
+        
+        # Always add local search first
+        local_search = 'coldfront.core.user.utils.LocalUserSearch'
+        self.USER_SEARCH_CLASSES.append(local_search)
+        logger.debug(f"Added local search: {local_search}")
+
+        # Add LDAP search if enabled
+        if getattr(settings, 'PLUGIN_LDAP_USER_SEARCH', False):
+            ldap_search = 'coldfront.plugins.ldap_user_search.utils.LDAPUserSearch'
+            self.USER_SEARCH_CLASSES.append(ldap_search)
+            logger.debug(f"Added LDAP search: {ldap_search}")
+            
+        logger.debug(f"Final search classes: {self.USER_SEARCH_CLASSES}")
+        
         self.user_search_string = user_search_string
         self.search_by = search_by
         self.usernames_names_to_exclude = usernames_names_to_exclude
 
     def search(self):
-
         matches = []
         usernames_not_found = []
         usernames_found = []
 
-
-        for search_class in self.USER_SEARCH_CLASSES:
-            cls = import_string(search_class)
+        logger.info("Starting user search process")
+        
+        # First try local search
+        local_search_class = self.USER_SEARCH_CLASSES[0]  # Local search is always first
+        try:
+            cls = import_string(local_search_class)
             search_class_obj = cls(self.user_search_string, self.search_by)
-            users = search_class_obj.search()
+            logger.debug(f"Initialized local search class object: {cls.__name__}")
+            
+            local_users = search_class_obj.search()
+            if local_users:
+                logger.info(f"Local search found {len(local_users)} users")
+                matches.extend(local_users)
+                
+        except Exception as e:
+            logger.error(
+                f"Error processing local search class {local_search_class}: {str(e)}", 
+                exc_info=True
+            )
 
-            for user in users:
-                username = user.get('username')
-                if username not in usernames_found and username not in self.usernames_names_to_exclude:
-                    usernames_found.append(username)
-                    matches.append(user)
+        # Only proceed with LDAP search if no local matches were found
+        if not matches and len(self.USER_SEARCH_CLASSES) > 1:
+            ldap_search_class = self.USER_SEARCH_CLASSES[1]
+            try:
+                cls = import_string(ldap_search_class)
+                search_class_obj = cls(self.user_search_string, self.search_by)
+                logger.debug(f"Initialized LDAP search class object: {cls.__name__}")
+                
+                ldap_users = search_class_obj.search()
+                if ldap_users:
+                    logger.info(f"LDAP search found {len(ldap_users)} users")
+                    matches.extend(ldap_users)
+                else:
+                    logger.debug("No users found in LDAP search")
+                    
+            except Exception as e:
+                logger.error(
+                    f"Error processing LDAP search class {ldap_search_class}: {str(e)}", 
+                    exc_info=True
+                )
 
-        if len(self.user_search_string.split()) > 1:
-            number_of_usernames_searched = len(self.user_search_string.split())
-            number_of_usernames_found = len(usernames_found)
-            usernames_not_found = list(set(self.user_search_string.split()) - set(usernames_found) - set(self.usernames_names_to_exclude))
-        else:
-            number_of_usernames_searched = None
-            number_of_usernames_found = None
-            usernames_not_found = None
-
-        context = {
+        return {
             'matches': matches,
-            'number_of_usernames_searched': number_of_usernames_searched,
-            'number_of_usernames_found': number_of_usernames_found,
-            'usernames_not_found': usernames_not_found
+            'usernames_not_found': usernames_not_found,
+            'usernames_found': usernames_found
         }
-        return context
