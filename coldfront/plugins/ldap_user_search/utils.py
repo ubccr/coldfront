@@ -4,7 +4,8 @@ import logging
 import ldap.filter
 from coldfront.core.user.utils import UserSearch
 from coldfront.core.utils.common import import_from_settings
-from ldap3 import Connection, Server, Tls, get_config_parameter, set_config_parameter, SASL
+from ldap3 import Connection, Server, Tls, get_config_parameter, set_config_parameter, SASL, AUTO_BIND_TLS_BEFORE_BIND
+import ssl
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,7 @@ class LDAPUserSearch(UserSearch):
         self.LDAP_PRIV_KEY_FILE = import_from_settings('LDAP_USER_SEARCH_PRIV_KEY_FILE', None)
         self.LDAP_CERT_FILE = import_from_settings('LDAP_USER_SEARCH_CERT_FILE', None)
         self.LDAP_CACERT_FILE = import_from_settings('LDAP_USER_SEARCH_CACERT_FILE', None)
+        self.LDAP_CERT_VALIDATE_MODE = import_from_settings('LDAP_USER_SEARCH_CERT_VALIDATE_MODE', None)
         self.USERNAME_ONLY_ATTR = import_from_settings('LDAP_USER_SEARCH_USERNAME_ONLY_ATTR', 'username')
         self.ATTRIBUTE_MAP = import_from_settings('LDAP_USER_SEARCH_ATTRIBUTE_MAP', {
                                                       "username": "uid",
@@ -37,14 +39,24 @@ class LDAPUserSearch(UserSearch):
 
         tls = None
         if self.LDAP_USE_TLS:
+            ldap_cert_validate_mode = ssl.CERT_NONE
+            if self.LDAP_CERT_VALIDATE_MODE == 'optional':
+                ldap_cert_validate_mode = ssl.CERT_OPTIONAL
+            elif self.LDAP_CERT_VALIDATE_MODE == 'required':
+                ldap_cert_validate_mode = ssl.CERT_REQUIRED
+
             tls = Tls(
                 local_private_key_file=self.LDAP_PRIV_KEY_FILE,
                 local_certificate_file=self.LDAP_CERT_FILE,
                 ca_certs_file=self.LDAP_CACERT_FILE,
+                validate=ldap_cert_validate_mode,
             )
 
         self.server = Server(self.LDAP_SERVER_URI, use_ssl=self.LDAP_USE_SSL, connect_timeout=self.LDAP_CONNECT_TIMEOUT, tls=tls)
-        conn_params = {"auto_bind": True}
+        auto_bind = True
+        if self.LDAP_USE_TLS:
+            auto_bind = AUTO_BIND_TLS_BEFORE_BIND
+        conn_params = {"auto_bind": auto_bind}
         if self.LDAP_SASL_MECHANISM:
             conn_params["sasl_mechanism"] = self.LDAP_SASL_MECHANISM
             conn_params["sasl_credentials"] = self.LDAP_SASL_CREDENTIALS
