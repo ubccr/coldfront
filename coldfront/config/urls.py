@@ -5,6 +5,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
 from django.views.generic import TemplateView
+import djp
 
 import coldfront.core.portal.views as portal_views
 
@@ -44,3 +45,5 @@ if 'mozilla_django_oidc' in settings.INSTALLED_APPS:
 
 if 'django_su.backends.SuBackend' in settings.AUTHENTICATION_BACKENDS:
     urlpatterns.append(path('su/', include('django_su.urls')))
+
+urlpatterns += djp.urlpatterns()
