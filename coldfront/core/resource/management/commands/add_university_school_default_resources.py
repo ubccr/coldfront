@@ -22,7 +22,7 @@ class Command(BaseCommand):
             ('Cluster', None, GENERAL_RESOURCE_NAME,
              'University Academic Cluster', None, True, True, True)
         resource_type_obj = ResourceType.objects.get(name=resource_type)
-        if parent_resource != None:
+        if parent_resource is not None:
             parent_resource_obj = Resource.objects.get(
                 name=parent_resource)
         else:
@@ -58,7 +58,7 @@ class Command(BaseCommand):
         for resource in resources:
             resource_type, parent_resource, name, description, school, is_available, is_public, is_allocatable = resource
             resource_type_obj = ResourceType.objects.get(name=resource_type)
-            if parent_resource != None:
+            if parent_resource is not None:
                 parent_resource_obj = Resource.objects.get(
                     name=parent_resource)
             else:
