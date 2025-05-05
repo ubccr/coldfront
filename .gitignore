@@ -21,4 +21,4 @@ db.json
 .env
 .devcontainer/*
 .bin/*
-coldfront-django.log*
+coldfront-django.*.log
