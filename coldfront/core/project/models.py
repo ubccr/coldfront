@@ -5,6 +5,7 @@ from enum import Enum
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import MinLengthValidator
+from django.core.validators import RegexValidator
 from django.db import models
 from ast import literal_eval
 from coldfront.core.utils.validate import AttributeValidator
@@ -15,6 +16,8 @@ from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.utils.common import import_from_settings
 
 PROJECT_ENABLE_PROJECT_REVIEW = import_from_settings('PROJECT_ENABLE_PROJECT_REVIEW', False)
+PROJECT_TITLE_REGEX = import_from_settings('PROJECT_TITLE_REGEX', '.*')
+PROJECT_TITLE_REGEX_DESCRIPTION = import_from_settings('PROJECT_TITLE_REGEX_DESCRIPTION', '')
 
 class ProjectPermission(Enum):
     """ A project permission stores the user, manager, pi, and update fields of a project. """
@@ -76,7 +79,7 @@ class Project(TimeStampedModel):
 We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!
         '''
 
-    title = models.CharField(max_length=255,)
+    title = models.CharField(max_length=255, validators=[RegexValidator(PROJECT_TITLE_REGEX, PROJECT_TITLE_REGEX_DESCRIPTION)])
     pi = models.ForeignKey(User, on_delete=models.CASCADE,)
     description = models.TextField(
         default=DEFAULT_DESCRIPTION,

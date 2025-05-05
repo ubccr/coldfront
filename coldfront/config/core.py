@@ -24,6 +24,8 @@ PUBLICATION_ENABLE = ENV.bool('PUBLICATION_ENABLE', default=True)
 # Enable Project Review
 #------------------------------------------------------------------------------
 PROJECT_ENABLE_PROJECT_REVIEW = ENV.bool('PROJECT_ENABLE_PROJECT_REVIEW', default=True)
+PROJECT_TITLE_REGEX = ENV.str('PROJECT_TITLE_REGEX', default='.*')
+PROJECT_TITLE_REGEX_DESCRIPTION = ENV.str('PROJECT_TITLE_REGEX_DESCRIPTION', default='')
 
 #------------------------------------------------------------------------------
 # Allocation related
