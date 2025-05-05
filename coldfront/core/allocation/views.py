@@ -55,7 +55,9 @@ from coldfront.core.allocation.signals import (allocation_new,
                                                allocation_disable,
                                                allocation_remove_user,
                                                allocation_change_approved,
-                                               allocation_attribute_changed)
+                                               allocation_change_created,
+                                               allocation_change_approved,)
+>>>>>>> main
 from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
                                              get_user_resources)
 from coldfront.core.project.models import (Project, ProjectUser, ProjectPermission,
@@ -240,7 +242,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             allocation_obj.end_date = None
             allocation_obj.save()
 
-            if allocation_obj.status.name == ['Denied', 'Revoked']:
+            if allocation_obj.status.name in ['Denied', 'Revoked']:
                 allocation_disable.send(
                     sender=self.__class__, allocation_pk=allocation_obj.pk)
                 allocation_users = allocation_obj.allocationuser_set.exclude(
@@ -494,6 +496,25 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             form.add_error(None, format_html(
                 'You need to create an account name. Create it by clicking the link under the "Allocation account" field.'))
             return self.form_invalid(form)
+
+        allocation_limit_objs = resource_obj.resourceattribute_set.filter(
+            resource_attribute_type__name='allocation_limit').first()
+        if allocation_limit_objs:
+            allocation_limit = int(allocation_limit_objs.value)
+            allocation_count = project_obj.allocation_set.filter(
+                resources=resource_obj,
+                status__name__in=[
+                    'Active', 'New',
+                    'Renewal Requested',
+                    'Paid',
+                    'Payment Pending',
+                    'Payment Requested'
+                ]
+            ).count()
+            if allocation_count >= allocation_limit:
+                form.add_error(None, format_html(
+                    'Your project is at the allocation limit allowed for this resource.'))
+                return self.form_invalid(form)
 
         usernames = form_data.get('users')
         usernames.append(project_obj.pi.username)
@@ -1827,6 +1848,12 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 )
 
         messages.success(request, 'Allocation change request successfully submitted.')
+
+        allocation_change_created.send(
+            sender=self.__class__,
+            allocation_pk=allocation_obj.pk,
+            allocation_change_pk=allocation_change_request_obj.pk,)
+        
 
         send_allocation_admin_email(allocation_obj,
                                     'New Allocation Change Request',

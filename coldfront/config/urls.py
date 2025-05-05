@@ -33,6 +33,9 @@ if settings.PUBLICATION_ENABLE:
 if settings.RESEARCH_OUTPUT_ENABLE:
     urlpatterns.append(path('research-output/', include('coldfront.core.research_output.urls')))
 
+if 'coldfront.plugins.api' in settings.INSTALLED_APPS:
+    urlpatterns.append(path('api/', include('coldfront.plugins.api.urls')))
+
 if 'coldfront.plugins.iquota' in settings.INSTALLED_APPS:
     urlpatterns.append(path('iquota/', include('coldfront.plugins.iquota.urls')))
 

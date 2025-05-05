@@ -1,8 +1,10 @@
 import logging
+from unittest.mock import patch
 
 from django.core.exceptions import ValidationError
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase
 
+from coldfront.core.project.utils import generate_project_code
 from coldfront.core.test_helpers.factories import (
     UserFactory,
     ProjectFactory,
@@ -205,3 +207,73 @@ class TestProjectAttribute(TestCase):
         )
         with self.assertRaises(ValidationError):
             new_attr.clean()
+
+
+class TestProjectCode(TransactionTestCase):
+    """Tear down database after each run to prevent conflicts across cases """
+    reset_sequences = True
+
+    def setUp(self):
+        self.user = UserFactory(username='capeo')
+        self.field_of_science = FieldOfScienceFactory(description='Physics')
+        self.status = ProjectStatusChoiceFactory(name='Active')
+
+
+    def create_project_with_code(self, title, project_code, project_code_padding=0):
+        """Helper method to create a project and a project code with a specific prefix and padding"""
+        # Project Creation
+        project = Project.objects.create(
+            title=title,
+            pi=self.user,
+            status=self.status,
+            field_of_science=self.field_of_science,
+        )
+
+        project.project_code = generate_project_code(project_code, project.pk, project_code_padding)
+
+        project.save()
+
+        return project.project_code
+
+
+    @patch('coldfront.config.core.PROJECT_CODE', 'BFO')
+    @patch('coldfront.config.core.PROJECT_CODE_PADDING', 3)
+    def test_project_code_increment_after_deletion(self):
+        from coldfront.config.core import PROJECT_CODE
+        from coldfront.config.core import PROJECT_CODE_PADDING
+        """Test that the project code increments by one after a project is deleted"""
+
+        # Create the first project
+        project_with_code_padding1 = self.create_project_with_code('Project 1', PROJECT_CODE, PROJECT_CODE_PADDING)
+        self.assertEqual(project_with_code_padding1, 'BFO001')
+
+        # Delete the first project
+        project_obj1 = Project.objects.get(title='Project 1')
+        project_obj1.delete()
+
+        # Create the second project
+        project_with_code_padding2 = self.create_project_with_code('Project 2', PROJECT_CODE, PROJECT_CODE_PADDING)
+        self.assertEqual(project_with_code_padding2, 'BFO002')
+
+
+    @patch('coldfront.config.core.PROJECT_CODE','BFO')
+    def test_no_padding(self):
+        from coldfront.config.core import PROJECT_CODE
+        """Test with code and no padding"""
+        project_with_code = self.create_project_with_code('Project 1', PROJECT_CODE)
+        self.assertEqual(project_with_code, 'BFO1')  # No padding
+
+    @patch('coldfront.config.core.PROJECT_CODE', 'BFO')
+    @patch('coldfront.config.core.PROJECT_CODE_PADDING', 3)
+    def test_different_prefix_padding(self):
+        from coldfront.config.core import PROJECT_CODE
+        from coldfront.config.core import PROJECT_CODE_PADDING
+        """Test with code and padding"""
+
+        # Create two projects with codes
+        project_with_code_padding1 = self.create_project_with_code('Project 1', PROJECT_CODE, PROJECT_CODE_PADDING)
+        project_with_code_padding2 = self.create_project_with_code('Project 2', PROJECT_CODE, PROJECT_CODE_PADDING)
+
+        # Test the generated project codes
+        self.assertEqual(project_with_code_padding1, 'BFO001')
+        self.assertEqual(project_with_code_padding2, 'BFO002')

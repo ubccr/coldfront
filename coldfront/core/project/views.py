@@ -11,6 +11,7 @@ from django import forms
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import user_passes_test, login_required
 from django.contrib.auth.models import User
+from coldfront.core.project.utils import generate_project_code
 from coldfront.core.utils.common import import_from_settings
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
@@ -33,6 +34,11 @@ from coldfront.core.allocation.models import (Allocation,
                                               AllocationUserStatusChoice)
 from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_remove_user)
+from coldfront.core.project.signals import (project_new,
+                                            project_archive,
+                                            project_activate_user,
+                                            project_remove_user,
+                                            project_update)
 from coldfront.core.grant.models import Grant
 from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectAddUsersToAllocationForm,
@@ -43,7 +49,8 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectReviewForm,
                                           ProjectSearchForm,
                                           ProjectUserUpdateForm,
-                                          ProjectAttributeUpdateForm)
+                                          ProjectAttributeUpdateForm,
+                                          ProjectCreationForm)
 from coldfront.core.project.models import (Project,
                                            ProjectAttribute,
                                            ProjectReview,
@@ -70,6 +77,9 @@ if EMAIL_ENABLED:
     EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
         'EMAIL_DIRECTOR_EMAIL_ADDRESS')
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
+
+PROJECT_CODE = import_from_settings('PROJECT_CODE', False)
+PROJECT_CODE_PADDING = import_from_settings('PROJECT_CODE_PADDING', False)
 
 logger = logging.getLogger(__name__)
 
@@ -441,6 +451,10 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
         end_date = datetime.datetime.now()
         project.status = project_status_archive
         project.save()
+
+        # project signals
+        project_archive.send(sender=self.__class__,project_obj=project)
+
         for allocation in project.allocation_set.filter(status__name='Active'):
             allocation.status = allocation_status_expired
             allocation.end_date = end_date
@@ -451,7 +465,7 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
 class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Project
     template_name_suffix = '_create_form'
-    fields = ['title', 'description', 'field_of_science', ]
+    form_class = ProjectCreationForm
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -474,6 +488,17 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
             role=ProjectUserRoleChoice.objects.get(name='Manager'),
             status=ProjectUserStatusChoice.objects.get(name='Active')
         )
+
+        if PROJECT_CODE:
+            '''
+            Set the ProjectCode object, if PROJECT_CODE is defined. 
+            If PROJECT_CODE_PADDING is defined, the set amount of padding will be added to PROJECT_CODE.
+            '''
+            project_obj.project_code = generate_project_code(PROJECT_CODE, project_obj.pk, PROJECT_CODE_PADDING or 0)
+            project_obj.save(update_fields=["project_code"])
+
+        # project signals
+        project_new.send(sender=self.__class__, project_obj=project_obj)
 
         return super().form_valid(form)
 
@@ -502,6 +527,14 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+
+        if PROJECT_CODE and project_obj.project_code == "":
+            '''
+            Updates project code if no value was set, providing the feature is activated. 
+            '''
+            project_obj.project_code = generate_project_code(PROJECT_CODE, project_obj.pk, PROJECT_CODE_PADDING or 0)
+            project_obj.save(update_fields=["project_code"])
+
         if project_obj.status.name not in ['Active', 'New', ]:
             messages.error(request, 'You cannot update an archived project.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
@@ -509,6 +542,8 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
             return super().dispatch(request, *args, **kwargs)
 
     def get_success_url(self):
+        # project signals
+        project_update.send(sender=self.__class__, project_obj=self.object)
         return reverse('project-detail', kwargs={'pk': self.object.pk})
 
 
@@ -703,6 +738,9 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                         project_user_obj = ProjectUser.objects.create(
                             user=user_obj, project=project_obj, role=role_choice, status=project_user_active_status_choice)
 
+                    # project signals
+                    project_activate_user.send(sender=self.__class__,project_user_pk=project_user_obj.pk)
+
                     for allocation in Allocation.objects.filter(pk__in=allocation_form_data):
                         if allocation.allocationuser_set.filter(user=user_obj).exists():
                             allocation_user_obj = allocation.allocationuser_set.get(
@@ -820,6 +858,9 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                         user=user_obj)
                     project_user_obj.status = project_user_removed_status_choice
                     project_user_obj.save()
+
+                    # project signals
+                    project_remove_user.send(sender=self.__class__,project_user_pk=project_user_obj.pk)
 
                     # get allocation to remove users from
                     allocations_to_remove_user_from = project_obj.allocation_set.filter(
