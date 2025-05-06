@@ -33,7 +33,10 @@ if settings.PUBLICATION_ENABLE:
 if settings.RESEARCH_OUTPUT_ENABLE:
     urlpatterns.append(path('research-output/', include('coldfront.core.research_output.urls')))
 
-if 'coldfront_custom_resources' in settings.INSTALLED_APPS: 
+if 'coldfront.plugins.movable_allocations' in settings.INSTALLED_APPS:
+    urlpatterns.append(path('movable_allocations/', include('coldfront.plugins.movable_allocations.urls')))
+
+if 'coldfront_custom_resources' in settings.INSTALLED_APPS:
     urlpatterns.append(path('custom_resources/', include('coldfront_custom_resources.urls')))
 
 if 'coldfront.plugins.announcements' in settings.INSTALLED_APPS:

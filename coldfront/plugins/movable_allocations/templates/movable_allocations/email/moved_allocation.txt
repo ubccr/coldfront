@@ -1,0 +1,13 @@
+Your {{ resource }} allocation, {{ allocation_url }}, was moved to a different project by
+{{ user.first_name }} {{ user.last_name }} ({{ user.username }}).
+
+New location:
+Project: {{ destination_project_url }}
+
+Old location:
+Project: {{ origin_project_url }}
+
+If this allocation has a compute resource then its slurm account has changed. You should
+visit your allocation and note the new slurm account.
+
+{{ signature }}
