@@ -35,5 +35,5 @@ class Command(BaseCommand):
             AllocationAttribute.objects.get_or_create(
                 allocation_attribute_type=attribute_type,
                 allocation=allocation,
-                value=default_value,
+                defaults = {"value": default_value},
             )
