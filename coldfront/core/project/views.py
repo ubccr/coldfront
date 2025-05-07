@@ -229,6 +229,12 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING'] = ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING
         context['ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING'] = ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING
         context['enable_customizable_forms'] = 'coldfront.plugins.customizable_forms' in settings.INSTALLED_APPS
+        project_messages = project_obj.projectusermessage_set
+        if self.request.user.is_superuser or self.request.user.has_perm('project.view_projectusermessage'):
+            project_messages = project_messages.all()
+        else:
+            project_messages = project_messages.filter(is_private=False)
+        context['project_messages'] = project_messages.order_by('-created')
 
         try:
             context['ondemand_url'] = settings.ONDEMAND_URL

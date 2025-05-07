@@ -615,7 +615,7 @@ Project Detail
     </div>
   </div>
   <div class="card-body">
-    {% if project.projectusermessage_set.all %}
+    {% if project_messages %}
       <div class="table-responsive">
         <table class="table table-hover">
           <thead>
@@ -626,7 +626,7 @@ Project Detail
             </tr>
           </thead>
           <tbody>
-            {% for message in project.projectusermessage_set.all %}
+            {% for message in project_messages %}
             <tr>
               <td>{{ message.message }}</td>
               {% if message.is_private %}
