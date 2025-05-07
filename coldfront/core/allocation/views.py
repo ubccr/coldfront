@@ -174,12 +174,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         # Can the user update the project?
         is_allowed_to_update_project = allocation_obj.project.has_perm(self.request.user, ProjectPermission.UPDATE, 'change_project')
-        # If not is the user a part of a group that can update the allocation?
-        if not is_allowed_to_update_project:
-            is_allowed_to_update_project = allocation_obj.has_perm(self.request.user, AllocationPermission.MANAGER, 'change_allocation')
-
         context['is_allowed_to_update_project'] = is_allowed_to_update_project
-
         context['allocation_user_roles_enabled'] = check_if_roles_are_enabled(allocation_obj)
         context['allocation_invoices'] = allocation_obj.allocationinvoice_set.all()
 
@@ -208,7 +203,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             context['allocation_moving_enabled'] = is_moveable and is_moveable.value == 'Yes'
 
         context['project'] = allocation_obj.project
-        context['notes'] = notes
+        context['notes'] = notes.order_by("-created")
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
         context['ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING'] = ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING
         context['ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING'] = ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING
