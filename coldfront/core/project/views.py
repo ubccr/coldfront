@@ -480,6 +480,18 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     def get_form(self, form_class = None):
         form = super().get_form(form_class)
         form.fields['pi_username'].required = not check_if_pi_eligible(self.request.user)
+        form.fields['description'].widget.attrs.update(
+            {
+                "placeholder": (
+                    "EXAMPLE: Our research involves the collection, storage, and analysis of rat "
+                    "colony behaviorial footage to study rat social patterns in natural settings. "
+                    "We intend to store the footage in a shared Slate-Project directory, perform "
+                    "cleaning of the footage with the Python library Pillow, and then perform "
+                    "video classification analysis on the footage using Python libraries such as "
+                    "TorchVision using Quartz and Big Red 200."
+                )
+            }
+        )
         return form
 
     def get_context_data(self, **kwargs):
