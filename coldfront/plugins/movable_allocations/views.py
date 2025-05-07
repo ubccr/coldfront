@@ -73,7 +73,7 @@ class AllocationMoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         is_moveable = allocation_obj.allocationattribute_set.filter(
             allocation_attribute_type__name="Is Moveable"
         ).first()
-        if is_moveable and is_moveable.value == "Yes":
+        if not (is_moveable and is_moveable.value == "Yes"):
             messages.error(request, "Allocation must be moveable.")
             return HttpResponseRedirect(
                 reverse("allocation-detail", kwargs={"pk": kwargs.get("pk")})
