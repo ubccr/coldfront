@@ -39,14 +39,14 @@ Allocation Detail
       <div class="col">
         <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>
       </div>
-      <div class="col">
+      <div class="col" style="padding-right: 14px;">
         {% if allocation.is_changeable and allocation.status.name == 'Active' and is_allowed_to_update_project %}
-          <a class="btn btn-primary" href="{% url 'allocation-change' allocation.pk %}" role="button" style="float: right;">
+          <a class="btn btn-primary mr-1" href="{% url 'allocation-change' allocation.pk %}" role="button" style="float: right;">
             Request Change
           </a>
         {% endif %}
         {% if allocation_moving_enabled and user_has_permissions %}
-          <a href="{% url 'move-allocation' allocation.pk %}" class="btn btn-primary" role="button" style="float: right;">Move Allocation</a>
+          <a href="{% url 'move-allocation' allocation.pk %}" class="btn btn-primary mr-1" role="button" style="float: right;">Move Allocation</a>
         {% endif %}
         {% if allocation.status.name in 'Active, Billing Information Submitted' and allocation.get_parent_resource.name in ALLOCATION_REMOVAL_REQUESTS_ALLOWED %}
           {% load allocation_removal_requests_tags %}
