@@ -15,44 +15,24 @@ MESSAGE_TAGS = {
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
-    'formatters': {
-        'custom': {
-            'format': '{levelname} {asctime} {message}',
-            'style': '{'
-        }
-    },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
         },
-        'file': {
-            'class': 'logging.FileHandler',
-            'filename': './coldfront.log',
-            'formatter': 'custom'
+        # 'file': {
+        #     'class': 'logging.FileHandler',
+        #     'filename': '/tmp/debug.log',
+        # },
+    },
+    'loggers': {
+        'django_auth_ldap': {
+            'level': 'WARN',
+            # 'handlers': ['console', 'file'],
+            'handlers': ['console', ],
         },
-        'mail_admins': {
-            'class': 'coldfront.core.utils.log.CustomAdminEmailHandler',
-            'formatter': 'custom',
-            'level': 'ERROR'
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
         },
     },
-    'root': {
-        'handlers': ['file', 'mail_admins'],
-        'level': 'INFO',
-    }
-    #'loggers': {
-    #    'django_auth_ldap': {
-    #        'level': 'WARN',
-    #        # 'handlers': ['console', 'file'],
-    #        'handlers': ['console', ],
-    #    },
-    #    'django': {
-    #        'handlers': ['console'],
-    #        'level': 'INFO',
-    #    },
-    #    'root': {
-    #        'handlers': ['console', 'file'],
-    #        'level': 'INFO',
-    #    }
-    #},
 }
