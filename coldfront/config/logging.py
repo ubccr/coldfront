@@ -51,5 +51,9 @@ LOGGING = {
             "handlers": ["console", "file"],
             "level": "INFO",
         },
+        "django-q": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+        },
     },
 }
