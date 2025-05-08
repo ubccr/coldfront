@@ -55,6 +55,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+  "debugpy>=1.8.14",
   "ruff",
 ]
 auth = [

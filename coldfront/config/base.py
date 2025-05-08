@@ -55,7 +55,6 @@ sys.modules['fontawesome_free'] = __import__('fontawesome-free')
 INSTALLED_APPS += [
     'crispy_forms',
     'crispy_bootstrap4',
-    'sslserver',
     'django_q',
     'simple_history',
     'fontawesome_free',
@@ -74,6 +73,12 @@ INSTALLED_APPS += [
     'coldfront.core.publication',
     'coldfront.core.research_output',
 ]
+
+# sslserver turned on only when debug mode is turned on
+if DEBUG:
+    INSTALLED_APPS += [
+            'sslserver'
+            ]
 
 #------------------------------------------------------------------------------
 # Django Middleware

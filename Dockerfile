@@ -8,11 +8,12 @@ RUN apt-get update \
 WORKDIR /usr/src/app
 COPY . .
 
-RUN uv sync --extra prod
+RUN uv sync --extra prod --extra dev
 RUN echo "yes" | uv run manage.py initial_setup
 RUN uv run manage.py load_test_data
 
 ENV DEBUG=True
 ENV PYTHONUNBUFFERED=1
 EXPOSE 8000
+EXPOSE 5678
 CMD ["uv", "run", "manage.py", "runserver", "0.0.0.0:8000"]
