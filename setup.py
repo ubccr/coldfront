@@ -58,7 +58,7 @@ setup(
         'redis==3.5.3',
         'requests==2.31.0',
         'six==1.16.0',
-        'sqlparse==0.4.4',
+        'sqlparse==0.5.0',
         'text-unidecode==1.3',
         'types-python-dateutil==2.8.19.20240106',
         'typing_extensions==4.10.0',
