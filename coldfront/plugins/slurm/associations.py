@@ -4,6 +4,8 @@ import os
 import re
 import sys
 
+from django.db.models import Q
+
 from coldfront.core.resource.models import Resource
 from coldfront.plugins.slurm.utils import (SLURM_ACCOUNT_ATTRIBUTE_NAME,
                                            SLURM_CLUSTER_ATTRIBUTE_NAME,
@@ -115,7 +117,7 @@ class SlurmCluster(SlurmBase):
             cluster.add_allocation(allocation, user_specs=user_specs)
 
         # Process child resources
-        children = Resource.objects.filter(parent_resource_id=resource.id, resource_type__name=['Cluster Partition','Generic'])
+        children = Resource.objects.get(Q(parent_resource_id=resource.id), Q(resource_type__name='Generic') | Q(resource_type__name='Cluster'))
         for r in children:
             partition_specs = r.get_attribute_list(SLURM_SPECS_ATTRIBUTE_NAME)
             partition_user_specs = r.get_attribute_list(SLURM_USER_SPECS_ATTRIBUTE_NAME)
