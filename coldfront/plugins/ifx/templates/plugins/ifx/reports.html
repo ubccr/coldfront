@@ -35,7 +35,7 @@ Report runs
               dom: 't',
               columns: [
                   {data: 'report', width: '100px'},
-                  {data: 'date_range', width: '100px'},
+                  {data: 'date_range', width: '200px'},
                   {data:  function(item){ return `<a href="${item.url_root}/${item.xls_file_path}">${item.xls_file_path}</a>`}},
                   {data:  function(item){ return `<a href="${item.url_root}/${item.text_file_path}">${item.text_file_path}</a>`}},
                   {data:  function(item){ return new Date(item.updated).toLocaleTimeString('en-us', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}}
@@ -65,22 +65,40 @@ Report runs
                   $(this).datepicker('setDate', new Date(inst.selectedYear, inst.selectedMonth + 1, 0));
               }
           });
+          $("#fy").change(function() {
+              if ($(this).is(":checked")) {
+                  $("#start_date").prop('disabled', true)
+                  $("#end_date").prop('disabled', true)
+              } else {
+                  $("#start_date").prop('disabled', false)
+                  $("#end_date").prop('disabled', false)
+              }
+          })
 
           $("input[type='submit']").click((ev) => {
-              ev.preventDefault()
-              $.ajax({
-                  contentType: 'application/json',
-                  url: '/ifx/api/run-report/',
-                  method: 'POST',
-                  headers: {'X-CSRFToken': '{{ csrf_token }}'},
-                  data: JSON.stringify({
-                      'name': 'Standard',
-                      'date_range': 'fy'
-                  }),
-                  dataType: "json"
-              }).done(
-                  function () { reportRunsTable.ajax.reload() }
-              )
+            const report = $("#report").val()
+            const fy = $("#fy").is(":checked")
+            const start_date = $("#start_date").val()
+            const end_date = $("#end_date").val()
+            if (!fy && (!start_date || !end_date)) {
+                alert("Start date and End date or FY are required")
+                return
+            }
+            const date_range = fy ? 'fy' : `${start_date}:${end_date}`
+            ev.preventDefault()
+            $.ajax({
+                contentType: 'application/json',
+                url: '/ifx/api/run-report/',
+                method: 'POST',
+                headers: {'X-CSRFToken': '{{ csrf_token }}'},
+                data: JSON.stringify({
+                    'name': report,
+                    'date_range': date_range,
+                }),
+                dataType: "json"
+            }).done(
+                function () { reportRunsTable.ajax.reload() }
+            )
           })
     })
 </script>
@@ -95,24 +113,25 @@ Report runs
     </div>
     <div style="margin: 2em;">
         <form method="post">
-            {% csrf_token %}
-            <table>
-                <tbody>
-                    <tr>
-                        <td>Report</td>
-                        <td>
-                            <select name="report" id="report">
-                                <option value="Standard">Standard</option>
-                                <option value="SEASHCSPH">SEAS / HCSPH</option>
-                            </select>
-                        </td>
-                        <td>Fiscal Year</td><td><input type="checkbox" name="date_range" id="fy" checked></td>
-                        <td>Start Date</td><td><input type="text" name="start_date" id="start_date"></td>
-                        <td>End Date</td><td><input type="text" name="end_date" id="end_date"></td>
-                        <td><input type="submit" value="Run report"></input></td>
-                    </tr>
-                </tbody>
-            </table>
+          <input type="hidden" name="date_range" id="date_range">
+          {% csrf_token %}
+          <table>
+              <tbody>
+                  <tr>
+                      <td>Report</td>
+                      <td>
+                          <select name="report" id="report">
+                              <option value="Standard">Standard</option>
+                              <option value="SEASHCSPH">SEAS / HCSPH</option>
+                          </select>
+                      </td>
+                      <td>Fiscal Year</td><td><input type="checkbox" name="fy" id="fy"></td>
+                      <td>Start Date</td><td><input type="text" name="start_date" id="start_date"></td>
+                      <td>End Date</td><td><input type="text" name="end_date" id="end_date"></td>
+                      <td><input type="submit" value="Run report"></input></td>
+                  </tr>
+              </tbody>
+          </table>
         </form>
     </div>
     <div style="margin: 2em;">
