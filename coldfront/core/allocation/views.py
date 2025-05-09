@@ -1337,11 +1337,18 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
         context = super().get_context_data(**kwargs)
         if self.request.user.is_superuser:
             allocation_list = Allocation.objects.filter(
-                status__name__in=['New', 'Renewal Requested', 'Paid', 'Billing Information Submitted']
+                status__name__in=['New', 'Paid', 'Billing Information Submitted']
+            ).exclude(project__status__name__in=['Archived', 'Renewal Denied'])
+            allocation_renewal_list = Allocation.objects.filter(
+                status__name='Renewal Requested'
             ).exclude(project__status__name__in=['Archived', 'Renewal Denied'])
         else:
             allocation_list = Allocation.objects.filter(
-                status__name__in=['New', 'Renewal Requested', 'Paid', 'Billing Information Submitted'],
+                status__name__in=['New', 'Paid', 'Billing Information Submitted'],
+                resources__review_groups__in=list(self.request.user.groups.all())
+            ).exclude(project__status__name__in=['Archived', 'Renewal Denied']).distinct()
+            allocation_renewal_list = Allocation.objects.filter(
+                status__name='Renewal Requested',
                 resources__review_groups__in=list(self.request.user.groups.all())
             ).exclude(project__status__name__in=['Archived', 'Renewal Denied']).distinct()
 
