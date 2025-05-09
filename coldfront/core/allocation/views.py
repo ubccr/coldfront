@@ -2426,6 +2426,8 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             errs.append(err)
         if allocation_obj.resources.filter(resource_type__name='Storage').count() == 0:
             errs.append('You can only request changes for storage allocations.')
+        if allocation_obj.resources.filter(is_allocatable=True).count() == 0:
+            errs.append(f'You cannot request changes for allocations on {allocation_obj.resources.first().name}')
         changeable_status_list = [
             'Active', 'Renewal Requested', 'Payment Pending', 'Payment Requested', 'Paid'
         ]

@@ -400,6 +400,7 @@ def collect_update_project_status_membership():
     # collect commonly used db objects
     projectuser_role_user = ProjectUserRoleChoice.objects.get(name='User')
     projectuserstatus_active = ProjectUserStatusChoice.objects.get(name='Active')
+    project_active_status = ProjectStatusChoice.objects.get(name='Active')
     projectusers_to_remove = []
 
     active_projects = Project.objects.filter(
@@ -414,13 +415,8 @@ def collect_update_project_status_membership():
     ]
 
     active_pi_groups, inactive_pi_groups = remove_inactive_disabled_managers(groupusercollections)
-    projects_to_deactivate = [g.project for g in inactive_pi_groups]
-    Project.objects.bulk_update(
-        [
-            Project(id=p.pk, status=ProjectStatusChoice.objects.get(name='Inactive'))
-            for p in projects_to_deactivate
-        ], ['status']
-    )
+    projects_to_deactivate = Project.objects.filter(pk__in=[g.project.pk for g in inactive_pi_groups])
+    projects_to_deactivate.update(status=ProjectStatusChoice.objects.get(name='Archived'))
     logger.debug('projects_to_deactivate %s', projects_to_deactivate)
     if projects_to_deactivate:
         pis_to_deactivate = ProjectUser.objects.filter(
@@ -431,6 +427,25 @@ def collect_update_project_status_membership():
         pis_to_deactivate.update(status=ProjectUserStatusChoice.objects.get(name='Removed'))
         logger.info('deactivated projects and pis: %s',
             [(pi.project.title, pi.user.username) for pi in pis_to_deactivate])
+
+    ### identify projects for which PIs have changed ###
+    projects_with_changed_pis = Project.objects.filter(
+        pk__in=[g.project.pk for g in active_pi_groups]
+    ).exclude(
+        reduce(operator.or_,
+            ((
+                Q(title=group.project.title) &
+                Q(pi__username=group.pi['sAMAccountName'][0])
+                for group in active_pi_groups
+            ))
+        )
+    )
+    for project in projects_with_changed_pis:
+        matching_group = next(g for g in active_pi_groups if g.project == project)
+        logger.info("changing pi for %s from %s to %s", project.title, project.pi.username, matching_group.pi['sAMAccountName'][0])
+        project.pi = get_user_model().objects.get(username=matching_group.pi['sAMAccountName'][0])
+        project.save()
+
 
     ### identify PIs with incorrect roles and change their status ###
     projectuser_role_pi = ProjectUserRoleChoice.objects.get(name='PI')
@@ -445,13 +460,17 @@ def collect_update_project_status_membership():
     )
 
     if pis_mislabeled:
-        logger.info('Project PIs with incorrect labeling: %s',
+        logger.info('Project PI ProjectUsers with incorrect labeling: %s',
             [(pi.project.title, pi.user.username) for pi in pis_mislabeled])
-        ProjectUser.objects.bulk_update([
-            ProjectUser(id=pi.id, role=projectuser_role_pi)
-            for pi in pis_mislabeled
-        ], ['role'])
+        pis_mislabeled.update(role=projectuser_role_pi)
 
+    ### run check on Projects in active_pi_groups, activate if inactive ###
+    active_pi_group_projs_statuschange = Project.objects.filter(
+        pk__in=[g.project.pk for g in active_pi_groups]).exclude(
+        status=project_active_status
+    )
+    logger.info("projects to reactivate: %s", [p.title for p in active_pi_group_projs_statuschange])
+    active_pi_group_projs_statuschange.update(status=project_active_status)
     for group in active_pi_groups:
 
         ad_users_not_added, remove_projuser_names = group.compare_active_members_projectusers()
@@ -487,7 +506,7 @@ def collect_update_project_status_membership():
                 )
             # create new entries for all new ProjectUsers
             missing_projectusers = present_project_ifxusers.exclude(
-                id__in=[pu.user.pk for pu in present_projectusers]
+                pk__in=[pu.user.pk for pu in present_projectusers]
             )
             logger.debug("missing_projectusers - ifxusers in present_project_ifxusers who are not ")
             ProjectUser.objects.bulk_create([
@@ -508,10 +527,8 @@ def collect_update_project_status_membership():
     ### update status of projectUsers slated for removal ###
     # change ProjectUser status to Removed
     projectuserstatus_removed = ProjectUserStatusChoice.objects.get(name='Removed')
-    ProjectUser.objects.bulk_update([
-        ProjectUser(id=pu.id, status=projectuserstatus_removed)
-        for pu in projectusers_to_remove
-    ], ['status'])
+    projectusers_to_remove_queryset = ProjectUser.objects.filter(pk__in=[pu.pk for pu in projectusers_to_remove])
+    projectusers_to_remove_queryset.update(status=projectuserstatus_removed)
     logger.info('changing status of these ProjectUsers to "Removed":%s',
                 [{"uname":pu.user.username, "lab": pu.project.title} for pu in projectusers_to_remove])
 

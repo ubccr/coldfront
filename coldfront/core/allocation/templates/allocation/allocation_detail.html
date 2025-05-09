@@ -50,7 +50,7 @@ Allocation Detail
       <div class="col">
         <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>
       </div>
-      {% if allocation.is_changeable and not allocation.is_locked and user_can_manage_allocation and allocation.status.name in 'Active, Renewal Requested, Payment Pending, Payment Requested, Paid' and 'Cluster' not in allocation.get_parent_resource.resource_type.name %}
+      {% if allocation.is_changeable and allocation.get_parent_resource.is_allocatable and not allocation.is_locked and user_can_manage_allocation and allocation.status.name in 'Active, Renewal Requested, Payment Pending, Payment Requested, Paid' and 'Cluster' not in allocation.get_parent_resource.resource_type.name %}
         <div class="col">
           <a class="btn btn-primary" href="{% url 'allocation-change' allocation.pk %}" role="button" style="float: right;">
             Request Change

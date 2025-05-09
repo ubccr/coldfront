@@ -247,7 +247,7 @@ class ProjectAdmin(SimpleHistoryAdmin):
     readonly_fields_change = ('created', 'modified', )
     list_display = ('pk', 'title', 'PI', 'created', 'modified', 'status')
     search_fields = ['pi__username', 'projectuser__user__username',
-                     'projectuser__user__last_name', 'projectuser__user__last_name', 'title']
+                     'projectuser__user__first_name', 'projectuser__user__last_name', 'title']
     list_filter = ('status', 'force_review')
     inlines = [ProjectUserInline, ProjectAdminCommentInline, ProjectUserMessageInline, ProjectAttributeInLine]
     raw_id_fields = ['pi', ]
