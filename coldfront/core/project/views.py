@@ -1797,7 +1797,7 @@ class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
         pi_project_objs = Project.objects.filter(
             pi__in=pis,
             status__name__in=[
-                'Active', 'WWaiting For Admin Approval', 'Contacted By Admin', 'Review Pending'
+                'Active', 'Waiting For Admin Approval', 'Contacted By Admin', 'Review Pending'
             ]
         ).order_by('status__name')
         pi_projects = []
