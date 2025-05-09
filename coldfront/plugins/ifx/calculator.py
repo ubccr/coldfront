@@ -143,21 +143,24 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
                                                 user = get_user_model().objects.get(id=user_id)
                                             except get_user_model().DoesNotExist:
                                                 raise Exception(f'Cannot find user with id {user_id}')
-                                            brs = self.generate_billing_records_for_allocation_user(
-                                                year,
-                                                month,
-                                                user,
-                                                organization,
-                                                allocation,
-                                                allocation_percentage_data['fraction'],
-                                                allocation_tb,
-                                                recalculate,
-                                                remaining_tb,
-                                            )
-                                            if brs:
-                                                allocation_brs.extend(brs)
+                                            try:
+                                                brs = self.generate_billing_records_for_allocation_user(
+                                                    year,
+                                                    month,
+                                                    user,
+                                                    organization,
+                                                    allocation,
+                                                    allocation_percentage_data['fraction'],
+                                                    allocation_tb,
+                                                    recalculate,
+                                                    remaining_tb,
+                                                )
+                                                if brs:
+                                                    allocation_brs.extend(brs)
+                                            except Exception as e:
+                                                logger.error(f'Error generating billing records for user {user} of allocation {allocation}: {e}')
                                         if not allocation_brs:
-                                            raise Exception(f'No billing records created for {organization} allocation {allocation}')
+                                            errors.append(f'No billing recordasdfs created for {organization} allocation {allocation}')
                                         successes.extend(allocation_brs)
                                 except Exception as e:
                                     errors.append(str(e))

@@ -166,7 +166,6 @@ def calculate_billing_month(request, invoice_prefix, year, month):
         errors = [v[0] for v in resultinator.get_other_errors_by_organization().values()]
 
         return Response(data={ 'successes': successes, 'errors': errors }, status=status.HTTP_200_OK)
-        return Response('OK', status=status.HTTP_200_OK)
     # pylint: disable=broad-exception-caught
     except Exception as e:
         logger.exception(e)
