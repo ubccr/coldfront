@@ -83,7 +83,11 @@ Project Review List
             <td><a target="_blank" href="{% url 'project-detail' project_review.project.pk %}">{{ project_review.project.title|truncatechars:50 }}</a></td>
             <td>{{ project_review.created|date:"M. d, Y" }}</td>
             <td>{{ project_review.project.end_date|date:"M. d, Y" }}</td>
-            <td>{{ project_review.project.pi.first_name }} {{ project_review.project.pi.last_name }} ({{ project_review.project.pi.username }})</td>
+            <td>
+              <a href="#" data-toggle="modal" data-target="#id_pi_projects_modal" data-pi="{{project_review.project.pi.username}}">
+                {{ project_review.project.pi.first_name }} {{ project_review.project.pi.last_name }} ({{ project_review.project.pi.username }})
+              </a>
+            </td>
             <td>{{ project_review.project_updates|truncatechars:50 }}</td>
             {% if project_review.status.name == 'Contacted By Admin' %}
               <td><span class="badge badge-success"><i class="fas fa-check-circle fa-lg"></i></i></span></td>
@@ -157,6 +161,9 @@ Project Review List
           <div class="card-body">\
             ${project.description}\
           </div>\
+          <div class="card-footer">
+            <strong>Status:</strong> ${project.status}
+          </div>
         </div>`
       );
       }
