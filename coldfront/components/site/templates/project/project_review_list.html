@@ -32,7 +32,7 @@ Project Review List
             <td><a target="_target" href="{% url 'project-detail' project_request.pk %}">{{ project_request.title|truncatechars:50 }}</a></td>
             <td>{{ project_request.created|date:"M. d, Y" }}</td>
             <td>
-              <a href="#" data-toggle="modal" data-target="#id_pi_projects_modal" data-pi="{{project_request.pi.username}}">
+              <a href="#" data-toggle="modal" data-target="#id_pi_projects_modal" data-pi="{{project_request.pi.username}}" data-pk="{{project_request.pk}}">
                 {{ project_request.pi.first_name }} {{project_request.pi.last_name}} ({{ project_request.pi.username }})
               </a>
             </td>
@@ -84,7 +84,7 @@ Project Review List
             <td>{{ project_review.created|date:"M. d, Y" }}</td>
             <td>{{ project_review.project.end_date|date:"M. d, Y" }}</td>
             <td>
-              <a href="#" data-toggle="modal" data-target="#id_pi_projects_modal" data-pi="{{project_review.project.pi.username}}">
+              <a href="#" data-toggle="modal" data-target="#id_pi_projects_modal" data-pi="{{project_review.project.pi.username}}" data-pk="{{project_review.project.pk}}">
                 {{ project_review.project.pi.first_name }} {{ project_review.project.pi.last_name }} ({{ project_review.project.pi.username }})
               </a>
             </td>
@@ -146,10 +146,11 @@ Project Review List
     $('#id_pi_projects_modal .modal-body').html('')
     var link = $(event.relatedTarget);
     var pi = link.data('pi');
+    var pk = link.data('pk');
     var modal = $(this);
     for (let i = 0; i < pi_projects.length; i++) {
       project = pi_projects[i]
-      if (project.pi === pi) {
+      if (project.pi === pi && project.pk !== pk) {
         $('#id_pi_projects_modal .modal-body').append(
         `<div class="card mb-3">\
           <div class="card-header">\
