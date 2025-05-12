@@ -336,7 +336,7 @@ itsm_to_coldfront_map:
       type: string
       values: ["condo", "consumption", "subscription"] # if the status is active
       nulls: true
-      defaults_to: subscription
+      defaults_to: consumption
   comment:
     coldfront:
       - entity: allocation_attribute
@@ -402,7 +402,7 @@ itsm_to_coldfront_map:
       attribute: subsidized
       type: boolean
       nulls: true
-      defaults_to: false
+      defaults_to: true
   quota:
     coldfront:
       - entity: allocation_form

@@ -62,7 +62,7 @@ class AllocationViewTests(TestCase):
             "secure": "No",
             "audit": "No",
             "billing_exempt": "No",
-            "subsidized": "No",
+            "subsidized": "Yes",
         }
         for attr, value in allocation_defaults.items():
             attribute_type = AllocationAttributeType.objects.get(name=attr)
