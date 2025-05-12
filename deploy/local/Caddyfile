@@ -1,0 +1,10 @@
+http://localhost {
+    handle /static/* {
+        root * /srv/
+        file_server
+    }
+    handle {
+        reverse_proxy localhost:8000
+    }
+    log
+}
