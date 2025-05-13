@@ -14,6 +14,7 @@ from django.contrib.auth import get_user_model
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
+from ifxuser.models import Organization, OrgRelation
 from coldfront.config.env import ENV
 from coldfront.core import attribute_expansion
 from coldfront.core.resource.models import Resource
@@ -551,6 +552,24 @@ class Allocation(TimeStampedModel):
         if self.allocationuser_set.filter(user=user, status__name__in=['Active', 'New']).exists():
             return [AllocationPermission.USER]
 
+        departments = Organization.objects.filter(
+            org_tree='Research Computing Storage Billing',
+            useraffiliation__role='approver',
+            useraffiliation__user=user,
+        )
+        for department in departments:
+            child_lab_ids = list(
+                OrgRelation.objects.filter(parent=department, child__rank="lab").values_list(
+                    'child_id', flat=True
+                )
+            )
+            org_names = list(Organization.objects.filter(
+                id__in=child_lab_ids
+            ).values_list('name'))
+            org_names_str = ''.join([name[0] for name in org_names])
+            proj_pi_name = self.project.pi.full_name
+            if proj_pi_name in org_names_str:
+                return [AllocationPermission.USER]
         return []
 
     def has_perm(self, user, perm):
