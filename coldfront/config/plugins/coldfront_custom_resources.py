@@ -5,7 +5,6 @@ INSTALLED_APPS += [
     'coldfront_custom_resources',
     'coldfront_custom_resources.compute',
     'coldfront_custom_resources.service.posit_connect',
-    'coldfront_custom_resources.service.reallms',
     'coldfront_custom_resources.storage.geode_project',
     'coldfront_custom_resources.storage.slate_project'
 ]
