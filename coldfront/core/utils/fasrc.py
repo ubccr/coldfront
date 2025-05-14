@@ -79,28 +79,39 @@ def select_one_project_allocation(project_obj, resource_obj, dirpath):
             logger.exception('multiple allocations found for project/resource/path pairing: %s %s', allocations, allocations[0].path)
             raise Exception('multiple allocations found for project/resource/path pairing')
 
-def determine_size_fmt(byte_num):
+def return_unit_system(system):
+    if system == 'binary':
+        units = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB']
+        divisor = 1024.0
+    elif system == 'decimal':
+        units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB']
+        divisor = 1000.0
+    else:
+        raise Exception('invalid system')
+    return units, divisor
+
+def determine_size_fmt(byte_num, system='binary'):
     """Return the correct human-readable byte measurement.
     """
-    units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB']
+    units, divisor = return_unit_system(system)
     for u in units:
         unit = u
-        if abs(byte_num) < 1024.0:
+        if abs(byte_num) < divisor:
             return (round(byte_num, 3), unit)
-        byte_num /= 1024.0
+        byte_num /= divisor
     return (round(byte_num, 3), unit)
 
-def convert_size_fmt(num, target_unit, source_unit='B'):
-    units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB']
+def convert_size_fmt(num, target_unit, source_unit='B', system='binary'):
+    units, divisor = return_unit_system(system)
     diff = units.index(target_unit) - units.index(source_unit)
     if diff == 0:
         pass
     elif diff > 0:
         for i in range(diff):
-            num/=1024.0
+            num/=divisor
     elif diff < 0:
         for i in range(abs(diff)):
-            num*=1024.0
+            num*=divisor
     return round(num, 3)
 
 def get_resource_rate(resource):
@@ -118,7 +129,7 @@ def get_resource_rate(resource):
     # return charge per TB, adjusted to dollar value
     if rate_obj.units == 'TB':
         return rate_obj.price/100
-    price = convert_size_fmt(rate_obj.price, 'TB', source_unit=rate_obj.units)
+    price = convert_size_fmt(rate_obj.price, 'TiB', source_unit=rate_obj.units)
     return round(price/100, 2)
 
 def id_present_missing_resources(resourceserver_list):

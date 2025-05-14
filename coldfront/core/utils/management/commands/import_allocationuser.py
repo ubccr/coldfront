@@ -128,7 +128,7 @@ class Command(BaseCommand):
                 allocation= allocations[0]
                 if allocation: # get allocation
                     allocation_attribute_type_obj = AllocationAttributeType.objects.get(
-                        name='Storage Quota (TB)')
+                        name=f'Storage Quota ({allocation.unit_label})')
                     allocation_attribute_obj, created = AllocationAttribute.objects.get_or_create(
                         allocation_attribute_type=allocation_attribute_type_obj,
                         allocation=allocation,

@@ -97,6 +97,7 @@ def send_allocation_admin_email(
     project_title = allocation_obj.project.title
 
     ctx = email_template_context(other_vars)
+    ctx['quantity_label'] = allocation_obj.unit_label
     ctx['project_title'] = project_title
     ctx['pi_name'] = pi_name
     ctx['pi_username'] = f'{pi.username}'

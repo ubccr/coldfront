@@ -174,7 +174,7 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         quota_attr_ids = [
             attr.pk for attr in AllocationAttributeType.objects.filter(
-                name__in=['Core Usage (Hours)', 'Storage Quota (TB)']
+                name__in=['Core Usage (Hours)', 'Storage Quota (TB)', 'Storage Quota (TiB)']
             )
         ]
 
@@ -192,7 +192,7 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         allocationuser_filter = (Q(status__name='Active') & ~Q(usage_bytes__isnull=True))
 
         quota_attrs = AllocationAttributeType.objects.filter(
-            name__in=['Core Usage (Hours)', 'Storage Quota (TB)']
+            name__in=['Core Usage (Hours)', 'Storage Quota (TB)', 'Storage Quota (TiB)']
         )
 
         storage_pi_dict = {p.pi: [] for p in project_objs}

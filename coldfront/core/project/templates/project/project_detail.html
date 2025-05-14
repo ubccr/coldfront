@@ -261,14 +261,7 @@ Project Detail
               <td>{{ allocation.get_parent_resource.resource_type.name }}</td>
               <td>{{ allocation.path }}</td>
               <td>{{ allocation.allocationuser_set.count }}</td>
-              <td>{{ allocation.size|floatformat:1 }}
-                {% if allocation.get_parent_resource.resource_type.name == 'Cluster' %}
-                  CPU Hours
-                {% else %}
-                  TB
-                {% endif %}
-              </td>
-
+              <td>{{ allocation.size|floatformat:1 }} {{ allocation.unit_label }}</td>
               {% if allocation.status.name in 'New,In Progress,On Hold' %}
                 <td class="text-success">Requested</td>
               {% elif allocation.status.name == 'Active' %}

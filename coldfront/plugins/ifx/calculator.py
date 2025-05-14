@@ -28,7 +28,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
     '''
     OFFER_LETTER_TB_ATTRIBUTE = 'Offer Letter'
     OFFER_LETTER_CODE_ATTRIBUTE = 'Offer Letter Code'
-    STORAGE_QUOTA_ATTRIBUTE = 'Storage Quota (TB)'
+    STORAGE_QUOTA_ATTRIBUTE = 'Storage Quota (TiB)'
     STORAGE_RESOURCE_TYPE = 'Storage'
 
     def calculate_billing_month(self, year, month, organizations=None, user=None, recalculate=False, verbosity=0):
