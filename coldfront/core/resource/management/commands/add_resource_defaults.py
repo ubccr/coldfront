@@ -140,7 +140,7 @@ class Command(BaseCommand):
                 defaults={'value': default_value}
             )
 
-            quantity_label = "TB"
+            quantity_label = "TiB"
             if default_value == 20:
                 quantity_label += " in 20T increments"
 
