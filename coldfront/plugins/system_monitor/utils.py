@@ -50,7 +50,7 @@ class SystemMonitor:
         try:
             soup = BeautifulSoup(self.response.text, 'html.parser')
         except Exception:
-            print('Error in parsing HTML response')
+            logger.info('Error in parsing HTML response')
             return
 
         pattern = re.compile(r"Last updated: (?P<time>[A-Za-z\t :\d.]+)")
@@ -105,7 +105,7 @@ class SystemMonitor:
             running_value = job_numbers[0]
             queued_value = job_numbers[1]
         except Exception:
-            print('Error in parsing Table. Maybe data is missing')
+            logger.info('Error in parsing Table. Maybe data is missing')
             return
 
         utilization_data = {
