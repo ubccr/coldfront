@@ -50,7 +50,7 @@ Allocation Detail
         {% endif %}
         {% if allocation.status.name in 'Active, Billing Information Submitted' and allocation.get_parent_resource.name in ALLOCATION_REMOVAL_REQUESTS_ALLOWED %}
           {% load allocation_removal_requests_tags %}
-          {% has_admin_perm allocation request.user 'can_remove_allocations' as has_perm %}
+          {% has_admin_perm allocation request.user 'add_allocationremovalrequest' as has_perm %}
           {% if has_perm and user_has_permissions %}
             <a class="btn btn-primary mr-1" href="{% url 'allocation_removal_requests:allocation-remove' allocation.pk %}" role="button" style="float: right;">
               Remove Allocation
