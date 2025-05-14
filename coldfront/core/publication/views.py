@@ -465,7 +465,7 @@ class PublicationExportPublicationsView(LoginRequiredMixin, UserPassesTestMixin,
                         year=publication_form_data.get('year'),
                         unique_id=publication_form_data.get('unique_id'),
                     )
-                    print("id is"+publication_obj.display_uid())
+                    logger.info("id is"+publication_obj.display_uid())
                     temp_id = publication_obj.display_uid()
                     status, bib_str = crossref.get_bib(publication_obj.display_uid())
                     bp = BibTexParser(interpolate_strings=False)

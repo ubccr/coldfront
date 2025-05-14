@@ -113,12 +113,12 @@ def xdmod_fetch_total_storage(start, end, account, resources=None, statistics='p
         # XXX fix me. Here we assume any json response is bad as we're
         # expecting xml but XDMoD should just return json always. 
         
-        # print('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n')
-        # print(f'XDMOD synchronization error: ({start}, {end}, {account}, {resources}, response: {r})')
-        # print(r.content)
-        # print(r.url)
-        # print(payload)
-        # print('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n\n')
+        # logger.info('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n')
+        # logger.info(f'XDMOD synchronization error: ({start}, {end}, {account}, {resources}, response: {r})')
+        # logger.info(r.content)
+        # logger.info(r.url)
+        # logger.info(payload)
+        # logger.info('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n\n')
 
         raise XdmodNotFoundError('Got json response but expected XML: {}'.format(error))
     
