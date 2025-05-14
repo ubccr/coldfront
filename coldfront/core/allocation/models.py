@@ -1,4 +1,5 @@
 import datetime
+import importlib
 import logging
 from ast import literal_eval
 from enum import Enum
@@ -49,7 +50,6 @@ class AllocationPermission(Enum):
 
     USER = 'USER'
     MANAGER = 'MANAGER'
-
 
 class AllocationStatusChoice(TimeStampedModel):
     """ A project status choice indicates the status of the project. Examples include Active, Archived, and New. 
@@ -110,16 +110,6 @@ class Allocation(TimeStampedModel):
     is_locked = models.BooleanField(default=False)
     is_changeable = models.BooleanField(default=False)
     history = HistoricalRecords()
-
-    class Meta:
-        ordering = ['end_date', ]
-
-        permissions = (
-            ('can_view_all_allocations', 'Can view all allocations'),
-            ('can_review_allocation_requests',
-             'Can review allocation requests'),
-            ('can_manage_invoice', 'Can manage invoice')
-        )
 
     def clean(self):
         """ Validates the allocation and raises errors if the allocation is invalid. """
@@ -635,8 +625,7 @@ class AllocationAttribute(TimeStampedModel):
             resources = resources,
             allocations = allocs)
         return expanded
-
-
+           
 class AllocationAttributeUsage(TimeStampedModel):
     """ Allocation attribute usage indicates the usage of an allocation attribute. 
     
@@ -738,7 +727,6 @@ class AllocationUser(TimeStampedModel):
         ]
 
         return self.status.name == 'Active' and self.allocation.status.name in active_allocation_statuses
-
 
     def __str__(self):
         return '%s' % (self.user)

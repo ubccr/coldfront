@@ -5,7 +5,6 @@ from django.forms.models import model_to_dict
 
 from coldfront.core.allocation.models import (AllocationUser,
                                               AllocationUserStatusChoice,
-                                              AllocationStatusChoice,
                                               AllocationAdminAction,
                                               AllocationUserRoleChoice)
 from coldfront.core.resource.models import Resource
@@ -69,7 +68,7 @@ def get_user_resources(user_obj):
         resources = Resource.objects.filter(
             Q(is_allocatable=True) &
             Q(is_available=True) &
-            (Q(is_public=True) | Q(allowed_groups__in=user_obj.groups.all()) | Q(allowed_users__in=[user_obj, ]))
+            (Q(is_public=True) | Q(allowed_groups__in=user_obj.groups.all()) | Q(allowed_users__in=[user_obj,]))
         ).distinct()
 
     return resources
@@ -166,6 +165,10 @@ def create_admin_action(user, fields_to_check, allocation, base_model=None):
                 status_class = base_model._meta.get_field('status').remote_field.model
                 base_model_value = status_class.objects.get(pk=base_model_value).name
                 value = value.name
+            if key == 'project':
+                project_class = base_model._meta.get_field('project').remote_field.model
+                base_model_value = project_class.objects.get(pk=base_model_value).pk
+                value = value.pk
         if value != base_model_value:
             AllocationAdminAction.objects.create(
                 user=user,

@@ -74,7 +74,7 @@ class Command(BaseCommand):
             ('GID', 'Int', False, True),
             ('LDAP Group', 'Text', False, True),
             ('SMB Enabled', 'Yes/No', False, False),
-            ('Slate Project Directory', 'Text', False, False),
+            ('Slate-Project Directory', 'Text', False, False),
         ):
             AllocationAttributeType.objects.get_or_create(name=name, attribute_type=AttributeType.objects.get(
                 name=attribute_type), has_usage=has_usage, is_private=is_private)

@@ -4,9 +4,9 @@ import pprint
 import django
 import logging 
 
+from django import forms
 from django.conf import settings
 from django.contrib import messages
-from django import forms
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import user_passes_test, login_required
 from django.contrib.auth.models import User
@@ -229,6 +229,12 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING'] = ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING
         context['ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING'] = ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING
         context['enable_customizable_forms'] = 'coldfront.plugins.customizable_forms' in settings.INSTALLED_APPS
+        project_messages = project_obj.projectusermessage_set
+        if self.request.user.is_superuser or self.request.user.has_perm('project.view_projectusermessage'):
+            project_messages = project_messages.all()
+        else:
+            project_messages = project_messages.filter(is_private=False)
+        context['project_messages'] = project_messages.order_by('-created')
 
         try:
             context['ondemand_url'] = settings.ONDEMAND_URL
@@ -480,6 +486,18 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     def get_form(self, form_class = None):
         form = super().get_form(form_class)
         form.fields['pi_username'].required = not check_if_pi_eligible(self.request.user)
+        form.fields['description'].widget.attrs.update(
+            {
+                "placeholder": (
+                    "EXAMPLE: Our research involves the collection, storage, and analysis of rat "
+                    "colony behaviorial footage to study rat social patterns in natural settings. "
+                    "We intend to store the footage in a shared Slate-Project directory, perform "
+                    "cleaning of the footage with the Python library Pillow, and then perform "
+                    "video classification analysis on the footage using Python libraries such as "
+                    "TorchVision using Quartz and Big Red 200."
+                )
+            }
+        )
         return form
 
     def get_context_data(self, **kwargs):
@@ -722,9 +740,12 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
         if save_form:
             project_obj.save()
 
-        logger.info(
-            f'User {self.request.user.username} updated a project (project pk={project_obj.pk})'
-        )
+        if SLACK_MESSAGING_ENABLED:
+            url = f'{get_domain_url(self.request)}{reverse("project-detail", kwargs={"pk": project_obj.pk})}'
+            send_message(
+                f'Project "{project_obj.title}" with id {project_obj.pk} was updated. You can view '
+                f'it here: {url}')
+        logger.info(f'User {self.request.user.username} updated a project (project pk={project_obj.pk})')
         return super().form_valid(form)
 
     def get_success_url(self):
@@ -864,7 +885,7 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
             context['users_already_in_project'] = users_already_in_project
 
         status_list = ['Active', 'New', 'Renewal Requested', 'Billing Information Submitted']
-        allocations = project_obj.allocation_set.filter(status__name__in=status_list, is_locked=False).exclude(resources__name='Geode-Projects')
+        allocations = project_obj.allocation_set.filter(status__name__in=status_list, is_locked=False).exclude(resources__name='Geode-Project')
         initial_data = self.get_initial_data(request, allocations)
         allocation_formset = formset_factory(
             ProjectAddUsersToAllocationForm,
@@ -1288,7 +1309,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
         project_obj = get_object_or_404(Project, pk=pk)
         context['project'] = project_obj
-        context['display_warning'] = project_obj.allocation_set.filter(resources__name='Slate Project')
+        context['display_warning'] = project_obj.allocation_set.filter(resources__name='Slate-Project')
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
@@ -1763,7 +1784,8 @@ class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['project_review_list'] = ProjectReview.objects.filter(status__name='Pending')
+        context['project_review_list'] = ProjectReview.objects.filter(
+            status__name__in=['Pending', 'Contacted By Admin', ])
         projects = Project.objects.filter(
             status__name__in=['Waiting For Admin Approval', 'Contacted By Admin', ]
         )
@@ -1774,8 +1796,10 @@ class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
         
         pi_project_objs = Project.objects.filter(
             pi__in=pis,
-            status__name='Active'
-        )
+            status__name__in=[
+                'Active', 'Waiting For Admin Approval', 'Contacted By Admin', 'Review Pending'
+            ]
+        ).order_by('status__name')
         pi_projects = []
         for pi_project_obj in pi_project_objs:
             pi_projects.append(
@@ -1784,6 +1808,7 @@ class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
                     'title': pi_project_obj.title,
                     'pi': pi_project_obj.pi.username,
                     'description': pi_project_obj.description,
+                    'status': pi_project_obj.status.name,
                     'display': 'false' 
                 }
             )
@@ -1827,7 +1852,7 @@ class ProjectReviewCompleteView(LoginRequiredMixin, UserPassesTestMixin, View):
         return HttpResponseRedirect(reverse('project-review-list'))
 
 
-class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
+class ProjectReviewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     form_class = ProjectReviewEmailForm
     template_name = 'project/project_review_email.html'
     login_url = "/"
@@ -1861,12 +1886,16 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         """Return an instance of the form to be used in this view."""
         if form_class is None:
             form_class = self.get_form_class()
-        return form_class(self.kwargs.get('pk'), **self.get_form_kwargs())
+        return form_class(self.kwargs.get('pk'), self.request.user, **self.get_form_kwargs())
 
     def form_valid(self, form):
         pk = self.kwargs.get('pk')
         project_review_obj = get_object_or_404(ProjectReview, pk=pk)
         form_data = form.cleaned_data
+
+        project_review_status_obj = ProjectReviewStatusChoice.objects.get(name='Contacted By Admin')
+        project_review_obj.status = project_review_status_obj
+        project_review_obj.save()
 
         receiver_list = [project_review_obj.project.pi.email]
         cc = form_data.get('cc').strip()
@@ -1876,9 +1905,9 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             cc = []
 
         send_email(
-            'Request for more information',
+            f'Follow-up on Renewal for Project {project_review_obj.project.title}',
             form_data.get('email_body'),
-            EMAIL_DIRECTOR_EMAIL_ADDRESS,
+            EMAIL_TICKET_SYSTEM_ADDRESS,
             receiver_list,
             cc
         )
@@ -2639,7 +2668,7 @@ class ProjectReviewInfoView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
                 return False
 
         project_review_obj = get_object_or_404(ProjectReview, pk=self.kwargs.get('pk'))
-        if project_review_obj.status.name != 'Pending':
+        if project_review_obj.status.name not in ['Pending', 'Contacted By Admin']:
             messages.error(
                 self.request, f'You cannot view a project review\'s info with status "{project_review_obj.status.name}"'
             )

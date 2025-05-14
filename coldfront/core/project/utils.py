@@ -5,7 +5,6 @@ from django.forms.models import model_to_dict
 
 from coldfront.core.project.models import ProjectAdminAction, Project
 from coldfront.core.utils.common import import_from_settings
-from coldfront.core.user.models import UserProfile
 from coldfront.plugins.ldap_user_info.utils import get_user_info
 
 PROJECT_PI_ELIGIBLE_ADS_GROUPS = import_from_settings('PROJECT_PI_ELIGIBLE_ADS_GROUPS', [])

@@ -38,7 +38,6 @@ from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationReviewUserForm,
                                              AllocationSearchForm,
                                              AllocationUpdateForm,
-                                             AllocationInvoiceSearchForm,
                                              AllocationUserUpdateForm,
                                              AllocationAddUserFormset)
 from coldfront.core.allocation.models import (Allocation,
@@ -113,8 +112,6 @@ ALLOCATION_ACCOUNT_MAPPING = import_from_settings(
     'ALLOCATION_ACCOUNT_MAPPING', {})
 SLACK_MESSAGING_ENABLED = import_from_settings(
     'SLACK_MESSAGING_ENABLED', False)
-SLATE_PROJECT_SHOW_ESTIMATED_COST = import_from_settings(
-    'SLATE_PROJECT_SHOW_ESTIMATED_COST', False)
 
 ALLOCATION_REMOVAL_REQUESTS_ALLOWED = import_from_settings(
     'ALLOCATION_REMOVAL_REQUESTS_ALLOWED', [''])
@@ -174,13 +171,10 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context['attributes'] = attributes
         context['allocation_changes'] = allocation_changes
         context['allocation_changes_enabled'] = allocation_obj.is_changeable
-        context['display_estimated_cost'] = False
-        if 'coldfront.plugins.slate_project' in settings.INSTALLED_APPS: 
-            context['display_estimated_cost'] = SLATE_PROJECT_SHOW_ESTIMATED_COST
 
         # Can the user update the project?
-        context['is_allowed_to_update_project'] = allocation_obj.project.has_perm(self.request.user, ProjectPermission.UPDATE, 'change_project')
-
+        is_allowed_to_update_project = allocation_obj.project.has_perm(self.request.user, ProjectPermission.UPDATE, 'change_project')
+        context['is_allowed_to_update_project'] = is_allowed_to_update_project
         context['allocation_user_roles_enabled'] = check_if_roles_are_enabled(allocation_obj)
         context['allocation_invoices'] = allocation_obj.allocationinvoice_set.all()
 
@@ -202,8 +196,14 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context['user_exists_in_allocation'] = allocation_obj.allocationuser_set.filter(
             user=self.request.user, status__name__in=['Active', 'Pending - Remove', 'Invited', 'Pending', 'Disabled', 'Retired']).exists()
 
+        context['allocation_moving_enabled'] = False
+        if 'coldfront.plugins.movable_allocations' in settings.INSTALLED_APPS:
+            is_moveable = allocation_obj.allocationattribute_set.filter(
+                allocation_attribute_type__name='Is Moveable').first()
+            context['allocation_moving_enabled'] = is_moveable and is_moveable.value == 'Yes'
+
         context['project'] = allocation_obj.project
-        context['notes'] = notes
+        context['notes'] = notes.order_by("-created")
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
         context['ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING'] = ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING
         context['ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING'] = ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING
@@ -969,8 +969,7 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
     def get_users_to_remove(self, allocation_obj):
         users_to_remove = list(allocation_obj.allocationuser_set.exclude(
-            status__name__in=['Removed', 'Error', 'Pending - Add', 'Pending - Remove']
-        ).values_list('user__username', flat=True))
+            status__name__in=['Removed', 'Error', ]).values_list('user__username', flat=True))
 
         users_to_remove = get_user_model().objects.filter(username__in=users_to_remove).exclude(
             pk__in=[allocation_obj.project.pi.pk, self.request.user.pk])
@@ -1332,18 +1331,28 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
         if self.request.user.has_perm('allocation.can_review_allocation_requests'):
             return True
 
-        messages.error(
-            self.request, 'You do not have permission to review allocation requests.')
+        messages.error(self.request, 'You do not have permission to review allocation requests.')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.request.user.is_superuser:
             allocation_list = Allocation.objects.filter(
-                status__name__in=['New', 'Renewal Requested', 'Paid', 'Billing Information Submitted']
+                status__name__in=[
+                    'New', 'Paid', 'Billing Information Submitted', 'Contacted By Admin', 'Waiting For Admin Approval'
+                ]
+            ).exclude(project__status__name__in=['Archived', 'Renewal Denied'])
+            allocation_renewal_list = Allocation.objects.filter(
+                status__name='Renewal Requested'
             ).exclude(project__status__name__in=['Archived', 'Renewal Denied'])
         else:
             allocation_list = Allocation.objects.filter(
-                status__name__in=['New', 'Renewal Requested', 'Paid', 'Billing Information Submitted'],
+                status__name__in=[
+                    'New', 'Paid', 'Billing Information Submitted', 'Contacted By Admin', 'Waiting For Admin Approval'
+                ],
+                resources__review_groups__in=list(self.request.user.groups.all())
+            ).exclude(project__status__name__in=['Archived', 'Renewal Denied']).distinct()
+            allocation_renewal_list = Allocation.objects.filter(
+                status__name='Renewal Requested',
                 resources__review_groups__in=list(self.request.user.groups.all())
             ).exclude(project__status__name__in=['Archived', 'Renewal Denied']).distinct()
 
@@ -1692,22 +1701,6 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
             for error in form.errors:
                 messages.error(request, error)
         return HttpResponseRedirect(reverse('allocation-invoice-detail', kwargs={'pk': pk}))
-
-class AllocationAddInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
-    model = AllocationUserNote
-    template_name = 'allocation/allocation_add_invoice_note.html'
-    fields = ('is_private', 'note',)
-    
-    def test_func(self):
-        """ UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser:
-            return True
-
-        if self.request.user.has_perm('allocation.can_manage_invoice'):
-            return True
-
-        messages.error(self.request, 'You do not have permission to manage invoices.')
-        return False
 
 
 class AllocationAddInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
@@ -2208,6 +2201,8 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
             )
 
         return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
+
+
 
 
 class AllocationChangeListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):

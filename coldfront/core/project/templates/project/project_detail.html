@@ -44,9 +44,15 @@ Project Detail
     <div class="card-body">
       {% if project.status.name != 'Archived' %}
         <a class="btn btn-success" href="{% url 'project-add-users-search' project.pk %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
+{% if settings.GRANT_ENABLE %}
         <a class="btn btn-success" href="{% url 'grant-create' project.id %}" role="button"><i class="fas fa-trophy" aria-hidden="true"></i> Add Grant</a>
+{% endif %}
+{% if settings.PUBLICATION_ENABLE %}
         <a class="btn btn-success" href="{% url 'publication-search' project.pk %}" role="button"><i class="fas fa-newspaper" aria-hidden="true"></i> Add Publication</a>
+{% endif %}
+{% if settings.RESEARCH_OUTPUT_ENABLE %}
         <a class="btn btn-success" href="{% url 'add-research-output' project.pk %}" role="button"><i class="far fa-newspaper" aria-hidden="true"></i> Add Research Output</a>
+{% endif %}
       {% endif %}
     </div>
   </div>
@@ -293,8 +299,8 @@ Project Detail
 
 <!-- End Project Attributes -->
 
+{% if settings.GRANT_ENABLE %}
 <!-- Start Project Grants -->
-<!-- Hiding, we aren't collecting this
 <div class="card mb-3">
   <div class="card-header">
     <h3 class="d-inline" id="grants"><i class="fas fa-trophy" aria-hidden="true"></i> Grants</h3> <span class="badge badge-secondary">{{grants.count}}</span>
@@ -353,12 +359,11 @@ Project Detail
     {% endif %}
   </div>
 </div>
-
--->
 <!-- End Project Grants -->
+{% endif %}
 
 
-
+{% if settings.PUBLICATION_ENABLE %}
 <!-- Start Project Publications -->
 <div class="card mb-3">
   <div class="card-header">
@@ -409,8 +414,10 @@ Project Detail
   </div>
 </div>
 <!-- End Project Publications -->
+{% endif %}
 
 
+{% if settings.RESEARCH_OUTPUT_ENABLE %}
 <!-- Start Project ResearchOutputs -->
 <div class="card mb-3">
   <div class="card-header">
@@ -450,7 +457,7 @@ Project Detail
   </div>
 </div>
 <!-- End Project ResearchOutputs -->
-
+{% endif %}
 
 <!-- Start Admin Messages -->
 <div class="card mb-3">

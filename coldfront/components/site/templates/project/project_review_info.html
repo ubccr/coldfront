@@ -34,11 +34,11 @@ Test title
         <!-- <tr>
           <th scope="row" class="text-nowrap">Grants Last Updated:</th>
           <td>{{ project_review.project.latest_grant.modified|date:"M. d, Y"|default:"No grants" }}</td>
-        </tr>
+        </tr> -->
         <tr>
           <th scope="row" class="text-nowrap">Publications Last Updated:</th>
           <td>{{ project_review.project.latest_publication.modified|date:"M. d, Y"|default:"No publications" }}</td>
-        </tr> -->
+        </tr>
         <tr>
           <th scope="row" class="text-nowrap">Allocation Renewals:</th>
           <td>
@@ -61,6 +61,7 @@ Test title
   <div class="card-footer text-right">
     <a href="{% url 'project-review-approve' project_review.pk %}" class="btn btn-success mr-1">Approve</a>
     <a href="{% url 'project-review-deny' project_review.pk %}" class="btn btn-danger mr-1">Deny</a>
+    <a href="{% url 'project-review-email' project_review.pk %}" class="btn btn-primary mr-1">Email</a>
     <a href="{% url 'project-review-list' %}" class="btn btn-secondary mr-1">Back</a>
   </div>
 </div>

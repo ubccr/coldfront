@@ -1,4 +1,3 @@
-import os
 import environ
 from split_settings.tools import optional, include
 from coldfront.config.env import ENV, PROJECT_ROOT
@@ -19,7 +18,7 @@ plugin_configs = {
     'PLUGIN_SLURM': 'plugins/slurm.py',
     'PLUGIN_IQUOTA': 'plugins/iquota.py',
     'PLUGIN_FREEIPA': 'plugins/freeipa.py',
-    'PLUGIN_SYSMON': 'plugins/system_montior.py',
+    'PLUGIN_SYSMON': 'plugins/system_monitor.py',
     'PLUGIN_XDMOD': 'plugins/xdmod.py',
     'PLUGIN_AUTH_OIDC': 'plugins/openid.py',
     'PLUGIN_AUTH_LDAP': 'plugins/ldap.py',
@@ -34,7 +33,8 @@ plugin_configs = {
     'PLUGIN_CUSTOMIZABLE_FORMS': 'plugins/customizable_forms.py',
     'PLUGIN_PI_SEARCH': 'plugins/pi_search.py',
     'PLUGIN_ALLOCATION_REMOVAL_REQUESTS':'plugins/allocation_removal_requests.py',
-    'PLUGIN_ANNOUNCEMENTS': 'plugins/announcements.py'
+    'PLUGIN_ANNOUNCEMENTS': 'plugins/announcements.py',
+    'PLUGIN_MOVABLE_ALLOCATIONS': 'plugins/movable_allocations.py'
 }
 
 # This allows plugins to be enabled via environment variables. Can alternatively

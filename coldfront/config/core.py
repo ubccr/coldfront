@@ -14,6 +14,13 @@ CENTER_PROJECT_RENEWAL_HELP_URL = ENV.str('CENTER_PROJECT_RENEWAL_HELP_URL', def
 CENTER_BASE_URL = ENV.str('CENTER_BASE_URL', default='')
 
 #------------------------------------------------------------------------------
+# Enable Research Outputs, Grants, Publications
+#------------------------------------------------------------------------------
+RESEARCH_OUTPUT_ENABLE = ENV.bool('RESEARCH_OUTPUT_ENABLE', default=True)
+GRANT_ENABLE = ENV.bool('GRANT_ENABLE', default=True)
+PUBLICATION_ENABLE = ENV.bool('PUBLICATION_ENABLE', default=True)
+
+#------------------------------------------------------------------------------
 # Project related
 #------------------------------------------------------------------------------
 PROJECT_ENABLE_PROJECT_REVIEW = ENV.bool('PROJECT_ENABLE_PROJECT_REVIEW', default=True)
@@ -39,15 +46,9 @@ ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING = ENV.int('ALLOCATION_DAYS_TO_REVIEW_B
 #------------------------------------------------------------------------------
 RESOURCE_ENABLE_ACCOUNT_CHECKING = ENV.bool('RESOURCE_ENABLE_ACCOUNT_CHECKING', default=True)
 RESOURCE_ACCOUNTS = ENV.dict('RESOURCE_ACCOUNTS', default={})
-# RESOURCE_ACCOUNTS = dict([val.split('=', 1) for val in RESOURCE_ACCOUNTS.split(';') if val])
 
 # This is in days
 ALLOCATION_DEFAULT_ALLOCATION_LENGTH = ENV.int('ALLOCATION_DEFAULT_ALLOCATION_LENGTH', default=365)
-
-#------------------------------------------------------------------------------
-# Resource related
-#------------------------------------------------------------------------------
-SLATE_PROJECT_MAX_ALLOCATED_STORAGE = ENV.int('SLATE_PROJECT_MAX_ALLOCATED_STORAGE', default=60)
 
 #------------------------------------------------------------------------------
 # Allow user to select account name for allocation
@@ -57,7 +58,10 @@ ALLOCATION_ACCOUNT_MAPPING = ENV.dict('ALLOCATION_ACCOUNT_MAPPING', default={})
 
 SETTINGS_EXPORT += [
     'ALLOCATION_ACCOUNT_ENABLED',
-    'CENTER_HELP_URL'
+    'CENTER_HELP_URL',
+    'RESEARCH_OUTPUT_ENABLE',
+    'GRANT_ENABLE',
+    'PUBLICATION_ENABLE',
 ]
 
 ADMIN_COMMENTS_SHOW_EMPTY = ENV.bool('ADMIN_COMMENTS_SHOW_EMPTY', default=True)

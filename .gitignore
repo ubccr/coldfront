@@ -11,6 +11,7 @@ venv/
 static_root/
 db.sqlite3
 local_data/
+site/
 local_settings.py
 local_strings.py
 coldfront.db
@@ -18,6 +19,8 @@ coldfront.db
 .vscode
 db.json
 .env
+.devcontainer/*
+.bin/*
 cert.pem
 kep.pem
 coldfront.log

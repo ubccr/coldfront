@@ -18,6 +18,9 @@ SLURM_CMD_REMOVE_ACCOUNT = SLURM_SACCTMGR_PATH + ' -Q -i delete account where na
 SLURM_CMD_ADD_ACCOUNT = SLURM_SACCTMGR_PATH + ' -Q -i create account name={} cluster={}'
 SLURM_CMD_ADD_USER = SLURM_SACCTMGR_PATH + ' -Q -i create user name={} cluster={} account={}'
 SLURM_CMD_CHECK_ASSOCIATION = SLURM_SACCTMGR_PATH + ' list associations User={} Cluster={} Account={} Format=Cluster,Account,User,QOS -P'
+SLURM_CMD_LIST_ACCOUNTS = SLURM_SACCTMGR_PATH + ' list associations User={} Cluster={} Format=Account -Pn'
+SLURM_CMD_CHECK_DEFAULT_ACCOUNT = SLURM_SACCTMGR_PATH + ' show user User={} Cluster={} Format=DefaultAccount -Pn'
+SLURM_CMD_CHANGE_DEFAULT_ACCOUNT = SLURM_SACCTMGR_PATH + ' -Q -i modify user User={} where Cluster={} set DefaultAccount={}'
 SLURM_CMD_BLOCK_ACCOUNT = SLURM_SACCTMGR_PATH + ' -Q -i modify account {} where Cluster={} set GrpSubmitJobs=0'
 SLURM_CMD_DUMP_CLUSTER = SLURM_SACCTMGR_PATH + ' dump {} file={}'
 
@@ -53,6 +56,36 @@ def _run_slurm_cmd(cmd, noop=True):
     return result.stdout
 
 def slurm_remove_assoc(user, cluster, account, noop=False):
+    #check default account
+    cmd = SLURM_CMD_CHECK_DEFAULT_ACCOUNT.format(shlex.quote(user), shlex.quote(cluster))
+    output = _run_slurm_cmd(cmd, noop=noop)
+    default = ""
+    with StringIO(output.decode("UTF-8")) as fh:
+        default = fh.getvalue().strip()
+
+    if default != account:
+        _remove_assoc(user=user, cluster=cluster, account=account, noop=noop)
+        return
+
+    #get accounts
+    cmd = SLURM_CMD_LIST_ACCOUNTS.format(shlex.quote(user), shlex.quote(cluster))
+    output = _run_slurm_cmd(cmd, noop=noop)
+    accounts = []
+    with StringIO(output.decode("UTF-8")) as fh:
+        reader = fh.getvalue()
+        for line in reader.splitlines():
+            accounts += [line]
+
+    for userAccount in accounts:
+        if userAccount != account:
+            cmd = SLURM_CMD_CHANGE_DEFAULT_ACCOUNT.format(shlex.quote(user), shlex.quote(cluster), shlex.quote(userAccount))
+            _run_slurm_cmd(cmd, noop=noop)
+            break
+    
+    _remove_assoc(user=user, cluster=cluster, account=account, noop=noop)
+    
+    
+def _remove_assoc(user, cluster, account, noop=False):
     cmd = SLURM_CMD_REMOVE_USER.format(shlex.quote(user), shlex.quote(cluster), shlex.quote(account))
     _run_slurm_cmd(cmd, noop=noop)
 

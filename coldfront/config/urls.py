@@ -5,7 +5,6 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
 from django.views.generic import TemplateView
-from django.conf.urls.static import static
 
 import coldfront.core.portal.views as portal_views
 
@@ -19,18 +18,25 @@ urlpatterns = [
     path('center-summary', portal_views.center_summary, name='center-summary'),
     path('allocation-summary', portal_views.allocation_summary, name='allocation-summary'),
     path('allocation-by-fos', portal_views.allocation_by_fos, name='allocation-by-fos'),
-    path('project-summary', portal_views.project_summary, name='project-summary'),
-    path('user-summary', portal_views.user_summary, name='user-summary'),
     path('user/', include('coldfront.core.user.urls')),
     path('project/', include('coldfront.core.project.urls')),
     path('allocation/', include('coldfront.core.allocation.urls')),
     path('resource/', include('coldfront.core.resource.urls')),
-    path('grant/', include('coldfront.core.grant.urls')),
-    path('publication/', include('coldfront.core.publication.urls')),
-    path('research-output/', include('coldfront.core.research_output.urls')),
-] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+]
 
-if 'coldfront_custom_resources' in settings.INSTALLED_APPS: 
+if settings.GRANT_ENABLE:
+    urlpatterns.append(path('grant/', include('coldfront.core.grant.urls')))
+
+if settings.PUBLICATION_ENABLE:
+    urlpatterns.append(path('publication/', include('coldfront.core.publication.urls')))
+
+if settings.RESEARCH_OUTPUT_ENABLE:
+    urlpatterns.append(path('research-output/', include('coldfront.core.research_output.urls')))
+
+if 'coldfront.plugins.movable_allocations' in settings.INSTALLED_APPS:
+    urlpatterns.append(path('movable_allocations/', include('coldfront.plugins.movable_allocations.urls')))
+
+if 'coldfront_custom_resources' in settings.INSTALLED_APPS:
     urlpatterns.append(path('custom_resources/', include('coldfront_custom_resources.urls')))
 
 if 'coldfront.plugins.announcements' in settings.INSTALLED_APPS:

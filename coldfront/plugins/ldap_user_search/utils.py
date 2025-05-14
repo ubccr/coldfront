@@ -58,7 +58,6 @@ class LDAPUserSearch(UserSearch):
             user_dict[user_attr] = entry_dict.get(ldap_attr)[0] if entry_dict.get(ldap_attr) else ''
         return user_dict
 
-
     def search_a_user(self, user_search_string=None, search_by='all_fields'):
         size_limit = 50
         ldap_attrs = list(self.ATTRIBUTE_MAP.values())

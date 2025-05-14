@@ -1,0 +1,31 @@
+name: Feature Request
+description: Tell us about what new feature you want to see added to ColdFront!
+title: "Feature: "
+labels: ["documentation", "enhancement"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe your feature idea!
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      multiple: true
+      description: What component of the website does this issue enhance?
+      options:
+        - Projects
+        - Allocations
+        - Resources
+        - Administration
+        - Users
+        - Other
+  - type: textarea
+    id: info
+    attributes:
+      label: Additional information
+      description: If you have any example code/ ideas you would like to show, paste them here. This will be automatically formatted into code, so no need for backticks.
+      render: shell

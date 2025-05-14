@@ -359,7 +359,7 @@ required to log onto the site at least once before they can be added.
     @property
     def get_env(self):
         if not PROJECT_ENABLE_PERMISSIONS_PER_TYPE or PROJECT_PERMISSIONS_PER_TYPE.get(self.type.name) is None:
-            return PROJECT_ENABLE_PERMISSIONS_PER_TYPE.get('Default')
+            return PROJECT_PERMISSIONS_PER_TYPE.get('Default')
         merged = PROJECT_PERMISSIONS_PER_TYPE.get('Default') | PROJECT_PERMISSIONS_PER_TYPE.get(self.type.name)
         return merged
 

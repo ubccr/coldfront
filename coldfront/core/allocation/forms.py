@@ -1,11 +1,6 @@
-import logging
-from datetime import date
-from coldfront.core.user.models import UserProfile
 from django import forms
 from django.db.models.functions import Lower
-from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
-from django.conf import settings
 
 from coldfront.core.allocation.models import (AllocationAccount,
                                               AllocationAttributeType,
@@ -17,7 +12,6 @@ from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource, ResourceType
 from coldfront.core.utils.common import import_from_settings
 
-logger = logging.getLogger(__name__)
 
 ALLOCATION_ACCOUNT_ENABLED = import_from_settings(
     'ALLOCATION_ACCOUNT_ENABLED', False)
@@ -188,31 +182,7 @@ class AllocationSearchForm(forms.Form):
     show_all_allocations = forms.BooleanField(initial=False, required=False)
 
 
-class AllocationInvoiceSearchForm(forms.Form):
-    resource_type = forms.ModelChoiceField(
-        label='Resource Type',
-        queryset=ResourceType.objects.all().order_by('name'),
-        required=False
-    )
-    resource_name = forms.ModelMultipleChoiceField(
-        label='Resource Name',
-        queryset=Resource.objects.filter(is_allocatable=True).order_by('name'),
-        required=False
-    )
-    start_date = forms.DateField(
-        label='Start Date',
-        widget=forms.DateInput(attrs={'class': 'datepicker'}),
-        required=False
-    )
-    end_date = forms.DateField(
-        label='End Date',
-        widget=forms.DateInput(attrs={'class': 'datepicker'}),
-        required=False
-    )
-
-
 class AllocationReviewUserForm(forms.Form):
-    # No relation to AllocationUserReview model.
     ALLOCATION_REVIEW_USER_CHOICES = (
         ('keep_in_allocation_and_project', 'Keep in allocation and project'),
         ('keep_in_project_only', 'Remove from this allocation only'),
@@ -269,8 +239,8 @@ class AllocationAttributeUpdateForm(forms.Form):
     attribute_pk = forms.IntegerField(required=False, disabled=True)
     name = forms.CharField(max_length=150, required=False, disabled=True)
     value = forms.CharField(max_length=150, required=False, disabled=True)
-    old_value = forms.CharField(max_length=150, required=False, disabled=True)
     new_value = forms.CharField(max_length=150, required=False, disabled=False)
+    old_value = forms.CharField(max_length=150, required=False, disabled=True)
 
     def __init__(self, *args, **kwargs):
         new_value_disabled = kwargs.pop('new_value_disabled')
@@ -337,7 +307,6 @@ class AllocationChangeNoteForm(forms.Form):
             required=False, 
             widget=forms.Textarea,
             help_text="Leave any feedback about the allocation change request.")
-
 
 class AllocationAttributeCreateForm(forms.ModelForm):
     class Meta:
