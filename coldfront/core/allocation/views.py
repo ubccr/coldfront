@@ -506,9 +506,11 @@ class AllocationListView(ColdfrontListView):
 
         allocation_search_form = AllocationSearchForm(self.request.GET)
 
-        allocations = Allocation.objects.prefetch_related(
-            'project', 'project__pi', 'status', 'resources'
-        )
+        allocations = Allocation.objects.select_related(
+            'project', 'project__pi', 'status',
+        ).prefetch_related(
+            'resources', 'allocationuser_set', 'allocationuser_set__status',
+        ).exclude(status__name='Merged')
         if allocation_search_form.is_valid():
             data = allocation_search_form.cleaned_data
 
@@ -573,7 +575,6 @@ class AllocationListView(ColdfrontListView):
                 Q(allocationuser__user=self.request.user)
                 & Q(allocationuser__status__name='Active')
             ).order_by(order_by)
-
         return allocations.distinct()
 
     def get_context_data(self, **kwargs):
