@@ -23,11 +23,11 @@ class Command(BaseCommand):
         #          next_run=date)
 
         # if plugins are installed, add their tasks
-        kwargs = {  "repeats":-1, }
+        kwargs = {"repeats": -1,}
         plugins_tasks = {
-            'fasrc': ['import_quotas', 'id_import_allocations', 'pull_resource_data'],
-            'sftocf': ['pull_sf_push_cf', 'update_zones'],
-            'lfs': ['pull_lfs_filesystem_stats'],
+            'fasrc': ['id_import_allocations', 'import_quotas', 'pull_resource_data'],
+            'sftocf': ['import_allocation_filepaths', 'pull_sf_push_cf', 'update_zones'],
+            # 'lfs': ['pull_lfs_filesystem_stats'],
             'ldap': ['update_group_membership_ldap', 'id_add_projects'],
             'slurm': ['slurm_sync', 'slurm_manage_resources'],
             'xdmod': ['xdmod_usage'],
@@ -36,12 +36,12 @@ class Command(BaseCommand):
 
         for plugin, tasks in plugins_tasks.items():
             if f'coldfront.plugins.{plugin}' in settings.INSTALLED_APPS:
-                for task in tasks:
-                    if f'coldfront.plugins.{plugin}.tasks.{task}' not in scheduled:
-                        schedule(f'coldfront.plugins.{plugin}.tasks.{task}',
+                for tname in tasks:
+                    if f'coldfront.plugins.{plugin}.tasks.{tname}' not in scheduled:
+                        schedule(f'coldfront.plugins.{plugin}.tasks.{tname}',
                             next_run=date,
                             schedule_type=Schedule.DAILY,
-                            name=task,
+                            name=tname,
                             **kwargs)
 
         if 'coldfront.core.allocation.tasks.send_request_reminder_emails' not in scheduled:

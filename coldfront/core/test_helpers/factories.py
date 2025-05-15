@@ -9,6 +9,8 @@ from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.resource.models import (
     ResourceType,
     Resource,
+    ResourceAttributeType,
+    ResourceAttribute,
     AttributeType as RAttributeType
 )
 from coldfront.core.project.models import (
@@ -207,12 +209,12 @@ class ResourceTypeFactory(DjangoModelFactory):
         django_get_or_create = ('name',)
     name = 'Storage'
 
+
 class ResourceFactory(DjangoModelFactory):
     class Meta:
         model = Resource
         django_get_or_create = ('name',)
     name = factory.Faker('resource_name')
-
     description = factory.Faker('sentence')
     resource_type = SubFactory(ResourceTypeFactory)
 
@@ -232,13 +234,28 @@ class ResourceAttributeTypeFactory(DjangoModelFactory):
     is_unique_per_resource = factory.Faker("boolean")
     is_value_unique = factory.Faker("boolean")
 
+
+class RAttributeTypeFactory(DjangoModelFactory):
+    class Meta:
+        model = RAttributeType
+        django_get_or_create = ('name',)
+    name='Text'
+
+
+class ResourceAttributeTypeFactory(DjangoModelFactory):
+    class Meta:
+        model = ResourceAttributeType
+        django_get_or_create = ('name',)
+    name = 'quantity_label'
+    attribute_type = SubFactory(RAttributeTypeFactory)
+
+
 class ResourceAttributeFactory(DjangoModelFactory):
     class Meta:
         model = ResourceAttribute
-        django_get_or_create = ('resource', 'resource_attribute_type')
+    resource_attribute_type = SubFactory(ResourceAttributeTypeFactory)
 
-    value = 'admin_lab'
-    resource = factory.SubFactory(ResourceFactory)
+
 
 ### Allocation factories ###
 
@@ -385,14 +402,15 @@ def setup_models(test_case):
         )
     for resource_type in ['Storage', 'Cluster', 'Cluster Partition', 'Compute Node']:
         ResourceTypeFactory(name=resource_type)
-    for resource, r_id, rtype in [
-        ('holylfs10/tier1', 1, 'Storage'), 
-        ('holylfs09/tier1', 2, 'Storage'),
-        ('Test Cluster', 3, 'Cluster'),
+    for resource, r_id, rtype, quantity_label in [
+        ('holylfs10/tier1', 1, 'Storage', 'TB'),
+        ('holylfs09/tier1', 2, 'Storage', 'TB'),
+        ('Test Cluster', 3, 'Cluster', 'CPU Hours'),
         # ('Test Partition', 4, 'Cluster Partition'),
         # ('Test Node', 5, 'Compute Node')
     ]:
         ResourceFactory(name=resource, id=r_id, resource_type__name=rtype)
+        ResourceAttributeFactory(resource=Resource.objects.get(name=resource), value=quantity_label)
 
     quota_tb_type = AllocationAttributeTypeFactory(name='Storage Quota (TB)')
     for name, attribute_type, has_usage, is_private in (

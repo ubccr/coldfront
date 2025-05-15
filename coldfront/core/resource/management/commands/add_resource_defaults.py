@@ -140,9 +140,9 @@ class Command(BaseCommand):
                 defaults={'value': default_value}
             )
 
-            quantity_label = "TB"
+            quantity_label = "TiB"
             if default_value == 20:
-                quantity_label += " in 20T increments"
+                quantity_label = "TB in 20T increments"
 
             resource_obj.resourceattribute_set.update_or_create(
                 resource_attribute_type=label_type,

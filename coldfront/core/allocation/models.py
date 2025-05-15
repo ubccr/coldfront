@@ -13,6 +13,7 @@ from django.utils.module_loading import import_string
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
+from ifxuser.models import Organization, OrgRelation
 from coldfront.config.env import ENV
 from coldfront.core import attribute_expansion
 from coldfront.core.resource.models import Resource
@@ -137,6 +138,14 @@ class Allocation(TimeStampedModel):
         super().save(*args, **kwargs)
 
     @property
+    def unit_label(self):
+        label = self.get_parent_resource.quantity_label
+        if '20T increments' in label:
+            label = label.replace(' in 20T increments', '')
+        return label
+
+
+    @property
     def offer_letter_code(self):
         return self.get_attribute('Offer Letter Code')
 
@@ -211,7 +220,7 @@ class Allocation(TimeStampedModel):
             if s_type == 'exact':
                 size_attr_name = 'Quota_In_Bytes'
             elif s_type=='display':
-                size_attr_name = 'Storage Quota (TB)'
+                size_attr_name = f'Storage Quota ({self.unit_label})'
         else:
             return None
         return size_attr_name
@@ -225,12 +234,13 @@ class Allocation(TimeStampedModel):
             return float(self.get_attribute(size_attr_name))
         except ObjectDoesNotExist:
             if self.size_exact:
-                if 'TB' in self.get_parent_resource.quantity_label:
-                    divisor = 1099511627776
-                    size = self.size_exact/divisor
-                    if 'nesetape' in self.get_parent_resource.name:
-                        size = round(size, -1)
-                    return size
+                label_divisor = {'TB':1000000000000, 'TiB':1099511627776}
+                divisor = label_divisor[self.unit_label]
+                size = self.size_exact/divisor
+                if 'nesetape' in self.get_parent_resource.name:
+                    size = round(size, -1)
+                size = self.size_exact/divisor
+                return size
             return None
         except TypeError:
             return None
@@ -246,9 +256,9 @@ class Allocation(TimeStampedModel):
             ).allocationattributeusage.value)
         except ObjectDoesNotExist:
             if self.usage_exact:
-                if 'TB' in self.get_parent_resource.quantity_label:
-                    divisor = 1099511627776
-                    return self.usage_exact/divisor
+                label_divisor = {'TB':1000000000000, 'TiB':1099511627776}
+                divisor = label_divisor[self.unit_label]
+                return self.usage_exact/divisor
             return None
         except TypeError:
             return None
@@ -550,6 +560,24 @@ class Allocation(TimeStampedModel):
         if self.allocationuser_set.filter(user=user, status__name__in=['Active', 'New']).exists():
             return [AllocationPermission.USER]
 
+        departments = Organization.objects.filter(
+            org_tree='Research Computing Storage Billing',
+            useraffiliation__role='approver',
+            useraffiliation__user=user,
+        )
+        for department in departments:
+            child_lab_ids = list(
+                OrgRelation.objects.filter(parent=department, child__rank="lab").values_list(
+                    'child_id', flat=True
+                )
+            )
+            org_names = list(Organization.objects.filter(
+                id__in=child_lab_ids
+            ).values_list('name'))
+            org_names_str = ''.join([name[0] for name in org_names])
+            proj_pi_name = self.project.pi.full_name
+            if proj_pi_name in org_names_str:
+                return [AllocationPermission.USER]
         return []
 
     def has_perm(self, user, perm):

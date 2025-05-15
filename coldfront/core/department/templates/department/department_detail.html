@@ -75,7 +75,7 @@
                   <th scope="col">Project</th>
                   <th scope="col">Allocation</th>
                   <th scope="col">Users</th>
-                  <th scope="col">Quota (TB)</th>
+                  <th scope="col">Quota</th>
                   <th scope="col">Monthly Cost</th>
                 </tr>
               </thead>
@@ -111,7 +111,7 @@
                           </a>
                         </td>
                         <td>{{ allocation.allocationuser_set.count }}</td>
-                        <td>{{ allocation.size|floatformat:1 }}</td>
+                        <td>{{ allocation.size|floatformat:1 }} {{ allocation.unit_label }}</td>
                         <td>${{ allocation.cost|floatformat:2 }}</td>
                       </tr>
                     {% endif %}

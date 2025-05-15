@@ -341,12 +341,12 @@ def update_isilon_allocation_quota(allocation, new_quota):
     unallocated_space = isilon_conn.unallocated_space
     current_quota_obj = isilon_conn.get_quota_from_path(path)
     current_quota = current_quota_obj.thresholds.hard
-    logger.warning("changing allocation %s %s from %s (%s TB) to %s (%s TB)",
+    logger.warning("changing allocation %s %s from %s (%s TiB) to %s (%s TiB)",
        allocation.path, allocation, current_quota, allocation.size, new_quota_bytes, new_quota
     )
     if unallocated_space < (new_quota_bytes-current_quota):
         raise ValueError(
-            'ERROR: not enough space on volume to set quota to %s TB for %s'
+            'ERROR: not enough space on volume to set quota to %s TiB for %s'
             % (new_quota, allocation)
         )
     if current_quota > new_quota_bytes:

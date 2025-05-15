@@ -506,9 +506,11 @@ class AllocationListView(ColdfrontListView):
 
         allocation_search_form = AllocationSearchForm(self.request.GET)
 
-        allocations = Allocation.objects.prefetch_related(
-            'project', 'project__pi', 'status', 'resources'
-        )
+        allocations = Allocation.objects.select_related(
+            'project', 'project__pi', 'status',
+        ).prefetch_related(
+            'resources', 'allocationuser_set', 'allocationuser_set__status',
+        ).exclude(status__name='Merged')
         if allocation_search_form.is_valid():
             data = allocation_search_form.cleaned_data
 
@@ -573,7 +575,6 @@ class AllocationListView(ColdfrontListView):
                 Q(allocationuser__user=self.request.user)
                 & Q(allocationuser__status__name='Active')
             ).order_by(order_by)
-
         return allocations.distinct()
 
     def get_context_data(self, **kwargs):
@@ -746,7 +747,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             )
 
         for value, attr_name in (
-            (quantity, 'Storage Quota (TB)'),
+            (quantity, f'Storage Quota ({allocation_obj.unit_label})'),
             (expense_code, 'Expense Code'),
         ):
             allocation_obj.allocationattribute_set.create(
@@ -756,7 +757,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 )
             )
 
-        allocation_obj.set_usage('Storage Quota (TB)', 0)
+        allocation_obj.set_usage(f'Storage Quota ({allocation_obj.unit_label})', 0)
 
         allocation_user_active_status = AllocationUserStatusChoice.objects.get(
             name='Active'
@@ -2311,7 +2312,10 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                         'isilon': 'coldfront.plugins.isilon',
                         # 'lfs': 'coldfront.plugins.lustre',
                     }
-                    rtype = next((k for k in resources_plugins if k in alloc_change_obj.allocation.get_parent_resource.name), None)
+                    rtype = next((
+                        k for k in resources_plugins
+                        if k in alloc_change_obj.allocation.get_parent_resource.name
+                    ), None)
                     if not rtype:
                         err = ('You cannot auto-update non-isilon resources at this '
                             'time. Please manually update the resource before '
@@ -2319,8 +2323,9 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                         messages.error(request, err)
                         return self.redirect_to_detail(pk)
                     # get new quota value
+                    quantity_label = alloc_change_obj.allocation.unit_label
                     new_quota = next((
-                        a for a in attrs_to_change if a['name'] == 'Storage Quota (TB)'), None)
+                        a for a in attrs_to_change if a['name'] == f'Storage Quota ({quantity_label})'), None)
                     if not new_quota:
                         err = ('You can only auto-update resource quotas at this '
                             'time. Please manually update the resource before '
@@ -2426,6 +2431,8 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             errs.append(err)
         if allocation_obj.resources.filter(resource_type__name='Storage').count() == 0:
             errs.append('You can only request changes for storage allocations.')
+        if allocation_obj.resources.filter(is_allocatable=True).count() == 0:
+            errs.append(f'You cannot request changes for allocations on {allocation_obj.resources.first().name}')
         changeable_status_list = [
             'Active', 'Renewal Requested', 'Payment Pending', 'Payment Requested', 'Paid'
         ]
@@ -2527,7 +2534,7 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
                 new_value = formset_data.get('new_value')
                 # require nese shares to be divisible by 20
-                if formset_data['name'] == 'Storage Quota (TB)':
+                if formset_data['name'] == f'Storage Quota ({allocation_obj.unit_label})':
                     try:
                         new_value = re.sub('\.0$', '', new_value)
                         tbs = int(new_value)
@@ -2573,7 +2580,7 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         quantity = [
             a for a in attribute_changes_to_make
-            if a[0].allocation_attribute_type.name == 'Storage Quota (TB)'
+            if a[0].allocation_attribute_type.name == f'Storage Quota ({allocation_obj.unit_label})'
         ]
 
         email_vars = {
