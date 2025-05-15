@@ -19,3 +19,4 @@ recursive-include coldfront/plugins/ldap_user_info/templates *
 recursive-include coldfront/plugins/pi_search/templates *
 recursive-include coldfront/plugins/allocation_removal_requests/templates *
 recursive-include coldfront/plugins/announcements/templates *
+recursive-include coldfront/plugins/movable_allocations/templates *
