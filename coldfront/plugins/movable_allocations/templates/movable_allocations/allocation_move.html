@@ -138,6 +138,9 @@ Move Allocation
 
 <script>
   $(document).on('click', '.confirm-move', function () {
+    if (!$('#id_destination_project').val()) {
+      return;
+    }
     var confirmation = confirm('Are you sure you want to move this allocation? All of the users in this allocation will be added to the destination project if they do not exist already.');
     if (!confirmation) {
       return confirmation
