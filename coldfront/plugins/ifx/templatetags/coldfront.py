@@ -51,7 +51,7 @@ def just_dollars(val):
 @register.filter(name='bytestotbs')
 def bytestotbs(bytes):
     '''
-    Convert bytes to TB
+    Convert bytes to TiB
     '''
     if not str(bytes).isdigit():
         return bytes

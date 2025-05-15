@@ -19,6 +19,7 @@ from coldfront.core.test_helpers.factories import (
     UserFactory,
     ResourceFactory,
     ResourceTypeFactory,
+    ResourceAttributeFactory,
     AllocationFactory,
     AllocationChangeRequestFactory,
 )
@@ -422,6 +423,7 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
         self.client.force_login(self.pi_user)
         tier_restype = ResourceTypeFactory(name='Storage Tier')
         storage_tier = ResourceFactory(resource_type=tier_restype)
+        ResourceAttributeFactory(resource=storage_tier, value='TB')
         self.post_data = {
             'justification': 'test justification',
             'quantity': '1',

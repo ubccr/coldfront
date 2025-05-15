@@ -9,8 +9,8 @@ Requestor: {{user.full_name}} ({{user.username}})
 Requestor email: {{user.email}}
 
 {% if quantity %}
-Requested total size: {{quantity}} TB.
-This will require adding {{difference|floatformat}} TB to the current size of {{current_size|floatformat}} TB.
+Requested total size: {{quantity}} {{allocation.unit_label}}.
+This will require adding {{difference|floatformat}} {{allocation.unit_label}} to the current size of {{current_size|floatformat}} {{allocation.unit_label}}.
 {% if used_percentage %}
 {{resource}} was last recorded as {{used_percentage}}% full.
 {% endif %}

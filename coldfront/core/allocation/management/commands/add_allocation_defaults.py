@@ -57,6 +57,7 @@ class Command(BaseCommand):
         for name, attribute_type, has_usage, is_private in (
             # FASRC defaults
             ('Storage Quota (TB)', 'Float', True, False),
+            ('Storage Quota (TiB)', 'Float', True, False),
             ('Quota_In_Bytes', 'Int', True, False),
             ('UseStarFishZone', 'Yes/No', False, True),
             ('Offer Letter', 'Float', False, True),
