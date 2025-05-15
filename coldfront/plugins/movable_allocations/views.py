@@ -42,7 +42,7 @@ class AllocationMoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         group_exists = check_if_groups_in_review_groups(
             allocation_obj.get_parent_resource.review_groups.all(),
             self.request.user.groups.all(),
-            'can_move_allocations'
+            "can_move_allocations",
         )
         if group_exists:
             return True
@@ -102,7 +102,8 @@ class AllocationMoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             return HttpResponseRedirect(reverse("move-allocation", kwargs={"pk": pk}))
 
         destination_project_obj = Project.objects.filter(
-            id=form.cleaned_data.get("destination_project")).first()
+            id=form.cleaned_data.get("destination_project")
+        ).first()
         if not destination_project_obj:
             messages.error(
                 request,
@@ -112,7 +113,7 @@ class AllocationMoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         allocation_objs = destination_project_obj.allocation_set.filter(
             status__name__in=["Active", "New", "Renewal Requested"],
-            resources=allocation_obj.get_parent_resource
+            resources=allocation_obj.get_parent_resource,
         )
         if allocation_obj in allocation_objs:
             messages.error(
