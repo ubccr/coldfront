@@ -110,13 +110,18 @@ class AllocationMoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             )
             return HttpResponseRedirect(reverse("move-allocation", kwargs={"pk": pk}))
 
-        if check_over_allocation_limit(
-            allocation_obj,
-            destination_project_obj.allocation_set.filter(
-                status__name__in=["Active", "New", "Renewal Requested"],
-                resources=allocation_obj.get_parent_resource
-            ),
-        ):
+        allocation_objs = destination_project_obj.allocation_set.filter(
+            status__name__in=["Active", "New", "Renewal Requested"],
+            resources=allocation_obj.get_parent_resource
+        )
+        if allocation_obj in allocation_objs:
+            messages.error(
+                request,
+                "This allocation is already in this project.",
+            )
+            return HttpResponseRedirect(reverse("move-allocation", kwargs={"pk": pk}))
+
+        if check_over_allocation_limit(allocation_obj, allocation_objs):
             messages.error(
                 request,
                 "Moving this allocation to this project will put it over its resource limit.",
@@ -272,6 +277,7 @@ class ProjectDetailView(LoginRequiredMixin, TemplateView):
         allocation_objs = project_obj.allocation_set.filter(
             status__name__in=["Active", "New", "Renewal Requested"]
         )
+        context["already_in_project"] = allocation_obj in allocation_objs
         context["allocations"] = allocation_objs
         context["over_allocation_limit"] = check_over_allocation_limit(
             allocation_obj, allocation_objs

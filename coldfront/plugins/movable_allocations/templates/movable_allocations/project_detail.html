@@ -4,7 +4,12 @@
     This project does not exist.
   </div>
 {% else %}
-  {% if over_allocation_limit %}
+  {% if already_in_project %}
+    <div id="id_not_moveable" class="alert alert-danger">
+      <i class="fa fa-info-circle"></i>
+      This allocation is already in this project.
+    </div>  
+  {% elif over_allocation_limit %}
     <div id="id_not_moveable" class="alert alert-danger">
       <i class="fa fa-info-circle"></i>
       Moving this allocation to this project will put it over its resource limit.
