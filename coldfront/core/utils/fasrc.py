@@ -127,7 +127,7 @@ def get_resource_rate(resource):
     if resource_obj.resource_type.name == "Cluster":
         return rate_obj.decimal_price
     # return charge per TB, adjusted to dollar value
-    if rate_obj.units == 'TB':
+    if rate_obj.units in ['TiB', 'TB']:
         return rate_obj.price/100
     price = convert_size_fmt(rate_obj.price, 'TiB', source_unit=rate_obj.units)
     return round(price/100, 2)
