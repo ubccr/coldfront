@@ -24,8 +24,13 @@
     </legend>
     <p><strong>ID:</strong> {{ project.pk }}</p>
     <p><strong>Title:</strong> {{ project.title }}</p>
+    <p>
+      <strong>PI:</strong>
+      {{ project.pi.first_name }} {{ project.pi.last_name }} ({{ project.pi.username }})
+    </p>
     <p><strong>Project Description:</strong> {{ project.description }}</p>
     <p><strong>Project Type:</strong> {{ project.type }}</p>
+    <p><strong>Project Status:</strong> {{ project.status }}</p>
     <p><strong>End Date:</strong> {{ project.end_date }}</p>
   </fieldset>
   <div class="card">

@@ -40,8 +40,14 @@ Move Allocation
             </legend>
             <p><strong>ID:</strong> {{ allocation.project.pk }}</p>
             <p><strong>Title:</strong> {{ allocation.project.title }}</p>
+            <p>
+              <strong>PI:</strong>
+              {{ allocation.project.pi.first_name }} {{ allocation.project.pi.last_name }}
+              ({{ allocation.project.pi.username }})
+            </p>
             <p><strong>Project Description:</strong> {{ allocation.project.description }}</p>
             <p><strong>Project Type:</strong> {{ allocation.project.type }}</p>
+            <p><strong>Project Status:</strong> {{ allocation.project.status }}</p>
             <p><strong>End Date:</strong> {{ allocation.project.end_date }}</p>
           </fieldset>
           <hr>
