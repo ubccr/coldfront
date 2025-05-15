@@ -42,13 +42,10 @@ class AllocationMoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         group_exists = check_if_groups_in_review_groups(
             allocation_obj.get_parent_resource.review_groups.all(),
             self.request.user.groups.all(),
-            "change_allocation",
+            'can_move_allocations'
         )
         if group_exists:
             return True
-
-        # if self.request.user == allocation_obj.project.pi:
-        #     return True
 
         messages.error(self.request, "You do not have permission to move this allocation.")
         return False
@@ -66,15 +63,6 @@ class AllocationMoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         if not allocation_obj.project.status.name == "Active":
             messages.error(request, "You cannot move an allocation in an inactive project.")
-            return HttpResponseRedirect(
-                reverse("allocation-detail", kwargs={"pk": kwargs.get("pk")})
-            )
-
-        is_moveable = allocation_obj.allocationattribute_set.filter(
-            allocation_attribute_type__name="Is Moveable"
-        ).first()
-        if not (is_moveable and is_moveable.value == "Yes"):
-            messages.error(request, "Allocation must be moveable.")
             return HttpResponseRedirect(
                 reverse("allocation-detail", kwargs={"pk": kwargs.get("pk")})
             )
@@ -242,9 +230,8 @@ class AllocationMoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             destination_project_pk=destination_project_obj.pk,
         )
 
-        role = "Admin" if not request.user == origin_project_obj.pi else "User"
         logger.info(
-            f"{role} {request.user.username} moved allocation {allocation_obj.pk} from project "
+            f"Admin {request.user.username} moved allocation {allocation_obj.pk} from project "
             f"{origin_project_obj.pk} to project {destination_project_obj.pk}"
         )
 

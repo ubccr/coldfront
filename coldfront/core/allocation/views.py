@@ -196,11 +196,13 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context['user_exists_in_allocation'] = allocation_obj.allocationuser_set.filter(
             user=self.request.user, status__name__in=['Active', 'Pending - Remove', 'Invited', 'Pending', 'Disabled', 'Retired']).exists()
 
-        context['allocation_moving_enabled'] = False
+        context['can_move_allocation'] = False
         if 'coldfront.plugins.movable_allocations' in settings.INSTALLED_APPS:
-            is_moveable = allocation_obj.allocationattribute_set.filter(
-                allocation_attribute_type__name='Is Moveable').first()
-            context['allocation_moving_enabled'] = is_moveable and is_moveable.value == 'Yes'
+            context['can_move_allocation'] = check_if_groups_in_review_groups(
+                allocation_obj.get_parent_resource.review_groups.all(),
+                self.request.user.groups.all(),
+                'can_move_allocations'
+            )
 
         context['project'] = allocation_obj.project
         context['notes'] = notes.order_by("-created")
