@@ -141,7 +141,7 @@ class Allocation(TimeStampedModel):
     @property
     def unit_label(self):
         label = self.get_parent_resource.quantity_label
-        if label and '20T increments' in label:
+        if '20T increments' in label:
             label = label.replace(' in 20T increments', '')
         return label
 
