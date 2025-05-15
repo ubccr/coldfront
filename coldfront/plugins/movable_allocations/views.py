@@ -78,7 +78,7 @@ class AllocationMoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def get(self, request, *args, **kwargs):
         pk = self.kwargs.get("pk")
         allocation_obj = get_object_or_404(Allocation, pk=pk)
-        form = AllocationMoveForm(allocation_obj.project.pi, allocation_obj.project.pk)
+        form = AllocationMoveForm()
         context = self.get_context_data()
         context["form"] = form
         context["allocation"] = allocation_obj
@@ -95,7 +95,7 @@ class AllocationMoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         allocation_obj = get_object_or_404(Allocation, pk=pk)
         origin_project_obj = allocation_obj.project
 
-        form = AllocationMoveForm(request.user, origin_project_obj.pk, request.POST)
+        form = AllocationMoveForm(request.POST)
         if not form.is_valid():
             for error in form.errors:
                 messages.error(request, error)
