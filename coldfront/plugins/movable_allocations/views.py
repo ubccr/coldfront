@@ -113,7 +113,8 @@ class AllocationMoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         if check_over_allocation_limit(
             allocation_obj,
             destination_project_obj.allocation_set.filter(
-                status__name="Active", resources=allocation_obj.get_parent_resource
+                status__name__in=["Active", "New", "Renewal Requested"],
+                resources=allocation_obj.get_parent_resource
             ),
         ):
             messages.error(
@@ -268,7 +269,9 @@ class ProjectDetailView(LoginRequiredMixin, TemplateView):
 
         allocation_obj = get_object_or_404(Allocation, pk=allocation_pk)
         context["project"] = project_obj
-        allocation_objs = project_obj.allocation_set.filter(status__name="Active")
+        allocation_objs = project_obj.allocation_set.filter(
+            status__name__in=["Active", "New", "Renewal Requested"]
+        )
         context["allocations"] = allocation_objs
         context["over_allocation_limit"] = check_over_allocation_limit(
             allocation_obj, allocation_objs
