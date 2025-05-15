@@ -101,7 +101,15 @@ class AllocationMoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 messages.error(request, error)
             return HttpResponseRedirect(reverse("move-allocation", kwargs={"pk": pk}))
 
-        destination_project_obj = form.cleaned_data.get("destination_project")
+        destination_project_obj = Project.objects.filter(
+            id=form.cleaned_data.get("destination_project")).first()
+        if not destination_project_obj:
+            messages.error(
+                request,
+                "This project does not exist.",
+            )
+            return HttpResponseRedirect(reverse("move-allocation", kwargs={"pk": pk}))
+
         if check_over_allocation_limit(
             allocation_obj,
             destination_project_obj.allocation_set.filter(
@@ -251,9 +259,14 @@ class ProjectDetailView(LoginRequiredMixin, TemplateView):
     def get(self, request, *args, **kwargs):
         project_pk = self.kwargs.get("project_pk")
         allocation_pk = self.kwargs.get("pk")
-        project_obj = get_object_or_404(Project, pk=project_pk)
-        allocation_obj = get_object_or_404(Allocation, pk=allocation_pk)
         context = self.get_context_data()
+        context["does_not_exist"] = False
+        project_obj = Project.objects.filter(id=project_pk).first()
+        if not project_obj:
+            context["does_not_exist"] = True
+            return self.render_to_response(context)
+
+        allocation_obj = get_object_or_404(Allocation, pk=allocation_pk)
         context["project"] = project_obj
         allocation_objs = project_obj.allocation_set.filter(status__name="Active")
         context["allocations"] = allocation_objs

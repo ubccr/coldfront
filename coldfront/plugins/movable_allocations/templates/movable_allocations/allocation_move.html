@@ -99,7 +99,18 @@ Move Allocation
               </label>
             </div>
             <div class="col">
-              {{ form.destination_project }}
+              <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                  <span class="input-group-text">
+                    <i class="fas fa-search"></i>
+                  </span>
+                </div>
+                {{ form.destination_project }}
+                <div class="input-group-append">
+                  <button id="id_search_project" class="btn btn-outline-secondary" type="button">Search</button>
+                </div>
+              </div>
+              
             </div>
           </div>
         </div>
@@ -132,8 +143,8 @@ Move Allocation
   })
   $(document).ready(function () {
     $('#id_destination_project').addClass('form-control')
-    $('#id_destination_project').change(function (e) {
-      var project_pk = $("#id_destination_project option:selected").val();
+    $('#id_search_project').click(function (e) {
+      var project_pk = $("#id_destination_project").val();
       if (!project_pk) {
         $('#id_destination_project_info').html('')
         return;
@@ -147,7 +158,6 @@ Move Allocation
         success: function (data) {
           $('#id_destination_project_info').html(data)
           var not_moveable = $('#id_not_moveable');
-          console.log(not_moveable.length);
           if (not_moveable.length) {
             $('#id_submit').prop('disabled', true)
           } else {

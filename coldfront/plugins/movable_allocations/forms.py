@@ -5,7 +5,7 @@ from coldfront.core.project.models import Project
 
 
 class AllocationMoveForm(forms.Form):
-    destination_project = forms.ModelChoiceField(queryset=None)
+    destination_project = forms.IntegerField()
     users = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, required=False)
 
     def __init__(self, request_user, project_pk, *args, **kwargs):
