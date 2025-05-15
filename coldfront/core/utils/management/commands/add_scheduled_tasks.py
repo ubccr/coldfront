@@ -29,7 +29,7 @@ class Command(BaseCommand):
             'sftocf': ['import_allocation_filepaths', 'pull_sf_push_cf', 'update_zones'],
             # 'lfs': ['pull_lfs_filesystem_stats'],
             'ldap': ['update_group_membership_ldap', 'id_add_projects'],
-            'slurm': ['slurm_sync'],
+            'slurm': ['slurm_sync', 'slurm_manage_resources'],
             'xdmod': ['xdmod_usage'],
         }
         scheduled = [task.func for task in Schedule.objects.all()]

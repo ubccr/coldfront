@@ -1,4 +1,5 @@
 import logging
+import re
 import shlex
 import struct
 import subprocess
@@ -37,6 +38,7 @@ SLURM_CMD_DUMP_CLUSTER = SLURM_SACCTMGR_PATH + ' dump {} file={}'
 SLURM_CMD_LIST_PARTITIONS = SLURM_SCONTROL_PATH + ' show partitions'
 SLURM_CMD_GET_USER_INFO = SLURM_SSHARE_PATH + ' -u {} -A {} -o Account,User,RawShares,NormShares,RawUsage,FairShare --parsable'
 
+SLURM_CMD_SINFO_NODES = 'sinfo -N -r --format="%19N %23P %66G %5a %5c %8z %65f %50g"'
 
 logger = logging.getLogger(__name__)
 
@@ -144,6 +146,18 @@ def slurm_add_account(cluster, account, specs=None, noop=False):
 def slurm_block_account(cluster, account, noop=False):
     cmd = SLURM_CMD_BLOCK_ACCOUNT.format(shlex.quote(account), shlex.quote(cluster))
     _run_slurm_cmd(cmd, noop=noop)
+
+def slurm_get_nodes_info():
+    def table_to_dict_list(table_info):
+        keys = re.sub(r'\s+', ' ', table_info[0]).strip().lower().split(' ')
+        values = [re.sub(r'\s+', ' ', row).strip().split(' ') for row in table_info[1:]  if len(row)>0]
+        result_list = [dict(zip(keys, row)) for row in values if len(row)> 0]
+        return result_list
+
+    cmd = SLURM_CMD_SINFO_NODES
+    nodes_info = _run_slurm_cmd(cmd, noop=False)
+    nodes_info = nodes_info.decode('utf-8').split('\n')
+    return table_to_dict_list(nodes_info)
 
 def slurm_check_assoc(user, cluster, account):
     cmd = SLURM_CMD_CHECK_ASSOCIATION.format(

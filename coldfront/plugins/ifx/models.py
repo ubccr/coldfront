@@ -133,7 +133,7 @@ def resource_post_save(sender, instance, **kwargs):
     '''
     Ensure that there is a Product for each Resource
     '''
-    if not kwargs.get('raw') and not instance.resource_type.name in ["Storage Tier"] and instance.requires_payment:
+    if not kwargs.get('raw') and not instance.resource_type.name in ["Storage Tier", "Cluster", "Cluster Partition", "Compute Node"] and instance.requires_payment:
         try:
             product_resource = ProductResource.objects.get(resource=instance)
         except ProductResource.DoesNotExist:
