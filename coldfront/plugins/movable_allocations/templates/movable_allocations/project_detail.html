@@ -45,6 +45,7 @@
               <tr>
                 <th scope="col">Resource</th>
                 <th scope="col">Information</th>
+                <th scope="col">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -60,6 +61,7 @@
                   {% else %}
                     <td class="text-nowrap">{{allocation.description|default_if_none:""}}</td>
                   {% endif %}
+                  <td class="text-nowrap">{{ allocation.status }}</td>
                 </tr>
               {% endfor %}
             </tbody>
