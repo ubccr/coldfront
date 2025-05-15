@@ -10,7 +10,6 @@ from django.db import models
 from django.db.models import Q
 from django.utils.html import mark_safe
 from django.utils.module_loading import import_string
-from django.contrib.auth import get_user_model
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 

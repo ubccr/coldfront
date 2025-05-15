@@ -43,7 +43,7 @@ class Command(BaseCommand):
             ('xdmod_resource', 'Text'),
             # ('eula', 'Text'),
             # ('OnDemand','Yes/No'),
-            # ('ServiceEnd', 'Date'),
+            ('ServiceEnd', 'Date'),
             # ('ServiceStart', 'Date'),
             ('slurm_cluster', 'Text'),
             ('slurm_specs', 'Attribute Expanded Text'),

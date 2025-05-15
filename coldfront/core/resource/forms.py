@@ -58,6 +58,11 @@ class ResourceAttributeCreateForm(forms.ModelForm):
         self.fields['resource_attribute_type'].queryset = self.fields['resource_attribute_type'].queryset.order_by(Lower('name'))
 
 
+class ResourceAttributeUpdateForm(forms.Form):
+    resource_attribute_type_name = forms.CharField(max_length=250, required=False, disabled=True)
+    value = forms.CharField(max_length=350, required=True)
+
+
 class ResourceAllocationUpdateForm(forms.Form):
     allocation_pk = forms.IntegerField(required=False)
     project = forms.CharField(max_length=250, required=False, disabled=True)

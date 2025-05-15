@@ -3,6 +3,7 @@ from datetime import datetime
 from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import Group
+from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
@@ -194,13 +195,27 @@ class Resource(TimeStampedModel):
         return None
 
     @property
+    def owner(self):
+        """
+        Returns:
+            str: the status of the resource
+        """
+        try:
+            return ResourceAttribute.objects.get(resource=self, resource_attribute_type__name='Owner').value
+        except ObjectDoesNotExist:
+            return None
+
+
+    @property
     def status(self):
         """
         Returns:
             str: the status of the resource
         """
-
-        return ResourceAttribute.objects.get(resource=self, resource_attribute_type__attribute='Status').value
+        try:
+            return ResourceAttribute.objects.get(resource=self, resource_attribute_type__name='Status').value
+        except ObjectDoesNotExist:
+            return None
 
     @property
     def expiry(self):

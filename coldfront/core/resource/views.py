@@ -14,6 +14,7 @@ from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.views.generic import TemplateView
 from django.views.generic.edit import CreateView
+from django.core.exceptions import ObjectDoesNotExist
 
 from coldfront.core.utils.views import ColdfrontListView
 from coldfront.core.resource.models import Resource, ResourceAttribute
@@ -21,13 +22,15 @@ from coldfront.core.resource.forms import (
     ResourceAttributeCreateForm,
     ResourceSearchForm,
     ResourceAttributeDeleteForm,
+    ResourceAttributeUpdateForm,
     ResourceAllocationUpdateForm,
 )
-from coldfront.core.allocation.models import AllocationStatusChoice, AllocationAttributeType, AllocationAttribute
+from coldfront.core.allocation.models import AllocationAttributeType, AllocationAttribute
 from coldfront.core.allocation.signals import allocation_raw_share_edit
 
 from coldfront.plugins.slurm.utils import SlurmError
 
+from coldfront.core.project.models import Project
 
 logger = logging.getLogger(__name__)
 
@@ -170,6 +173,14 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     allocation_total['usage'] += allocation.usage
             context['allocation_total'] = allocation_total
 
+        owner = resource_obj.owner
+        if owner != None:
+            try:
+                owner = Project.objects.get(title=owner).pk
+            except ObjectDoesNotExist:
+                owner = owner
+        context['owner'] = owner
+
         context['allocations'] = allocations
         context['resource'] = resource_obj
         context['attributes'] = attributes
@@ -192,6 +203,18 @@ class ResourceAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Creat
             return True
         messages.error(
             self.request, 'You do not have permission to add resource attributes.')
+
+    def dispatch(self, request, *args, **kwargs):
+        resource_obj = get_object_or_404(Resource, pk=self.kwargs.get('pk'))
+        err = None
+        if resource_obj.is_available is False:
+            err = 'You cannot add resource attributes to retired allocations.'
+        if err:
+            messages.error(request, err)
+            return HttpResponseRedirect(
+                reverse('resource-detail', kwargs={'pk': resource_obj.pk})
+            )
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -217,6 +240,85 @@ class ResourceAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Creat
         return reverse('resource-detail', kwargs={'pk': self.kwargs.get('pk')})
 
 
+class ResourceAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'resource_resourceattribute_edit.html'
+
+    def test_func(self):
+        """UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+        err = 'You do not have permission to edit resource attributes.'
+        messages.error(self.request, err)
+        return False
+
+    def get_formset_initial_data(self, resource_attributes):
+        edit_attributes_formset_initial_data = []
+        if resource_attributes:
+            for attribute in resource_attributes:
+                edit_attributes_formset_initial_data.append(
+                    {
+                        'resource_attribute_type_name': attribute.resource_attribute_type.name,
+                        'value': attribute.value,
+                    }
+                )
+        return edit_attributes_formset_initial_data
+
+    def get_context_data(self, resource_obj):
+        context = {}
+        resource_attributes = resource_obj.resourceattribute_set.all()
+        if resource_attributes:
+            ResourceAttributeUpdateFormSet = formset_factory(
+                ResourceAttributeUpdateForm,
+                max_num=len(resource_attributes),
+                extra=0
+            )
+            edit_attributes_formset_initial_data = self.get_formset_initial_data(resource_attributes)
+            formset = ResourceAttributeUpdateFormSet(
+                initial=edit_attributes_formset_initial_data,
+                prefix='attributesform'
+            )
+            context['formset'] = formset
+        context['resource'] = resource_obj
+        return context
+
+    def get(self, request, *args, **kwargs):
+        resource_obj = get_object_or_404(Resource, pk=self.kwargs.get('pk'))
+        context = self.get_context_data(resource_obj)
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        resource_obj = get_object_or_404(Resource, pk=pk)
+        resource_attributes = resource_obj.resourceattribute_set.all()
+        edit_attributes_formset_initial_data = self.get_formset_initial_data(resource_attributes)
+        logger.warning(f'initial_data {edit_attributes_formset_initial_data}')
+
+        ResourceAttributeUpdateFormSet = formset_factory(
+            ResourceAttributeUpdateForm,
+            max_num=len(resource_attributes),
+            extra=0
+        )
+        formset = ResourceAttributeUpdateFormSet(
+            request.POST,
+            initial=edit_attributes_formset_initial_data,
+            prefix='attributesform'
+        )
+        if formset.is_valid():
+            for form in formset.forms:
+                attribute_name = form.cleaned_data.get('resource_attribute_type_name')
+                attribute_value = form.cleaned_data.get('value')
+                resource_attribute = [attribute for attribute in resource_attributes if attribute.resource_attribute_type.name == attribute_name][0]
+                resource_attribute.value = attribute_value
+                resource_attribute.save()
+            messages.success(request, 'Resource attributes update complete.')
+            return HttpResponseRedirect(reverse('resource-attributes-edit', kwargs={'pk': pk}))
+        else:
+            messages.error(request, 'Errors encountered, changes not saved. Check the form for details')
+            context = self.get_context_data(resource_obj)
+            context['formset'] = formset
+            return render(request, self.template_name, context)
+
+
 class ResourceAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'resource_resourceattribute_delete.html'
 
@@ -226,6 +328,18 @@ class ResourceAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Templ
             return True
         messages.error(
             self.request, 'You do not have permission to delete resource attributes.')
+
+    def dispatch(self, request, *args, **kwargs):
+        resource_obj = get_object_or_404(Resource, pk=self.kwargs.get('pk'))
+        err = None
+        if resource_obj.is_available is False:
+            err = 'You cannot delete resource attributes from retired allocations.'
+        if err:
+            messages.error(request, err)
+            return HttpResponseRedirect(
+                reverse('resource-detail', kwargs={'pk': resource_obj.pk})
+            )
+        return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
@@ -304,6 +418,15 @@ class ResourceListView(ColdfrontListView):
         resource_search_form = ResourceSearchForm(self.request.GET)
         resources = Resource.objects.filter(is_available=True)
 
+        project_list = Project.objects.filter(
+            Q(status__name__in=['New', 'Active', ]) & (
+                    Q(pi=self.request.user) | (
+                    Q(projectuser__user=self.request.user)
+                    & Q(projectuser__status__name='Active')
+            )
+            )
+        ).distinct().order_by('-created')
+
         if order_by == 'name':
             direction = self.request.GET.get('direction')
             if direction == 'asc':
@@ -363,12 +486,89 @@ class ResourceListView(ColdfrontListView):
                     Q(resourceattribute__resource_attribute_type__name='Vendor') &
                     Q(resourceattribute__value=data.get('vendor'))
                 )
-        return resources.distinct()
+        project_title_list = [project.title for project in project_list]
+        not_owned_compute_nodes = [attribute.resource.pk for attribute in ResourceAttribute.objects.filter(
+            resource_attribute_type__name='Owner',
+            resource__resource_type__name='Compute Node'
+        ).exclude(value__in=project_title_list)]
+        if self.request.user.is_superuser:
+            return resources.distinct()
+        return resources.exclude(pk__in=not_owned_compute_nodes).distinct()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(
             SearchFormClass=ResourceSearchForm, **kwargs)
         return context
+
+
+class ResourceArchivedListView(ResourceListView):
+    template_name = 'resource_archived_list.html'
+
+    def get_queryset(self):
+
+        order_by = self.return_order()
+        resource_search_form = ResourceSearchForm(self.request.GET)
+
+        if order_by == 'name':
+            direction = self.request.GET.get('direction')
+            if direction == 'asc':
+                resources = Resource.objects.all().order_by(Lower('name'))
+            elif direction == 'des':
+                resources = (Resource.objects.all().order_by(Lower('name')).reverse())
+            else:
+                resources = Resource.objects.all().order_by(order_by)
+        else:
+            resources = Resource.objects.all().order_by(order_by)
+        if resource_search_form.is_valid():
+            data = resource_search_form.cleaned_data
+
+            if data.get('show_allocatable_resources'):
+                resources = resources.filter(is_allocatable=True)
+            if data.get('resource_name'):
+                resources = resources.filter(
+                    name__icontains=data.get('resource_name')
+                )
+            if data.get('resource_type'):
+                resources = resources.filter(
+                    resource_type=data.get('resource_type')
+                )
+
+            if data.get('model'):
+                resources = resources.filter(
+                    Q(resourceattribute__resource_attribute_type__name='Model') &
+                    Q(resourceattribute__value=data.get('model'))
+                )
+            if data.get('serialNumber'):
+                resources = resources.filter(
+                    Q(resourceattribute__resource_attribute_type__name='SerialNumber') &
+                    Q(resourceattribute__value=data.get('serialNumber'))
+                )
+            if data.get('installDate'):
+                resources = resources.filter(
+                    Q(resourceattribute__resource_attribute_type__name='InstallDate') &
+                    Q(resourceattribute__value=data.get('installDate').strftime('%m/%d/%Y'))
+                )
+            if data.get('serviceStart'):
+                resources = resources.filter(
+                    Q(resourceattribute__resource_attribute_type_name='ServiceStart') &
+                    Q(resourceattribute__value=data.get('serviceStart').strftime('%m/%d/%Y'))
+                )
+            if data.get('serviceEnd'):
+                resources = resources.filter(
+                    Q(resourceattribute__resource_attribute_type__name='ServiceEnd') &
+                    Q(resourceattribute__value=data.get('serviceEnd').strftime('%m/%d/%Y'))
+                )
+            if data.get('warrantyExpirationDate'):
+                resources = resources.filter(
+                    Q(resourceattribute__resource_attribute_type__name='WarrantyExpirationDate') &
+                    Q(resourceattribute__value=data.get('warrantyExpirationDate').strftime('%m/%d/%Y'))
+                )
+            if data.get('vendor'):
+                resources = resources.filter(
+                    Q(resourceattribute__resource_attribute_type__name='Vendor') &
+                    Q(resourceattribute__value=data.get('vendor'))
+                )
+        return resources.exclude(is_available=True).distinct()
 
 
 class ResourceAllocationsEditView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -388,6 +588,8 @@ class ResourceAllocationsEditView(LoginRequiredMixin, UserPassesTestMixin, Templ
         err = None
         if 'Storage' in resource_obj.resource_type.name:
             err = 'You cannot bulk-edit storage allocations.'
+        if resource_obj.is_available is False:
+            err = 'You cannot edit retired allocations.'
         if err:
             messages.error(request, err)
             return HttpResponseRedirect(
