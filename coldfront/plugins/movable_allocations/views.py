@@ -146,6 +146,7 @@ class AllocationMoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         allocation_obj.save()
 
         slurm_account_obj = AllocationAttribute.objects.filter(
+            allocation=allocation_obj,
             allocation_attribute_type__name="slurm_account_name"
         ).first()
         if slurm_account_obj:
