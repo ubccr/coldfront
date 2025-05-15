@@ -143,10 +143,12 @@ class QuotaDataPuller:
         data['lab'] = data['pool'].str.replace('1', '').str.replace('hugl', '').str.replace('hus3', '')
         data['server'] = 'nesetape'
         data['storage_type'] = 'tape'
-        data['byte_allocation'] = data['mib_capacity'] * 1048576
+        data['byte_allocation'] = (data['mib_capacity'] + data['mib_capacity']*0.025) * 1048576
         data['byte_usage'] = data['mib_used'] * 1048576
-        data['tb_allocation'] = round(((data['mib_capacity']+ data['mib_capacity']*0.025) / 953674.3164), -1)
-        data['tb_usage'] = data['mib_used'] / 953674.3164
+        data['tb_allocation'] = round((
+            (data['mib_capacity'] + data['mib_capacity']*0.025) / 953674.31640625
+        ), -1)
+        data['tb_usage'] = data['mib_used'] / 953674.31640625
         data = data[[
             'lab', 'server', 'storage_type', 'byte_allocation',
             'byte_usage', 'tb_allocation', 'tb_usage', 'fs_path',
@@ -299,7 +301,9 @@ def push_quota_data(result_file):
             try:
                 # 3. get the storage quota TB allocation_attribute that has allocation=a.
                 allocation_values = {
-                    'Storage Quota (TB)': [data_dict['tb_allocation'],data_dict['tb_usage']]
+                    f'Storage Quota ({allocation.unit_label})': [
+                        data_dict['tb_allocation'],data_dict['tb_usage']
+                    ]
                 }
                 if data_dict['byte_allocation'] is not None:
                     allocation_values['Quota_In_Bytes'] = [

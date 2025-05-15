@@ -73,7 +73,7 @@ class UIChecker:
             if not isclose(usage_b_to_tb, usage_tb):
                 lines.append({'type': 'Data', 'name': 'mismatched_tb_byte_usages',
                             'url': url})
-        else:
+        elif response.context_data['invoice']:
             print("no usage:", url)
 
 

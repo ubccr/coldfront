@@ -155,7 +155,7 @@ Allocation Detail
               </tr>
             {% elif "Storage" in allocation.get_parent_resource.resource_type.name %}
               <tr>
-                <th scope="row" class="text-nowrap">Quota (TB):</th>
+                <th scope="row" class="text-nowrap">Quota ({{ allocation.unit_label }}):</th>
                 <td id="group_quota">{{ allocation.size|floatformat:2 }}</td>
             </tr>
             {% if invoice %}
@@ -173,7 +173,7 @@ Allocation Detail
             {% endif %}
           {% endif %}
           <tr>
-              <th scope="row" class="text-nowrap">Total Usage ({{allocation.get_parent_resource.quantity_label}}):</th>
+              <th scope="row" class="text-nowrap">Total Usage ({{allocation.unit_label}}):</th>
               <td>{{ allocation.usage|floatformat:2 }}
                 <span class="float-right">Last Synced {{user_sync_dt}}</span>
               </td>
@@ -500,7 +500,7 @@ Allocation Detail
                 <th scope="col">Logical Usage</th>
                 <th scope="col">Percent Usage</th>
                 {% if invoice %}
-                  <th scope="col">Cost Per User (TB/month)</th>
+                  <th scope="col">Cost Per User ({{ allocation.unit_label }}/month)</th>
                 {% endif %}
               {% else %}
                   <th scope="col">CPU Hours</th>

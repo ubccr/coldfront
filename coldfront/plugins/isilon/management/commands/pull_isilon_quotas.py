@@ -24,7 +24,7 @@ class Command(BaseCommand):
         quota_bytes_attributetype = AllocationAttributeType.objects.get(
             name='Quota_In_Bytes')
         quota_tbs_attributetype = AllocationAttributeType.objects.get(
-            name='Storage Quota (TB)')
+            name='Storage Quota (TiB)')
         # create isilon connections to all isilon clusters in coldfront
         isilon_resources = Resource.objects.filter(name__contains='tier1')
         for resource in isilon_resources:

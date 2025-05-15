@@ -60,8 +60,11 @@ class StandardReportRunner(BaseReportRunner):
                     left join nanites_organization o on po.organization_id = o.id
                     left join account a on br.account_id = a.id
             where
-                storage_attribute_type.name = 'Storage Quota (TB)' and
-                pu.start_date >= %s and pu.start_date < %s
+                (
+                    storage_attribute_type.name = 'Storage Quota (TiB)'
+                    or storage_attribute_type.name = 'Storage Quota (TB)'
+                ) 
+                and pu.start_date >= %s and pu.start_date < %s
         """
 
         return sql
