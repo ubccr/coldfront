@@ -98,7 +98,12 @@ Report runs
                 dataType: "json"
             }).done(
                 function () { reportRunsTable.ajax.reload() }
-            )
+            ).fail(
+                function (xhr, status, error) {
+                    let msg = xhr.responseJSON && xhr.responseJSON.error ? xhr.responseJSON.error : "Unknown error"
+                    alert(msg);
+                }
+            );
           })
     })
 </script>
@@ -115,19 +120,18 @@ Report runs
         <form method="post">
           <input type="hidden" name="date_range" id="date_range">
           {% csrf_token %}
-          <table>
+          <table cellpadding="5px" style="width: 100%">
               <tbody>
                   <tr>
                       <td>Report</td>
                       <td>
                           <select name="report" id="report">
-                              <option value="Standard">Standard</option>
-                              <option value="SEASHCSPH">SEAS / HCSPH</option>
+                              <option value="SEAS-HCSPH">SEAS-HCSPH</option>
                           </select>
                       </td>
-                      <td>Fiscal Year</td><td><input type="checkbox" name="fy" id="fy"></td>
-                      <td>Start Date</td><td><input type="text" name="start_date" id="start_date"></td>
-                      <td>End Date</td><td><input type="text" name="end_date" id="end_date"></td>
+                      <td>Fiscal Year <input type="checkbox" name="fy" id="fy"></td>
+                      <td>Start Date <input type="text" name="start_date" id="start_date"></td>
+                      <td>End Date <input type="text" name="end_date" id="end_date"></td>
                       <td><input type="submit" value="Run report"></input></td>
                   </tr>
               </tbody>
