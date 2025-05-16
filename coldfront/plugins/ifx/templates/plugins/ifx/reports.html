@@ -3,6 +3,14 @@
 {% load crispy_forms_tags %}
 {% load static %}
 
+{% block ifx_head %}
+<link rel="stylesheet" href="https://cdn.datatables.net/2.1.5/css/dataTables.dataTables.min.css"></style>
+<script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js"></script>
+<script src="https://cdn.datatables.net/2.1.5/js/dataTables.js"></script>
+<script src="https://cdn.datatables.net/select/2.0.5/js/dataTables.select.js"></script>
+<script src="https://cdn.datatables.net/select/2.0.5/js/select.dataTables.js"></script>
+{% endblock %}
+
 
 {% block title %}
 Report runs
@@ -32,11 +40,6 @@ Report runs
             dialog.dialog("close");
           });
           var reportRunsTable = $("#report-runs").DataTable({
-              layout: {
-                  topStart: 'search',
-                  topEnd: 'pageLength',
-                  bottomStart: 'paging',
-              },
               columns: [
                   {data: 'report', width: '100px'},
                   {data: 'date_range', width: '200px'},
