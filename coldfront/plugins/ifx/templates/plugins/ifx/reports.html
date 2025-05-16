@@ -32,7 +32,11 @@ Report runs
             dialog.dialog("close");
           });
           var reportRunsTable = $("#report-runs").DataTable({
-              dom: 't',
+              layout: {
+                  topStart: 'search',
+                  topEnd: 'pageLength',
+                  bottomStart: 'paging',
+              },
               columns: [
                   {data: 'report', width: '100px'},
                   {data: 'date_range', width: '200px'},
@@ -120,7 +124,7 @@ Report runs
         <form method="post">
           <input type="hidden" name="date_range" id="date_range">
           {% csrf_token %}
-          <table cellpadding="5px" style="width: 100%">
+          <table cellpadding="5px"  class="display" style="width: 100%">
               <tbody>
                   <tr>
                       <td>Report</td>
