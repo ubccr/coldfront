@@ -9,16 +9,29 @@ from pathlib import Path
 GENERAL_RESOURCE_NAME = import_from_settings('GENERAL_RESOURCE_NAME')
 app_commands_dir = os.path.dirname(__file__)
 
+DEFAULT_SCHOOL_RESOURCES_JSON_PATH = os.path.join(
+    os.path.dirname(__file__),
+    '..', 'data', 'school_resources.json'
+)
 
 class Command(BaseCommand):
     help = 'Add University and School Default Resources'
 
+    def add_arguments(self, parser):
+        # add a --json-file-path flag, with a sane default
+        parser.add_argument(
+            '--json-file-path',
+            type=str,
+            default=DEFAULT_SCHOOL_RESOURCES_JSON_PATH,
+            help='Filesystem path to school_resources.json'
+        )
+
     def handle(self, *args, **options):
-        self.add_genearl_university_resource()
-        self.add_school_resources()
+        json_file_path = options['json_file_path']
+        self.add_general_university_resource()
+        self.add_school_resources(json_file_path)
 
-
-    def add_genearl_university_resource(self):
+    def add_general_university_resource(self):
         # Generic University Cluster
         resource_type, parent_resource, name, description, school, is_available, is_public, is_allocatable = \
             ('Cluster', None, GENERAL_RESOURCE_NAME,
@@ -29,7 +42,6 @@ class Command(BaseCommand):
                 name=parent_resource)
         else:
             parent_resource_obj = None
-
         Resource.objects.get_or_create(
             resource_type=resource_type_obj,
             parent_resource=parent_resource_obj,
@@ -41,10 +53,8 @@ class Command(BaseCommand):
             is_allocatable=is_allocatable
         )
 
-    def add_school_resources(self):
+    def add_school_resources(self, json_file_path=DEFAULT_SCHOOL_RESOURCES_JSON_PATH):
         ## Load school_resources.json file ##
-        parent_dir = os.path.dirname(app_commands_dir)
-        json_file_path = os.path.join(parent_dir, 'data', 'school_resources.json')
         json_path = Path(json_file_path)
         text = json_path.read_text(encoding="utf-8")
         resources = json.loads(text)
@@ -53,14 +63,13 @@ class Command(BaseCommand):
         for rec in resources:
             # resolve foreign keys
             rt = ResourceType.objects.get(name=rec["resource_type"])
-            parent = None
-            if rec["parent_resource"]:
-                parent = Resource.objects.get(name=rec["parent_resource"])
+            # School resource's parent is always Univeristy GENERAL_RESOURCE
+            parent_resource_obj = Resource.objects.get(
+                name=GENERAL_RESOURCE_NAME)
             school = School.objects.get(description=rec["school"])
-
             Resource.objects.get_or_create(
                 resource_type=rt,
-                parent_resource=parent,
+                parent_resource=parent_resource_obj,
                 name=rec["name"],
                 description=rec["description"],
                 school=school,
