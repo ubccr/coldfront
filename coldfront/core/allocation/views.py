@@ -2127,7 +2127,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
             return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
 
         if end_date_extension != allocation_change_obj.end_date_extension:
-            create_admin_action(request.user, {'new_value': end_date_extension}, allocation_obj, attribute_change)
+            create_admin_action(request.user, {'end_date': end_date_extension}, allocation_obj)
             allocation_change_obj.end_date_extension = end_date_extension
 
         if allocation_attributes_to_change:
