@@ -365,7 +365,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                 send_allocation_customer_email(allocation_obj, 'Allocation Revoked', 'email/allocation_revoked.txt', domain_url=get_domain_url(self.request))
                 messages.success(request, 'Allocation Revoked!')
             elif allocation_obj.status.name == 'Removed':
-                send_allocation_customer_email(allocation_obj, 'Allocation Removed', 'email/allocation_removed.txt', domain_url=get_domain_url(self.request))
+                send_allocation_customer_email(allocation_obj, 'Allocation Removed', 'allocation_removal_requests/allocation_removed.txt', domain_url=get_domain_url(self.request))
                 messages.success(request, 'Allocation Removed!')
             else:
                 messages.success(request, 'Allocation updated!')
