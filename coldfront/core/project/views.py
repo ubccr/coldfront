@@ -1210,7 +1210,7 @@ class ProjectNoteCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView)
     model = ProjectUserMessage
     fields = '__all__'
     template_name = 'project/project_note_create.html'
-
+    enctype = 'multipart/form-data' 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
 
@@ -1251,7 +1251,8 @@ class ProjectAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Create
     model = ProjectAttribute
     form_class = ProjectAttributeAddForm
     template_name = 'project/project_attribute_create.html'
-
+    enctype="multipart/form-data"
+    # print("kjenf")
     def test_func(self):
         """ UserPassesTestMixin Tests"""
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
@@ -1274,7 +1275,6 @@ class ProjectAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Create
         initial['project'] = get_object_or_404(Project, pk=pk)
         initial['user'] = self.request.user
         return initial
-
     def get_form(self, form_class=None):
         """Return an instance of the form to be used in this view."""
         form = super().get_form(form_class)
@@ -1285,7 +1285,15 @@ class ProjectAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Create
         pk = self.kwargs.get('pk')
         context = super().get_context_data(*args, **kwargs)
         context['project'] = get_object_or_404(Project, pk=pk)
+        text_based_input_attributes = []
+        for m in ProjectAttribute.objects.all():
+            # print(m.doc)
+            if(m.proj_attr_type.attribute_type.name != "Upload"):
+                text_based_input_attributes.append(m.proj_attr_type.attribute_type.name)
+        context["text_based_input_attributes"] = text_based_input_attributes
+
         return context
+
 
     def get_success_url(self):
         return reverse('project-detail', kwargs={'pk': self.object.project_id})
