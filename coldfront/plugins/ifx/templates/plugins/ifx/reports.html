@@ -3,6 +3,14 @@
 {% load crispy_forms_tags %}
 {% load static %}
 
+{% block ifx_head %}
+<link rel="stylesheet" href="https://cdn.datatables.net/2.1.5/css/dataTables.dataTables.min.css"></style>
+<script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js"></script>
+<script src="https://cdn.datatables.net/2.1.5/js/dataTables.js"></script>
+<script src="https://cdn.datatables.net/select/2.0.5/js/dataTables.select.js"></script>
+<script src="https://cdn.datatables.net/select/2.0.5/js/select.dataTables.js"></script>
+{% endblock %}
+
 
 {% block title %}
 Report runs
@@ -31,23 +39,59 @@ Report runs
           .ajaxStop(function () {
             dialog.dialog("close");
           });
-        var reportRunsTable = $("#report-runs").DataTable({
-            dom: 't',
-            columns: [
-                {data: 'report', width: '100px'},
-                {data: 'date_range', width: '100px'},
-                {data:  function(item){ return `<a href="${item.url_root}/${item.xls_file_path}">${item.xls_file_path}</a>`}},
-                {data:  function(item){ return `<a href="${item.url_root}/${item.text_file_path}">${item.text_file_path}</a>`}},
-                {data:  function(item){ return new Date(item.updated).toLocaleTimeString('en-us', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}}
-            ],
-            ajax: {
-                url: '/ifx/api/report-runs/',
-                type: 'GET',
-                dataSrc: '',
-            }
-        })
+          var reportRunsTable = $("#report-runs").DataTable({
+              columns: [
+                  {data: 'report', width: '100px'},
+                  {data: 'date_range', width: '200px'},
+                  {data:  function(item){ return `<a href="${item.url_root}/${item.xls_file_path}">${item.xls_file_path}</a>`}},
+                  {data:  function(item){ return `<a href="${item.url_root}/${item.text_file_path}">${item.text_file_path}</a>`}},
+                  {data:  function(item){ return new Date(item.updated).toLocaleTimeString('en-us', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}}
+              ],
+              ajax: {
+                  url: '/ifx/api/report-runs/',
+                  type: 'GET',
+                  dataSrc: '',
+              }
+          })
 
-        $("input[type='submit']").click((ev) => {
+          $("#start_date").datepicker({
+              dateFormat: 'yy-mm',
+              changeMonth: true,
+              changeYear: true,
+              showButtonPanel: true,
+              onClose: function(dateText, inst) {
+                  $(this).datepicker('setDate', new Date(inst.selectedYear, inst.selectedMonth, 1));
+              }
+          });
+          $("#end_date").datepicker({
+              dateFormat: 'yy-mm',
+              changeMonth: true,
+              changeYear: true,
+              showButtonPanel: true,
+              onClose: function(dateText, inst) {
+                  $(this).datepicker('setDate', new Date(inst.selectedYear, inst.selectedMonth + 1, 0));
+              }
+          });
+          $("#fy").change(function() {
+              if ($(this).is(":checked")) {
+                  $("#start_date").prop('disabled', true)
+                  $("#end_date").prop('disabled', true)
+              } else {
+                  $("#start_date").prop('disabled', false)
+                  $("#end_date").prop('disabled', false)
+              }
+          })
+
+          $("input[type='submit']").click((ev) => {
+            const report = $("#report").val()
+            const fy = $("#fy").is(":checked")
+            const start_date = $("#start_date").val()
+            const end_date = $("#end_date").val()
+            if (!fy && (!start_date || !end_date)) {
+                alert("Start date and End date or FY are required")
+                return
+            }
+            const date_range = fy ? 'fy' : `${start_date}:${end_date}`
             ev.preventDefault()
             $.ajax({
                 contentType: 'application/json',
@@ -55,14 +99,19 @@ Report runs
                 method: 'POST',
                 headers: {'X-CSRFToken': '{{ csrf_token }}'},
                 data: JSON.stringify({
-                    'name': 'Standard',
-                    'date_range': 'fy'
+                    'name': report,
+                    'date_range': date_range,
                 }),
                 dataType: "json"
             }).done(
                 function () { reportRunsTable.ajax.reload() }
-            )
-        })
+            ).fail(
+                function (xhr, status, error) {
+                    let msg = xhr.responseJSON && xhr.responseJSON.error ? xhr.responseJSON.error : "Unknown error"
+                    alert(msg);
+                }
+            );
+          })
     })
 </script>
 <div>
@@ -76,8 +125,24 @@ Report runs
     </div>
     <div style="margin: 2em;">
         <form method="post">
-            {% csrf_token %}
-            <input type="submit" value="Run FY report"></input>
+          <input type="hidden" name="date_range" id="date_range">
+          {% csrf_token %}
+          <table cellpadding="5px"  class="display" style="width: 100%">
+              <tbody>
+                  <tr>
+                      <td>Report</td>
+                      <td>
+                          <select name="report" id="report">
+                              <option value="SEAS-HCSPH">SEAS-HCSPH</option>
+                          </select>
+                      </td>
+                      <td>Fiscal Year <input type="checkbox" name="fy" id="fy"></td>
+                      <td>Start Date <input type="text" name="start_date" id="start_date"></td>
+                      <td>End Date <input type="text" name="end_date" id="end_date"></td>
+                      <td><input type="submit" value="Run report"></input></td>
+                  </tr>
+              </tbody>
+          </table>
         </form>
     </div>
     <div style="margin: 2em;">
