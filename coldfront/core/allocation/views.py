@@ -1360,6 +1360,7 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
         context['allocation_status_active'] = AllocationStatusChoice.objects.get(name='Active')
         context['allocation_list'] = allocation_list
+        context['allocation_renewal_list'] = allocation_renewal_list
         context['PROJECT_ENABLE_PROJECT_REVIEW'] = PROJECT_ENABLE_PROJECT_REVIEW
         context['ALLOCATION_DEFAULT_ALLOCATION_LENGTH'] = ALLOCATION_DEFAULT_ALLOCATION_LENGTH
         return context
