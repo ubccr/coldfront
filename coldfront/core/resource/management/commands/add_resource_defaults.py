@@ -104,6 +104,7 @@ class Command(BaseCommand):
             ('b-nfs07-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1, True, True),
             ('b-nfs08-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1, True, True),
             ('b-nfs09-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1, True, True),
+            ('b-nfs10-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1, True, True),
             ('h-nfs11-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1, True, True),
             ('h-nfs12-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1, True, True),
             ('h-nfs13-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1, True, True),
@@ -113,6 +114,7 @@ class Command(BaseCommand):
             ('h-nfs17-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1, True, True),
             ('h-nfs18-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1, True, True),
             ('h-nfs19-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1, True, True),
+            ('h-nfs20-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1, True, True),
             ('boslfs02', 'complimentary lab storage', True, storage, 'Tier 0', 1, False, False),
             ('holylabs', 'complimentary lab storage', True, storage, 'Tier 0', 1, False, False),
         ):
