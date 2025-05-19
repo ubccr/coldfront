@@ -75,3 +75,37 @@ class HcsphSeasReportRunner(BaseReportRunner):
             results.append(row_dict)
 
         return results
+
+
+class AllocationBillingReportRunner(BaseReportRunner):
+    '''
+    Run a report that accumulates the total TBs allocated for a lab by resource, year, and month
+    and the total charges for that resource, year, and month.
+    '''
+
+    def get_sql(self):
+        '''
+        The sql
+        '''
+
+        sql = '''
+            select
+                proj.name as 'Project Name',
+                o.name as 'Lab Name',
+                CONCAT(pu.year, '-', LPAD(pu.month, 2, '0')) as 'Billing Month',
+                pu.decimal_quantity as 'Allocation TB',
+                t.decimal_charge as 'Charge',
+                p.product_name as 'Resource'
+            from
+                allocation_allocation alloc
+                    inner join project_project proj on a.project_id = proj.id
+                    inner join product p on p.id = pu.product_id
+                    inner join nanites_organization o on pu.organization_id = o.id
+                    left join billing_record br on pu.id = br.product_usage_id
+                    left join transaction t on br.id = t.billing_record_id
+            where
+                pu.start_date >= %s and pu.start_date < %s
+        '''
+
+        return sql
+
