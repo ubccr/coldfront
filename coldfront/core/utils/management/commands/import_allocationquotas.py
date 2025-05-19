@@ -66,10 +66,10 @@ class Command(BaseCommand):
                     writer.writerow(tocsv)
                     continue
 
-                allocation= allocations[0]
+                allocation = allocations[0]
                 if allocation: # get allocation
                     allocation_attribute_type_obj = AllocationAttributeType.objects.get(
-                        name='Storage Quota (TB)')
+                        name=f'Storage Quota ({allocation.unit_label})')
                     try:
                         allocation_attribute_obj = AllocationAttribute.objects.get(
                             allocation_attribute_type=allocation_attribute_type_obj,

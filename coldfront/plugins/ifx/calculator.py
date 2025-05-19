@@ -28,7 +28,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
     '''
     OFFER_LETTER_TB_ATTRIBUTE = 'Offer Letter'
     OFFER_LETTER_CODE_ATTRIBUTE = 'Offer Letter Code'
-    STORAGE_QUOTA_ATTRIBUTE = 'Storage Quota (TB)'
+    STORAGE_QUOTA_ATTRIBUTE = 'Storage Quota (TiB)'
     STORAGE_RESOURCE_TYPE = 'Storage'
 
     def calculate_billing_month(self, year, month, organizations=None, user=None, recalculate=False, verbosity=0):
@@ -143,21 +143,24 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
                                                 user = get_user_model().objects.get(id=user_id)
                                             except get_user_model().DoesNotExist:
                                                 raise Exception(f'Cannot find user with id {user_id}')
-                                            brs = self.generate_billing_records_for_allocation_user(
-                                                year,
-                                                month,
-                                                user,
-                                                organization,
-                                                allocation,
-                                                allocation_percentage_data['fraction'],
-                                                allocation_tb,
-                                                recalculate,
-                                                remaining_tb,
-                                            )
-                                            if brs:
-                                                allocation_brs.extend(brs)
+                                            try:
+                                                brs = self.generate_billing_records_for_allocation_user(
+                                                    year,
+                                                    month,
+                                                    user,
+                                                    organization,
+                                                    allocation,
+                                                    allocation_percentage_data['fraction'],
+                                                    allocation_tb,
+                                                    recalculate,
+                                                    remaining_tb,
+                                                )
+                                                if brs:
+                                                    allocation_brs.extend(brs)
+                                            except Exception as e:
+                                                logger.error(f'Error generating billing records for user {user} of allocation {allocation}: {e}')
                                         if not allocation_brs:
-                                            raise Exception(f'No billing records created for {organization} allocation {allocation}')
+                                            errors.append(f'No billing recordasdfs created for {organization} allocation {allocation}')
                                         successes.extend(allocation_brs)
                                 except Exception as e:
                                     errors.append(str(e))
@@ -166,9 +169,9 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
                                     if self.verbosity == self.LOUD:
                                         logger.exception(e)
                             else:
-                                errors.append(f'Allocation {allocation} is not a storage allocation.  Skipping.')
+                                logger.info(f'Allocation {allocation} is not a storage allocation.  Skipping.')
                         else:
-                            errors.append(f'Allocation {allocation} has more than one resource.')
+                            logger.info(f'Allocation {allocation} has more than one resource.')
         else:
             errors.append(f'Organization {organization.slug} is not a Harvard organization.')
         return (successes, errors)

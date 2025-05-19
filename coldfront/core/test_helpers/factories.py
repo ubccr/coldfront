@@ -1,14 +1,18 @@
 import factory
-from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
 from factory import SubFactory
-from factory.fuzzy import FuzzyChoice
 from factory.django import DjangoModelFactory
 from faker import Faker
 from faker.providers import BaseProvider, DynamicProvider
 
 from coldfront.core.field_of_science.models import FieldOfScience
-from coldfront.core.resource.models import ResourceType, Resource
+from coldfront.core.resource.models import (
+    ResourceType,
+    Resource,
+    ResourceAttributeType,
+    ResourceAttribute,
+    AttributeType as RAttributeType
+)
 from coldfront.core.project.models import (
     Project,
     ProjectUser,
@@ -36,6 +40,8 @@ from coldfront.core.allocation.models import (
 from coldfront.core.grant.models import GrantFundingAgency, GrantStatusChoice
 from coldfront.core.publication.models import PublicationSource
 
+from coldfront.core.allocation.models import AttributeType
+from coldfront.core.resource.models import ResourceAttribute, ResourceAttributeType
 
 ### Default values and Faker provider setup ###
 
@@ -203,14 +209,51 @@ class ResourceTypeFactory(DjangoModelFactory):
         django_get_or_create = ('name',)
     name = 'Storage'
 
+
 class ResourceFactory(DjangoModelFactory):
     class Meta:
         model = Resource
         django_get_or_create = ('name',)
     name = factory.Faker('resource_name')
-
     description = factory.Faker('sentence')
     resource_type = SubFactory(ResourceTypeFactory)
+
+class RAttributeTypeFactory(DjangoModelFactory):
+    class Meta:
+        model = RAttributeType
+        # django_get_or_create = ('name',)
+    name = factory.Faker('Int')
+
+class ResourceAttributeTypeFactory(DjangoModelFactory):
+    class Meta:
+        model = ResourceAttributeType
+
+    attribute_type = factory.SubFactory(RAttributeTypeFactory)
+    name = factory.Faker("word")
+    is_required = factory.Faker("boolean")
+    is_unique_per_resource = factory.Faker("boolean")
+    is_value_unique = factory.Faker("boolean")
+
+
+class RAttributeTypeFactory(DjangoModelFactory):
+    class Meta:
+        model = RAttributeType
+        django_get_or_create = ('name',)
+    name='Text'
+
+
+class ResourceAttributeTypeFactory(DjangoModelFactory):
+    class Meta:
+        model = ResourceAttributeType
+        django_get_or_create = ('name',)
+    name = 'quantity_label'
+    attribute_type = SubFactory(RAttributeTypeFactory)
+
+
+class ResourceAttributeFactory(DjangoModelFactory):
+    class Meta:
+        model = ResourceAttribute
+    resource_attribute_type = SubFactory(ResourceAttributeTypeFactory)
 
 
 
@@ -346,16 +389,28 @@ def setup_models(test_case):
         AllocationUserStatusChoiceFactory(name=status_choice)
     for status in ['Pending', 'Approved', 'Denied']:
         AllocationChangeStatusChoiceFactory(name=status)
+    for attribute_type in ['Active/Inactive', 'Date', 'Int', 'Text', 'Attribute Expanded Text', 'Float']:
+        RAttributeTypeFactory(name=attribute_type)
+    for resource_attribute_type, attribute_type in (
+        ('slurm_cluster', 'Text'),
+        ('Owner', 'Text'),
+        ('ServiceEnd', 'Date'),
+    ):
+        ResourceAttributeTypeFactory(
+            name=resource_attribute_type,
+            attribute_type=RAttributeType.objects.get(name=attribute_type),
+        )
     for resource_type in ['Storage', 'Cluster', 'Cluster Partition', 'Compute Node']:
         ResourceTypeFactory(name=resource_type)
-    for resource, r_id, rtype in [
-        ('holylfs10/tier1', 1, 'Storage'), 
-        ('holylfs09/tier1', 2, 'Storage'),
-        ('Test Cluster', 3, 'Cluster'),
+    for resource, r_id, rtype, quantity_label in [
+        ('holylfs10/tier1', 1, 'Storage', 'TB'),
+        ('holylfs09/tier1', 2, 'Storage', 'TB'),
+        ('Test Cluster', 3, 'Cluster', 'CPU Hours'),
         # ('Test Partition', 4, 'Cluster Partition'),
         # ('Test Node', 5, 'Compute Node')
     ]:
         ResourceFactory(name=resource, id=r_id, resource_type__name=rtype)
+        ResourceAttributeFactory(resource=Resource.objects.get(name=resource), value=quantity_label)
 
     quota_tb_type = AllocationAttributeTypeFactory(name='Storage Quota (TB)')
     for name, attribute_type, has_usage, is_private in (

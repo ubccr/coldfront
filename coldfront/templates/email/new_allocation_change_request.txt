@@ -1,15 +1,25 @@
 {% load mathfilters %}
-An allocation change request for has been made for {{pi_name}} ({{pi_username}}) project {{project_title}} - {{resource}}.
-The request was made by user {{user.full_name}} ({{user.username}}). This user's email is {{user.email}}
+An allocation change request for has been made for allocation {{allocation.pk}}.
+
+PI: {{pi_name}} ({{pi_username}})
+Project: {{project_title}}
+Resource: {{resource}}
+Path: {{allocation.path}}
+Requestor: {{user.full_name}} ({{user.username}})
+Requestor email: {{user.email}}
 
 {% if quantity %}
-Requested total size: {{quantity}} TB.
-This will require adding {{difference|floatformat}} TB to the current size of {{current_size|floatformat}} TB.
+Requested total size: {{quantity}} {{allocation.unit_label}}.
+This will require adding {{difference|floatformat}} {{allocation.unit_label}} to the current size of {{current_size|floatformat}} {{allocation.unit_label}}.
 {% if used_percentage %}
-
 {{resource}} was last recorded as {{used_percentage}}% full.
 {% endif %}
 {% endif %}
+
+Justification:
+{{justification}}
+Please review the change request:
+{{url}}
 
 {% if nese %}
 Here is a draft ticket to send to NESE. Please carefully check the values to ensure their accuracy.
@@ -25,7 +35,3 @@ Any additional details:
 Any additional administrators (if applicable):
 {% endif %}
 
-Justification:
-{{justification}}
-Please review the change request:
-{{url}}

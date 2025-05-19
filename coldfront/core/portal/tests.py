@@ -2,9 +2,10 @@ from django.test import TestCase, tag
 from coldfront.core.test_helpers import utils
 from coldfront.core.test_helpers.factories import setup_models
 from coldfront.core.allocation.models import AllocationChangeRequest, AllocationChangeStatusChoice
+from coldfront.core.test_helpers.factories import setup_models, ProjectFactory, ResourceFactory, ResourceAttributeTypeFactory, ResourceAttributeFactory
+from coldfront.core.resource.models import AttributeType
 
 UTIL_FIXTURES = ['coldfront/core/test_helpers/test_data/test_fixtures/ifx.json']
-
 
 class PortalViewTest(TestCase):
     """Base class for portal view tests
@@ -85,3 +86,42 @@ class HomePageTest(PortalViewTest):
         # allocationuser not belonging to project cannot see project
         response = utils.login_and_get_page(self.client, self.nonproj_allocationuser, '')
         self.assertEqual(response.context['project_list'].count(), 0)
+
+    def test_home_page_managed_resources_display(self):
+        """check that managed resources display properly on the home page
+        """
+        ProjectFactory(pi=self.pi_user, title="managed_lab")
+        ProjectFactory(pi=self.admin_user, title="admin_lab")
+        text_attribute_type = AttributeType.objects.get(name="Text")
+        managed_resource = ResourceFactory(name="managed_lab", resource_type__name='Compute Node')
+        managed_resource2 = ResourceFactory(name="managed_lab2", resource_type__name='Compute Node')
+        admin_resource = ResourceFactory(name="admin_lab", resource_type__name='Compute Node')
+        owner_resourcer_attr_type = ResourceAttributeTypeFactory(name="Owner", attribute_type=text_attribute_type)
+        ResourceAttributeFactory(resource_attribute_type=owner_resourcer_attr_type, value="managed_lab",
+                                 resource=managed_resource)
+        ResourceAttributeFactory(resource_attribute_type=owner_resourcer_attr_type, value="managed_lab",
+                                 resource=managed_resource2)
+        ResourceAttributeFactory(resource_attribute_type=owner_resourcer_attr_type, value="admin_lab",
+                                 resource=admin_resource)
+        utils.page_contains_for_user(self, self.pi_user, '', 'Managed Resources')
+        utils.page_contains_for_user(self, self.admin_user, '', 'Managed Resources')
+        utils.page_contains_for_user(self, self.pi_user, '', 'managed_lab')
+        utils.page_contains_for_user(self, self.pi_user, '', 'managed_lab2')
+        utils.page_does_not_contain_for_user(self, self.pi_user, '', 'admin_lab')
+        utils.page_contains_for_user(self, self.admin_user, '', 'admin_lab')
+        utils.page_does_not_contain_for_user(self, self.admin_user, '', 'managed_lab')
+        utils.page_does_not_contain_for_user(self, self.admin_user, '', 'managed_lab2')
+
+    def test_home_page_archive_resources_dont_show(self):
+        ProjectFactory(pi=self.pi_user, title="managed_lab")
+        text_attribute_type = AttributeType.objects.get(name="Text")
+        owner_resourcer_attr_type = ResourceAttributeTypeFactory(name="Owner", attribute_type=text_attribute_type)
+        archived_resource = ResourceFactory(name="archived_resource", resource_type__name='Compute Node', is_available=False)
+        archived_resource2 = ResourceFactory(name="archived_resource2", resource_type__name='Compute Node', is_available=False)
+        active_resource = ResourceFactory(name="active_resource", resource_type__name='Compute Node')
+        ResourceAttributeFactory(resource_attribute_type=owner_resourcer_attr_type, value="managed_lab", resource=archived_resource)
+        ResourceAttributeFactory(resource_attribute_type=owner_resourcer_attr_type, value="managed_lab", resource=archived_resource2)
+        ResourceAttributeFactory(resource_attribute_type=owner_resourcer_attr_type, value="managed_lab", resource=active_resource)
+        utils.page_contains_for_user(self, self.pi_user, '', 'active_resource')
+        utils.page_does_not_contain_for_user(self, self.pi_user, '', 'archived_resource')
+        utils.page_does_not_contain_for_user(self, self.pi_user, '', 'archived_resource2')

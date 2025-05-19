@@ -15,6 +15,14 @@ MESSAGE_TAGS = {
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'filters': {
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse'
+        },
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue'
+        },
+    },
     'formatters': {
         'key-events': {
             "()": "django.utils.log.ServerFormatter",
@@ -31,6 +39,12 @@ LOGGING = {
         'console': {
             'class': 'logging.StreamHandler',
         },
+        'console_debug': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'default',
+            'level': 'DEBUG',
+            'filters': ['require_debug_true'],
+        },
         'django-q': {
             'class': 'logging.handlers.TimedRotatingFileHandler',
             'filename': 'logs/django-q.log',
@@ -46,6 +60,11 @@ LOGGING = {
             'backupCount': 10,
             'formatter': 'key-events',
             'level': 'INFO',
+        },
+        'mail_admins': {
+            'level': 'ERROR',
+            'filters': ['require_debug_false'],
+            'class': 'django.utils.log.AdminEmailHandler',
         },
         # 'file': {
         #     'class': 'logging.FileHandler',
@@ -66,11 +85,11 @@ LOGGING = {
             'handlers': ['django-q', 'key-events'],
         },
         'ifx': {
-            'handlers': ['console', 'key-events'],
+            'handlers': ['console', 'key-events', 'console_debug', 'mail_admins'],
             'level': 'INFO',
         },
         'ifxbilling': {
-            'handlers': ['console', 'key-events'],
+            'handlers': ['console', 'key-events', 'console_debug', 'mail_admins'],
             'level': 'INFO',
         },
         'coldfront': {

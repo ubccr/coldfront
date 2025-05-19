@@ -68,30 +68,30 @@ Center Summary
         <thead>
           <tr>
             <th scope="col">Name</th>
-            <th scope="col">Capacity (TB)</th>
-            <th scope="col">Used (TB)</th>
+            <th scope="col">Capacity</th>
+            <th scope="col">Used</th>
             {% comment %}
             <th scope="col">Warranty expires</th>
             {% endcomment %}
             <th scope="col">File count</th>
             <th scope="col">User count</th>
             <th scope="col">Lab count</th>
-            <th scope="col">Avg. Allocation Size (TB)</th>
+            <th scope="col">Avg. Allocation Size</th>
           </tr>
         </thead>
         <tbody>
           {% for volume in volumes %}
             <tr>
               <td>{{ volume.name }}</td>
-              <td>{{ volume.quota_TB|floatformat:2 }}</td>
-              <td>{{ volume.used_TB|floatformat:2 }}</td>
+              <td>{{ volume.quota_TB|floatformat:2 }} {{ volume.quantity_label }}</td>
+              <td>{{ volume.used_TB|floatformat:2 }} {{ volume.quantity_label }}</td>
               {% comment %}
               <td>{{ volume.expiry }}</td>
               {% endcomment %}
               <td>{{ volume.regular_files }}</td>
               <td>{{ volume.user_count }}</td>
               <td>{{ volume.lab_count }}</td>
-              <td>{{ volume.avgsize }}</td>
+              <td>{{ volume.avgsize }} {{ volume.quantity_label }}</td>
             </tr>
           {% endfor %}
         </tbody>

@@ -174,7 +174,7 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         quota_attr_ids = [
             attr.pk for attr in AllocationAttributeType.objects.filter(
-                name__in=['Core Usage (Hours)', 'Storage Quota (TB)']
+                name__in=['Core Usage (Hours)', 'Storage Quota (TB)', 'Storage Quota (TiB)']
             )
         ]
 
@@ -192,7 +192,7 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         allocationuser_filter = (Q(status__name='Active') & ~Q(usage_bytes__isnull=True))
 
         quota_attrs = AllocationAttributeType.objects.filter(
-            name__in=['Core Usage (Hours)', 'Storage Quota (TB)']
+            name__in=['Core Usage (Hours)', 'Storage Quota (TB)', 'Storage Quota (TiB)']
         )
 
         storage_pi_dict = {p.pi: [] for p in project_objs}
@@ -214,9 +214,9 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         storage_pi_dict = {pi:allocs for pi, allocs in storage_pi_dict.items() if allocs}
         compute_pi_dict = {pi:allocs for pi, allocs in compute_pi_dict.items() if allocs}
         for pi, allocs in storage_pi_dict.items():
-            pi.storage_total_price = sum(float(a.cost) for a in allocs)
+            pi.storage_total_price = sum(float(a.cost) for a in allocs if a.cost)
         for pi, allocs in compute_pi_dict.items():
-            pi.compute_total_price = sum(float(a.cost) for a in allocs)
+            pi.compute_total_price = sum(float(a.cost) for a in allocs if a.cost)
 
         context['compute_pi_dict'] = compute_pi_dict
         context['storage_pi_dict'] = storage_pi_dict

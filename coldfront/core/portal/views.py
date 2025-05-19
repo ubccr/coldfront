@@ -15,7 +15,7 @@ from coldfront.core.portal.utils import (
 )
 from coldfront.core.project.models import Project
 from coldfront.core.publication.models import Publication
-from coldfront.core.resource.models import Resource
+from coldfront.core.resource.models import Resource, ResourceAttribute
 from coldfront.config.env import ENV
 from coldfront.core.department.models import Department, DepartmentMember
 from coldfront.core.utils.common import import_from_settings
@@ -82,10 +82,12 @@ def home(request):
         department_list = Department.objects.filter(
             id__in=user_depts.values_list('organization_id')
         )
-
-        resource_list = Resource.objects.filter(
-            allowed_users=request.user)
-
+        project_title_list = [project.title for project in project_list]
+        owned_resources = [attribute.resource.pk for attribute in ResourceAttribute.objects.filter(
+            resource_attribute_type__name='Owner',
+            value__in=project_title_list
+        )]
+        resource_list = Resource.objects.filter(Q(allowed_users=request.user) | Q(pk__in=owned_resources)).filter(is_available=True).distinct()
         context['resource_list'] = resource_list
         context['department_list'] = department_list
         context['project_list'] = project_list
@@ -124,7 +126,7 @@ def center_summary(request):
     context['publication_by_year_bar_chart_data'] = publication_by_year_bar_chart_data
     context['total_publications_count'] = publications.distinct().count()
 
-
+    volumes = []
     # Storage Card
     if ENV.bool('PLUGIN_SFTOCF', default=False):
         starfish_redash = StarFishRedash(STARFISH_SERVER)
@@ -145,8 +147,11 @@ def center_summary(request):
             resource = Resource.objects.get(name__contains=volume['name'])
 
             resource_allocations = resource.allocation_set.filter(status__name='Active')
+            volume['quantity_label'] = resource.quantity_label
 
-            allocation_sizes = [float(allocation.size) for allocation in resource_allocations if allocation.size]
+            allocation_sizes = [
+                float(alloc.size) for alloc in resource_allocations if alloc.size
+            ]
             # volume['avgsize'] = allocation_sizes
             try:
                 volume['avgsize'] = round(sum(allocation_sizes)/len(allocation_sizes), 2)
@@ -155,7 +160,11 @@ def center_summary(request):
 
             project_ids = set(resource_allocations.values_list('project'))
             volume['lab_count'] = len(project_ids)
-            user_ids = {user.pk for allocation in resource_allocations for user in allocation.allocationuser_set.all()}
+            user_ids = {
+                user.pk
+                for alloc in resource_allocations
+                for user in alloc.allocationuser_set.all()
+            }
             volume['user_count'] = len(user_ids)
 
         context['volumes'] = volumes
@@ -178,8 +187,8 @@ def center_summary(request):
     usage_tb = [vol['used_TB'] for vol in volumes]
 
     names.insert(0, 'names')
-    usage_tb.insert(0, 'usage (TB)')
-    free_tb.insert(0, 'quota (TB)')
+    usage_tb.insert(0, 'usage (TiB)')
+    free_tb.insert(0, 'quota (TiB)')
 
     storage_data_columns = [ usage_tb, free_tb,names, ]
 

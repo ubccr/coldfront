@@ -206,11 +206,12 @@ class Project(TimeStampedModel):
                         'child_id', flat=True
                     )
                 )
-                project_org_links = ProjectOrganization.objects.filter(
-                    organization_id__in=child_lab_ids
-                ).values_list("project_id")
-                proj_pool = Project.objects.filter(pk__in=project_org_links)
-                if self in proj_pool:
+                org_names = list(Organization.objects.filter(
+                    id__in=child_lab_ids
+                ).values_list('name'))
+                org_names_str = ''.join([name[0] for name in org_names])
+                proj_pi_name = self.pi.full_name
+                if proj_pi_name in org_names_str:
                     return [ProjectPermission.USER]
             return []
 

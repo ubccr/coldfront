@@ -43,7 +43,7 @@ class Command(BaseCommand):
             ('xdmod_resource', 'Text'),
             # ('eula', 'Text'),
             # ('OnDemand','Yes/No'),
-            # ('ServiceEnd', 'Date'),
+            ('ServiceEnd', 'Date'),
             # ('ServiceStart', 'Date'),
             ('slurm_cluster', 'Text'),
             ('slurm_specs', 'Attribute Expanded Text'),
@@ -104,6 +104,7 @@ class Command(BaseCommand):
             ('b-nfs07-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1, True, True),
             ('b-nfs08-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1, True, True),
             ('b-nfs09-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1, True, True),
+            ('b-nfs10-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1, True, True),
             ('h-nfs11-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1, True, True),
             ('h-nfs12-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1, True, True),
             ('h-nfs13-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1, True, True),
@@ -113,6 +114,7 @@ class Command(BaseCommand):
             ('h-nfs17-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1, True, True),
             ('h-nfs18-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1, True, True),
             ('h-nfs19-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1, True, True),
+            ('h-nfs20-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1, True, True),
             ('boslfs02', 'complimentary lab storage', True, storage, 'Tier 0', 1, False, False),
             ('holylabs', 'complimentary lab storage', True, storage, 'Tier 0', 1, False, False),
         ):
@@ -140,9 +142,9 @@ class Command(BaseCommand):
                 defaults={'value': default_value}
             )
 
-            quantity_label = "TB"
+            quantity_label = "TiB"
             if default_value == 20:
-                quantity_label += " in 20T increments"
+                quantity_label = "TB in 20T increments"
 
             resource_obj.resourceattribute_set.update_or_create(
                 resource_attribute_type=label_type,

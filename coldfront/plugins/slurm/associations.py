@@ -239,6 +239,9 @@ class SlurmCluster(SlurmBase):
                 name=partition['PartitionName'],
                 parent_resource=current_cluster_resource,
                 resource_type=partition_resourcetype,
+                defaults={
+                    'description': f"{partition['PartitionName']} partition on {current_cluster_resource.name}"
+                }
             )
             partition_resource.resourceattribute_set.update_or_create(
                 resource_attribute_type=slurm_specs_resourceattribute_type,

@@ -1,7 +1,8 @@
 from django.test import TestCase
 
 from coldfront.core.test_helpers import utils
-from coldfront.core.test_helpers.factories import setup_models
+from coldfront.core.test_helpers.factories import setup_models, ProjectFactory, ResourceFactory, ResourceAttributeTypeFactory, ResourceAttributeFactory
+from coldfront.core.resource.models import AttributeType
 
 
 UTIL_FIXTURES = [
@@ -27,11 +28,69 @@ class ResourceViewBaseTest(TestCase):
         utils.test_logged_out_redirect_to_login(self, url)
         utils.test_user_can_access(self, self.admin_user, url)  # admin can access
 
+
 class ResourceListViewTest(ResourceViewBaseTest):
     """Tests for ResourceListView"""
 
     def setUp(self):
-        self.client.force_login(self.admin_user, backend=BACKEND)
+        self.client.force_login(self.pi_user, backend=BACKEND)
+        self.url = f'/resource/'
+
+    def test_only_user_managed_compute_nodes_show(self):
+        ProjectFactory(pi=self.pi_user, title="managed_lab")
+        ProjectFactory(pi=self.admin_user, title="admin_lab")
+        text_attribute_type = AttributeType.objects.get(name="Text")
+        managed_resource = ResourceFactory(name="managed_lab", resource_type__name='Compute Node')
+        admin_resource = ResourceFactory(name="admin_lab", resource_type__name='Compute Node')
+        owner_resourcer_attr_type = ResourceAttributeTypeFactory(name="Owner", attribute_type=text_attribute_type)
+        ResourceAttributeFactory(resource_attribute_type=owner_resourcer_attr_type, value="managed_lab", resource=managed_resource)
+        ResourceAttributeFactory(resource_attribute_type=owner_resourcer_attr_type, value="admin_lab", resource=admin_resource)
+        utils.page_contains_for_user(self, self.pi_user, self.url, 'managed_lab')
+        utils.page_does_not_contain_for_user(self, self.pi_user, self.url, 'admin_lab')
+        utils.page_contains_for_user(self, self.admin_user, self.url, 'admin_lab')
+        utils.page_contains_for_user(self, self.admin_user, self.url, 'managed_lab')
+
+    def test_retired_resources_filter_shows(self):
+        utils.page_contains_for_user(self, self.pi_user, self.url, 'View retired resources')
+        utils.page_contains_for_user(self, self.admin_user, self.url, 'View retired resources')
+
+    def test_archive_resources_dont_show(self):
+        ResourceFactory(name="archived_resource", resource_type__name='Compute Node', is_available=False)
+        ResourceFactory(name="archived_resource2", resource_type__name='Compute Node', is_available=False)
+        ResourceFactory(name="active_resource", resource_type__name='Compute Node')
+        utils.page_contains_for_user(self, self.pi_user, self.url, 'active_resource')
+        utils.page_does_not_contain_for_user(self, self.pi_user, self.url, 'archived_resource')
+        utils.page_does_not_contain_for_user(self, self.pi_user, self.url, 'archived_resource2')
+
+
+
+class ResourceArchivedListViewTest(ResourceViewBaseTest):
+    """Tests for ResourceArchivedListView"""
+
+    def setUp(self):
+        self.client.force_login(self.pi_user, backend=BACKEND)
+        self.url = f'/resource/archived/'
+
+    def test_archive_resources_show(self):
+        ResourceFactory(name="archived_resource", resource_type__name='Compute Node', is_available=False)
+        ResourceFactory(name="active_resource", resource_type__name='Compute Node')
+        utils.page_contains_for_user(self, self.pi_user, self.url, 'archived_resource')
+        utils.page_does_not_contain_for_user(self, self.pi_user, self.url, 'active_resource')
+        utils.page_contains_for_user(self, self.admin_user, self.url, 'archived_resource')
+        utils.page_does_not_contain_for_user(self, self.admin_user, self.url, 'active_resource')
+
+    def test_can_filter_by_name(self):
+        AttributeType.objects.get(name="Text")
+        ResourceFactory(name="archived_resource", resource_type__name='Compute Node', is_available=False)
+        ResourceFactory(name="archived_resource2", resource_type__name='Compute Node', is_available=False)
+        ResourceFactory(name="active_resource", resource_type__name='Compute Node')
+        search_url = f'{self.url}?resource_name=archived_resource'
+        utils.page_contains_for_user(self, self.pi_user, search_url, 'archived_resource')
+        utils.page_contains_for_user(self, self.pi_user, search_url, 'archived_resource2')
+        utils.page_does_not_contain_for_user(self, self.pi_user, search_url, 'active_resource')
+        search_url = f'{self.url}?resource_name=archived_resource2'
+        utils.page_contains_for_user(self, self.pi_user, search_url, 'archived_resource2')
+        utils.page_does_not_contain_for_user(self, self.pi_user, search_url, 'active_resource')
 
 
 class ClusterResourceDetailViewTest(ResourceViewBaseTest):
@@ -145,6 +204,7 @@ class StorageResourceAttributeDeleteViewTest(ResourceViewBaseTest):
         self.resource_access_tstbase(self.url)
         utils.test_user_cannot_access(self, self.resource_allowed_user, self.url)
         utils.test_user_cannot_access(self, self.pi_user, self.url)
+
 
 class ClusterResourceAttributeDeleteViewTest(ResourceViewBaseTest):
     """Tests for ResourceAttributeDeleteView"""
