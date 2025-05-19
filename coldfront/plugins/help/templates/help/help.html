@@ -16,16 +16,7 @@ Contact Research Technologies
 <form method="post" action="{% url 'send_help_email' %}">
     {% csrf_token %}
     {{ form|crispy }}
-    <div class="form-group">
-        <label for="category">Choose an area to direct your question to: <span class="asteriskField">*</span></label>
-        <select id="category" name="category" class="form-control" required>
-            <option value="" selected="selected"></option>
-            {% for title in titles %}
-                <option value="{{ forloop.counter0 }}">{{ title }}</option>
-            {% endfor %}
-            <option value="{{ -1 }}">Other</option>
-        </select>
-    </div>
+    <input type="hidden" id="target_index" name="target_index" value="{{ target_index }}">
 
     {% if request_user_info %}
         <div>Name</div>

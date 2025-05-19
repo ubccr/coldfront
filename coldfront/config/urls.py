@@ -21,8 +21,7 @@ urlpatterns = [
     path('user/', include('coldfront.core.user.urls')),
     path('project/', include('coldfront.core.project.urls')),
     path('allocation/', include('coldfront.core.allocation.urls')),
-    path('resource/', include('coldfront.core.resource.urls')),
-    path('help/', include('coldfront.plugins.help.urls')),
+    path('resource/', include('coldfront.core.resource.urls'))
 ]
 
 if settings.GRANT_ENABLE:
@@ -66,6 +65,9 @@ if 'coldfront.plugins.iquota' in settings.INSTALLED_APPS:
 
 if 'mozilla_django_oidc' in settings.INSTALLED_APPS:
     urlpatterns.append(path('oidc/', include('mozilla_django_oidc.urls')))
+
+if 'coldfront.plugins.help' in settings.INSTALLED_APPS:
+    urlpatterns.append(path('help/', include('coldfront.plugins.help.urls'))),
 
 if 'django_su.backends.SuBackend' in settings.AUTHENTICATION_BACKENDS:
     urlpatterns.append(path('su/', include('django_su.urls')))
