@@ -29,6 +29,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
     OFFER_LETTER_TB_ATTRIBUTE = 'Offer Letter'
     OFFER_LETTER_CODE_ATTRIBUTE = 'Offer Letter Code'
     STORAGE_QUOTA_ATTRIBUTE = 'Storage Quota (TiB)'
+    OTHER_STORAGE_QUOTA_ATTRIBUTE = 'Storage Quota (TB)'
     STORAGE_RESOURCE_TYPE = 'Storage'
 
     def calculate_billing_month(self, year, month, organizations=None, user=None, recalculate=False, verbosity=0):
@@ -158,9 +159,9 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
                                                 if brs:
                                                     allocation_brs.extend(brs)
                                             except Exception as e:
-                                                logger.error(f'Error generating billing records for user {user} of allocation {allocation}: {e}')
+                                                logger.error(f'Error generating billing records for the user {user} of allocation {allocation}: {e}')
                                         if not allocation_brs:
-                                            errors.append(f'No billing recordasdfs created for {organization} allocation {allocation}')
+                                            errors.append(f'No billing records created for {organization} allocation {allocation}')
                                         successes.extend(allocation_brs)
                                 except Exception as e:
                                     errors.append(str(e))
@@ -362,7 +363,9 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
         '''
         allocation_size_tb = allocation.get_attribute(self.STORAGE_QUOTA_ATTRIBUTE)
         if not allocation_size_tb:
-            raise Exception(f'Allocation {allocation.id} ({allocation.get_resources_as_string} for {allocation.project.title}) does not have the {self.STORAGE_QUOTA_ATTRIBUTE} attribute')
+            allocation_size_tb = allocation.get_attribute(self.OTHER_STORAGE_QUOTA_ATTRIBUTE)
+        if not allocation_size_tb:
+            raise Exception(f'Allocation {allocation.id} ({allocation.get_resources_as_string} for {allocation.project.title}) does not have the {self.STORAGE_QUOTA_ATTRIBUTE} attribute or the {self.OTHER_STORAGE_QUOTA_ATTRIBUTE} attribute set.')
         return Decimal(allocation_size_tb)
 
     def get_allocation_resource_product(self, allocation):
