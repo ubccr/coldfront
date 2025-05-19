@@ -56,13 +56,25 @@ def load_approver_schools(json_data):
 
 
 class Command(BaseCommand):
-    help = 'Import school data'
+    help = 'Import approver-school mappings from JSON'
+
+    def add_arguments(self, parser):
+        default_path = os.path.join(
+            app_commands_dir, 'data', 'approver_schools_data.json'
+        )
+        parser.add_argument(
+            '--json-file-path',
+            type=str,
+            default=default_path,
+            help='Path to approver_schools_data.json'
+        )
 
     def handle(self, *args, **options):
-        print('Adding schools ...')
-        json_file_path = os.path.join(app_commands_dir, 'data', 'approver_schools_data.json')
-        with open(json_file_path, "r") as file:
-            json_data = json.load(file)
+        json_file_path = options['json_file_path']
+        self.stdout.write(f'Loading approver-school data from {json_file_path}…')
+
+        with open(json_file_path, 'r', encoding='utf-8') as fp:
+            json_data = json.load(fp)
             load_approver_schools(json_data)
 
-        print('Finished adding approvers')
+        self.stdout.write(self.style.SUCCESS('Finished adding approvers.'))

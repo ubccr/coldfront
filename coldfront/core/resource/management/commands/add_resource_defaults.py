@@ -1,5 +1,4 @@
 from django.core.management.base import BaseCommand
-
 from coldfront.core.resource.models import (AttributeType,
                                             ResourceAttributeType,
                                             ResourceType)
@@ -52,3 +51,4 @@ class Command(BaseCommand):
         ):
             ResourceType.objects.get_or_create(
                 name=resource_type, description=description)
+

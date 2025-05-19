@@ -31,6 +31,7 @@ def run_setup():
     call_command('add_default_grant_options')
     call_command('add_default_project_choices')
     call_command('add_resource_defaults')
+    call_command('add_university_school_default_resources')
     call_command('add_allocation_defaults')
     call_command('add_default_publication_sources')
     call_command('add_scheduled_tasks')              
