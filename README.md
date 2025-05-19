@@ -1,3 +1,6 @@
+NYU fork specific changes are documented at https://github.com/NYU-RTS/rts-coldfront/wiki
+
+
 ![ColdFront](docs/pages/images/logo-lg.png)
 
 # ColdFront - Resource Allocation System
