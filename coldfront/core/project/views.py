@@ -76,7 +76,8 @@ from coldfront.core.project.utils import (get_new_end_date_from_list,
                                           generate_slurm_account_name,
                                           create_admin_action_for_creation,
                                           create_admin_action_for_deletion,
-                                          check_if_pi_eligible)
+                                          check_if_pi_eligible,
+                                          check_if_pis_eligible)
 from coldfront.core.allocation.utils import send_added_user_email
 from coldfront.core.utils.slack import send_message
 from coldfront.core.project.signals import project_activate, project_user_role_changed
@@ -1784,18 +1785,19 @@ class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['project_review_list'] = ProjectReview.objects.filter(
+
+        project_reviews = ProjectReview.objects.filter(
             status__name__in=['Pending', 'Contacted By Admin', ])
+        pi_eligibilities = check_if_pis_eligible(
+            set([project_review.project.pi for project_review in project_reviews]))
+        context['project_review_list'] = project_reviews
+        context['pi_eligibilities'] = pi_eligibilities
+
         projects = Project.objects.filter(
             status__name__in=['Waiting For Admin Approval', 'Contacted By Admin', ]
         )
         context['project_request_list'] = projects
-        pis = set()
-        pi_eligibilities = {}
-        for project in projects:
-            pi_eligibilities[project.pi.username] = check_if_pi_eligible(project.pi)
-            pis.add(project.pi)
-        
+        pis = set([project.pi for project in projects])
         pi_project_objs = Project.objects.filter(
             pi__in=pis,
             status__name__in=[
@@ -1814,7 +1816,6 @@ class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
                     'display': 'false' 
                 }
             )
-        context['pi_eligibilities'] = pi_eligibilities
         context['pi_projects'] = pi_projects
 
         context['EMAIL_ENABLED'] = EMAIL_ENABLED
