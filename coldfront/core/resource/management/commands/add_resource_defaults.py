@@ -47,7 +47,7 @@ class Command(BaseCommand):
             ('Server', 'Extra servers providing various services'),
             ('Software License', 'Software license purchased by users'),
             ('Storage', 'NAS storage'),
-            ('Generic', 'Generic School'),
+            ('Generic', 'Generic resource associated with a school'),
         ):
             ResourceType.objects.get_or_create(
                 name=resource_type, description=description)
