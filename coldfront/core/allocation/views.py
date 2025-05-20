@@ -365,6 +365,9 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                 send_allocation_customer_email(allocation_obj, 'Allocation Revoked', 'email/allocation_revoked.txt', domain_url=get_domain_url(self.request))
                 messages.success(request, 'Allocation Revoked!')
             elif allocation_obj.status.name == 'Removed':
+                if 'coldfront.plugins.allocation_removal_requests' in settings.INSTALLED_APPS:
+                    from coldfront.plugins.allocation_removal_requests.signals import allocation_remove
+                    allocation_remove.send(sender=self.__class__, allocation_pk=allocation_obj.pk)
                 send_allocation_customer_email(allocation_obj, 'Allocation Removed', 'allocation_removal_requests/allocation_removed.txt', domain_url=get_domain_url(self.request))
                 messages.success(request, 'Allocation Removed!')
             else:
