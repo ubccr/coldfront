@@ -13,8 +13,17 @@ Review Project
 <h2>Reviewing Project: {{project.title}}</h2>
 <hr>
 
+{% if ineligible_pi %}
+  <div class="alert alert-warning" role="alert">
+    <i class="fas fa-info-circle" aria-hidden="true"></i>
+    This project's PI is no longer eligible to be a PI, possibly due to a change in their IU status.
+    After you submit the renewal we will reach out to you to discuss options (only Staff and Faculty
+    are allowed to be PIs).
+  </div>
+{% endif %}
+
 <div class="card-body">
-  <p class="text-justify">{% settings_value 'CENTER_NAME' %} requires faculty to review their project information annually in order to renew their group’s accounts. The information provided by researchers is compiled and used to help make the case to the University for continued investment in {% settings_value 'CENTER_NAME' %}. Up-to-date and accurate information is crucial to our success. <a href="mailto:{% settings_value 'EMAIL_PROJECT_REVIEW_CONTACT' %}">Questions? Contact us</a></p>
+  <p class="text-justify">{% settings_value 'CENTER_NAME' %} requires faculty to review their project information annually in order to renew their group's accounts. The information provided by researchers is compiled and used to help make the case to the University for continued investment in {% settings_value 'CENTER_NAME' %}. Up-to-date and accurate information is crucial to our success. <a href="mailto:{% settings_value 'EMAIL_PROJECT_REVIEW_CONTACT' %}">Questions? Contact us</a></p>
 
   <p class="text-justify">Please update the following information:</p>
 
