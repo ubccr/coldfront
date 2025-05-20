@@ -87,6 +87,11 @@ Project Review List
               <a href="#" data-toggle="modal" data-target="#id_pi_projects_modal" data-pi="{{project_review.project.pi.username}}" data-pk="{{project_review.project.pk}}">
                 {{ project_review.project.pi.first_name }} {{ project_review.project.pi.last_name }} ({{ project_review.project.pi.username }})
               </a>
+              {% if not pi_eligibilities|get_value_from_dict:project_review.project.pi.username %}
+              <a href="#" data-toggle="popover" title="Not Eligible" data-trigger="hover" data-content="This user is not eligible to be a PI!">
+                <span class="badge badge-danger"><i class="fas fa-exclamation-circle"></i></span><span class="sr-only">${new_content}</span>
+              </a>
+              {% endif %}
             </td>
             <td>{{ project_review.project_updates|truncatechars:50 }}</td>
             {% if project_review.status.name == 'Contacted By Admin' %}
@@ -98,9 +103,6 @@ Project Review List
               <a href="{% url 'project-review-approve' project_review.pk %}" class="btn btn-success mr-1">Approve</a>
               <a href="{% url 'project-review-deny' project_review.pk %}" class="btn btn-danger mr-1">Deny</a>
               <a href="{% url 'project-review-info' project_review.pk %}" class="btn btn-primary mr-1">Info</a>
-              {% if EMAIL_ENABLED %}
-                <!-- <a href="{% url 'project-review-email' project_review.pk %}" class="btn btn-info mr-1">Email</a> -->
-              {% endif %}
             </td>
           </tr>
         {% endfor %}

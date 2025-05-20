@@ -1791,7 +1791,9 @@ class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
         )
         context['project_request_list'] = projects
         pis = set()
+        pi_eligibilities = {}
         for project in projects:
+            pi_eligibilities[project.pi.username] = check_if_pi_eligible(project.pi)
             pis.add(project.pi)
         
         pi_project_objs = Project.objects.filter(
@@ -1812,6 +1814,7 @@ class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
                     'display': 'false' 
                 }
             )
+        context['pi_eligibilities'] = pi_eligibilities
         context['pi_projects'] = pi_projects
 
         context['EMAIL_ENABLED'] = EMAIL_ENABLED
