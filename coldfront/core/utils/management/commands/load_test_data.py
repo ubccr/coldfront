@@ -101,12 +101,12 @@ resources = [
      'University Academic Cluster', None, True, True, True),
 
     # Generic
-    ('Generic', None, 'Tandon', 'Tandon-wide-resources', School.objects.get(description='Tandon School of Engineering'),
+    ('Generic', Resource.objects.get(name=GENERAL_RESOURCE_NAME), 'Tandon', 'Tandon-wide-resources', School.objects.get(description='Tandon School of Engineering'),
      True, False, True), #cgray
-    ('Generic', None, 'Tandon-GPU-Adv', 'Advanced GPU resource', School.objects.get(description='Tandon School of Engineering'),
+    ('Generic', Resource.objects.get(name=GENERAL_RESOURCE_NAME), 'Tandon-GPU-Adv', 'Advanced GPU resource', School.objects.get(description='Tandon School of Engineering'),
      True, False, True),
-    ('Generic', None, 'CDS', 'CDS-wide-resources', School.objects.get(description='Center for Data Science'), True, False, True),
-    ('Generic', None, 'CDS-GPU-Prio', 'Priority GPU resource',
+    ('Generic', Resource.objects.get(name=GENERAL_RESOURCE_NAME), 'CDS', 'CDS-wide-resources', School.objects.get(description='Center for Data Science'), True, False, True),
+    ('Generic', Resource.objects.get(name=GENERAL_RESOURCE_NAME), 'CDS-GPU-Prio', 'Priority GPU resource',
      School.objects.get(description='Center for Data Science'), True, False, True), # sfoster
 
     # Clusters
@@ -186,15 +186,10 @@ class Command(BaseCommand):
 
             resource_type, parent_resource, name, description, school, is_available, is_public, is_allocatable = resource
             resource_type_obj = ResourceType.objects.get(name=resource_type)
-            if parent_resource != None:
-                parent_resource_obj = Resource.objects.get(
-                    name=parent_resource)
-            else:
-                parent_resource_obj = None
 
             Resource.objects.get_or_create(
                 resource_type=resource_type_obj,
-                parent_resource=parent_resource_obj,
+                parent_resource=parent_resource,
                 name=name,
                 description=description,
                 school=school,
