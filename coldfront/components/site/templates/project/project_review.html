@@ -106,6 +106,8 @@ Review Project
       $('#div_id_project_updates').hide();
     }
 
+    $('#div_id_project_updates > label').html('Project updates<span class="asteriskField">*</span>');
+
     $('#id_no_project_updates').change(function (e) {
       if (e.target.checked) {
         $('#div_id_project_updates').hide();
