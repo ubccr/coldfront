@@ -707,8 +707,8 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             message = 'You cannot modify this allocation because it is locked! Contact support for details.'
         elif allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', 'Payment Pending', 'Payment Requested', 'Paid']:
             message = f'You cannot add users to an allocation with status {allocation_obj.status.name}.'
-        elif allocation_obj.get_parent_resource.name == 'Geode-Projects':
-            message = f'You cannot add users to a Geode-Project allocation.'
+        elif allocation_obj.get_parent_resource.name == 'Geode-Project':
+            message = 'You cannot add users to a Geode-Project allocation.'
         if message:
             messages.error(request, message)
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
@@ -965,8 +965,8 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
             message = 'You cannot modify this allocation because it is locked! Contact support for details.'
         elif allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', ]:
             message = f'You cannot remove users from a allocation with status {allocation_obj.status.name}.'
-        elif allocation_obj.get_parent_resource.name == 'Geode-Projects':
-            message = f'You cannot remove users from a Geode-Project allocation.'
+        elif allocation_obj.get_parent_resource.name == 'Geode-Project':
+            message = 'You cannot remove users from a Geode-Project allocation.'
         if message:
             messages.error(request, message)
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
