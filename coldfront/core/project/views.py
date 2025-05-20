@@ -2359,7 +2359,7 @@ class ProjectActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
                 return False
 
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if not project_obj.status.name in ['Waiting For Admin Approval', 'Contacted By Admin', ]:
+        if project_obj.status.name not in ['Waiting For Admin Approval', 'Contacted By Admin', ]:
             messages.error(
                 self.request, f'You cannot approve a project with status "{project_obj.status.name}"'
             )
@@ -2420,7 +2420,7 @@ class ProjectDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
                 return False
 
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if not project_obj.status.name in ['Waiting For Admin Approval', 'Contacted By Admin', ]:
+        if project_obj.status.name not in ['Waiting For Admin Approval', 'Contacted By Admin', ]:
             messages.error(
                 self.request, f'You cannot deny a project with status "{project_obj.status.name}"'
             )
@@ -2492,7 +2492,7 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
                 return False
 
         project_review_obj = get_object_or_404(ProjectReview, pk=self.kwargs.get('pk'))
-        if project_review_obj.status.name != 'Pending':
+        if project_review_obj.status.name not in ['Pending', 'Contacted By Admin', ]:
             messages.error(
                 self.request, f'You cannot approve a project review with status "{project_review_obj.status.name}"'
             )
@@ -2581,7 +2581,7 @@ class ProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
                 return False
 
         project_review_obj = get_object_or_404(ProjectReview, pk=self.kwargs.get('pk'))
-        if project_review_obj.status.name != 'Pending':
+        if project_review_obj.status.name not in ['Pending', 'Contacted By Admin', ]:
             messages.error(
                 self.request, f'You cannot deny a project review with status "{project_review_obj.status.name}"'
             )
