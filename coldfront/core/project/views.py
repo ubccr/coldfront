@@ -69,7 +69,6 @@ from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.views import ColdfrontListView, NoteCreateView, NoteUpdateView
 from coldfront.core.utils.common import get_domain_url, import_from_settings
-from coldfront.core.utils.fasrc import sort_by
 from coldfront.core.utils.mail import send_email, send_email_template
 
 if 'django_q' in settings.INSTALLED_APPS:
@@ -83,6 +82,7 @@ ALLOCATION_DEFAULT_ALLOCATION_LENGTH = import_from_settings(
 
 EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings('EMAIL_DIRECTOR_EMAIL_ADDRESS')
 EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
+CENTER_BASE_URL = import_from_settings('CENTER_BASE_URL')
 
 
 def produce_filter_parameter(key, value):
@@ -147,16 +147,12 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             self.request.user, ProjectPermission.GENERAL_MANAGER
         )
 
-        if self.request.user.is_superuser:
-            attributes = list(
-                self.object.projectattribute_set.all().order_by('proj_attr_type__name')
-            )
-        else:
-            attributes = list(
-                self.object.projectattribute_set.filter(
-                    proj_attr_type__is_private=False
-                )
-            )
+        attributes = self.object.projectattribute_set.all().order_by('proj_attr_type__name')
+
+        if not self.request.user.is_superuser:
+            attributes = attributes.filter(proj_attr_type__is_private=False)
+
+        attributes = list(attributes)
 
         attributes_with_usage = [
             att for att in attributes if hasattr(att, 'projectattributeusage')
@@ -873,8 +869,7 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 err = 'You cannot edit the PI of the project.'
                 messages.error(self.request, err)
                 return False
-            else:
-                return True
+            return True
         err = 'You do not have permission to edit project users.'
         messages.error(self.request, err)
         return False
@@ -936,11 +931,28 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 project_user_obj.enable_notifications = form_data.get(
                     'enable_notifications'
                 )
-                project_user_obj.role = ProjectUserRoleChoice.objects.get(
-                    name=form_data.get('role')
-                )
+                old_role = project_user_obj.role.name
+                new_role = form_data.get('role')
+                username = project_user_obj.user.username
+                project_user_obj.role = ProjectUserRoleChoice.objects.get(name=new_role)
                 project_user_obj.save()
 
+                project_role_change_email_context = {
+                    'project_title': project_obj.title,
+                    'username': username,
+                    'old_role': old_role,
+                    'new_role': new_role,
+                    'project_url': f'{CENTER_BASE_URL.strip("/")}/project/{project_obj.pk}/',
+                }
+
+                send_email_template(
+                    subject=f'Role Change for User {username} in Project {project_obj.title}',
+                    template_name='email/project_role_change.txt',
+                    template_context=project_role_change_email_context,
+                    sender=EMAIL_SENDER,
+                    receiver_list=[project_user_obj.user.email],
+                    cc=[project_obj.pi.email]
+                )
                 messages.success(request, 'User details updated.')
                 return HttpResponseRedirect(
                     reverse(
