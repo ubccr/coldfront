@@ -1,0 +1,42 @@
+[
+  {
+    "resource_type": "Generic",
+    "parent_resource": null,
+    "name": "Tandon",
+    "description": "Tandon-wide-resources",
+    "school": "Tandon School of Engineering",
+    "is_available": true,
+    "is_public": false,
+    "is_allocatable": true
+  },
+  {
+    "resource_type": "Generic",
+    "parent_resource": null,
+    "name": "Tandon-GPU-Adv",
+    "description": "Advanced GPU resource",
+    "school": "Tandon School of Engineering",
+    "is_available": true,
+    "is_public": false,
+    "is_allocatable": true
+  },
+  {
+    "resource_type": "Generic",
+    "parent_resource": null,
+    "name": "CDS",
+    "description": "CDS-wide-resources",
+    "school": "Center for Data Science",
+    "is_available": true,
+    "is_public": false,
+    "is_allocatable": true
+  },
+  {
+    "resource_type": "Generic",
+    "parent_resource": null,
+    "name": "CDS-GPU-Prio",
+    "description": "Priority GPU resource",
+    "school": "Center for Data Science",
+    "is_available": true,
+    "is_public": false,
+    "is_allocatable": true
+  }
+]

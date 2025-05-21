@@ -7,6 +7,7 @@ from coldfront.core.resource.management.commands.add_university_school_default_r
 import tempfile
 import json
 import os
+from pathlib import Path
 
 GENERAL_RESOURCE_NAME = import_from_settings('GENERAL_RESOURCE_NAME')
 
@@ -78,10 +79,13 @@ class AddUniversityAndGenericResourcesTestCase(TestCase):
         os.remove(tmp_path)
 
     def test_add_school_resources(self):
+        test_file_path = os.path.join(os.path.dirname(__file__), "..", "data", "test_school_resources.json")
         # run the method under test
-        self.cmd.add_general_university_resource()
-        self.cmd.add_school_resources()
-
+        call_command(
+            "add_university_school_default_resources",  # or whatever your command name is
+            json_file_path=test_file_path
+        )
+ 
         # there should be exactly 4 Resources
         self.assertEqual(Resource.objects.count(), 5)
 
@@ -129,6 +133,9 @@ class AddUniversityAndGenericResourcesTestCase(TestCase):
 
     def test_idempotent(self):
         # calling it twice shouldn't create duplicates
-        self.cmd.add_general_university_resource()
-        self.cmd.add_school_resources()
+        test_file_path = os.path.join(os.path.dirname(__file__), "..", "data", "test_school_resources.json")
+        call_command(
+            "add_university_school_default_resources",  # or whatever your command name is
+            json_file_path=test_file_path
+        )
         self.assertEqual(Resource.objects.count(), 5)
