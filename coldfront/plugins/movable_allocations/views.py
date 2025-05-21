@@ -135,12 +135,11 @@ class AllocationMoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             )
             return HttpResponseRedirect(reverse("move-allocation", kwargs={"pk": pk}))
 
-        if not request.user == origin_project_obj.pi:
-            create_admin_action(
-                user=request.user,
-                fields_to_check={"project": destination_project_obj},
-                allocation=allocation_obj,
-            )
+        create_admin_action(
+            user=request.user,
+            fields_to_check={"project": destination_project_obj},
+            allocation=allocation_obj,
+        )
 
         allocation_obj.project = destination_project_obj
         allocation_obj.save()
