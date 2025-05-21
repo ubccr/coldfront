@@ -50,9 +50,9 @@ def send_email(subject, body, sender, receiver_list, cc=[]):
     try:
         email = EmailMessage(subject, body, sender, receiver_list, cc=cc)
         email.send(fail_silently=False)
-    except SMTPException:
-        logger.error('Failed to send email to %s from %s with subject %s',
-                     ','.join(receiver_list), sender, subject)
+    except SMTPException as e:
+        logger.exception('Failed to send email to %s from %s with subject %s: %s',
+                     ','.join(receiver_list), sender, subject, e)
 
 
 def send_email_template(
