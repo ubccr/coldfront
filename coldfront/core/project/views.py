@@ -479,7 +479,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Project
     template_name_suffix = '_update_form'
-    fields = ['title', 'description', 'school', ]
+    fields = ['title', 'description', ]
     success_message = 'Project updated.'
 
     def test_func(self):
