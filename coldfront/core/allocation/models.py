@@ -68,6 +68,16 @@ class AllocationStatusChoice(TimeStampedModel):
         return (self.name,)
 
 
+class ParentStorageActiveManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(parent_links=None, resources__name="Storage2")
+
+
+class ActiveManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(status__name="Active")
+
+
 class Allocation(TimeStampedModel):
     """An allocation provides users access to a resource.
 
@@ -111,6 +121,8 @@ class Allocation(TimeStampedModel):
     is_locked = models.BooleanField(default=False)
     is_changeable = models.BooleanField(default=False)
     history = HistoricalRecords()
+    storage_parents = ParentStorageActiveManager()
+    active = ActiveManager()
 
     def clean(self):
         """Validates the allocation and raises errors if the allocation is invalid."""
