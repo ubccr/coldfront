@@ -75,7 +75,7 @@ class AllocationParentsManager(models.Manager):
 
 class ActiveStorageAllocationsManager(models.Manager):
     def get_queryset(self):
-        return super().get_queryset().filter(status__name="Active", reoureces__name="Storage2")
+        return super().get_queryset().filter(status__name="Active", resources__name="Storage2")
 
 
 class Allocation(TimeStampedModel):
@@ -120,6 +120,7 @@ class Allocation(TimeStampedModel):
     description = models.CharField(max_length=512, blank=True, null=True)
     is_locked = models.BooleanField(default=False)
     is_changeable = models.BooleanField(default=False)
+    objects = models.Manager()
     history = HistoricalRecords()
     parents = AllocationParentsManager()
     active_storage = ActiveStorageAllocationsManager()
