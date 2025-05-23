@@ -121,8 +121,8 @@ class Allocation(TimeStampedModel):
     is_locked = models.BooleanField(default=False)
     is_changeable = models.BooleanField(default=False)
     history = HistoricalRecords()
-    storage_parents = AllocationParentsManager()
-    active = ActiveStorageAllocationsManager()
+    parents = AllocationParentsManager()
+    active_storage = ActiveStorageAllocationsManager()
 
     def clean(self):
         """Validates the allocation and raises errors if the allocation is invalid."""
