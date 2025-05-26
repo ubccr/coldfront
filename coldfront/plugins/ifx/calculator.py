@@ -1,14 +1,16 @@
 '''
 Custom billing calculator class for Coldfront
 '''
+# pylint: disable=broad-exception-raised,logging-fstring-interpolation,broad-exception-caught,line-too-long
+
 import logging
 import re
-import requests
 import json
 from collections import defaultdict, OrderedDict
 from decimal import Decimal
+import requests
 from django.core.exceptions import MultipleObjectsReturned
-from django.db import connection, transaction
+from django.db import connection
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.conf import settings
@@ -32,7 +34,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
     OTHER_STORAGE_QUOTA_ATTRIBUTE = 'Storage Quota (TB)'
     STORAGE_RESOURCE_TYPE = 'Storage'
 
-    def calculate_billing_month(self, year, month, organizations=None, user=None, recalculate=False, verbosity=0):
+    def calculate_billing_month(self, year, month, organizations=None, recalculate=False, verbosity=0, user=None):
         '''
         Calculate a month of billing for the given year and month
 
@@ -72,7 +74,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
 
         results = {}
         for organization in organizations_to_process:
-            result = self.generate_billing_records_for_organization(year, month, organization, user, recalculate)
+            result = self.generate_billing_records_for_organization(year, month, organization, recalculate, user)
             results[organization.name] = result
 
         if year == 2023 and (month == 3 or month == 4):
@@ -80,7 +82,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
 
         return Resultinator(results)
 
-    def generate_billing_records_for_organization(self, year, month, organization, user, recalculate, **kwargs):
+    def generate_billing_records_for_organization(self, year, month, organization, recalculate, user=None, **kwargs):
         '''
         Create and save all of the :class:`~ifxbilling.models.BillingRecord` objects for the month for an organization.
 
@@ -142,8 +144,8 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
                                         for user_id, allocation_percentage_data in user_allocation_percentages.items():
                                             try:
                                                 user = get_user_model().objects.get(id=user_id)
-                                            except get_user_model().DoesNotExist:
-                                                raise Exception(f'Cannot find user with id {user_id}')
+                                            except get_user_model().DoesNotExist as dne:
+                                                raise Exception(f'Cannot find user with id {user_id}') from dne
                                             try:
                                                 brs = self.generate_billing_records_for_allocation_user(
                                                     year,
@@ -381,23 +383,15 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
         :return: The Allocation storage Product
         :rtype: `~ifxbilling.models.Product`
         '''
-        resources = allocation.resources.all()
-        if not resources:
-            raise Exception(f'Allocation {allocation.id} has no resources')
-        if len(resources) > 1:
-            raise Exception(f'Allocation {allocation.id} has more than one resource. Cannot figure out a Product Rate.')
+        product_allocation = allocation.productallocation_set.first()
+        if not product_allocation:
+            raise Exception(f'Allocation {allocation} does not have a ProductAllocation')
+        return product_allocation.product
 
-        products = [pr.product for pr in resources[0].productresource_set.all()]
-        if not products:
-            raise Exception(f'Allocation {allocation.id} resource {resources[0]} has no associated Product.')
-        if len(products) > 1:
-            raise Exception(f'Allocation {allocation.id} resource {resources[0]} has multiple Products.')
-
-        return products[0]
 
     def get_allocation_resource_product_rate(self, allocation):
         '''
-        Get the active Rate for the Product associated with the Allocation's Resource
+        Get the active Rate for the Product associated with the Allocation or it's parent Resource
 
         :param allocation: The Allocation
         :type allocation: `~coldfront.core.allocation.models.Allocation`
@@ -409,7 +403,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
         '''
         product = self.get_allocation_resource_product(allocation)
         try:
-            rate = product.rate_set.get(is_active=True)
+            rate = product.get_active_rates().first()
         except Rate.DoesNotExist:
             raise Exception(f'Cannot find an active rate for Product {product.product_name}')
 
@@ -507,12 +501,39 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
                             and ua.product_id = %s
                     )
                 group by pu.product_user_id
+                union
+                select
+                    pu.product_user_id, sum(pu.quantity) as quantity
+                from
+                    product_usage pu inner join ifx_allocationuserproductusage aupu on pu.id = aupu.product_usage_id
+                    inner join allocation_historicalallocationuser hau on hau.history_id = aupu.allocation_user_id
+                    inner join allocation_allocation a on a.id = hau.allocation_id
+                where
+                    hau.allocation_id = %s
+                    and pu.year = %s
+                    and pu.month = %s
+                    and exists (
+                        select 1
+                        from
+                            user_product_account ua inner join account acct on ua.account_id = acct.id
+                            inner join ifx_projectorganization po on acct.organization_id = po.organization_id
+                            inner join product pp on ua.product_id = pp.id
+                            inner join product p on p.parent_id = pp.id
+                        where
+                            po.project_id = a.project_id
+                            and ua.user_id = pu.product_user_id
+                            and ua.is_valid = 1
+                            and acct.valid_from <= pu.start_date
+                            and acct.expiration_date > pu.start_date
+                            and p.id = %s
+                    )
+                group by pu.product_user_id
             ) t
             group by product_user_id
         '''.replace('\n', ' ')
 
         cursor = connection.cursor()
-        cursor.execute(sql, [allocation.id, year, month, allocation.id, year, month, product.id])
+        cursor.execute(sql, [allocation.id, year, month, allocation.id, year, month, product.id, allocation.id, year, month, product.id])
         total = 0
         count = 0
         for row in cursor.fetchall():
@@ -535,6 +556,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
             if self.verbosity > 0:
                 logger.info(f'Allocation {allocation} has no users at all. Setting PI {pi} as user.')
 
+        # pylint: disable=consider-iterating-dictionary,consider-using-dict-items
         for uid in allocation_user_fractions.keys():
             # For the situation where there is an allocation, and the PI is an allocation user, but no data is used
             # set fraction to 1.
@@ -677,7 +699,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
             offer_letter_tb = allocation_tb - remaining_tb
             remaining_space_str = f' remaining after faculty commitment of {offer_letter_tb} TB'
         allocation_percent = Decimal(allocation_fraction * 100).quantize(Decimal('0.01'))
-        allocation_string = f'{allocation_percent}% of {remaining_tb} TB of {product_usage.product.product_name}{remaining_space_str}'
+        allocation_string = f'{allocation_percent}% of {remaining_tb.quantize(Decimal("0.01"))} TB from the {product_usage.product.product_name} allocation{remaining_space_str}'
 
         description = f'{decimal_charge_str} for {percent_str}{allocation_string} at {price_str} per TB'
 
