@@ -1,51 +1,65 @@
+import logging
 from django.shortcuts import render
 from django.core.mail import send_mail
+from django.views.generic import TemplateView
+from django.contrib import messages
 
-from django.contrib.auth.models import User
-from coldfront.config.plugins.help import SUPPORT_EMAILS, EMAIL_HELP_TEMPLATE, EMAIL_HELP_DEFAULT_TARGET
+from coldfront.core.utils.common import import_from_settings
+from coldfront.plugins.help.forms import HelpForm
 
-def get_help(request):
-    return get_targeted_help(request, None)
+EMAIL_HELP_SUPPORT_EMAILS = import_from_settings("EMAIL_HELP_SUPPORT_EMAILS", {})
+EMAIL_HELP_TEMPLATE = import_from_settings("EMAIL_HELP_TEMPLATE", "")
+EMAIL_HELP_DEFAULT_EMAIL = import_from_settings("EMAIL_HELP_DEFAULT_EMAIL", "")
 
-
-def get_targeted_help(request, tgt):
-    context = {}
-    context["titles"] = [e["title"] for e in SUPPORT_EMAILS]
-    sel_index = next((i for i, e in enumerate(SUPPORT_EMAILS) if tgt and e["address"].startswith(tgt)), None)
-    context["target_index"] = sel_index if sel_index is not None else -1
-    context["request_user_info"] = not request.user.is_authenticated
-
-    return render(request, "help/help.html", context)
+logger = logging.getLogger(__name__)
 
 
-def send_help(request):
-    form_data = request.POST
-    if form_data:
-        target_id = int(form_data.get("target_index", -1))
-        if target_id == -1:
-            target_email = EMAIL_HELP_DEFAULT_TARGET
+class SlateProjectSearchResultsView(TemplateView):
+    template_name = "help/help.html"
+
+    def get_initial_data(self):
+        initial_data = {"first_name": "", "last_name": "", "user_email": "", "queue_email": ""}
+
+        user = self.request.user
+        if user.is_authenticated:
+            initial_data["first_name"] = user.first_name
+            initial_data["last_name"] = user.last_name
+            initial_data["user_email"] = user.email
+
+        queue = self.request.GET.get("queue", "")
+        initial_data["queue_email"] = EMAIL_HELP_SUPPORT_EMAILS.get(queue, EMAIL_HELP_DEFAULT_EMAIL)
+        return initial_data
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form"] = HelpForm(initial=self.get_initial_data())
+        return context
+
+    def get(self, request, *args, **kwargs):
+        return render(request, "help/help.html", self.get_context_data())
+
+    def post(self, request, *args, **kwargs):
+        form = HelpForm(request.POST, initial=self.get_initial_data())
+        if form.is_valid():
+            form_data = form.cleaned_data
+            queue_email = form_data.get("queue_email")
+            user_email = form_data.get("user_email")
+            first = form_data.get("first_name")
+            last = form_data.get("last_name")
+            message = form_data.get("message")
+            send_mail(
+                subject=form_data.get("subject", "Help Request"),
+                message=EMAIL_HELP_TEMPLATE.format(first=first, last=last, message=message),
+                from_email=user_email,
+                recipient_list=[queue_email],
+                fail_silently=False,
+            )
         else:
-            target_email = SUPPORT_EMAILS[target_id]["address"]
+            messages.error(
+                request,
+                f"Something went wrong, please try again. If the issue persists contact {EMAIL_HELP_DEFAULT_EMAIL}.",
+            )
+            logger.error(f"An error occured in the help form. Error: {form.errors.as_text()}")
+            return render(request, "help/help.html", self.get_context_data())
 
-        if request.user.is_authenticated:
-            user = User.objects.get(username=request.user.username)
-            user_email = user.email
-            first = user.first_name
-            last = user.last_name
-        else:
-            user_email = form_data.get("email", "")
-            first = form_data.get("first_name", "")
-            last = form_data.get("last_name", "")
-
-        message=form_data.get("message", ""),
-
-        send_mail(
-            subject=form_data.get("subject", "Help Request"),
-            message=EMAIL_HELP_TEMPLATE.format(first=first, last=last, message=message),
-            from_email=user_email,
-            recipient_list=[target_email],
-            fail_silently=False,
-        )
-
-    context = None
-    return render(request, "help/form_completed.html", context)
+        return render(request, "help/form_completed.html")
