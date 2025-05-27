@@ -36,7 +36,7 @@ class SlateProjectSearchResultsView(TemplateView):
         return context
 
     def get(self, request, *args, **kwargs):
-        return render(request, "help/help.html", self.get_context_data())
+        return self.render_to_response(self.get_context_data())
 
     def post(self, request, *args, **kwargs):
         form = HelpForm(request.POST, initial=self.get_initial_data())
@@ -60,6 +60,6 @@ class SlateProjectSearchResultsView(TemplateView):
                 f"Something went wrong, please try again. If the issue persists contact {EMAIL_HELP_DEFAULT_EMAIL}.",
             )
             logger.error(f"An error occured in the help form. Error: {form.errors.as_text()}")
-            return render(request, "help/help.html", self.get_context_data())
+            return self.render_to_response(self.get_context_data())
 
         return render(request, "help/form_completed.html")
