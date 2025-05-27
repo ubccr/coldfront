@@ -1,8 +1,12 @@
 Dear {{center_name}} user,
 
 Your access to {{center_name}} resources has expired. Any accounts under these RT project(s) and allocation(s) are now unable to
-access the associated resource. If you wish to continue using them, the managers responsible for the following project(s) must renew the expired
-project(s) and allocation(s). Below is a list of links to your project(s) containing at least one expired allocation: 
+access the associated resource.
+
+If you wish to continue using them, the managers responsible for the following project(s) must renew the expired
+project(s) and allocation(s) before 7/31, after which the projects will be terminated and cannot be renewed.
+
+Below is a list of links to your project(s) containing at least one expired allocation: 
 {% for project_key, project_url in project_dict.items %}
 Project Title: {{project_key}}
 Project URL: {{ project_url.0 }}

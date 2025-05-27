@@ -1,63 +1,82 @@
-{% if over_allocation_limit %}
+{% if does_not_exist %}
   <div id="id_not_moveable" class="alert alert-danger">
     <i class="fa fa-info-circle"></i>
-    Moving this allocation to this project will put it over its resource limit.
+    This project does not exist.
   </div>
-{% elif not resource_allowed %}
-  <div id="id_not_moveable" class="alert alert-danger">
-    <i class="fa fa-info-circle"></i>
-    The resource in this allocation is not allowed in this type of project.
+{% else %}
+  {% if already_in_project %}
+    <div id="id_not_moveable" class="alert alert-danger">
+      <i class="fa fa-info-circle"></i>
+      This allocation is already in this project.
+    </div>  
+  {% elif over_allocation_limit %}
+    <div id="id_not_moveable" class="alert alert-danger">
+      <i class="fa fa-info-circle"></i>
+      Moving this allocation to this project will put it over its resource limit.
+    </div>
+  {% elif not resource_allowed %}
+    <div id="id_not_moveable" class="alert alert-danger">
+      <i class="fa fa-info-circle"></i>
+      The resource in this allocation is not allowed in this type of project.
+    </div>
+  {% endif %}
+  <fieldset>
+    <legend>
+      <strong><u>Project Info</u></strong>
+      <a href="{% url 'project-detail' project.pk %}" target="_blank">
+        <i class="fas fa-external-link-alt" aria-hidden="true"></i>
+      </a>
+    </legend>
+    <p><strong>ID:</strong> {{ project.pk }}</p>
+    <p><strong>Title:</strong> {{ project.title }}</p>
+    <p>
+      <strong>PI:</strong>
+      {{ project.pi.first_name }} {{ project.pi.last_name }} ({{ project.pi.username }})
+    </p>
+    <p><strong>Project Description:</strong> {{ project.description }}</p>
+    <p><strong>Project Type:</strong> {{ project.type }}</p>
+    <p><strong>Project Status:</strong> {{ project.status }}</p>
+    <p><strong>End Date:</strong> {{ project.end_date }}</p>
+  </fieldset>
+  <div class="card">
+    <div class="card-header">
+      <h4>Allocations</h4>
+    </div>
+    <div class="card-body">
+      {% if allocations %}
+        <div class="table-responsive">
+          <table class="table table-bordered table-sm">
+            <thead>
+              <tr>
+                <th scope="col">Resource</th>
+                <th scope="col">Information</th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for allocation in allocations %}
+                <tr>
+                  <td>
+                    <a class="text-nowrap" href="{% url 'allocation-detail' allocation.pk %}" target="_blank">
+                      {{ allocation.get_parent_resource.name }}
+                    </a>
+                  </td>
+                  {% if allocation.get_information != '' %}
+                    <td class="text-nowrap">{{ allocation.get_information }}</td>
+                  {% else %}
+                    <td class="text-nowrap">{{allocation.description|default_if_none:""}}</td>
+                  {% endif %}
+                  <td class="text-nowrap">{{ allocation.status }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="alert alert-info">
+          <i class="fa fa-info-circle"></i> This project has no active allocations.
+        </div>
+      {% endif %}
+    </div>
   </div>
 {% endif %}
-<fieldset>
-  <legend>
-    <strong><u>Project Info</u></strong>
-    <a href="{% url 'project-detail' project.pk %}" target="_blank">
-      <i class="fas fa-external-link-alt" aria-hidden="true"></i>
-    </a>
-  </legend>
-  <p><strong>ID:</strong> {{ project.pk }}</p>
-  <p><strong>Title:</strong> {{ project.title }}</p>
-  <p><strong>Project Description:</strong> {{ project.description }}</p>
-  <p><strong>Project Type:</strong> {{ project.type }}</p>
-  <p><strong>End Date:</strong> {{ project.end_date }}</p>
-</fieldset>
-<div class="card">
-  <div class="card-header">
-    <h4>Allocations</h4>
-  </div>
-  <div class="card-body">
-    {% if allocations %}
-      <div class="table-responsive">
-        <table class="table table-bordered table-sm">
-          <thead>
-            <tr>
-              <th scope="col">Resource</th>
-              <th scope="col">Information</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for allocation in allocations %}
-              <tr>
-                <td>
-                  <a class="text-nowrap" href="{% url 'allocation-detail' allocation.pk %}" target="_blank">
-                    {{ allocation.get_parent_resource.name }}
-                  </a>
-                </td>
-                {% if allocation.get_information != '' %}
-                  <td class="text-nowrap">{{ allocation.get_information }}</td>
-                {% else %}
-                  <td class="text-nowrap">{{allocation.description|default_if_none:""}}</td>
-                {% endif %}
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    {% else %}
-      <div class="alert alert-info">
-        <i class="fa fa-info-circle"></i> This project has no active allocations.
-      </div>
-    {% endif %}
-  </div>
-</div>

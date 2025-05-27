@@ -14,11 +14,11 @@ Move Allocation
 <hr>
 
 <p>
-  You can move an allocation from this project to another you own as long as the other project's
+  Allocations can be moved to another project as long as the other project's
   restrictions are not met, i.e. max allocations allowed for this resource in the project. <strong>
   Users in the allocation are also moved over and anyone missing from the destination project are
-  automatically added to it. If there are users you do not want included in the move then remove
-  them from the allocation first.</strong> Compute allocations being moved will be given a new slurm
+  automatically added to it. If there are users that should not be moved then they need to be removed
+  from the allocation first.</strong> Compute allocations being moved will be given a new slurm
   account. Storage allocation file system access will not be effected.
 </p>
 
@@ -40,14 +40,21 @@ Move Allocation
             </legend>
             <p><strong>ID:</strong> {{ allocation.project.pk }}</p>
             <p><strong>Title:</strong> {{ allocation.project.title }}</p>
+            <p>
+              <strong>PI:</strong>
+              {{ allocation.project.pi.first_name }} {{ allocation.project.pi.last_name }}
+              ({{ allocation.project.pi.username }})
+            </p>
             <p><strong>Project Description:</strong> {{ allocation.project.description }}</p>
             <p><strong>Project Type:</strong> {{ allocation.project.type }}</p>
+            <p><strong>Project Status:</strong> {{ allocation.project.status }}</p>
             <p><strong>End Date:</strong> {{ allocation.project.end_date }}</p>
           </fieldset>
           <hr>
           <fieldset>
             <legend><strong><u>Allocation Info</u></strong></legend>
             <p><strong>Resource:</strong> {{ allocation.get_parent_resource.name }}</p>
+            <p><strong>Status:</strong> {{ allocation.status }}</p>
             <p><strong>End Date:</strong> {{ allocation.end_date }}</p>
             <div>
               <strong>Users:</strong>
@@ -99,7 +106,18 @@ Move Allocation
               </label>
             </div>
             <div class="col">
-              {{ form.destination_project }}
+              <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                  <span class="input-group-text">
+                    <i class="fas fa-search"></i>
+                  </span>
+                </div>
+                {{ form.destination_project }}
+                <div class="input-group-append">
+                  <button id="id_search_project" class="btn btn-outline-secondary" type="button">Search</button>
+                </div>
+              </div>
+              
             </div>
           </div>
         </div>
@@ -121,6 +139,9 @@ Move Allocation
 
 <script>
   $(document).on('click', '.confirm-move', function () {
+    if (!$('#id_destination_project').val()) {
+      return;
+    }
     var confirmation = confirm('Are you sure you want to move this allocation? All of the users in this allocation will be added to the destination project if they do not exist already.');
     if (!confirmation) {
       return confirmation
@@ -132,8 +153,8 @@ Move Allocation
   })
   $(document).ready(function () {
     $('#id_destination_project').addClass('form-control')
-    $('#id_destination_project').change(function (e) {
-      var project_pk = $("#id_destination_project option:selected").val();
+    $('#id_search_project').click(function (e) {
+      var project_pk = $("#id_destination_project").val();
       if (!project_pk) {
         $('#id_destination_project_info').html('')
         return;
@@ -147,7 +168,6 @@ Move Allocation
         success: function (data) {
           $('#id_destination_project_info').html(data)
           var not_moveable = $('#id_not_moveable');
-          console.log(not_moveable.length);
           if (not_moveable.length) {
             $('#id_submit').prop('disabled', true)
           } else {

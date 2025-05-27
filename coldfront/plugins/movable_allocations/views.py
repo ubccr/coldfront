@@ -42,13 +42,10 @@ class AllocationMoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         group_exists = check_if_groups_in_review_groups(
             allocation_obj.get_parent_resource.review_groups.all(),
             self.request.user.groups.all(),
-            "change_allocation",
+            "can_move_allocations",
         )
         if group_exists:
             return True
-
-        # if self.request.user == allocation_obj.project.pi:
-        #     return True
 
         messages.error(self.request, "You do not have permission to move this allocation.")
         return False
@@ -70,15 +67,6 @@ class AllocationMoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 reverse("allocation-detail", kwargs={"pk": kwargs.get("pk")})
             )
 
-        is_moveable = allocation_obj.allocationattribute_set.filter(
-            allocation_attribute_type__name="Is Moveable"
-        ).first()
-        if not (is_moveable and is_moveable.value == "Yes"):
-            messages.error(request, "Allocation must be moveable.")
-            return HttpResponseRedirect(
-                reverse("allocation-detail", kwargs={"pk": kwargs.get("pk")})
-            )
-
         if allocation_obj.is_locked:
             messages.error(request, "You cannot move a locked allocation")
             return HttpResponseRedirect(
@@ -90,7 +78,7 @@ class AllocationMoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def get(self, request, *args, **kwargs):
         pk = self.kwargs.get("pk")
         allocation_obj = get_object_or_404(Allocation, pk=pk)
-        form = AllocationMoveForm(allocation_obj.project.pi, allocation_obj.project.pk)
+        form = AllocationMoveForm()
         context = self.get_context_data()
         context["form"] = form
         context["allocation"] = allocation_obj
@@ -107,19 +95,34 @@ class AllocationMoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         allocation_obj = get_object_or_404(Allocation, pk=pk)
         origin_project_obj = allocation_obj.project
 
-        form = AllocationMoveForm(request.user, origin_project_obj.pk, request.POST)
+        form = AllocationMoveForm(request.POST)
         if not form.is_valid():
             for error in form.errors:
                 messages.error(request, error)
             return HttpResponseRedirect(reverse("move-allocation", kwargs={"pk": pk}))
 
-        destination_project_obj = form.cleaned_data.get("destination_project")
-        if check_over_allocation_limit(
-            allocation_obj,
-            destination_project_obj.allocation_set.filter(
-                status__name="Active", resources=allocation_obj.get_parent_resource
-            ),
-        ):
+        destination_project_obj = Project.objects.filter(
+            id=form.cleaned_data.get("destination_project")
+        ).first()
+        if not destination_project_obj:
+            messages.error(
+                request,
+                "This project does not exist.",
+            )
+            return HttpResponseRedirect(reverse("move-allocation", kwargs={"pk": pk}))
+
+        allocation_objs = destination_project_obj.allocation_set.filter(
+            status__name__in=["Active", "New", "Renewal Requested"],
+            resources=allocation_obj.get_parent_resource,
+        )
+        if allocation_obj in allocation_objs:
+            messages.error(
+                request,
+                "This allocation is already in this project.",
+            )
+            return HttpResponseRedirect(reverse("move-allocation", kwargs={"pk": pk}))
+
+        if check_over_allocation_limit(allocation_obj, allocation_objs):
             messages.error(
                 request,
                 "Moving this allocation to this project will put it over its resource limit.",
@@ -132,17 +135,17 @@ class AllocationMoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             )
             return HttpResponseRedirect(reverse("move-allocation", kwargs={"pk": pk}))
 
-        if not request.user == origin_project_obj.pi:
-            create_admin_action(
-                user=request.user,
-                fields_to_check={"project": destination_project_obj},
-                allocation=allocation_obj,
-            )
+        create_admin_action(
+            user=request.user,
+            fields_to_check={"project": destination_project_obj},
+            allocation=allocation_obj,
+        )
 
         allocation_obj.project = destination_project_obj
         allocation_obj.save()
 
         slurm_account_obj = AllocationAttribute.objects.filter(
+            allocation=allocation_obj,
             allocation_attribute_type__name="slurm_account_name"
         ).first()
         if slurm_account_obj:
@@ -242,9 +245,8 @@ class AllocationMoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             destination_project_pk=destination_project_obj.pk,
         )
 
-        role = "Admin" if not request.user == origin_project_obj.pi else "User"
         logger.info(
-            f"{role} {request.user.username} moved allocation {allocation_obj.pk} from project "
+            f"Admin {request.user.username} moved allocation {allocation_obj.pk} from project "
             f"{origin_project_obj.pk} to project {destination_project_obj.pk}"
         )
 
@@ -264,11 +266,19 @@ class ProjectDetailView(LoginRequiredMixin, TemplateView):
     def get(self, request, *args, **kwargs):
         project_pk = self.kwargs.get("project_pk")
         allocation_pk = self.kwargs.get("pk")
-        project_obj = get_object_or_404(Project, pk=project_pk)
-        allocation_obj = get_object_or_404(Allocation, pk=allocation_pk)
         context = self.get_context_data()
+        context["does_not_exist"] = False
+        project_obj = Project.objects.filter(id=project_pk).first()
+        if not project_obj:
+            context["does_not_exist"] = True
+            return self.render_to_response(context)
+
+        allocation_obj = get_object_or_404(Allocation, pk=allocation_pk)
         context["project"] = project_obj
-        allocation_objs = project_obj.allocation_set.filter(status__name="Active")
+        allocation_objs = project_obj.allocation_set.filter(
+            status__name__in=["Active", "New", "Renewal Requested"]
+        )
+        context["already_in_project"] = allocation_obj in allocation_objs
         context["allocations"] = allocation_objs
         context["over_allocation_limit"] = check_over_allocation_limit(
             allocation_obj, allocation_objs

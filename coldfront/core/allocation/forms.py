@@ -113,7 +113,7 @@ class AllocationAddUserForm(forms.Form):
         cleaned_data = super().clean()
         if cleaned_data.get('selected'):
             if not self.fields['role'].disabled and not cleaned_data.get('role'):
-                raise ValidationError('This resource requires user roles')
+                raise forms.ValidationError('This resource requires user roles')
 
         return cleaned_data
 
@@ -336,6 +336,6 @@ class AllocationUserUpdateForm(forms.Form):
     def clean(self):
         cleaned_data = super().clean()
         if not self.fields['role'].disabled and not cleaned_data.get('role'):
-            raise ValidationError('This resource requires user roles')
+            raise forms.ValidationError('This resource requires user roles')
 
         return cleaned_data

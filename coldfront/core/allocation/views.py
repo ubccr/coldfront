@@ -196,11 +196,13 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context['user_exists_in_allocation'] = allocation_obj.allocationuser_set.filter(
             user=self.request.user, status__name__in=['Active', 'Pending - Remove', 'Invited', 'Pending', 'Disabled', 'Retired']).exists()
 
-        context['allocation_moving_enabled'] = False
+        context['can_move_allocation'] = False
         if 'coldfront.plugins.movable_allocations' in settings.INSTALLED_APPS:
-            is_moveable = allocation_obj.allocationattribute_set.filter(
-                allocation_attribute_type__name='Is Moveable').first()
-            context['allocation_moving_enabled'] = is_moveable and is_moveable.value == 'Yes'
+            context['can_move_allocation'] = check_if_groups_in_review_groups(
+                allocation_obj.get_parent_resource.review_groups.all(),
+                self.request.user.groups.all(),
+                'can_move_allocations'
+            )
 
         context['project'] = allocation_obj.project
         context['notes'] = notes.order_by("-created")
@@ -363,7 +365,10 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                 send_allocation_customer_email(allocation_obj, 'Allocation Revoked', 'email/allocation_revoked.txt', domain_url=get_domain_url(self.request))
                 messages.success(request, 'Allocation Revoked!')
             elif allocation_obj.status.name == 'Removed':
-                send_allocation_customer_email(allocation_obj, 'Allocation Removed', 'email/allocation_removed.txt', domain_url=get_domain_url(self.request))
+                if 'coldfront.plugins.allocation_removal_requests' in settings.INSTALLED_APPS:
+                    from coldfront.plugins.allocation_removal_requests.signals import allocation_remove
+                    allocation_remove.send(sender=self.__class__, allocation_pk=allocation_obj.pk)
+                send_allocation_customer_email(allocation_obj, 'Allocation Removed', 'allocation_removal_requests/allocation_removed.txt', domain_url=get_domain_url(self.request))
                 messages.success(request, 'Allocation Removed!')
             else:
                 messages.success(request, 'Allocation updated!')
@@ -702,8 +707,8 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             message = 'You cannot modify this allocation because it is locked! Contact support for details.'
         elif allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', 'Payment Pending', 'Payment Requested', 'Paid']:
             message = f'You cannot add users to an allocation with status {allocation_obj.status.name}.'
-        elif allocation_obj.get_parent_resource.name == 'Geode-Projects':
-            message = f'You cannot add users to a Geode-Project allocation.'
+        elif allocation_obj.get_parent_resource.name == 'Geode-Project':
+            message = 'You cannot add users to a Geode-Project allocation.'
         if message:
             messages.error(request, message)
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
@@ -960,8 +965,8 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
             message = 'You cannot modify this allocation because it is locked! Contact support for details.'
         elif allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', ]:
             message = f'You cannot remove users from a allocation with status {allocation_obj.status.name}.'
-        elif allocation_obj.get_parent_resource.name == 'Geode-Projects':
-            message = f'You cannot remove users from a Geode-Project allocation.'
+        elif allocation_obj.get_parent_resource.name == 'Geode-Project':
+            message = 'You cannot remove users from a Geode-Project allocation.'
         if message:
             messages.error(request, message)
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
@@ -1337,16 +1342,28 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
         context = super().get_context_data(**kwargs)
         if self.request.user.is_superuser:
             allocation_list = Allocation.objects.filter(
-                status__name__in=['New', 'Renewal Requested', 'Paid', 'Billing Information Submitted']
+                status__name__in=[
+                    'New', 'Paid', 'Billing Information Submitted', 'Contacted By Admin', 'Waiting For Admin Approval'
+                ]
+            ).exclude(project__status__name__in=['Archived', 'Renewal Denied'])
+            allocation_renewal_list = Allocation.objects.filter(
+                status__name='Renewal Requested'
             ).exclude(project__status__name__in=['Archived', 'Renewal Denied'])
         else:
             allocation_list = Allocation.objects.filter(
-                status__name__in=['New', 'Renewal Requested', 'Paid', 'Billing Information Submitted'],
+                status__name__in=[
+                    'New', 'Paid', 'Billing Information Submitted', 'Contacted By Admin', 'Waiting For Admin Approval'
+                ],
+                resources__review_groups__in=list(self.request.user.groups.all())
+            ).exclude(project__status__name__in=['Archived', 'Renewal Denied']).distinct()
+            allocation_renewal_list = Allocation.objects.filter(
+                status__name='Renewal Requested',
                 resources__review_groups__in=list(self.request.user.groups.all())
             ).exclude(project__status__name__in=['Archived', 'Renewal Denied']).distinct()
 
         context['allocation_status_active'] = AllocationStatusChoice.objects.get(name='Active')
         context['allocation_list'] = allocation_list
+        context['allocation_renewal_list'] = allocation_renewal_list
         context['PROJECT_ENABLE_PROJECT_REVIEW'] = PROJECT_ENABLE_PROJECT_REVIEW
         context['ALLOCATION_DEFAULT_ALLOCATION_LENGTH'] = ALLOCATION_DEFAULT_ALLOCATION_LENGTH
         return context
@@ -2114,7 +2131,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
             return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
 
         if end_date_extension != allocation_change_obj.end_date_extension:
-            create_admin_action(request.user, {'new_value': end_date_extension}, allocation_obj, attribute_change)
+            create_admin_action(request.user, {'end_date': end_date_extension}, allocation_obj)
             allocation_change_obj.end_date_extension = end_date_extension
 
         if allocation_attributes_to_change:

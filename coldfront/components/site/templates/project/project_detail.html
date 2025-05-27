@@ -332,9 +332,11 @@ Project Detail
                   <i class="far fa-folder-open" aria-hidden="true"></i><span class="sr-only">Details</span>
                 </a>
                 {% if is_allowed_to_update_project and allocation.status.name in 'Active, New, Renewal Requested, Billing Information Submitted' and not allocation.is_locked %}
-                  <a title="Add Users" data-toggle="tooltip" data-delay="250" href="{% url 'allocation-add-users' allocation.pk %}">
-                    <i class="fas fa-user-plus" aria-hidden="true"></i><span class="sr-only">Add Users</span>
-                  </a>
+                  {% if not allocation.get_parent_resource.name == 'Geode-Project' %}
+                    <a title="Add Users" data-toggle="tooltip" data-delay="250" href="{% url 'allocation-add-users' allocation.pk %}">
+                      <i class="fas fa-user-plus" aria-hidden="true"></i><span class="sr-only">Add Users</span>
+                    </a>
+                  {% endif %}
                 {% endif %}
                 {% if allocation.project.requires_review and allocation.project.get_env|get_value_from_dict:'renewable' %}
                   {% if allocation.is_locked and allocation.status.name == 'Active' and allocation.expires_in <= ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING and allocation.expires_in >= 0 %}

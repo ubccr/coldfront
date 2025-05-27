@@ -76,7 +76,8 @@ from coldfront.core.project.utils import (get_new_end_date_from_list,
                                           generate_slurm_account_name,
                                           create_admin_action_for_creation,
                                           create_admin_action_for_deletion,
-                                          check_if_pi_eligible)
+                                          check_if_pi_eligible,
+                                          check_if_pis_eligible)
 from coldfront.core.allocation.utils import send_added_user_email
 from coldfront.core.utils.slack import send_message
 from coldfront.core.project.signals import project_activate, project_user_role_changed
@@ -1661,7 +1662,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         context['project_review_form'] = project_review_form
         context['project_users'] = ', '.join(['{} {}'.format(ele.user.first_name, ele.user.last_name)
                                               for ele in project_obj.projectuser_set.filter(status__name__in=['Active','Inactive']).order_by('user__last_name')])
-
+        context['ineligible_pi'] = not check_if_pi_eligible(project_obj.pi)
         context['formset'] = []
         allocation_data = self.get_allocation_data(project_obj)
         if allocation_data:
@@ -1784,20 +1785,25 @@ class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['project_review_list'] = ProjectReview.objects.filter(
+
+        project_reviews = ProjectReview.objects.filter(
             status__name__in=['Pending', 'Contacted By Admin', ])
+        pi_eligibilities = check_if_pis_eligible(
+            set([project_review.project.pi for project_review in project_reviews]))
+        context['project_review_list'] = project_reviews
+        context['pi_eligibilities'] = pi_eligibilities
+
         projects = Project.objects.filter(
             status__name__in=['Waiting For Admin Approval', 'Contacted By Admin', ]
         )
         context['project_request_list'] = projects
-        pis = set()
-        for project in projects:
-            pis.add(project.pi)
-        
+        pis = set([project.pi for project in projects])
         pi_project_objs = Project.objects.filter(
             pi__in=pis,
-            status__name='Active'
-        )
+            status__name__in=[
+                'Active', 'Waiting For Admin Approval', 'Contacted By Admin', 'Review Pending'
+            ]
+        ).order_by('status__name')
         pi_projects = []
         for pi_project_obj in pi_project_objs:
             pi_projects.append(
@@ -1806,6 +1812,7 @@ class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
                     'title': pi_project_obj.title,
                     'pi': pi_project_obj.pi.username,
                     'description': pi_project_obj.description,
+                    'status': pi_project_obj.status.name,
                     'display': 'false' 
                 }
             )
@@ -2356,7 +2363,7 @@ class ProjectActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
                 return False
 
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if not project_obj.status.name in ['Waiting For Admin Approval', 'Contacted By Admin', ]:
+        if project_obj.status.name not in ['Waiting For Admin Approval', 'Contacted By Admin', ]:
             messages.error(
                 self.request, f'You cannot approve a project with status "{project_obj.status.name}"'
             )
@@ -2417,7 +2424,7 @@ class ProjectDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
                 return False
 
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if not project_obj.status.name in ['Waiting For Admin Approval', 'Contacted By Admin', ]:
+        if project_obj.status.name not in ['Waiting For Admin Approval', 'Contacted By Admin', ]:
             messages.error(
                 self.request, f'You cannot deny a project with status "{project_obj.status.name}"'
             )
@@ -2489,7 +2496,7 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
                 return False
 
         project_review_obj = get_object_or_404(ProjectReview, pk=self.kwargs.get('pk'))
-        if project_review_obj.status.name != 'Pending':
+        if project_review_obj.status.name not in ['Pending', 'Contacted By Admin', ]:
             messages.error(
                 self.request, f'You cannot approve a project review with status "{project_review_obj.status.name}"'
             )
@@ -2578,7 +2585,7 @@ class ProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
                 return False
 
         project_review_obj = get_object_or_404(ProjectReview, pk=self.kwargs.get('pk'))
-        if project_review_obj.status.name != 'Pending':
+        if project_review_obj.status.name not in ['Pending', 'Contacted By Admin', ]:
             messages.error(
                 self.request, f'You cannot deny a project review with status "{project_review_obj.status.name}"'
             )

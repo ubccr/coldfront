@@ -3,7 +3,8 @@ Dear {{ center_name }} user,
 Your project "{{ project_title }}" on RT Projects will expire in {{ expiring_in_days }} day{{ expiring_in_days|pluralize }}.
 This project has no allocations in it and is not providing access to any of RT's resources. Once it expires you will no longer 
 be able to edit your project. If you do not need this project to give you access to RT's resources then it is recommended to
-let it expire.
+archive it. You can do so with the archive project button on your project's detail page. Archiving a project will terminate it
+and you will not receive renewal emails. 
 
 If you are not the PI or a manager in this project you are receiving this notice as a courtesy.
 

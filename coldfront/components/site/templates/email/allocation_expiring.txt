@@ -1,8 +1,10 @@
 Dear {{center_name}} user,
 
-Your access to {{center_name}} resources is expiring soon. Failure to renew the expiring RT project and its allocation(s) on time will terminate access to the resource 
-for all users in the allocation(s). To renew, login to RT Projects and complete the short renewal process for each expiring project. Below is a list of links to 
-your project(s) containing at least one expiring allocation: 
+Your access to Research Technologies resources is expiring soon. To renew, login to RT Projects and
+complete the short renewal process for each expiring project. Failure to renew the expiring RT project(s)
+and its allocation(s) on time will terminate access to the resource for all users in the allocation(s).
+
+Below is a list of links to your project(s) containing at least one expiring allocation:
 {% for project_key, project_url in project_dict.items %}
 Project Title: {{project_key}}
 Project URL: {{ project_url.0 }}
@@ -15,7 +17,9 @@ Project Type: {{ project_url.3 }}
         {% endfor %}{% endspaceless %}
 {% endfor %}
 The managers for these projects are required to renew them unless stated otherwise. The expiring allocations can be renewed during the project renewal.
-If they are not they will need to be renewed seperately.
+If they are not they will need to be renewed seperately. If you do not need any of these projects anymore we recommend archiving them, doing so will
+expire all allocations with it. You can do so with the archive project button on your project's detail page. You will not receive renewal emails
+for archived projects. Archiving a project does not affect any of the data within the resource allocations it has.
 For more information about the yearly renewal, visit our knowledge base: {{ project_renewal_help_url }}
 
 If you are not the PI or a manager under this project, you are receiving this notice as a courtesy.

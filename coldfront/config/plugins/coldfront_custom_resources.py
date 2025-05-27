@@ -5,7 +5,6 @@ INSTALLED_APPS += [
     'coldfront_custom_resources',
     'coldfront_custom_resources.compute',
     'coldfront_custom_resources.service.posit_connect',
-    'coldfront_custom_resources.service.reallms',
     'coldfront_custom_resources.storage.geode_project',
     'coldfront_custom_resources.storage.slate_project'
 ]
@@ -31,6 +30,7 @@ LDAP_SLATE_PROJECT_BIND_PASSWORD = ENV.str('LDAP_SLATE_PROJECT_BIND_PASSWORD')
 LDAP_SLATE_PROJECT_CONNECT_TIMEOUT = ENV.str('LDAP_SLATE_PROJECT_CONNECT_TIMEOUT', 2.5)
 DISPLAY_USER_SLATE_PROJECTS = ENV.str('DISPLAY_USER_SLATE_PROJECTS', False)
 SLATE_PROJECT_EMAIL = ENV.str('SLATE_PROJECT_EMAIL')
+SLATE_PROJECT_GROUP_ACCOUNT_EMAIL = ENV.str('SLATE_PROJECT_GROUP_ACCOUNT_EMAIL')
 SLATE_PROJECT_TICKET_QUEUE = ENV.str('SLATE_PROJECT_TICKET_QUEUE')
 
 ENABLE_LDAP_SLATE_PROJECT_SYNCING = ENV.bool('ENABLE_LDAP_SLATE_PROJECT_SYNCING', False)
