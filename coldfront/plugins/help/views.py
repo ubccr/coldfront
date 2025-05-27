@@ -35,9 +35,6 @@ class SlateProjectSearchResultsView(TemplateView):
         context["form"] = HelpForm(initial=self.get_initial_data())
         return context
 
-    def get(self, request, *args, **kwargs):
-        return self.render_to_response(self.get_context_data())
-
     def post(self, request, *args, **kwargs):
         form = HelpForm(request.POST, initial=self.get_initial_data())
         if form.is_valid():
