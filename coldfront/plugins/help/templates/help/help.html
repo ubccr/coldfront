@@ -8,11 +8,9 @@
 Contact Research Technologies
 {% endblock %}
 
-{% block header %}
-{% endblock %}
-
 {% block content %}
-
+<h2>Contact Research Technologies</h2>
+<hr>
 <form method="post">
   {% csrf_token %}
   {{ form|crispy }}
