@@ -17,7 +17,7 @@ Project Type: {{ project_url.3 }}
         {% endfor %}{% endspaceless %}
 {% endfor %}
 The managers for these projects are required to renew them unless stated otherwise. The expiring allocations can be renewed during the project renewal.
-If they are not they will need to be renewed seperately. If you do not need any of these projects anymore we recommend archiving them, doing so will
+If they are not they will need to be renewed separately. If you do not need any of these projects anymore we recommend archiving them, doing so will
 expire all allocations with it. You can do so with the archive project button on your project's detail page. You will not receive renewal emails
 for archived projects. Archiving a project does not affect any of the data within the resource allocations it has.
 For more information about the yearly renewal, visit our knowledge base: {{ project_renewal_help_url }}
