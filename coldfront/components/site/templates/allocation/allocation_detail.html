@@ -332,8 +332,8 @@ Allocation Detail
   </div>
 {% endif %}
 
-{% if allocation.get_parent_resource.name == 'REALLMs' %}
-  {% include "service/reallms/reallms_api_key_div.html" %}
+{% if allocation.get_parent_resource.name == 'REALLMs API' %}
+  {% include "service/reallms_api/reallms_api_key_div.html" %}
 {% endif %}
 
 <!-- Start Allocation Invoices -->
