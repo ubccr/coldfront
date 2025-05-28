@@ -11,7 +11,7 @@ Project User Detail
 {% block content %}
 <h2>Project User Detail</h2>
 
-<h3>Project: {{project.title}}</h3>
+<h3>Project: {{project_obj.title}}</h3>
 <hr>
 
 <form action="{% url 'project-user-detail' project_obj.pk project_user_obj.pk %}" method="post">
@@ -63,7 +63,11 @@ Project User Detail
             </tr>
             <tr>
               <th scope="row">Notifications On:</th>
-              <td>{{project_user_update_form.enable_notifications}}</td>
+              <td>{{project_user_update_form.enable_notifications}}<br/><br/>
+                Disabling notifications will disable general allocation- and project-related announcements.
+                User-specific emails such as role change notifications will still be sent.
+                PIs cannot opt out of receiving emails.
+              </td>
             </tr>
           {% endif %}
         </table>

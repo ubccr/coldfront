@@ -1,0 +1,9 @@
+This is a notification that {{role_changer}} has changed the role of user {{username}} in the ColdFront project {{project_title}} from {{old_role}} to {{new_role}}.
+
+You can view the {{project_title}} project on ColdFront here: {{project_url}}
+You can read more about roles and their permissions here: https://docs.rc.fas.harvard.edu/kb/roles-responsibilities/
+
+If you have any questions, please email us at rchelp@rc.fas.harvard.edu.
+
+Thank you,
+{{signature}}
