@@ -69,7 +69,12 @@ from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.views import ColdfrontListView, NoteCreateView, NoteUpdateView
 from coldfront.core.utils.common import get_domain_url, import_from_settings
-from coldfront.core.utils.mail import send_email, send_email_template
+from coldfront.core.utils.mail import (
+    send_email,
+    send_email_template,
+    email_template_context,
+    build_link
+)
 
 if 'django_q' in settings.INSTALLED_APPS:
     from django_q.tasks import Task
@@ -82,7 +87,6 @@ ALLOCATION_DEFAULT_ALLOCATION_LENGTH = import_from_settings(
 
 EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings('EMAIL_DIRECTOR_EMAIL_ADDRESS')
 EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
-CENTER_BASE_URL = import_from_settings('CENTER_BASE_URL')
 
 
 def produce_filter_parameter(key, value):
@@ -938,13 +942,16 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 project_user_obj.role = ProjectUserRoleChoice.objects.get(name=new_role)
                 project_user_obj.save()
 
-                project_role_change_email_context = {
-                    'project_title': project_obj.title,
-                    'username': username,
-                    'old_role': old_role,
-                    'new_role': new_role,
-                    'project_url': f'{CENTER_BASE_URL.strip("/")}/project/{project_obj.pk}/',
+                project_role_change_email_context = email_template_context(
+                    extra_context={
+                        'project_title': project_obj.title,
+                        'username': username,
+                        'old_role': old_role,
+                        'new_role': new_role,
+                        'role_changer': requester_uname,
+                        'project_url': build_link(f'project/{project_obj.pk}/')
                 }
+                )
 
                 send_email_template(
                     subject=f'Role Change for User {username} in Project {project_obj.title}',
