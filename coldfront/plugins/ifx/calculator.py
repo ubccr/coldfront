@@ -1,6 +1,7 @@
 '''
 Custom billing calculator class for Coldfront
 '''
+# pylint: disable=broad-exception-raised,broad-exception-caught,line-too-long,logging-fstring-interpolation
 import logging
 import re
 import requests
@@ -130,45 +131,49 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
                     for allocation in project.allocation_set.filter(status=active):
                         resources = allocation.resources.all()
                         if resources.count() == 1:
-                            if resources[0].resource_type.name == self.STORAGE_RESOURCE_TYPE:
-                                try:
-                                    allocation_tb = self.get_allocation_tb(allocation)
-                                    offer_letter_br, remaining_tb = self.process_offer_letter(year, month, organization, allocation, allocation_tb, recalculate)
-                                    if offer_letter_br:
-                                        successes.append(offer_letter_br)
-                                    if remaining_tb > Decimal('0'):
-                                        allocation_brs = []
-                                        user_allocation_percentages = self.get_user_allocation_percentages(year, month, allocation)
-                                        for user_id, allocation_percentage_data in user_allocation_percentages.items():
-                                            try:
-                                                user = get_user_model().objects.get(id=user_id)
-                                            except get_user_model().DoesNotExist:
-                                                raise Exception(f'Cannot find user with id {user_id}')
-                                            try:
-                                                brs = self.generate_billing_records_for_allocation_user(
-                                                    year,
-                                                    month,
-                                                    user,
-                                                    organization,
-                                                    allocation,
-                                                    allocation_percentage_data['fraction'],
-                                                    allocation_tb,
-                                                    recalculate,
-                                                    remaining_tb,
-                                                )
-                                                if brs:
-                                                    allocation_brs.extend(brs)
-                                            except Exception as e:
-                                                logger.error(f'Error generating billing records for the user {user} of allocation {allocation}: {e}')
-                                        if not allocation_brs:
-                                            errors.append(f'No billing records created for {organization} allocation {allocation}')
-                                        successes.extend(allocation_brs)
-                                except Exception as e:
-                                    errors.append(str(e))
-                                    if self.verbosity == self.CHATTY:
-                                        logger.error(e)
-                                    if self.verbosity == self.LOUD:
-                                        logger.exception(e)
+                            resource = resources[0]
+                            if resource.resource_type.name == self.STORAGE_RESOURCE_TYPE:
+                                if resource.requires_payment:
+                                    try:
+                                        allocation_tb = self.get_allocation_tb(allocation)
+                                        offer_letter_br, remaining_tb = self.process_offer_letter(year, month, organization, allocation, allocation_tb, recalculate)
+                                        if offer_letter_br:
+                                            successes.append(offer_letter_br)
+                                        if remaining_tb > Decimal('0'):
+                                            allocation_brs = []
+                                            user_allocation_percentages = self.get_user_allocation_percentages(year, month, allocation)
+                                            for user_id, allocation_percentage_data in user_allocation_percentages.items():
+                                                try:
+                                                    user = get_user_model().objects.get(id=user_id)
+                                                except get_user_model().DoesNotExist:
+                                                    raise Exception(f'Cannot find user with id {user_id}')
+                                                try:
+                                                    brs = self.generate_billing_records_for_allocation_user(
+                                                        year,
+                                                        month,
+                                                        user,
+                                                        organization,
+                                                        allocation,
+                                                        allocation_percentage_data['fraction'],
+                                                        allocation_tb,
+                                                        recalculate,
+                                                        remaining_tb,
+                                                    )
+                                                    if brs:
+                                                        allocation_brs.extend(brs)
+                                                except Exception as e:
+                                                    logger.error(f'Error generating billing records for the user {user} of allocation {allocation}: {e}')
+                                            if not allocation_brs:
+                                                errors.append(f'No billing records created for {organization} allocation {allocation}')
+                                            successes.extend(allocation_brs)
+                                    except Exception as e:
+                                        errors.append(str(e))
+                                        if self.verbosity == self.CHATTY:
+                                            logger.error(e)
+                                        if self.verbosity == self.LOUD:
+                                            logger.exception(e)
+                                else:
+                                    errors.append(f'Resource {resource} for allocation {allocation} does not require payment.  Skipping.')
                             else:
                                 logger.info(f'Allocation {allocation} is not a storage allocation.  Skipping.')
                         else:
