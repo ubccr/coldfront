@@ -73,6 +73,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
 
         results = {}
         for organization in organizations_to_process:
+            connection.close()
             result = self.generate_billing_records_for_organization(year, month, organization, user, recalculate)
             results[organization.name] = result
 
