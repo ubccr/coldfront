@@ -75,6 +75,10 @@ class AllocationQuerySet(models.QuerySet):
     def parents(self):
         return self.filter(parent_links=None)
 
+    def consumption(self):
+        return self.filter(allocationattribute__allocation_attribute_type__name="service_rate",
+                           allocationattribute__value="consumption")
+
 
 class Allocation(TimeStampedModel):
     """An allocation provides users access to a resource.
