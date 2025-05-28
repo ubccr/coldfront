@@ -3,6 +3,7 @@
 '''
 Views
 '''
+# pylint: disable=broad-exception-raised,broad-exception-caught,line-too-long,logging-fstring-interpolation
 import logging
 import json
 from django.shortcuts import render, redirect
@@ -127,6 +128,55 @@ def get_billing_record_list(request):
         raise PermissionDenied
     return ifxbilling_get_billing_record_list(request._request)
 
+def calculate_billing_month_task(year, month, email, recalculate=False, user_ifxorg=None):
+    '''
+    Calculate billing month task
+    '''
+    logger.debug('Calculating billing records for month %d of year %d', month, year)
+    successes = 0
+    errors = []
+
+    try:
+        organizations = ifxuser_models.Organization.objects.filter(org_tree='Harvard')
+        if user_ifxorg:
+            organizations = [ifxuser_models.Organization.objects.get(ifxorg=user_ifxorg)]
+
+        if recalculate:
+            for br in ifxbilling_models.BillingRecord.objects.filter(year=year, month=month):
+                br.delete()
+            ifxbilling_models.ProductUsageProcessing.objects.filter(product_usage__year=year, product_usage__month=month).delete()
+
+        calculator = NewColdfrontBillingCalculator()
+        resultinator = calculator.calculate_billing_month(year, month, organizations=organizations, recalculate=recalculate)
+        for org, result in resultinator.results.items():
+            if len(result[0]):
+                successes += len(result[0])
+        errors = [v[0] for v in resultinator.get_other_errors_by_organization().values()]
+    except Exception as e:
+        logger.exception(e)
+        errors.append(f'Error calculating billing month {month}/{year}: {e}')
+
+    fromstr = 'rchelp@rc.fas.harvard.edu'
+    tostr = email
+    message = f'{successes} billing records successfully created.'
+    if errors:
+        errorstr = '<br/>&nbsp;&nbsp;'.join(errors)
+        message += f'<p>Errors:</p> <p{errorstr}</p>'
+    subject = f'RC Storage billing month calculation for {month}/{year}'
+    cclist = [settings.EMAILS.BILLING_CALCULATION_TASK_CC] if hasattr(settings, 'EMAILS') and hasattr(settings.EMAILS, 'BILLING_CALCULATION_TASK_CC') else []
+
+    try:
+        send(
+            to=tostr,
+            fromaddr=fromstr,
+            message=message,
+            subject=subject,
+            cclist=cclist
+        )
+    except Exception as e:
+        logger.exception(e)
+        raise Exception(f'Error sending email to {tostr} from {fromstr} with message {message} and subject {subject}: {e}.') from e
+
 @api_view(['POST',])
 @permission_classes([AdminPermissions,])
 def calculate_billing_month(request, invoice_prefix, year, month):
@@ -152,24 +202,23 @@ def calculate_billing_month(request, invoice_prefix, year, month):
         if user_ifxorg:
             organizations = [ifxuser_models.Organization.objects.get(ifxorg=user_ifxorg)]
 
-        if recalculate:
-            for br in ifxbilling_models.BillingRecord.objects.filter(year=year, month=month):
-                br.delete()
-            ifxbilling_models.ProductUsageProcessing.objects.filter(product_usage__year=year, product_usage__month=month).delete()
-        calculator = NewColdfrontBillingCalculator()
-        resultinator = calculator.calculate_billing_month(year, month, organizations=organizations, recalculate=recalculate)
-        successes = 0
-        errors = []
-        for org, result in resultinator.results.items():
-            if len(result[0]):
-                successes += len(result[0])
-        errors = [v[0] for v in resultinator.get_other_errors_by_organization().values()]
+        email = request.user.email
+        if not email:
+            return Response(data={'error': 'User email is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(data={ 'successes': successes, 'errors': errors }, status=status.HTTP_200_OK)
-    # pylint: disable=broad-exception-caught
-    except Exception as e:
+        async_task(
+            'coldfront.plugins.ifx.views.calculate_billing_month_task',
+            year,
+            month,
+            email,
+            recalculate=recalculate,
+            user_ifxorg=user_ifxorg
+        )
+
+        return Response('OK', status=status.HTTP_200_OK)
+    except ifxuser_models.Organization.DoesNotExist as e:
         logger.exception(e)
-        return Response(data={ 'error': f'Billing calculation failed {e}' }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response(data={ 'error': f'Organization with ifxorg {user_ifxorg} cannot be found' }, status=status.HTTP_400_BAD_REQUEST)
 
 @login_required
 @api_view(['GET',])
