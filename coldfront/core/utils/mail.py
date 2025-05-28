@@ -50,9 +50,9 @@ def send_email(subject, body, sender, receiver_list, cc=[]):
     try:
         email = EmailMessage(subject, body, sender, receiver_list, cc=cc)
         email.send(fail_silently=False)
-    except SMTPException:
-        logger.error('Failed to send email to %s from %s with subject %s',
-                     ','.join(receiver_list), sender, subject)
+    except SMTPException as e:
+        logger.exception('Failed to send email to %s from %s with subject %s: %s',
+                     ','.join(receiver_list), sender, subject, e)
 
 
 def send_email_template(
@@ -61,6 +61,10 @@ def send_email_template(
     """Helper function for sending emails from a template
     """
     body = render_to_string(template_name, template_context)
+    logger.info(
+        "sent email with subject %s to receivers %s and ccs %s from sender %s",
+        subject, receiver_list, cc, sender
+    )
     return send_email(subject, body, sender, receiver_list, cc=cc)
 
 
