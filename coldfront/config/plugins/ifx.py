@@ -27,6 +27,7 @@ class RATES():
 
 class EMAILS():
     DEFAULT_EMAIL_FROM_ADDRESS = 'rchelp@rc.fas.harvard.edu'
+    BILLING_CALCULATION_TASK_CC = 'akitzmiller@fas.harvard.edu'
 
 # Ignore billing models in the django-author pre-save so that values are set directly
 AUTHOR_IGNORE_MODELS = [

@@ -146,6 +146,9 @@ Calculate Billing Month
                     error: function (jqXHR, status, error) {
                         alert(status + ' ' + error)
                     },
+                    success: function () {
+                        alert('Calculation started.  You will receive an email when complete.')
+                    }
                 }).done(
                     function () { productUsagesTable.ajax.reload() }
                 )
