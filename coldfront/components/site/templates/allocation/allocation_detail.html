@@ -218,6 +218,10 @@ Allocation Detail
   </div>
 </div>
 
+{% if allocation.get_parent_resource.name == 'REALLMs API' %}
+  {% include "service/reallms_api/reallms_api_key_div.html" %}
+{% endif %}
+
 {% if attributes or attributes_with_usage or user_has_permissions %}
   <div class="card mb-3">
     <div class="card-header">
@@ -330,10 +334,6 @@ Allocation Detail
       {% endif %}
     </div>
   </div>
-{% endif %}
-
-{% if allocation.get_parent_resource.name == 'REALLMs API' %}
-  {% include "service/reallms_api/reallms_api_key_div.html" %}
 {% endif %}
 
 <!-- Start Allocation Invoices -->
