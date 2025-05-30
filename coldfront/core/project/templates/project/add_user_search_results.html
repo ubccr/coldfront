@@ -6,11 +6,17 @@
     {% if number_of_usernames_found %}
       <strong>Found {{number_of_usernames_found}} of
       {{number_of_usernames_searched}} usernames searched.</strong>
+    {% elif number_of_emails_found %}
+      <strong>Found {{number_of_emails_found}} of
+        {{number_of_emails_searched}} emails searched.</strong>
     {% elif matches %}
-      <strong>Found {{matches|length}} match{{matches|length|pluralize}}.</strong>
+      <strong>Found {{matches|length}} match{{matches|pluralize:"es"}}.</strong>
     {% endif %}
     <br>
-    {% if usernames_not_found %}
+    {% if emails_not_found %}
+      Email{{emails_not_found|length|pluralize}} missing from database
+      {{emails_not_found|length|pluralize:"is, are"}}: {{ emails_not_found|join:", " }}.
+    {% elif usernames_not_found %}
       Username{{usernames_not_found|length|pluralize}} missing from database
       {{usernames_not_found|length|pluralize:"is, are"}}: {{ usernames_not_found|join:", " }}.
     {% endif %}
