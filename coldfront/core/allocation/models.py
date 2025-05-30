@@ -1,11 +1,7 @@
 import datetime
-import importlib
-import json
 import logging
-from ast import literal_eval
 from enum import Enum
 
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -76,8 +72,10 @@ class AllocationQuerySet(models.QuerySet):
         return self.filter(parent_links=None)
 
     def consumption(self):
-        return self.filter(allocationattribute__allocation_attribute_type__name="service_rate",
-                           allocationattribute__value="consumption")
+        return self.filter(
+            allocationattribute__allocation_attribute_type__name="service_rate",
+            allocationattribute__value="consumption",
+        )
 
 
 class Allocation(TimeStampedModel):
