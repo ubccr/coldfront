@@ -19,7 +19,7 @@ ColdFront users.
 
 ## Requirements
 
-- `pip install python-ldap ldap3`
+- uv sync --extra ldap
 
 ## Usage
 
