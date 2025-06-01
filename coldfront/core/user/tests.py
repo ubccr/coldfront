@@ -1,27 +1,24 @@
-from coldfront.core.test_helpers.factories import UserFactory
+# SPDX-FileCopyrightText: (C) ColdFront Authors
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 from django.test import TestCase
 
-from coldfront.core.test_helpers.factories import (
-    UserFactory,
-)
-
+from coldfront.core.test_helpers.factories import UserFactory
 from coldfront.core.user.models import UserProfile
+
 
 class TestUserProfile(TestCase):
     class Data:
         """Collection of test data, separated for readability"""
 
         def __init__(self):
-            user = UserFactory(username='submitter')
+            user = UserFactory(username="submitter")
 
-            self.initial_fields = {
-                'user': user,
-                'is_pi': True,
-                'id': user.id
-            }
-            
+            self.initial_fields = {"user": user, "is_pi": True, "id": user.id}
+
             self.unsaved_object = UserProfile(**self.initial_fields)
-    
+
     def setUp(self):
         self.data = self.Data()
 

@@ -1,9 +1,14 @@
+# SPDX-FileCopyrightText: (C) ColdFront Authors
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 import os
+
 from coldfront.config.env import ENV
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Database settings
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Set this using the DB_URL env variable. Defaults to sqlite.
 #
 # Examples:
@@ -13,18 +18,13 @@ from coldfront.config.env import ENV
 #
 # Postgresql:
 #  DB_URL=psql://user:password@127.0.0.1:5432/database
-#------------------------------------------------------------------------------
-DATABASES = {
-    'default': ENV.db_url(
-        var='DB_URL',
-        default='sqlite:///' + os.path.join(os.getcwd(), 'coldfront.db')
-    )
-}
+# ------------------------------------------------------------------------------
+DATABASES = {"default": ENV.db_url(var="DB_URL", default="sqlite:///" + os.path.join(os.getcwd(), "coldfront.db"))}
 
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Custom Database settings
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # You can also override this manually in local_settings.py, for example:
 #
 # NOTE: For mysql you need to: pip install mysqlclient
