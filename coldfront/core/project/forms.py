@@ -45,6 +45,7 @@ class ProjectAddUserForm(forms.Form):
 
 
 class ProjectAddUsersToAllocationForm(forms.Form):
+                
     allocation = forms.MultipleChoiceField(
         widget=forms.CheckboxSelectMultiple(attrs={'checked': 'checked'}), required=False)
 
@@ -64,7 +65,6 @@ class ProjectAddUsersToAllocationForm(forms.Form):
             self.fields['allocation'].help_text = '<br/>Select allocations to add selected users to.'
         else:
             self.fields['allocation'].widget = forms.HiddenInput()
-
 
 class ProjectRemoveUserForm(forms.Form):
     username = forms.CharField(max_length=150, disabled=True)

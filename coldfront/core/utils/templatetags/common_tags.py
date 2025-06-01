@@ -57,3 +57,10 @@ def get_value_from_dict(dict_data, key):
     """
     if key:
         return dict_data.get(key)
+
+@register.filter('get_value_by_index')
+def get_value_from_dict(array, index):
+    """
+    usage example {{ your_list|get_value_by_index:your_index }}
+    """
+    return array[index]
