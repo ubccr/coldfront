@@ -1787,7 +1787,7 @@ class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
         context = super().get_context_data(**kwargs)
 
         project_reviews = ProjectReview.objects.filter(
-            status__name__in=['Pending', 'Contacted By Admin', ])
+            status__name__in=['Pending', 'Contacted By Admin', ]).order_by('created')
         pi_eligibilities = check_if_pis_eligible(
             set([project_review.project.pi for project_review in project_reviews]))
         context['project_review_list'] = project_reviews
@@ -1795,7 +1795,7 @@ class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
 
         projects = Project.objects.filter(
             status__name__in=['Waiting For Admin Approval', 'Contacted By Admin', ]
-        )
+        ).order_by('created')
         context['project_request_list'] = projects
         pis = set([project.pi for project in projects])
         pi_project_objs = Project.objects.filter(
