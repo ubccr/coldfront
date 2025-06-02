@@ -47,4 +47,4 @@ subscribe ccr-open-coldfront-list@listserv.buffalo.edu first_name last_name
 
 ## License
 
-ColdFront is released under the GPLv3 license. See the LICENSE file.
+ColdFront is released under the AGPLv3 license. See REUSE.toml.

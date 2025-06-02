@@ -13,12 +13,12 @@ authors = [
 ]
 description = "HPC Resource Allocation System"
 readme = "README.md"
-license = { file = "LICENSE" }
+license = "AGPL-3.0-or-later"
+license-files = ["LICENSES/*.txt"]
 keywords = ["high-performance-computing", "resource-allocation"]
 classifiers = [
     'Programming Language :: Python :: 3',
     'Framework :: Django :: 4.2',
-    'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
     'Topic :: Scientific/Engineering',
     'Topic :: System :: Systems Administration',
     'Topic :: Internet :: WWW/HTTP :: WSGI :: Application',
@@ -83,6 +83,8 @@ dev = [
     "factory-boy>=3.3.3",
     "faker>=37.1.0",
     "pytest-django>=4.11.1",
+    "reuse>=5.0.2",
+    "ruff>=0.11.4",
 ]
 docs = [
     "mkdocs>=1.6.1",
@@ -93,10 +95,21 @@ docs = [
     "pygments",
     "pymdown-extensions",
 ]
-lint = ["ruff>=0.11.4"]
 
 [[tool.uv.index]]
 name = "testpypi"
 url = "https://test.pypi.org/simple/"
 publish-url = "https://test.pypi.org/legacy/"
 explicit = true
+
+[tool.ruff]
+line-length = 120
+indent-width = 4
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.ruff.format]
+indent-style = "space"
+docstring-code-format = true

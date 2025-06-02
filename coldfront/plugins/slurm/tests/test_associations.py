@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: (C) ColdFront Authors
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 from io import StringIO
 
 from django.core.management import call_command
@@ -5,30 +9,29 @@ from django.test import TestCase
 
 from coldfront.core.resource.models import Resource
 from coldfront.plugins.slurm.associations import SlurmCluster
-from coldfront.plugins.slurm.utils import SLURM_CLUSTER_ATTRIBUTE_NAME
 
 
 class AssociationTest(TestCase):
-    fixtures = ['test_data.json']
+    fixtures = ["test_data.json"]
 
     @classmethod
     def setUpClass(cls):
-        call_command('import_field_of_science_data')
-        call_command('add_default_grant_options')
-        call_command('add_default_project_choices')
-        call_command('add_default_allocation_choices')
-        call_command('add_default_publication_sources')
+        call_command("import_field_of_science_data")
+        call_command("add_default_grant_options")
+        call_command("add_default_project_choices")
+        call_command("add_default_allocation_choices")
+        call_command("add_default_publication_sources")
         super(AssociationTest, cls).setUpClass()
 
     def test_allocations_to_slurm(self):
-        resource = Resource.objects.get(name='University HPC')
+        resource = Resource.objects.get(name="University HPC")
         cluster = SlurmCluster.new_from_resource(resource)
-        self.assertEqual(cluster.name, 'university-hpc')
+        self.assertEqual(cluster.name, "university-hpc")
         self.assertEqual(len(cluster.accounts), 1)
-        self.assertIn('ccollins', cluster.accounts)
-        self.assertEqual(len(cluster.accounts['ccollins'].users), 3)
-        for u in ['ccollins', 'radams', 'mlopez']:
-            self.assertIn(u, cluster.accounts['ccollins'].users)
+        self.assertIn("ccollins", cluster.accounts)
+        self.assertEqual(len(cluster.accounts["ccollins"].users), 3)
+        for u in ["ccollins", "radams", "mlopez"]:
+            self.assertIn(u, cluster.accounts["ccollins"].users)
 
     def test_parse_sacctmgr_roundtrip(self):
         dump = StringIO("""
@@ -56,12 +59,12 @@ User - 'larry':DefaultAccount='physics':Fairshare=parent
 
         # Parse sacctmgr dump format
         cluster = SlurmCluster.new_from_stream(dump)
-        self.assertEqual(cluster.name, 'alpha')
+        self.assertEqual(cluster.name, "alpha")
         self.assertEqual(len(cluster.accounts), 2)
-        self.assertIn('physics', cluster.accounts)
-        self.assertEqual(len(cluster.accounts['physics'].users), 3)
-        for u in ['jane', 'john', 'larry']:
-            self.assertIn(u, cluster.accounts['physics'].users)
+        self.assertIn("physics", cluster.accounts)
+        self.assertEqual(len(cluster.accounts["physics"].users), 3)
+        for u in ["jane", "john", "larry"]:
+            self.assertIn(u, cluster.accounts["physics"].users)
 
         # Write sacctmgr dump format
         out = StringIO("")
@@ -69,9 +72,9 @@ User - 'larry':DefaultAccount='physics':Fairshare=parent
 
         # Roundtrip
         cluster2 = SlurmCluster.new_from_stream(StringIO(out.getvalue()))
-        self.assertEqual(cluster2.name, 'alpha')
+        self.assertEqual(cluster2.name, "alpha")
         self.assertEqual(len(cluster2.accounts), 2)
-        self.assertIn('physics', cluster2.accounts)
-        self.assertEqual(len(cluster2.accounts['physics'].users), 3)
-        for u in ['jane', 'john', 'larry']:
-            self.assertIn(u, cluster2.accounts['physics'].users)
+        self.assertIn("physics", cluster2.accounts)
+        self.assertEqual(len(cluster2.accounts["physics"].users), 3)
+        for u in ["jane", "john", "larry"]:
+            self.assertIn(u, cluster2.accounts["physics"].users)

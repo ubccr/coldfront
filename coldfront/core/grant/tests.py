@@ -1,17 +1,20 @@
+# SPDX-FileCopyrightText: (C) ColdFront Authors
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 import datetime
 
 from dateutil.relativedelta import relativedelta
-
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
+from coldfront.core.grant.models import Grant
 from coldfront.core.test_helpers.factories import (
     GrantFundingAgencyFactory,
     GrantStatusChoiceFactory,
     ProjectFactory,
 )
 
-from coldfront.core.grant.models import Grant
 
 class TestGrant(TestCase):
     class Data:
@@ -19,30 +22,29 @@ class TestGrant(TestCase):
 
         def __init__(self):
             project = ProjectFactory()
-            grantFundingAgency = GrantFundingAgencyFactory(name='Department of Defense (DoD)')
-            grantStatusChoice = GrantStatusChoiceFactory(name='Active')
+            grantFundingAgency = GrantFundingAgencyFactory(name="Department of Defense (DoD)")
+            grantStatusChoice = GrantStatusChoiceFactory(name="Active")
 
             start_date = datetime.date.today()
             end_date = start_date + relativedelta(days=900)
 
-
             self.initial_fields = {
-            'project': project,
-            'title':'Quantum Halls',
-            'grant_number':'12345',
-            'role':'PI',
-            'grant_pi_full_name':'Stephanie Foster',
-            'funding_agency': grantFundingAgency,
-            'grant_start':start_date,
-            'grant_end':end_date,
-            'percent_credit':20.0,
-            'direct_funding':200000.0,
-            'total_amount_awarded':1000000.0,
-            'status': grantStatusChoice
+                "project": project,
+                "title": "Quantum Halls",
+                "grant_number": "12345",
+                "role": "PI",
+                "grant_pi_full_name": "Stephanie Foster",
+                "funding_agency": grantFundingAgency,
+                "grant_start": start_date,
+                "grant_end": end_date,
+                "percent_credit": 20.0,
+                "direct_funding": 200000.0,
+                "total_amount_awarded": 1000000.0,
+                "status": grantStatusChoice,
             }
-            
+
             self.unsaved_object = Grant(**self.initial_fields)
-    
+
     def setUp(self):
         self.data = self.Data()
 
@@ -65,7 +67,7 @@ class TestGrant(TestCase):
 
     def test_title_minlength(self):
         expected_minimum_length = 3
-        minimum_title = 'x' * expected_minimum_length
+        minimum_title = "x" * expected_minimum_length
 
         grant_obj = self.data.unsaved_object
 
@@ -82,11 +84,11 @@ class TestGrant(TestCase):
 
     def test_title_maxlength(self):
         expected_maximum_length = 255
-        maximum_title = 'x' * expected_maximum_length
+        maximum_title = "x" * expected_maximum_length
 
         grant_obj = self.data.unsaved_object
 
-        grant_obj.title = maximum_title + 'x'
+        grant_obj.title = maximum_title + "x"
         with self.assertRaises(ValidationError):
             grant_obj.clean_fields()
 
@@ -99,7 +101,7 @@ class TestGrant(TestCase):
 
     def test_grant_number_minlength(self):
         expected_minimum_length = 3
-        minimum_grant_number = '1' * expected_minimum_length
+        minimum_grant_number = "1" * expected_minimum_length
 
         grant_obj = self.data.unsaved_object
 
@@ -116,11 +118,11 @@ class TestGrant(TestCase):
 
     def test_grant_number_maxlength(self):
         expected_maximum_length = 255
-        maximum_grant_number = '1' * expected_maximum_length
+        maximum_grant_number = "1" * expected_maximum_length
 
         grant_obj = self.data.unsaved_object
 
-        grant_obj.grant_number = maximum_grant_number + '1'
+        grant_obj.grant_number = maximum_grant_number + "1"
         with self.assertRaises(ValidationError):
             grant_obj.clean_fields()
 
@@ -133,11 +135,11 @@ class TestGrant(TestCase):
 
     def test_grant_pi_maxlength(self):
         expected_maximum_length = 255
-        maximum_grant_pi_full_name = 'x' * expected_maximum_length
+        maximum_grant_pi_full_name = "x" * expected_maximum_length
 
         grant_obj = self.data.unsaved_object
 
-        grant_obj.grant_pi_full_name = maximum_grant_pi_full_name + 'x'
+        grant_obj.grant_pi_full_name = maximum_grant_pi_full_name + "x"
         with self.assertRaises(ValidationError):
             grant_obj.clean_fields()
 
@@ -152,21 +154,21 @@ class TestGrant(TestCase):
         self.assertEqual(0, len(Grant.objects.all()))
 
         grant_obj = self.data.unsaved_object
-        grant_obj.grant_pi_full_name = ''
+        grant_obj.grant_pi_full_name = ""
         grant_obj.save()
 
         self.assertEqual(1, len(Grant.objects.all()))
 
         retrieved_obj = Grant.objects.get(pk=grant_obj.pk)
-        self.assertEqual('', retrieved_obj.grant_pi_full_name)
+        self.assertEqual("", retrieved_obj.grant_pi_full_name)
 
     def test_other_funding_agency_maxlength(self):
         expected_maximum_length = 255
-        maximum_other_funding_agency = 'x' * expected_maximum_length
+        maximum_other_funding_agency = "x" * expected_maximum_length
 
         grant_obj = self.data.unsaved_object
 
-        grant_obj.other_funding_agency = maximum_other_funding_agency + 'x'
+        grant_obj.other_funding_agency = maximum_other_funding_agency + "x"
         with self.assertRaises(ValidationError):
             grant_obj.clean_fields()
 
@@ -181,21 +183,21 @@ class TestGrant(TestCase):
         self.assertEqual(0, len(Grant.objects.all()))
 
         grant_obj = self.data.unsaved_object
-        grant_obj.other_funding_agency = ''
+        grant_obj.other_funding_agency = ""
         grant_obj.save()
 
         self.assertEqual(1, len(Grant.objects.all()))
 
         retrieved_obj = Grant.objects.get(pk=grant_obj.pk)
-        self.assertEqual('', retrieved_obj.other_funding_agency)
+        self.assertEqual("", retrieved_obj.other_funding_agency)
 
     def test_other_award_number_maxlength(self):
         expected_maximum_length = 255
-        maxiumum_other_award_number = '1' * expected_maximum_length
+        maxiumum_other_award_number = "1" * expected_maximum_length
 
         grant_obj = self.data.unsaved_object
 
-        grant_obj.other_award_number = maxiumum_other_award_number + '1'
+        grant_obj.other_award_number = maxiumum_other_award_number + "1"
         with self.assertRaises(ValidationError):
             grant_obj.clean_fields()
 
@@ -210,13 +212,13 @@ class TestGrant(TestCase):
         self.assertEqual(0, len(Grant.objects.all()))
 
         grant_obj = self.data.unsaved_object
-        grant_obj.other_award_number = ''
+        grant_obj.other_award_number = ""
         grant_obj.save()
 
         self.assertEqual(1, len(Grant.objects.all()))
 
         retrieved_obj = Grant.objects.get(pk=grant_obj.pk)
-        self.assertEqual('', retrieved_obj.other_award_number)
+        self.assertEqual("", retrieved_obj.other_award_number)
 
     def test_percent_credit_maxvalue(self):
         expected_maximum_value = 100
@@ -235,17 +237,17 @@ class TestGrant(TestCase):
         self.assertEqual(expected_maximum_value, retrieved_obj.percent_credit)
 
     def test_project_foreignkey_on_delete(self):
-            grant_obj = self.data.unsaved_object
-            grant_obj.save()
+        grant_obj = self.data.unsaved_object
+        grant_obj.save()
 
-            self.assertEqual(1, len(Grant.objects.all()))
+        self.assertEqual(1, len(Grant.objects.all()))
 
-            grant_obj.project.delete()
+        grant_obj.project.delete()
 
-            # expecting CASCADE
-            with self.assertRaises(Grant.DoesNotExist):
-                Grant.objects.get(pk=grant_obj.pk)
-            self.assertEqual(0, len(Grant.objects.all()))
+        # expecting CASCADE
+        with self.assertRaises(Grant.DoesNotExist):
+            Grant.objects.get(pk=grant_obj.pk)
+        self.assertEqual(0, len(Grant.objects.all()))
 
     def test_funding_agency_foreignkey_on_delete(self):
         grant_obj = self.data.unsaved_object
@@ -272,4 +274,3 @@ class TestGrant(TestCase):
         with self.assertRaises(Grant.DoesNotExist):
             Grant.objects.get(pk=grant_obj.pk)
         self.assertEqual(0, len(Grant.objects.all()))
-

@@ -1,0 +1,90 @@
+version = 1
+SPDX-PackageName = "coldfront"
+SPDX-PackageDownloadLocation = "https://github.com/ubccr/coldfront"
+
+[[annotations]]
+path = [
+    ".python-version",
+    "Dockerfile",
+    "MANIFEST.in",
+    "docs/pages/.pages",
+    "pyproject.toml",
+    "**.yaml",
+    "**.yml",
+    "**.md",
+    "**.txt",
+    "**.csv",
+    "**.sql",
+    "**.gitignore",
+    "**.html",
+    "**.css",
+    "**.webmanifest",
+]
+SPDX-FileCopyrightText = "(C) ColdFront Authors"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
+
+[[annotations]]
+path = [
+    "docs/pages/images/*",
+    "**.ico",
+]
+SPDX-FileCopyrightText = "(C) ColdFront Authors"
+SPDX-License-Identifier = "CC-BY-NC-ND-4.0"
+
+[[annotations]]
+path = [
+    "uv.lock",
+    "coldfront/**.png",
+    "coldfront/**.jpg",
+]
+SPDX-FileCopyrightText = "NONE"
+SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = [
+    "coldfront/static/bootstrap/*",
+]
+SPDX-FileCopyrightText = "Copyright (c) 2011-2025 The Bootstrap Authors"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = [
+    "coldfront/static/c3js/*",
+]
+SPDX-FileCopyrightText = "Copyright (c) 2013 Masayuki Tanaka"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = [
+    "coldfront/static/datatable/*",
+]
+SPDX-FileCopyrightText = "Copyright (C) 2008-2025, SpryMedia Ltd."
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = [
+    "coldfront/static/flatpickr/*",
+]
+SPDX-FileCopyrightText = "Copyright (c) 2017 Gregory Petrosyan"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = [
+    "coldfront/static/jquery/*",
+]
+SPDX-FileCopyrightText = "Copyright OpenJS Foundation and other contributors"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = [
+    "coldfront/static/select2/*",
+]
+SPDX-FileCopyrightText = "Copyright (c) 2012-2017 Kevin Brown, Igor Vaynberg, and Select2 contributors"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = [
+    "coldfront/static/d3/*",
+]
+SPDX-FileCopyrightText = "Copyright 2010-2023 Mike Bostock"
+SPDX-License-Identifier = "ISC"
