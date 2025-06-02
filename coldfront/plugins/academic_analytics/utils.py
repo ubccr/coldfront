@@ -13,6 +13,8 @@ ORACLE_DB_PASSWORD = import_from_settings('ORACLE_DB_PASSWORD')
 ORACLE_DB_DSN = import_from_settings('ORACLE_DB_DSN')
 ORACLE_DB_QUERY = import_from_settings('ORACLE_DB_QUERY')
 
+logger = logging.getLogger(__name__)
+
 
 def get_user_ids(usernames):
     """
@@ -37,11 +39,15 @@ def format_author(author):
     authors_split = author.split('|')
     for author in authors_split:
         author_split = author.split(',')
-        if not len(author_split):
-            author_split = author.split(' ')
-            formatted_author = f'{author_split[0].strip()} {author_split[1].strip()}'
-        else:
-            formatted_author = f'{author_split[1].strip()} {author_split[0].strip()}'
+        try:
+            if not len(author_split):
+                author_split = author.split(' ')
+                formatted_author = f'{author_split[0].strip()} {author_split[1].strip()}'
+            else:
+                formatted_author = f'{author_split[1].strip()} {author_split[0].strip()}'
+        except IndexError:
+            logger.error(f"Error finding aa auther with username: {author}")
+
         formatted_authors.append(formatted_author)
 
     return ' and '.join(formatted_authors)
