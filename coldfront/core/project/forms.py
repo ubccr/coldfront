@@ -208,7 +208,7 @@ class ProjectRequestEmailForm(forms.Form):
 class ProjectReviewAllocationForm(forms.Form):
     pk = forms.IntegerField(disabled=True)
     resource = forms.CharField(max_length=100, disabled=True)
-    users = forms.CharField(max_length=1000, disabled=True, required=False)
+    users = forms.CharField(max_length=2000, disabled=True, required=False)
     status = forms.CharField(max_length=50, disabled=True)
     expires_on = forms.DateField(
         widget=forms.DateInput(attrs={'class': 'datepicker'}),
