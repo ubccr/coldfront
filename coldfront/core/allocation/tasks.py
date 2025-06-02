@@ -96,7 +96,7 @@ def send_expiry_emails():
 
                     for projectuser in allocation.project.projectuser_set.filter(user=user, status__name='Active'): 
                         if ((projectuser.enable_notifications) and 
-                            (allocationuser.user == user and allocationuser.status.name == 'Active')):
+                            (allocationuser.user == user and allocationuser.status.name__in == ['Active', 'Invited', 'Disabled'])):
 
                             if (user.email not in email_receiver_list):
                                 email_receiver_list.append(user.email)
