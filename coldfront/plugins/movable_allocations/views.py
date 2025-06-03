@@ -55,7 +55,7 @@ class AllocationMoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             return super().dispatch(request, *args, **kwargs)
 
         allocation_obj = get_object_or_404(Allocation, pk=kwargs.get("pk"))
-        if not allocation_obj.status.name == "Active":
+        if allocation_obj.status.name not in ["Active", "Renewal Requested"]:
             messages.error(request, "You cannot move an inactive allocation.")
             return HttpResponseRedirect(
                 reverse("allocation-detail", kwargs={"pk": kwargs.get("pk")})
