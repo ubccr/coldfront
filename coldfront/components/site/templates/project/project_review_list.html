@@ -88,7 +88,7 @@ Project Review List
                 {{ project_review.project.pi.first_name }} {{ project_review.project.pi.last_name }} ({{ project_review.project.pi.username }})
               </a>
               {% if not pi_eligibilities|get_value_from_dict:project_review.project.pi.username %}
-              <a href="#" data-toggle="popover" title="Not Eligible" data-trigger="hover" data-content="This user is not eligible to be a PI!">
+              <a href="#" class="notnavigable" data-toggle="popover" title="Not Eligible" data-trigger="hover" data-content="This user is not eligible to be a PI!">
                 <span class="badge badge-danger"><i class="fas fa-exclamation-circle"></i></span><span class="sr-only">${new_content}</span>
               </a>
               {% endif %}
@@ -143,6 +143,8 @@ Project Review List
   $("#navbar-admin").addClass("active");
   $("#navbar-director").addClass("active");
   $("#navbar-project-reviews").addClass("active");
+
+  $('a.notnavigable').click(function(e) {e.preventDefault();});
 
   $('#id_pi_projects_modal').on('show.bs.modal', function (event) {
     $('#id_pi_projects_modal .modal-body').html('')

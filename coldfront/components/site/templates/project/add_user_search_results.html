@@ -68,7 +68,7 @@
             <th><input type="checkbox" class="check" id="selectAll"></th>
             <th scope="col">#</th>
             <th scope="col">
-              <a href="#" data-toggle="popover" title="Info" data-trigger="hover" data-content="Hover over an icon to see a user's account status for each selected resource">
+              <a href="#" class="notnavigable" data-toggle="popover" title="Info" data-trigger="hover" data-content="Hover over an icon to see a user's account status for each selected resource">
                 <span class="badge badge-info"><i class="fas fa-question-circle"></i></span><span class="sr-only">Hover over an icon to see a user's account status for each selected resource</span>
               </a>
             </th>
@@ -85,7 +85,7 @@
               <td>{{ form.selected }}</td>
               <td>{{ forloop.counter }}</td>
               <td>
-                <a id="status-{{ forloop.counter }}" href="#" data-toggle="popover" title="No Allocations Selected" data-trigger="hover" data-content="No allocations to check accounts on">
+                <a id="status-{{ forloop.counter }}" class="notnavigable" href="#" data-toggle="popover" title="No Allocations Selected" data-trigger="hover" data-content="No allocations to check accounts on">
                   <span class="badge badge-secondary"><i class="fas fa-minus-circle"></i></span><span class="sr-only">No allocations to check accounts on</span>
                 </a>
               </td>
@@ -274,7 +274,8 @@
   }
 
   $('document').ready(function () {
-    $('[data-toggle="popover"]').popover();  
+    $('[data-toggle="popover"]').popover();
+    $('a.notnavigable').click(function(e) {e.preventDefault();});
     for (var i = 0; i < matches; i++) {
       var username = user_accounts[i][0];
       all_accounts[username] = new Set();
