@@ -4,11 +4,11 @@ Before we start, thank you for considering contributing to ColdFront!
 
 Every contribution no matter how small is welcome here! Whether you are adding a whole new feature, improving the aesthetics of the webpage, adding some tests cases, or just fixing a typo your contributions are appreciated. 
 
-In this document you will find a set a guidelines for contributing to the ColdFront project, not hard rules. However, sticking to the advice contained in this document will help you to make better contributions, save time, and make it more likely your contributions are accepted. 
+In this document you will find a set a guidelines for contributing to the ColdFront project, not hard rules. However, sticking to the advice contained in this document will help you to make better contributions, save time, and increase the chances of your contributions getting accepted. 
 
 This project abides by a [Code of Conduct](CODE_OF_CONDUCT.md) that all contributors are required to uphold. Please read this document before interacting with the project.
 
-In addition, all commits must be "Signed-off" by using `git commit -s`, acknowledging that you agree to the Developer Certificate of Origin.
+In addition, you must sign off on all commits using `git commit -s`, acknowledging you agree to the Developer Certificate of Origin.
 
 ## Contributor's Agreement
 
@@ -16,15 +16,15 @@ You are under no obligation whatsoever to provide any bug fixes, patches, or upg
 
 ## Contribution Workflow
 
-Most contributions will start by opening up an issue, discussing with maintainers and the community, and then opening a pull request. It is perfectly acceptable to just provide a pull request without first opening an issue. If the changes you are suggesting or writing are significant it is strongly advised to open an issue first to avoid wasting your time in case your changes cannot be accepted. 
+For most contributions, you will start by opening up an issue, discussing changes with maintainers and the community, and then opening a pull request. It is perfectly acceptable to provide a pull request without opening an issue first. However, we recommend you open an issue if the changes you suggest are significant to ensure your changes can be successfully merged.
 
 ### Issues
 
-Requested changes are tracked using GitHub issues. These include bugs, feature requests, and general concerns. 
+We track requested changes using GitHub issues. These include bugs, feature requests, and general concerns. 
 
 Before making an issue, please look at current and previous issues to make sure that your concern has not already been raised by someone else. It is also advised to read through the [current documentation](https://coldfront.readthedocs.io/en/stable/). If an issue with your concern is already opened you are encouraged to comment further on it. The `Search Issues` feature is great to check to see if someone has already raised your issue before. 
 
-If after searching pre-existing issues your concern has not been raised (or you are unsure if a previous issue covers your concern) please open a new issue with any labels that you believe are relevant. Including relevant images, links, and syntax-highlighted text snippets will help maintainers to understand your concerns better and respond more quickly. It is also helpful to include any debugging steps you have attempted or ideas on how to fix your issue. 
+If, after searching pre-existing issues, your concern has not been raised (or you are unsure if a previous issue covers your concern) please open a new issue with any labels you believe are relevant. Please include any relevant images, links, and syntax-highlighted text snippets to help maintainers understand your concerns better. It is also helpful to include any debugging steps you have attempted or ideas on how to fix your issue. 
 
 ### Pull Requests
 
@@ -40,28 +40,28 @@ To create a pull request:
 
 #### Spelling and Naming
 
-Contributors should aim to have a spell-checker enabled in their development environment or text editor to reduce the prevalence of typos. Contributors should avoid writing names in code that use jargon or abbreviations that are not directly relevant to ColdFront or the tools already used to develop it. 
+Please use a spell-checker when modifying the codebase to reduce the prevalence of typos. You should avoid writing names in code that use jargon or abbreviations that are not directly relevant to ColdFront or tools used in its development.
 
 #### Annotations
 
-Usage of Python's type annotations are encouraged as they make more parts of the code statically checkable and make it easy for new and returning contributors to understand the codebase. Whenever possible use the most recent annotation syntax available for the minimum version of Python used by the project. 
+You are encouraged to use Python's type annotations to improve code readability and maintainability. Whenever possible, use the most recent annotation syntax available for the minimum version of Python supported by ColdFront. 
 
 > The minimum Python version supported can be found in the `pyproject.toml` file.
 
 #### Testing
 
-All new and changed features must include unit tests to verify that they work correctly. Every non-trivial function should have at least as many test cases as that function's cyclomatic complexity to verify that all independent code paths through that function operate correctly. 
+All new and changed features must include unit tests to verify that they work correctly. Every non-trivial function should have at least as many test cases as its cyclomatic complexity to verify all independent code paths in the function operate correctly.
 
-When using [uv](https://docs.astral.sh/uv/), the full test suite can be ran using the command `uv run coldfront test`. 
+When using [uv](https://docs.astral.sh/uv/), the full test suite can be run using the command `uv run coldfront test`. 
 
 #### Formatting and Linting
 
 This project is formatted and linted using [ruff](https://docs.astral.sh/ruff/). 
 
-Ruff can be used to check for any linting errors in Python code using `uv run ruff check` and can fix many linting errors itself by using `uv run ruff check --fix` when using [uv](https://docs.astral.sh/uv/). 
+You can use Ruff to check for any linting errors in proposed Python code using `uv run ruff check`. Ruff can also fix many linting errors automatically with `uv run ruff check --fix` when using [uv](https://docs.astral.sh/uv/).
 
-If your code is failing the linter but you would like it to remain unchanged for a valid reason you can suppress warnings using a `# noqa: <warning-error-code>` comment on the line(s) in question. 
+If your code is failing linting checks but you you have a valid reason to leave it unchanged, you can suppress warnings using a `# noqa: <warning-error-code>` comment on the line(s) in question
 
-Ruff can be used to check formatting by using `uv run ruff format --check` and fix many formatting errors itself by using `uv run ruff format`. 
+You can also use Ruff to check formatting using `uv run ruff format --check` and automatically fix formatting errors with `uv run ruff format`.
 
-If your code is failing the formatter but you would like it to remain unchanged for a valid reason you can suppress warnings for a specific block of code by enclosing it with the comments `# fmt: off` and `# fmt: on`. These comments work at the statement level so placing them inside of expressions will not have any effect. 
+If your code is failing formatting checks but you have a valid reason to leave it unchanged, you can suppress warnings for a specific block of code by enclosing it with the comments `# fmt: off` and `# fmt: on`. These comments work at the statement level so placing them inside of expressions will not have any effect. 
