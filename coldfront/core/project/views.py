@@ -1797,7 +1797,9 @@ class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
             status__name__in=['Waiting For Admin Approval', 'Contacted By Admin', ]
         ).order_by('created')
         context['project_request_list'] = projects
+
         pis = set([project.pi for project in projects])
+        pis = pis.union(set([project_review.project.pi for project_review in project_reviews]))
         pi_project_objs = Project.objects.filter(
             pi__in=pis,
             status__name__in=[
