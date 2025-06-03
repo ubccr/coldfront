@@ -46,7 +46,7 @@ def format_author(author):
             else:
                 formatted_author = f'{author_split[1].strip()} {author_split[0].strip()}'
         except IndexError:
-            logger.error(f"Error finding aa auther with username: {author}")
+            logger.error(f"Error finding aa author with username: {author}")
 
         formatted_authors.append(formatted_author)
 
