@@ -1,12 +1,34 @@
-Dear {{ center_name }} user,
+Dear {{center_name}} user,
 
-Your project "{{ project_title }}" on RT Projects will expire in {{ expiring_in_days }} day{{ expiring_in_days|pluralize }}.
-This project has no allocations in it and is not providing access to any of RT's resources. Once it expires you will no longer 
-be able to edit your project. If you do not need this project to give you access to RT's resources then it is recommended to
-archive it. You can do so with the archive project button on your project's detail page. Archiving a project will terminate it
-and you will not receive renewal emails. 
+Your access to {{center_name}} resources is expiring soon. To renew, login to RT Projects and
+complete the short renewal process for each expiring project. Failure to renew the expiring RT project(s)
+and its allocation(s) on time will terminate access to the resource for all users in the allocation(s).
 
-If you are not the PI or a manager in this project you are receiving this notice as a courtesy.
+Below is your expiring project(s):
+{% spaceless %}
+{% for project in project_dict %}
+----------------------------------------------
+Project Title: {{project.project.title}}
+Project URL: {{ project.project_url }}
+Project PI: {{ project.project.pi }}
+Project Type: {{ project.project.type }}
+Project Days Remaining: {{ expiring_in_days }}
+{% if project.project.type.name == 'Class' %}
+NOTE: This project cannot be renewed. The PI of this project will need to submit a new project.
+{% endif %}
+Allocations expiring soon:
+{% for allocation in project.allocations %}    {{ allocation.get_parent_resource }}
+{% empty %}    No allocations to list{% endfor %}
+{% endfor %}
+{% endspaceless %}
+
+The managers for these projects are required to renew them unless stated otherwise. The expiring allocations can be renewed during the project renewal.
+If they are not they will need to be renewed separately. If you do not need any of these projects anymore we recommend archiving them, doing so will
+expire all allocations with it. You can do so with the archive project button on your project's detail page. You will not receive renewal emails
+for archived projects. Archiving a project does not affect any of the data within the resource allocations it has.
+For more information about the yearly renewal, visit our knowledge base: {{ project_renewal_help_url|safe }}
+
+If you are not the PI or a manager under this project, you are receiving this notice as a courtesy.
 
 If you have any questions please email us at {{ help_email }}
 
