@@ -1,19 +1,21 @@
 '''
 Models for ifxbilling plugin
 '''
+# pylint: disable=broad-exception-raised,broad-exception-caught,logging-fstring-interpolation
 import logging
 import json
 from decimal import Decimal
 from datetime import datetime
 from django.utils import timezone
-from django.db import models, connection
+from django.db import models, connection, transaction
 from django.contrib.auth import get_user_model
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.conf import settings
+from rest_framework.exceptions import ValidationError
 from fiine.client import API as FiineAPI
 from fiine.client import ApiException
-from coldfront.core.allocation.models import AllocationUser
+from coldfront.core.allocation.models import AllocationUser, Allocation
 from coldfront.core.resource.models import Resource
 from coldfront.core.project.models import Project
 from ifxbilling.models import ProductUsage, Product, Facility
@@ -68,6 +70,21 @@ class ProductResource(models.Model):
         on_delete=models.CASCADE
     )
 
+class ProductAllocation(models.Model):
+    '''
+    Link between Allocations and Products
+    '''
+    allocation = models.ForeignKey(
+        Allocation,
+        on_delete=models.CASCADE
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE
+    )
+    def __str__(self):
+        return f'{self.allocation} - {self.product}'
+
 def allocation_user_to_allocation_product_usage(allocation_user, product, overwrite=False, year=None, month=None):
     '''
     Converts an allocation_user to an allocation_product_usage.
@@ -88,8 +105,8 @@ def allocation_user_to_allocation_product_usage(allocation_user, product, overwr
         if not project_organization:
             raise Exception(f'ProjectOrganization entry is missing for {allocation_user.allocation.project}')
         organization = project_organization.organization
-    except ProjectOrganization.DoesNotExist:
-        raise Exception(f'Cannot map allocation_user {allocation_user} to organization')
+    except ProjectOrganization.DoesNotExist as dne:
+        raise Exception(f'Cannot map allocation_user {allocation_user} to organization') from dne
 
     aupus = AllocationUserProductUsage.objects.filter(
         product_usage__product=product,
@@ -123,10 +140,128 @@ def allocation_user_to_allocation_product_usage(allocation_user, product, overwr
     product_usage_data['units'] = 'b'
     tb_quantity = Decimal(product_usage_data['quantity'] / 1024**4).quantize(Decimal("100.0000"))
     product_usage_data['decimal_quantity'] = tb_quantity
-    product_usage_data['description'] = f"{tb_quantity.quantize(Decimal('0.00'))} TB of {allocation_user.allocation.get_attribute('Storage Quota (TiB)')} TB allocation of {product_usage_data['product']} for {product_usage_data['product_user']} on {product_usage_data['start_date']}"
+    allocation_size = allocation_user.allocation.get_attribute('Storage Quota (TiB)')
+    if not allocation_size:
+        allocation_size = allocation_user.allocation.get_attribute('Storage Quota (TB)')
+    product_usage_data['description'] = f"{tb_quantity.quantize(Decimal('0.00'))} TB of {allocation_size} TB allocation of {product_usage_data['product']} for {product_usage_data['product_user']} on {product_usage_data['start_date']}"
+    # pylint: disable=unused-variable
     product_usage, created = ProductUsage.objects.get_or_create(**product_usage_data)
     aupu = AllocationUserProductUsage.objects.create(allocation_user=allocation_user.history.first(), product_usage=product_usage)
     return aupu
+
+def update_allocation_product(allocation):
+    '''
+    For the given Allocation, create a Product and ProductAllocation if they don't exist
+    or update the existing Product.
+
+    The Resource is set as a parent of the Product.
+    Returns the Product.
+    '''
+    resource = allocation.resources.first()
+    if resource.resource_type.name == "Storage":
+
+        if allocation.status.name != 'Active':
+            logger.debug(f'Allocation {allocation} is not active')
+            return
+
+        if not allocation.get_attribute(name='RequiresPayment') == 'True':
+            logger.debug(f'Allocation {allocation} does not require payment')
+            return
+
+        with transaction.atomic():
+            tb_str = f"{allocation.get_attribute(name='Storage Quota (TB)')} TB"
+            if not tb_str:
+                tb_str = f"{allocation.get_attribute(name='Storage Quota (TiB)')} TiB"
+            if tb_str:
+                dir_str = allocation.get_attribute(name='Subdirectory')
+                if dir_str:
+                    dir_str = f' at {dir_str}'
+                else:
+                    dir_str = f' for {allocation.project.title}'
+                product_name = f'{tb_str} of {resource.name}{dir_str}'
+                if len(product_name) > 100:
+                    raise Exception(f'Product name {product_name} is too long')
+                product_description = product_name
+                facility = Facility.objects.get(name='Research Computing Storage')
+                billing_calculator = 'coldfront.plugins.ifx.calculator.NewColdfrontBillingCalculator'
+                product_category = 'Storage Allocation'
+                object_code_category = 'Technical Services'
+                if not resource.productresource_set.first():
+                    raise Exception(f'Resource {resource} has no ProductResource')
+                resource_product = resource.productresource_set.first().product
+                allocation_organization = None
+                try:
+                    allocation_organization = allocation.project.projectorganization_set.first().organization
+                except Exception as e:
+                    logger.error(f'Allocation {allocation} has no project organization set')
+                    raise e
+                try:
+                    pa = ProductAllocation.objects.get(allocation=allocation)
+                    product = pa.product
+                    if not hasattr(settings, 'FIINELESS') or not settings.FIINELESS:
+                        fiine_product = FiineAPI.readProduct(product_number=product.product_number)
+                        fiine_product.product_name = product_name
+                        fiine_product.product_description = product_description
+                        fiine_product.facility = facility.name
+                        fiine_product.parent = {
+                            'product_number': resource_product.product_number,
+                        }
+                        fiine_product.product_organization = {
+                            'ifxorg': allocation_organization.ifxorg,
+                        }
+                        fiine_product.billing_calculator = billing_calculator
+                        fiine_product.product_category = product_category
+                        fiine_product.object_code_category = object_code_category
+                        fiine_product_dict = fiine_product.to_dict()
+                        fiine_product_dict.pop('product_number')
+                        updated_fiine_product = FiineAPI.updateProduct(product_number=product.product_number, **fiine_product_dict)
+                        for field in ['product_name', 'product_description', 'object_code_category']:
+                            setattr(product, field, getattr(updated_fiine_product, field))
+                    else:
+                        product.product_name = product_name
+                        product.product_description = product_description
+                        product.object_code_category = object_code_category
+                        product.billing_calculator = billing_calculator
+                        product.product_category = product_category
+                    product.facility = facility
+                    product.product_organization = allocation_organization
+                    product.parent = resource_product
+                    product.save()
+                    return product
+                except ProductAllocation.DoesNotExist:
+                    pa = ProductAllocation(allocation=allocation)
+                    # Create a new Product.  create_new_product method knows about FIINELESS
+                    product = create_new_product(
+                        product_name=product_name,
+                        product_description=product_description,
+                        facility=facility,
+                        parent=resource_product,
+                        product_organization=allocation_organization,
+                        object_code_category='Technical Services',
+                        billing_calculator='coldfront.plugins.ifx.calculator.NewColdfrontBillingCalculator',
+                        product_category='Storage Allocation',
+                    )
+                    pa.product = product
+                    pa.save()
+                except ValidationError as e:
+                    logger.error(f'Validation error creating product for allocation {allocation}: {e}')
+                except Exception as e:
+                    logger.error(f'Error creating product for allocation {allocation}: {e}')
+                    raise
+            else:
+                logger.error(f'Allocation {allocation} has no Storage Quota (TB) or Storage Quota (TiB) attribute')
+                raise Exception(f'Allocation {allocation} has no Storage Quota (TB) or Storage Quota (TiB) attribute')
+
+def allocation_post_save(sender, instance, **kwargs):
+    '''
+    Create a Product, ProductAllocation for each Allocation
+    '''
+    if not kwargs.get('raw'):
+        try:
+            update_allocation_product(instance)
+        except Exception as e:
+            logger.error(f'Error creating product for allocation {instance}: {e}')
+
 
 @receiver(post_save, sender=Resource)
 def resource_post_save(sender, instance, **kwargs):

@@ -3,6 +3,8 @@
 '''
 Create ProductUsages and AllocationUserProductUsages from AllocationUsers for a specified month
 '''
+# pylint: disable=broad-exception-raised,broad-exception-caught,logging-fstring-interpolation
+
 import logging
 from django.utils import timezone
 from django.core.management.base import BaseCommand
@@ -90,9 +92,19 @@ class Command(BaseCommand):
                                 pi = allocation.project.pi
                                 AllocationUser.objects.create(allocation=allocation, user=pi, status=AllocationUserStatusChoice.objects.get(name='Active'))
                                 logger.info(f'Set PI {pi} as a user for {allocation}')
+
+                            allocation_product = None
+                            try:
+                                allocation_product = allocation.productallocation_set.first().product
+                            except Exception as e:
+                                logger.error(f'Error getting product allocation for {allocation}: {e}')
+
                             for allocation_user in AllocationUser.objects.filter(allocation=allocation):
                                 try:
-                                    allocation_user_to_allocation_product_usage(allocation_user, product, overwrite, month=month, year=year)
+                                    if allocation_product:
+                                        allocation_user_to_allocation_product_usage(allocation_user, allocation_product, overwrite, month=month, year=year)
+                                    else:
+                                        allocation_user_to_allocation_product_usage(allocation_user, product, overwrite, month=month, year=year)
                                     successes += 1
                                 except Exception as e:
                                     if 'AllocationUserProductUsage already exists for use of' not in str(e):
