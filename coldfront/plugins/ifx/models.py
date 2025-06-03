@@ -169,9 +169,14 @@ def update_allocation_product(allocation):
             return
 
         with transaction.atomic():
-            tb_str = f"{allocation.get_attribute(name='Storage Quota (TB)')} TB"
-            if not tb_str:
-                tb_str = f"{allocation.get_attribute(name='Storage Quota (TiB)')} TiB"
+            tb_str = None
+            attr_val = allocation.get_attribute(name='Storage Quota (TB)')
+            if attr_val:
+                tb_str = f"{attr_val} TB"
+            else:
+                attr_val = allocation.get_attribute(name='Storage Quota (TiB)')
+                if attr_val:
+                    tb_str = f"{attr_val} TiB"
             if tb_str:
                 dir_str = allocation.get_attribute(name='Subdirectory')
                 if dir_str:
