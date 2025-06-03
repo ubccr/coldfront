@@ -84,13 +84,20 @@ Project Review List
             <td>{{ project_review.created|date:"M. d, Y" }}</td>
             <td>{{ project_review.project.end_date|date:"M. d, Y" }}</td>
             <td>
-              <a href="#" data-toggle="modal" data-target="#id_pi_projects_modal" data-pi="{{project_review.project.pi.username}}" data-pk="{{project_review.project.pk}}">
+              <a
+                href="#"
+                data-toggle="modal"
+                data-target="#id_pi_projects_modal"
+                data-pi="{{project_review.project.pi.username}}"
+                data-pk="{{project_review.project.pk}}"
+                data-eligible="{{pi_eligibilities|get_value_from_dict:project_review.project.pi.username}}"
+              \>
                 {{ project_review.project.pi.first_name }} {{ project_review.project.pi.last_name }} ({{ project_review.project.pi.username }})
               </a>
               {% if not pi_eligibilities|get_value_from_dict:project_review.project.pi.username %}
-              <a href="#" class="notnavigable" data-toggle="popover" title="Not Eligible" data-trigger="hover" data-content="This user is not eligible to be a PI!">
-                <span class="badge badge-danger"><i class="fas fa-exclamation-circle"></i></span><span class="sr-only">${new_content}</span>
-              </a>
+                <a id="id_ineligible" href="#" class="notnavigable" data-toggle="popover" title="Not Eligible" data-trigger="hover" data-content="This user is not eligible to be a PI!">
+                  <span class="badge badge-danger"><i class="fas fa-exclamation-circle"></i></span><span class="sr-only">${new_content}</span>
+                </a>
               {% endif %}
             </td>
             <td>{{ project_review.project_updates|truncatechars:50 }}</td>
@@ -126,6 +133,19 @@ Project Review List
     <div class="modal-content">
       <div class="modal-header">
         <h4 class="modal-title" id="id_pi_projects_label">PI Projects</h4>
+        
+        <a
+          style="font-size: 1.4em;"
+          id="id_ineligible_modal"
+          href="#"
+          class="notnavigable ml-1"
+          data-toggle="popover"
+          title="Not Eligible"
+          data-trigger="hover"
+          data-content="This user is not eligible to be a PI!"
+        \>
+          <span class="badge badge-danger"><i class="fas fa-exclamation-circle"></i></span><span class="sr-only">${new_content}</span>
+        </a>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
@@ -151,6 +171,13 @@ Project Review List
     var link = $(event.relatedTarget);
     var pi = link.data('pi');
     var pk = link.data('pk');
+    var eligible = link.data('eligible');
+    console.log(eligible);
+    if (eligible === 'False') {
+      $('#id_ineligible_modal').show();
+    } else {
+      $('#id_ineligible_modal').hide();
+    }
     var modal = $(this);
     for (let i = 0; i < pi_projects.length; i++) {
       project = pi_projects[i]
