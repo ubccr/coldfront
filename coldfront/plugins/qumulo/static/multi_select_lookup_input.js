@@ -61,10 +61,16 @@ class MultiSelectLookupInput {
     const existingMatches = document.querySelector(
       `#${this.widgetName}-output-list > li[value="${value}"]`
     );
-
     if (existingMatches === null) {
-      const liElement = this.createListItemElement(value);
-      this.outputListElement.appendChild(liElement);
+      const liValues = this.outputElement.value
+        .split(",")
+        .filter((outputValue) => outputValue.length && outputValue !== value);
+
+      liValues.push(value);
+      liValues.sort();
+
+      const liElements = liValues.map(this.createListItemElement);
+      this.outputListElement.replaceChildren(...liElements);
 
       if (updateValue) {
         this.outputElement.value = this.addValueToOutputList(
@@ -82,7 +88,9 @@ class MultiSelectLookupInput {
 
     const outputList = outputListStr.split(",");
 
-    return [...outputList, value.trim()].join(",");
+    return [...outputList, value.trim()]
+      .sort((a, b) => a.localeCompare(b))
+      .join(",");
   };
 
   createListItemElement = (value) => {
@@ -117,6 +125,7 @@ class MultiSelectLookupInput {
     for (const value of values) {
       this.addOption(value, this.widgetName);
     }
+
     inputElement.value = "";
   };
 

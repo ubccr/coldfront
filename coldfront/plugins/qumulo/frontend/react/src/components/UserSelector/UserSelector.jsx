@@ -21,6 +21,7 @@ function UserSelector({
       .filter((value) => value.length);
 
     const newUsers = [...users, ...values];
+    newUsers.sort((a, b) => a.localeCompare(b));
     setUsers(newUsers);
     setInputText("");
 
