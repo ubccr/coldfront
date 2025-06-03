@@ -1801,10 +1801,17 @@ class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
         pis = set([project.pi for project in projects])
         pis = pis.union(set([project_review.project.pi for project_review in project_reviews]))
         pi_project_objs = Project.objects.filter(
-            pi__in=pis,
-            status__name__in=[
-                'Active', 'Waiting For Admin Approval', 'Contacted By Admin', 'Review Pending'
-            ]
+            Q(
+                pi__in=pis,
+                status__name__in=[
+                    'Active', 'Waiting For Admin Approval', 'Contacted By Admin', 'Review Pending'
+                ],
+            ) |
+            Q(
+                pi__in=pis,
+                status__name='Expired',
+                end_date__gt=datetime.datetime.now() - datetime.timedelta(days=PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING)
+            )
         ).order_by('status__name')
         pi_projects = []
         for pi_project_obj in pi_project_objs:
