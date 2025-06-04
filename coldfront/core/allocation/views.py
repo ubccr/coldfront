@@ -2575,7 +2575,9 @@ class AllocationUserDetailView(LoginRequiredMixin, UserPassesTestMixin, Template
                 request, f'You cannot update a user in a(n) {allocation_obj.status.name} allocation.'
             )
             return HttpResponseRedirect(
-                reverse('allocation-user-detail', kwargs={'pk': allocation_user_pk})
+                reverse(
+                    'allocation-user-detail',
+                    kwargs={'pk': allocation_obj.pk, 'allocation_user_pk': allocation_user_pk})
             )
 
         if allocation_obj.allocationuser_set.filter(id=allocation_user_pk).exists():
@@ -2588,7 +2590,7 @@ class AllocationUserDetailView(LoginRequiredMixin, UserPassesTestMixin, Template
                 return HttpResponseRedirect(
                     reverse(
                         'allocation-user-detail',
-                        kwargs={'pk': allocation_obj.pk, 'allocation_user_pk': allocation_user_obj.pk}
+                        kwargs={'pk': allocation_obj.pk, 'allocation_user_pk': allocation_user_pk}
                     )
                 )
 
@@ -2607,7 +2609,7 @@ class AllocationUserDetailView(LoginRequiredMixin, UserPassesTestMixin, Template
                         reverse(
                             'allocation-user-detail',
                             kwargs={
-                                'pk': allocation_obj.pk, 'allocation_user_pk': allocation_user_obj.pk
+                                'pk': allocation_obj.pk, 'allocation_user_pk': allocation_user_pk
                             }
                         )
                     )
@@ -2615,7 +2617,7 @@ class AllocationUserDetailView(LoginRequiredMixin, UserPassesTestMixin, Template
                 allocation_user_obj.save()
                 allocation_change_user_role.send(
                     sender=self.__class__,
-                    allocation_user_pk=allocation_user_obj.pk,
+                    allocation_user_pk=allocation_user_pk,
                 )
 
                 logger.info(
@@ -2627,7 +2629,7 @@ class AllocationUserDetailView(LoginRequiredMixin, UserPassesTestMixin, Template
                 return HttpResponseRedirect(
                     reverse(
                         'allocation-user-detail',
-                        kwargs={'pk': allocation_obj.pk, 'allocation_user_pk': allocation_user_obj.pk}
+                        kwargs={'pk': allocation_obj.pk, 'allocation_user_pk': allocation_user_pk}
                     )
                 )
             else:
@@ -2635,7 +2637,7 @@ class AllocationUserDetailView(LoginRequiredMixin, UserPassesTestMixin, Template
                 return HttpResponseRedirect(
                     reverse(
                         'allocation-user-detail',
-                        kwargs={'pk': allocation_obj.pk, 'allocation_user_pk': allocation_user_obj.pk}
+                        kwargs={'pk': allocation_obj.pk, 'allocation_user_pk': allocation_user_pk}
                     )
                 )
 
