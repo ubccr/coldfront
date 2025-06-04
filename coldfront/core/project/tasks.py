@@ -89,7 +89,7 @@ def send_expiry_emails():
                     'help_email': EMAIL_TICKET_SYSTEM_ADDRESS,
                     'signature': EMAIL_SIGNATURE
                 }
-                send_email_template(f'Access to your {CENTER_NAME} resources is expiring soon',
+                send_email_template(f'Access to your {CENTER_NAME} projects is expiring soon',
                     'email/project_expiring.txt',
                     template_context,
                     EMAIL_TICKET_SYSTEM_ADDRESS,
@@ -136,7 +136,7 @@ def send_expiry_emails():
                 'help_email': EMAIL_TICKET_SYSTEM_ADDRESS,
                 'signature': EMAIL_SIGNATURE
             }
-            send_email_template(f'Access to your {CENTER_NAME} resources has expired',
+            send_email_template(f'Access to your {CENTER_NAME} projects has expired',
                 'email/project_expired.txt',
                 template_context,
                 EMAIL_TICKET_SYSTEM_ADDRESS,

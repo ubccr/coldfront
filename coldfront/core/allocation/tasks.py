@@ -116,7 +116,7 @@ def send_expiry_emails():
                                     )
                             
         if email_receiver_list:
-            send_email_template(f'Your access to {CENTER_NAME}\'s resources is expiring soon',
+            send_email_template(f'Your access to {CENTER_NAME} allocations is expiring soon',
                         'email/allocation_expiring.txt',
                         template_context,
                         EMAIL_TICKET_SYSTEM_ADDRESS,
@@ -206,7 +206,7 @@ def send_expiry_emails():
                             
         if email_receiver_list:
 
-            send_email_template('Your access to resource(s) have expired',
+            send_email_template(f'Access to your {CENTER_NAME} allocations has expired',
                         'email/allocation_expired.txt',
                         template_context,
                         EMAIL_TICKET_SYSTEM_ADDRESS,
