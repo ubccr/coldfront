@@ -85,7 +85,7 @@ def send_expiry_emails():
                     'center_name': CENTER_NAME,
                     'expiring_in_days': days_remaining,
                     'project_dict': projects,
-                    'project_renewal_help_url': "https://servicenow.iu.edu/kb?id=kb_article_view&sysparm_article=KB0024132",
+                    'project_renewal_help_url': CENTER_PROJECT_RENEWAL_HELP_URL,
                     'help_email': EMAIL_TICKET_SYSTEM_ADDRESS,
                     'signature': EMAIL_SIGNATURE
                 }
