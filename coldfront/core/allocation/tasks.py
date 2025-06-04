@@ -123,7 +123,7 @@ def send_expiry_emails():
                         email_receiver_list
                         ) 
 
-            logger.debug(f'Allocation(s) expiring in soon, email sent to user {user}.')
+            logger.debug(f'Allocation(s) expiring email sent to user {user}.')
 
     #Allocations expired
     admin_projectdict = {}
