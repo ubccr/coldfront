@@ -2570,7 +2570,7 @@ class AllocationUserDetailView(LoginRequiredMixin, UserPassesTestMixin, Template
         project_obj = allocation_obj.project
         allocation_user_pk = self.kwargs.get('allocation_user_pk')
 
-        if allocation_obj.status.name not in ['Active', 'Billing Information Submitted', 'New']:
+        if allocation_obj.status.name not in ['Active', 'Billing Information Submitted', 'New', 'Renewal Requested']:
             messages.error(
                 request, f'You cannot update a user in a(n) {allocation_obj.status.name} allocation.'
             )
