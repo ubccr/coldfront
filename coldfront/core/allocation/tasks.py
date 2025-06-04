@@ -62,7 +62,7 @@ def send_expiry_emails():
             for allocationuser in user.allocationuser_set.all():
                 allocation = allocationuser.allocation
 
-                if (((allocation.status.name in ['Active', 'Payment Pending', 'Payment Requested', 'Unpaid']) and (allocation.end_date == expring_in_days))):
+                if (((allocation.status.name in ['Active', 'Payment Pending', 'Payment Requested', 'Unpaid']) and (allocation.end_date == expring_in_days) and not allocation.project.end_date == expring_in_days)):
                     if not allocation.project.requires_review:
                         continue
 
@@ -96,7 +96,7 @@ def send_expiry_emails():
 
                     for projectuser in allocation.project.projectuser_set.filter(user=user, status__name='Active'): 
                         if ((projectuser.enable_notifications) and 
-                            (allocationuser.user == user and allocationuser.status.name__in == ['Active', 'Invited', 'Disabled'])):
+                            (allocationuser.user == user and allocationuser.status.name in ['Active', 'Invited', 'Disabled'])):
 
                             if (user.email not in email_receiver_list):
                                 email_receiver_list.append(user.email)
@@ -144,7 +144,7 @@ def send_expiry_emails():
             if not allocation.project.requires_review:
                 continue
 
-            if (allocation.end_date == expring_in_days and not allocation.is_locked):
+            if (allocation.end_date == expring_in_days and not allocation.project.end_date == expring_in_days and not allocation.is_locked):
                 
                 project_url = f'{CENTER_BASE_URL.strip("/")}/{"project"}/{allocation.project.pk}/'
 
@@ -169,7 +169,7 @@ def send_expiry_emails():
 
                 for projectuser in allocation.project.projectuser_set.filter(user=user, status__name='Active'): 
                     if ((projectuser.enable_notifications) and 
-                        (allocationuser.user == user and allocationuser.status.name == 'Active')):
+                        (allocationuser.user == user and allocationuser.status.name in ['Active', 'Invited', 'Disabled'])):
 
                         if not expire_notification or expire_notification and expire_notification.value == 'No':
 
