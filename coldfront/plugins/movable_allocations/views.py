@@ -61,7 +61,7 @@ class AllocationMoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 reverse("allocation-detail", kwargs={"pk": kwargs.get("pk")})
             )
 
-        if not allocation_obj.project.status.name == "Active":
+        if allocation_obj.project.status.name not in ["Active", "Review Pending"]:
             messages.error(request, "You cannot move an allocation in an inactive project.")
             return HttpResponseRedirect(
                 reverse("allocation-detail", kwargs={"pk": kwargs.get("pk")})
