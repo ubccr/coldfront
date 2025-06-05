@@ -4,19 +4,19 @@ from coldfront.plugins.qumulo.tests.utils.mock_data import (
     build_models,
     create_allocation,
 )
-
-import logging
 from coldfront.core.allocation.models import (
     AllocationStatusChoice,
     AllocationAttributeType,
     AllocationAttribute,
 )
-from datetime import datetime, date
-from dateutil.relativedelta import relativedelta
-
 from coldfront.plugins.qumulo.management.commands.check_billing_cycles import (
     check_allocation_billing_cycle_and_prepaid_exp,
 )
+
+from datetime import datetime, date
+from dateutil.relativedelta import relativedelta
+import calendar
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -98,12 +98,12 @@ class TestBillingCycleTypeUpdates(TestCase):
         prepaid_billing_start = datetime.strptime(prepaid_billing_start, "%Y-%m-%d")
         prepaid_months = int(prepaid_months)
 
-        prepaid_until = datetime(
-            prepaid_billing_start.year
-            + (prepaid_billing_start.month + prepaid_months - 1) // 12,
-            (prepaid_billing_start.month + prepaid_months - 1) % 12 + 1,
-            prepaid_billing_start.day,
-        )
+        prepaid_until = prepaid_billing_start + relativedelta(months=prepaid_months)
+        last_day_of_month = (prepaid_billing_start.day == calendar.monthrange(prepaid_billing_start.year, prepaid_billing_start.month)[1])
+
+        if last_day_of_month == True:
+            new_day = calendar.monthrange(prepaid_until.year, prepaid_until.month)[1]
+            prepaid_until = prepaid_until.replace(day=new_day)
 
         return prepaid_until
 
@@ -239,3 +239,48 @@ class TestBillingCycleTypeUpdates(TestCase):
         ).value
 
         self.assertEqual(new_billing_cycle, "monthly")
+
+    def test_prepaid_start_last_of_month(self):
+        self.prepaid_form_data["prepaid_billing_date"] = "2025-03-31"
+        prepaid_allocation = create_allocation(
+            self.project, self.user, self.prepaid_form_data
+        )
+        prepaid_allocation.status = AllocationStatusChoice.objects.get(name="Active")
+        prepaid_allocation.save()
+
+        check_allocation_billing_cycle_and_prepaid_exp()
+
+        date_string = AllocationAttribute.objects.get(
+            allocation=prepaid_allocation,
+            allocation_attribute_type__name="prepaid_expiration",
+        ).value
+        date_format = "%Y-%m-%d"
+
+        try:
+            datetime.strptime(date_string, date_format)
+        except:
+            self.fail
+
+    def test_prepaid_on_leap_year(self):
+        self.prepaid_form_data["prepaid_billing_date"] = "2024-02-29"
+        self.prepaid_form_data["prepaid_time"] = 1
+        prepaid_allocation = create_allocation(
+            self.project, self.user, self.prepaid_form_data
+        )
+        prepaid_allocation.status = AllocationStatusChoice.objects.get(name="Active")
+        prepaid_allocation.save()
+
+        check_allocation_billing_cycle_and_prepaid_exp()
+
+        date_string = AllocationAttribute.objects.get(
+            allocation=prepaid_allocation,
+            allocation_attribute_type__name="prepaid_expiration",
+        ).value
+        date_format = "%Y-%m-%d"
+
+        try:
+            datetime.strptime(date_string, date_format)
+        except:
+            self.fail
+           
+        self.assertEqual(date_string,"2024-03-31 00:00:00")

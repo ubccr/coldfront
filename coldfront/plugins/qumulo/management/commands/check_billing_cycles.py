@@ -1,4 +1,4 @@
-import logging
+from django.db.models import OuterRef, Subquery
 
 from coldfront.config.env import ENV
 from coldfront.core.allocation.models import (
@@ -8,9 +8,10 @@ from coldfront.core.allocation.models import (
 )
 from coldfront.core.resource.models import Resource
 
-from django.db.models import OuterRef, Subquery
-
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
+import calendar
+import logging
 
 
 logger = logging.getLogger(__name__)
@@ -61,15 +62,17 @@ def calculate_prepaid_expiration(
         name="prepaid_expiration"
     )
     logger.warn(f"Calculation prepaid expiration")
+    
     if bill_cycle == "prepaid" and prepaid_expiration == None:
         prepaid_billing_start = datetime.strptime(prepaid_billing_start, "%Y-%m-%d")
         prepaid_months = int(prepaid_months)
-        prepaid_until = datetime(
-            prepaid_billing_start.year
-            + (prepaid_billing_start.month + prepaid_months - 1) // 12,
-            (prepaid_billing_start.month + prepaid_months - 1) % 12 + 1,
-            prepaid_billing_start.day,
-        )
+        prepaid_until = prepaid_billing_start + relativedelta(months=prepaid_months)
+        is_last_day_of_month = (prepaid_billing_start.day == calendar.monthrange(prepaid_billing_start.year, prepaid_billing_start.month)[1])
+
+        if is_last_day_of_month == True:
+            new_day = calendar.monthrange(prepaid_until.year, prepaid_until.month)[1]
+            prepaid_until = prepaid_until.replace(day=new_day)
+
         AllocationAttribute.objects.create(
             allocation=allocation,
             allocation_attribute_type=prepaid_expiration_attribute,
