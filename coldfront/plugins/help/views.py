@@ -14,7 +14,7 @@ EMAIL_HELP_DEFAULT_EMAIL = import_from_settings("EMAIL_HELP_DEFAULT_EMAIL", "")
 logger = logging.getLogger(__name__)
 
 
-class SlateProjectSearchResultsView(TemplateView):
+class HelpView(TemplateView):
     template_name = "help/help.html"
 
     def get_initial_data(self):

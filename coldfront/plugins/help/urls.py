@@ -1,8 +1,8 @@
 from django.urls import path
 
-from coldfront.plugins.help.views import SlateProjectSearchResultsView
+from coldfront.plugins.help.views import HelpView
 
 
 urlpatterns = [
-    path("", SlateProjectSearchResultsView.as_view(), name="get-help"),
+    path("", HelpView.as_view(), name="get-help"),
 ]
