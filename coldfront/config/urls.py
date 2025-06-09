@@ -69,7 +69,7 @@ if 'mozilla_django_oidc' in settings.INSTALLED_APPS:
     urlpatterns.append(path('oidc/', include('mozilla_django_oidc.urls')))
 
 if 'coldfront.plugins.help' in settings.INSTALLED_APPS:
-    urlpatterns.append(path('help/', include('coldfront.plugins.help.urls'))),
+    urlpatterns.append(path('help/', include('coldfront.plugins.help.urls')))
 
 if 'django_su.backends.SuBackend' in settings.AUTHENTICATION_BACKENDS:
     urlpatterns.append(path('su/', include('django_su.urls')))
