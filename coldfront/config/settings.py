@@ -34,7 +34,8 @@ plugin_configs = {
     'PLUGIN_PI_SEARCH': 'plugins/pi_search.py',
     'PLUGIN_ALLOCATION_REMOVAL_REQUESTS':'plugins/allocation_removal_requests.py',
     'PLUGIN_ANNOUNCEMENTS': 'plugins/announcements.py',
-    'PLUGIN_MOVABLE_ALLOCATIONS': 'plugins/movable_allocations.py'
+    'PLUGIN_MOVABLE_ALLOCATIONS': 'plugins/movable_allocations.py',
+    'PLUGIN_HELP': 'plugins/help.py'
 }
 
 # This allows plugins to be enabled via environment variables. Can alternatively
