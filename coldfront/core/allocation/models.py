@@ -7,6 +7,7 @@ import logging
 from ast import literal_eval
 from enum import Enum
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -131,7 +132,7 @@ class Allocation(TimeStampedModel):
         if self.pk:
             old_obj = Allocation.objects.get(pk=self.pk)
             if old_obj.status.name != self.status.name and self.status.name == "Expired":
-                for func_string in ALLOCATION_FUNCS_ON_EXPIRE:
+                for func_string in settings.ALLOCATION_FUNCS_ON_EXPIRE:
                     func_to_run = import_string(func_string)
                     func_to_run(self.pk)
 
