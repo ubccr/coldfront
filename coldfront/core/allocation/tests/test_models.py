@@ -5,6 +5,7 @@
 """Unit tests for the allocation models"""
 
 import datetime
+from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -227,3 +228,62 @@ class AllocationModelStrTests(TestCase):
 
         self.assertNotEqual(original_string, new_string)
         self.assertEqual(new_string, expected_new_string)
+
+
+class AllocationModelExpiresInTests(TestCase):
+    mocked_today = datetime.date(2025, 1, 1)
+    three_years_after_mocked_today = datetime.date(2028, 1, 1)
+    four_years_after_mocked_today = datetime.date(2029, 1, 1)
+
+    def test_end_date_is_today_returns_zero(self):
+        """Test that the expires_in method returns 0 when the end date is today."""
+        allocation: Allocation = AllocationFactory(end_date=timezone.now().date())
+        self.assertEqual(allocation.expires_in, 0)
+
+    def test_end_date_tomorrow_returns_one(self):
+        """Test that the expires_in method returns 1 when the end date is tomorrow."""
+        tomorrow: datetime.date = (timezone.now() + datetime.timedelta(days=1)).date()
+        allocation: Allocation = AllocationFactory(end_date=tomorrow)
+        self.assertEqual(allocation.expires_in, 1)
+
+    def test_end_date_yesterday_returns_negative_one(self):
+        """Test that the expires_in method returns -1 when the end date is yesterday."""
+        yesterday: datetime.date = (timezone.now() - datetime.timedelta(days=1)).date()
+        allocation: Allocation = AllocationFactory(end_date=yesterday)
+        self.assertEqual(allocation.expires_in, -1)
+
+    def test_end_date_one_week_ago_returns_negative_seven(self):
+        """Test that the expires_in method returns -7 when the end date is one week ago."""
+        days_in_a_week: int = 7
+        one_week_ago: datetime.date = (timezone.now() - datetime.timedelta(days=days_in_a_week)).date()
+        allocation: Allocation = AllocationFactory(end_date=one_week_ago)
+        self.assertEqual(allocation.expires_in, -days_in_a_week)
+
+    def test_end_date_in_one_week_returns_seven(self):
+        """Test that the expires_in method returns 7 when the end date is in one week."""
+        days_in_a_week: int = 7
+        one_week_from_now: datetime.date = (timezone.now() + datetime.timedelta(days=days_in_a_week)).date()
+        allocation: Allocation = AllocationFactory(end_date=one_week_from_now)
+        self.assertEqual(allocation.expires_in, days_in_a_week)
+
+    def test_end_date_in_three_years_without_leap_day_returns_days_including_no_leap_day(self):
+        """Test that the expires_in method returns the correct number of days in three years when those years did not have a leap year."""
+        days_in_three_years_excluding_leap_year = 365 * 3
+
+        with patch("coldfront.core.allocation.models.datetime") as mock_datetime:
+            mock_datetime.date.today.return_value = self.mocked_today
+
+            allocation: Allocation = AllocationFactory(end_date=self.three_years_after_mocked_today)
+
+            self.assertEqual(allocation.expires_in, days_in_three_years_excluding_leap_year)
+
+    def test_end_date_in_four_years_returns_days_including_leap_day(self):
+        """Test that the expires_in method accounts for the extra day of a leap year."""
+        days_in_four_years_including_leap_year = (365 * 4) + 1
+
+        with patch("coldfront.core.allocation.models.datetime") as mock_datetime:
+            mock_datetime.date.today.return_value = self.mocked_today
+
+            allocation: Allocation = AllocationFactory(end_date=self.four_years_after_mocked_today)
+
+            self.assertEqual(allocation.expires_in, days_in_four_years_including_leap_year)
