@@ -21,3 +21,6 @@ db.json
 .env
 .devcontainer/*
 .bin/*
+local_resources/*
+
+coldfront/plugins/sftocf/*
