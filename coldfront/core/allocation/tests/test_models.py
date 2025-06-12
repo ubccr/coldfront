@@ -4,17 +4,20 @@
 
 """Unit tests for the allocation models"""
 
-from django.test import TestCase, override_settings
-
-from coldfront.core.test_helpers.factories import AllocationFactory, AllocationStatusChoiceFactory, ProjectFactory, ResourceFactory
-from coldfront.core.allocation.models import Allocation, AllocationStatusChoice
-from coldfront.core.project.models import Project
 import datetime
+
 from django.core.exceptions import ValidationError
-from unittest.mock import patch
+from django.test import TestCase, override_settings
 from django.utils.safestring import SafeString
 
-
+from coldfront.core.allocation.models import Allocation, AllocationStatusChoice
+from coldfront.core.project.models import Project
+from coldfront.core.test_helpers.factories import (
+    AllocationFactory,
+    AllocationStatusChoiceFactory,
+    ProjectFactory,
+    ResourceFactory,
+)
 
 
 class AllocationModelTests(TestCase):
@@ -44,14 +47,18 @@ class AllocationModelCleanMethodTests(TestCase):
 
     def test_status_is_expired_and_no_end_date_has_validation_error(self):
         """Test that an allocation with status 'expired' and no end date raises a validation error."""
-        actual_allocation: Allocation = AllocationFactory.build(status=self.expired_status, end_date=None, project=self.project)
+        actual_allocation: Allocation = AllocationFactory.build(
+            status=self.expired_status, end_date=None, project=self.project
+        )
         with self.assertRaises(ValidationError):
             actual_allocation.full_clean()
 
     def test_status_is_expired_and_end_date_not_past_has_validation_error(self):
         """Test that an allocation with status 'expired' and end date in the future raises a validation error."""
         end_date_in_the_future: datetime.date = (datetime.datetime.now() + datetime.timedelta(days=1)).date()
-        actual_allocation: Allocation = AllocationFactory.build(status=self.expired_status, end_date=end_date_in_the_future, project=self.project)
+        actual_allocation: Allocation = AllocationFactory.build(
+            status=self.expired_status, end_date=end_date_in_the_future, project=self.project
+        )
         with self.assertRaises(ValidationError):
             actual_allocation.full_clean()
 
@@ -60,7 +67,9 @@ class AllocationModelCleanMethodTests(TestCase):
         end_date: datetime.date = (datetime.datetime.now() + datetime.timedelta(days=1)).date()
         start_date_after_end_date: datetime.date = end_date + datetime.timedelta(days=1)
 
-        actual_allocation: Allocation = AllocationFactory.build(status=self.expired_status, start_date=start_date_after_end_date, end_date=end_date, project=self.project)
+        actual_allocation: Allocation = AllocationFactory.build(
+            status=self.expired_status, start_date=start_date_after_end_date, end_date=end_date, project=self.project
+        )
         with self.assertRaises(ValidationError):
             actual_allocation.full_clean()
 
@@ -69,34 +78,44 @@ class AllocationModelCleanMethodTests(TestCase):
         start_date: datetime.date = datetime.datetime(year=2023, month=11, day=2).date()
         end_date: datetime.date = start_date + datetime.timedelta(days=40)
 
-        actual_allocation: Allocation = AllocationFactory.build(status=self.expired_status, start_date=start_date, end_date=end_date, project=self.project)
+        actual_allocation: Allocation = AllocationFactory.build(
+            status=self.expired_status, start_date=start_date, end_date=end_date, project=self.project
+        )
         actual_allocation.full_clean()
 
     def test_status_is_expired_and_start_date_equals_end_date_no_error(self):
         """Test that an allocation with status 'expired' and start date equal to end date does not raise a validation error."""
         start_and_end_date: datetime.date = datetime.datetime(year=1997, month=4, day=20).date()
 
-        actual_allocation: Allocation = AllocationFactory.build(status=self.expired_status, start_date=start_and_end_date, end_date=start_and_end_date, project=self.project)
+        actual_allocation: Allocation = AllocationFactory.build(
+            status=self.expired_status, start_date=start_and_end_date, end_date=start_and_end_date, project=self.project
+        )
         actual_allocation.full_clean()
 
     def test_status_is_active_and_no_start_date_has_validation_error(self):
         """Test that an allocation with status 'active' and no start date raises a validation error."""
-        actual_allocation: Allocation = AllocationFactory.build(status=self.active_status, start_date=None, project=self.project)
+        actual_allocation: Allocation = AllocationFactory.build(
+            status=self.active_status, start_date=None, project=self.project
+        )
         with self.assertRaises(ValidationError):
             actual_allocation.full_clean()
 
     def test_status_is_active_and_no_end_date_has_validation_error(self):
         """Test that an allocation with status 'active' and no end date raises a validation error."""
-        actual_allocation: Allocation = AllocationFactory.build(status=self.active_status, end_date=None, project=self.project)
+        actual_allocation: Allocation = AllocationFactory.build(
+            status=self.active_status, end_date=None, project=self.project
+        )
         with self.assertRaises(ValidationError):
             actual_allocation.full_clean()
 
     def test_status_is_active_and_start_date_after_end_date_has_validation_error(self):
         """Test that an allocation with status 'active' and start date after end date raises a validation error."""
         end_date: datetime.date = (datetime.datetime.now() + datetime.timedelta(days=1)).date()
-        start_date_after_end_date: datetime.date = (end_date + datetime.timedelta(days=1))
+        start_date_after_end_date: datetime.date = end_date + datetime.timedelta(days=1)
 
-        actual_allocation: Allocation = AllocationFactory.build(status=self.active_status, start_date=start_date_after_end_date, end_date=end_date, project=self.project)
+        actual_allocation: Allocation = AllocationFactory.build(
+            status=self.active_status, start_date=start_date_after_end_date, end_date=end_date, project=self.project
+        )
         with self.assertRaises(ValidationError):
             actual_allocation.full_clean()
 
@@ -105,42 +124,53 @@ class AllocationModelCleanMethodTests(TestCase):
         start_date: datetime.date = datetime.datetime(year=2001, month=5, day=3).date()
         end_date: datetime.date = start_date + datetime.timedelta(days=160)
 
-        actual_allocation: Allocation = AllocationFactory.build(status=self.active_status, start_date=start_date, end_date=end_date, project=self.project)
+        actual_allocation: Allocation = AllocationFactory.build(
+            status=self.active_status, start_date=start_date, end_date=end_date, project=self.project
+        )
         actual_allocation.full_clean()
 
     def test_status_is_active_and_start_date_equals_end_date_no_error(self):
         """Test that an allocation with status 'active' and start date equal to end date does not raise a validation error."""
         start_and_end_date: datetime.date = datetime.datetime(year=2005, month=6, day=3).date()
 
-        actual_allocation: Allocation = AllocationFactory.build(status=self.active_status, start_date=start_and_end_date, end_date=start_and_end_date, project=self.project)
+        actual_allocation: Allocation = AllocationFactory.build(
+            status=self.active_status, start_date=start_and_end_date, end_date=start_and_end_date, project=self.project
+        )
         actual_allocation.full_clean()
 
-    
 
 class AllocationFuncOnExpireException(Exception):
     """Custom exception for testing allocation expiration function in the AllocationModelSaveMethodTests class."""
+
     pass
+
 
 def allocation_func_on_expire_exception(*args, **kwargs):
     """Test function to be called on allocation expiration in the AllocationModelSaveMethodTests class."""
     raise AllocationFuncOnExpireException("This is a test exception for allocation expiration.")
 
+
 def get_dotted_path(func):
     """Return the dotted path string for a Python function in the AllocationModelSaveMethodTests class."""
     return f"{func.__module__}.{func.__qualname__}"
 
+
 NUMBER_OF_INVOCATIONS = 12
 
+
 def count_invocations(*args, **kwargs):
-    count_invocations.invocation_count = getattr(count_invocations, 'invocation_count', 0) + 1
+    count_invocations.invocation_count = getattr(count_invocations, "invocation_count", 0) + 1
     pass
 
+
 def count_invocations_negative(*args, **kwargs):
-    count_invocations_negative.invocation_count = getattr(count_invocations_negative, 'invocation_count', 0) - 1
+    count_invocations_negative.invocation_count = getattr(count_invocations_negative, "invocation_count", 0) - 1
     pass
+
 
 def list_of_same_expire_funcs(func: callable, size=NUMBER_OF_INVOCATIONS) -> list[str]:
     return [get_dotted_path(func) for _ in range(size)]
+
 
 def list_of_different_expire_funcs() -> list[str]:
     """Return a list of different functions to be called on allocation expiration.
@@ -160,7 +190,6 @@ def list_of_different_expire_funcs() -> list[str]:
 
 
 class AllocationModelSaveMethodTests(TestCase):
-
     def setUp(self):
         count_invocations.invocation_count = 0
         count_invocations_negative.invocation_count = 0
@@ -173,7 +202,11 @@ class AllocationModelSaveMethodTests(TestCase):
         cls.other_status: AllocationStatusChoice = AllocationStatusChoiceFactory(name="Other")
         cls.project: Project = ProjectFactory()
 
-    @override_settings(ALLOCATION_FUNCS_ON_EXPIRE=[get_dotted_path(allocation_func_on_expire_exception),])
+    @override_settings(
+        ALLOCATION_FUNCS_ON_EXPIRE=[
+            get_dotted_path(allocation_func_on_expire_exception),
+        ]
+    )
     def test_on_expiration_calls_single_func_in_funcs_on_expire(self):
         """Test that the allocation save method calls the functions specified in ALLOCATION_FUNCS_ON_EXPIRE when it expires."""
         allocation = AllocationFactory(status=self.active_status)
@@ -258,6 +291,7 @@ class AllocationModelSaveMethodTests(TestCase):
         allocations = [AllocationFactory(status=self.active_status) for _ in range(25)]
         for allocation in allocations:
             self.assertTrue(Allocation.objects.filter(id=allocation.id).exists())
+
 
 class AllocationModelExpiresInTests(TestCase):
     # going to skip ths until I know how datetimes should be handled
