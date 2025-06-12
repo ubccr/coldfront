@@ -81,6 +81,9 @@ Project Detail
           <span class="badge badge-pill badge-info">project review pending</span>
         {% endif %}
     </p>
+    {% if PROJECT_INSTITUTION_EMAIL_MAP %}
+        <p class="card-text text-justify"><strong>Institution: </strong>{{ project.institution }}</p>
+    {% endif %}
     <p class="card-text text-justify"><strong>Created: </strong>{{ project.created|date:"M. d, Y" }}</p>
   </div>
 </div>

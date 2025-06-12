@@ -71,6 +71,13 @@ Project List
             <a href="?order_by=status&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Status asc</span></a>
             <a href="?order_by=status&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Status desc</span></a>
           </th>
+          {% if PROJECT_INSTITUTION_EMAIL_MAP %}
+              <th scope="col" class="text-nowrap">
+                  Institution
+                  <a href="?order_by=id&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Institution asc</span></a>
+                  <a href="?order_by=id&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Institution desc</span></a>
+              </th>
+          {% endif %}
         </tr>
       </thead>
       <tbody>
@@ -85,6 +92,9 @@ Project List
             <td style="text-align: justify; text-justify: inter-word;">{{ project.title }}</td>
             <td>{{ project.field_of_science.description }}</td>
             <td>{{ project.status.name }}</td>
+            {% if PROJECT_INSTITUTION_EMAIL_MAP %}
+                <td>{{ project.institution }}</td>
+            {% endif %}
           </tr>
         {% endfor %}
       </tbody>
