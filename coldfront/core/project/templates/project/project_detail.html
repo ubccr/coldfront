@@ -175,6 +175,7 @@ Project Detail
               <th scope="col">Information</th>
               <th scope="col">Status</th>
               <th scope="col">End Date</th>
+              <th scope="col">Filesystem Path</th>
               <th scope="col" class="nosort">Actions</th>
             </tr>
           </thead>
@@ -196,6 +197,7 @@ Project Detail
                 <td class="text-info">{{ allocation.status.name }}</td>
               {% endif %}
               <td>{{allocation.end_date|date:"Y-m-d"}}</td>
+              <td>{{ allocation.filesystem_path }}</td>
               <td>
                 <a href="{% url 'allocation-detail' allocation.pk %}"><i class="far fa-folder-open" aria-hidden="true"></i><span class="sr-only">Details</span></a>
                 {% if allocation.is_locked and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
