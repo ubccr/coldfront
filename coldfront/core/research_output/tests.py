@@ -1,13 +1,17 @@
+# SPDX-FileCopyrightText: (C) ColdFront Authors
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 import datetime
+
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError
 from django.test import TestCase
 
+from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.test_helpers.factories import (
     ProjectFactory,
     UserFactory,
 )
-from coldfront.core.research_output.models import ResearchOutput
 
 
 class TestResearchOutput(TestCase):
@@ -16,13 +20,13 @@ class TestResearchOutput(TestCase):
 
         def __init__(self):
             project = ProjectFactory()
-            user = UserFactory(username='submitter')
+            user = UserFactory(username="submitter")
 
             self.initial_fields = {
-                'project': project,
-                'title': 'Something we made!',
-                'description': 'something, really',
-                'created_by': user,
+                "project": project,
+                "title": "Something we made!",
+                "description": "something, really",
+                "created_by": user,
             }
             self.unsaved_object = ResearchOutput(**self.initial_fields)
 
@@ -50,25 +54,25 @@ class TestResearchOutput(TestCase):
         self.assertEqual(0, len(ResearchOutput.objects.all()))
 
         research_output_obj = self.data.unsaved_object
-        research_output_obj.title = ''
+        research_output_obj.title = ""
         research_output_obj.save()
 
         self.assertEqual(1, len(ResearchOutput.objects.all()))
 
         retrieved_obj = ResearchOutput.objects.get(pk=research_output_obj.pk)
-        self.assertEqual('', retrieved_obj.title)
+        self.assertEqual("", retrieved_obj.title)
 
     def test_empty_title_sanitized(self):
         research_output_obj = self.data.unsaved_object
-        research_output_obj.title = '        \t\n        '
+        research_output_obj.title = "        \t\n        "
         research_output_obj.save()
 
         retrieved_obj = ResearchOutput.objects.get(pk=research_output_obj.pk)
-        self.assertEqual('', retrieved_obj.title)
+        self.assertEqual("", retrieved_obj.title)
 
     def test_description_minlength(self):
         expected_minimum_length = 3
-        minimum_description = 'x' * expected_minimum_length
+        minimum_description = "x" * expected_minimum_length
 
         research_output_obj = self.data.unsaved_object
 
@@ -110,7 +114,7 @@ class TestResearchOutput(TestCase):
         try:
             retrieved_obj = ResearchOutput.objects.get(pk=research_output_obj.pk)
         except ResearchOutput.DoesNotExist as e:
-            raise self.failureException('Expected no cascade from user deletion') from e
+            raise self.failureException("Expected no cascade from user deletion") from e
 
         # if here, did not cascade
         self.assertIsNone(retrieved_obj.created_by)  # null, as expected from SET_NULL

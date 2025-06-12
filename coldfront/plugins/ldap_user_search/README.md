@@ -19,7 +19,7 @@ ColdFront users.
 
 ## Requirements
 
-- `pip install python-ldap ldap3`
+- uv sync --extra ldap
 
 ## Usage
 
@@ -39,6 +39,7 @@ To enable this plugin set the following applicable environment variables:
 | `LDAP_USER_SEARCH_PRIV_KEY_FILE` | None | Path to the private key file |
 | `LDAP_USER_SEARCH_CERT_FILE` | None | Path to the certificate file |
 | `LDAP_USER_SEARCH_CACERT_FILE` | None | Path to the CA certificate file |
+| `LDAP_USER_SEARCH_CERT_VALIDATE_MODE` | none | The extent to which the certificate is validated.  Can be 'required' (the certificate is required and validated), 'optional' (certificate is optional but validated if provided), 'none' (certs are ignored) |
 
 The following can be set in your local settings:
 | `LDAP_USER_SEARCH_ATTRIBUTE_MAP` | `{"username": "uid", "last_name": "sn", "first_name": "givenName", "email": "mail"}` | A mapping from ColdFront user attributes to LDAP attributes. |

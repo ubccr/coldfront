@@ -93,6 +93,7 @@ The following settings are ColdFront specific settings related to the core appli
 | ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS | List of days users can request extensions in an allocation change request. Default 30,60,90 |
 | ALLOCATION_ACCOUNT_ENABLED             | Allow user to select account name for allocation. Default False |
 | ALLOCATION_RESOURCE_ORDERING           | Controls the ordering of parent resources for an allocation (if allocation has multiple resources).  Should be a list of field names suitable for Django QuerySet order_by method.  Default is ['-is_allocatable', 'name']; i.e. prefer Resources with is_allocatable field set, ordered by name of the Resource.|
+| ALLOCATION_EULA_ENABLE                 | Enable or disable requiring users to agree to EULA on allocations. Only applies to allocations using a resource with a defined 'eula' attribute. Default False|
 | INVOICE_ENABLED                        | Enable or disable invoices. Default True       |
 | ONDEMAND_URL                           | The URL to your Open OnDemand installation     |
 | LOGIN_FAIL_MESSAGE                     | Custom message when user fails to login. Here you can paint a custom link to your user account portal |
@@ -144,6 +145,11 @@ disabled:
 | EMAIL_SIGNATURE                 | Email signature to add to outgoing emails |
 | EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS   | List of days to send email notifications for expiring allocations. Default 7,14,30 |
 | EMAIL_ADMINS_ON_ALLOCATION_EXPIRE | Setting this to True will send a daily email notification to administrators with a list of allocations that have expired that day. |
+| EMAIL_ALLOCATION_EULA_REMINDERS | Enable/Disable EULA reminders. Default False |
+| EMAIL_ALLOCATION_EULA_IGNORE_OPT_OUT | Ignore user email settings and always send EULA related emails. Default False |
+| EMAIL_ALLOCATION_EULA_CONFIRMATIONS | Enable/Disable email notifications when a EULA is accepted or declined. Default False |
+| EMAIL_ALLOCATION_EULA_CONFIRMATIONS_CC_MANAGERS | CC project managers on eula notification emails (requires EMAIL_ALLOCATION_EULA_CONFIRMATIONS to be enabled). Default False |
+| EMAIL_ALLOCATION_EULA_INCLUDE_ACCEPTED_EULA | Include copy of EULA in email notifications for accepted EULAs. Default False |
 
 ### Plugin settings
 For more info on [ColdFront plugins](plugin/existing_plugins.md) (Django apps)
@@ -271,6 +277,7 @@ exist in your backend LDAP to show up in the ColdFront user search.
 | LDAP_USER_SEARCH_PRIV_KEY_FILE  | Path to the private key file.       |
 | LDAP_USER_SEARCH_CERT_FILE  | Path to the certificate file.           |
 | LDAP_USER_SEARCH_CACERT_FILE  | Path to the CA cert file.             |
+| LDAP_USER_SEARCH_CERT_VALIDATE_MODE | Whether to require/validate certs.  If 'required', certs are required and validated.  If 'optional', certs are optional but validated if provided.  If 'none' (the default) certs are ignored. |
 
 ## Advanced Configuration
 

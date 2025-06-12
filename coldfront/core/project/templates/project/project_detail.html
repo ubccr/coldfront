@@ -2,6 +2,7 @@
 {% load crispy_forms_tags %}
 {% load humanize %}
 {% load static %}
+{% load common_tags %}
 
 
 {% block title %}
@@ -194,13 +195,21 @@ Project Detail
             <tr>
               <td>{{ allocation.get_parent_resource.name }}</td>
               <td>{{ allocation.get_parent_resource.resource_type.name }}</td>
-              {% if allocation.get_information != '' %}
+              {% if user_allocation_status|get_value_by_index:forloop.counter0 == 'PendingEULA' %}
+              <td class="test-nowrap"><a href="{% url 'allocation-review-eula' allocation.pk %}">Review and Accept EULA to activate</a> </td>
+              {% else %}
+              {% if allocation.get_information != '' %} 
               <td class="text-nowrap">{{allocation.get_information}}</td>
               {% else %}
               <td class="text-nowrap">{{allocation.description|default_if_none:""}}</td>
               {% endif %}
+              {% endif %}
               {% if allocation.status.name == 'Active' %}
+              {% if user_allocation_status|get_value_by_index:forloop.counter0 == 'PendingEULA' %}
+              <td class="text-success">{{ user_allocation_status|get_value_by_index:forloop.counter0 }}</td>
+              {% else %}
                 <td class="text-success">{{ allocation.status.name }}</td>
+              {% endif %}
               {% elif  allocation.status.name == 'Expired' or allocation.status.name == 'Denied' %}
                 <td class="text-danger">{{ allocation.status.name }}</td>
               {% else %}
