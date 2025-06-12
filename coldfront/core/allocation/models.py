@@ -129,6 +129,7 @@ class Allocation(TimeStampedModel):
         """Saves the project."""
 
         if self.pk:
+            ALLOCATION_FUNCS_ON_EXPIRE = import_from_settings("ALLOCATION_FUNCS_ON_EXPIRE", [])
             old_obj = Allocation.objects.get(pk=self.pk)
             if old_obj.status.name != self.status.name and self.status.name == "Expired":
                 for func_string in ALLOCATION_FUNCS_ON_EXPIRE:
