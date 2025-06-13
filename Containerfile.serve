@@ -14,6 +14,9 @@ RUN uv run manage.py load_test_data
 
 ENV DEBUG=True
 ENV PYTHONUNBUFFERED=1
+ENV PLUGIN_SLURM=True
+ENV PLUGIN_XDMOD=True
+ENV XDMOD_API_URL="https://localhost"
 EXPOSE 8000
 EXPOSE 5678
 
