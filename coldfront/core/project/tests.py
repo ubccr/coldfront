@@ -17,30 +17,32 @@ from coldfront.core.test_helpers.factories import (
 from coldfront.core.project.models import (
     Project,
     ProjectAttribute,
-    ProjectAttributeType, ProjectUser, ProjectPermission,
+    ProjectAttributeType,
+    ProjectUser,
+    ProjectPermission,
 )
 
 logging.disable(logging.CRITICAL)
 
-class TestProject(TestCase):
 
+class TestProject(TestCase):
     class Data:
         """Collection of test data, separated for readability"""
 
         def __init__(self):
-            user = UserFactory(username='cgray')
+            user = UserFactory(username="cgray")
             user.userprofile.is_pi = True
 
-            school = SchoolFactory(description='Tandon School of Engineering')
-            status = ProjectStatusChoiceFactory(name='Active')
+            school = SchoolFactory(description="Tandon School of Engineering")
+            status = ProjectStatusChoiceFactory(name="Active")
 
             self.initial_fields = {
-                'pi': user,
-                'title': 'Angular momentum in QGP holography',
-                'description': 'We want to estimate the quark chemical potential of a rotating sample of plasma.',
-                'school': school,
-                'status': status,
-                'force_review': True
+                "pi": user,
+                "title": "Angular momentum in QGP holography",
+                "description": "We want to estimate the quark chemical potential of a rotating sample of plasma.",
+                "school": school,
+                "status": status,
+                "force_review": True,
             }
 
             self.unsaved_object = Project(**self.initial_fields)
@@ -69,11 +71,11 @@ class TestProject(TestCase):
     def test_title_maxlength(self):
         """Test that the title field has a maximum length of 255 characters"""
         expected_maximum_length = 255
-        maximum_title = 'x' * expected_maximum_length
+        maximum_title = "x" * expected_maximum_length
 
         project_obj = self.data.unsaved_object
 
-        project_obj.title = maximum_title + 'x'
+        project_obj.title = maximum_title + "x"
         with self.assertRaises(ValidationError):
             project_obj.clean_fields()
 
@@ -89,7 +91,7 @@ class TestProject(TestCase):
         project_obj = self.data.unsaved_object
         assert project_obj.pk is None
 
-        project_obj.title = 'Auto-Import Project'
+        project_obj.title = "Auto-Import Project"
         with self.assertRaises(ValidationError):
             project_obj.clean()
 
@@ -98,7 +100,7 @@ class TestProject(TestCase):
         If description is less than 10 characters, an error should be raised
         """
         expected_minimum_length = 10
-        minimum_description = 'x' * expected_minimum_length
+        minimum_description = "x" * expected_minimum_length
 
         project_obj = self.data.unsaved_object
 
@@ -139,8 +141,7 @@ class TestProject(TestCase):
         self.assertEqual(0, len(Project.objects.all()))
 
     def test_school_foreignkey_on_delete(self):
-        """Test that a project is deleted when its school is deleted.
-        """
+        """Test that a project is deleted when its school is deleted."""
         project_obj = self.data.unsaved_object
         project_obj.save()
 
@@ -167,23 +168,19 @@ class TestProject(TestCase):
             Project.objects.get(pk=project_obj.pk)
         self.assertEqual(0, len(Project.objects.all()))
 
-
     def test_project_manager_assignment(self):
         # Step 1: Save the project
         project = self.data.unsaved_object
         project.save()
 
         # Step 2: Create a user to act as the manager
-        manager_user = UserFactory(username='project_manager')
+        manager_user = UserFactory(username="project_manager")
         manager_role = ProjectUserRoleChoiceFactory(name="Manager")
         active_status = ProjectUserStatusChoiceFactory(name="Active")
 
         # Step 4: Assign the user as a manager to the project
         ProjectUser.objects.create(
-            project=project,
-            user=manager_user,
-            role=manager_role,
-            status=active_status
+            project=project, user=manager_user, role=manager_role, status=active_status
         )
 
         # Step 5: Assert that the manager has the MANAGER permission
@@ -192,10 +189,9 @@ class TestProject(TestCase):
 
 
 class TestProjectAttribute(TestCase):
-
     @classmethod
     def setUpTestData(cls):
-        project_attr_types = [('Project ID', 'Text'), ('Account Number', 'Int')]
+        project_attr_types = [("Project ID", "Text"), ("Account Number", "Int")]
         for atype in project_attr_types:
             ProjectAttributeTypeFactory(
                 name=atype[0],
@@ -205,7 +201,7 @@ class TestProjectAttribute(TestCase):
             )
         cls.project = ProjectFactory()
         cls.new_attr = ProjectAttributeFactory(
-            proj_attr_type=ProjectAttributeType.objects.get(name='Account Number'),
+            proj_attr_type=ProjectAttributeType.objects.get(name="Account Number"),
             project=cls.project,
             value=1243,
         )
@@ -216,7 +212,7 @@ class TestProjectAttribute(TestCase):
         saved if the attribute type is unique
         """
         self.assertEqual(1, len(self.project.projectattribute_set.all()))
-        proj_attr_type = ProjectAttributeType.objects.get(name='Account Number')
+        proj_attr_type = ProjectAttributeType.objects.get(name="Account Number")
         new_attr = ProjectAttribute(project=self.project, proj_attr_type=proj_attr_type)
         with self.assertRaises(ValidationError):
             new_attr.clean()
@@ -224,9 +220,9 @@ class TestProjectAttribute(TestCase):
     def test_attribute_must_match_datatype(self):
         """Test that the attribute value must match the attribute type"""
 
-        proj_attr_type = ProjectAttributeType.objects.get(name='Account Number')
+        proj_attr_type = ProjectAttributeType.objects.get(name="Account Number")
         new_attr = ProjectAttribute(
-            project=self.project, proj_attr_type=proj_attr_type, value='abc'
+            project=self.project, proj_attr_type=proj_attr_type, value="abc"
         )
         with self.assertRaises(ValidationError):
             new_attr.clean()

@@ -8,7 +8,8 @@ from django.contrib.auth import get_user_model
 from coldfront.core.school.models import School
 from coldfront.core.utils.common import import_from_settings
 
-GENERAL_RESOURCE_NAME = import_from_settings('GENERAL_RESOURCE_NAME')
+GENERAL_RESOURCE_NAME = import_from_settings("GENERAL_RESOURCE_NAME")
+
 
 class AllocationFormTest(TestCase):
     """Tests for AllocationForm resource restriction by school."""
@@ -17,53 +18,76 @@ class AllocationFormTest(TestCase):
         self.user = get_user_model().objects.create(username="testuser")
 
         # Create schools
-        self.school_a = School.objects.create(description='Tandon School of Engineering')
-        self.school_b = School.objects.create(description='Center for Data Science')
+        self.school_a = School.objects.create(
+            description="Tandon School of Engineering"
+        )
+        self.school_b = School.objects.create(description="Center for Data Science")
         # Create projects under different schools
-        status = ProjectStatusChoice.objects.create(name='Active')
-        self.project_a = Project.objects.create(title="Project A", description="test", school=self.school_a, pi=self.user, status=status)
-        self.project_b = Project.objects.create(title="Project B", description="Test", school=self.school_b, pi=self.user, status=status)
+        status = ProjectStatusChoice.objects.create(name="Active")
+        self.project_a = Project.objects.create(
+            title="Project A",
+            description="test",
+            school=self.school_a,
+            pi=self.user,
+            status=status,
+        )
+        self.project_b = Project.objects.create(
+            title="Project B",
+            description="Test",
+            school=self.school_b,
+            pi=self.user,
+            status=status,
+        )
 
         # Create resources under different schools
-        cluster = ResourceType.objects.create(name='Cluster', description='Cluster servers')
-        generic = ResourceType.objects.create(name='Generic', description='Generic School')
+        cluster = ResourceType.objects.create(
+            name="Cluster", description="Cluster servers"
+        )
+        generic = ResourceType.objects.create(
+            name="Generic", description="Generic School"
+        )
         self.resource_a = Resource.objects.create(
-                resource_type=generic,
-                parent_resource=None,
-                name='Tandon',
-                description='Tandon-wide-resources',
-                school=self.school_a,
-                is_available=True,
-                is_public=False,
-                is_allocatable=True
-            )
+            resource_type=generic,
+            parent_resource=None,
+            name="Tandon",
+            description="Tandon-wide-resources",
+            school=self.school_a,
+            is_available=True,
+            is_public=False,
+            is_allocatable=True,
+        )
         self.resource_b = Resource.objects.create(
-                resource_type=generic,
-                parent_resource=None,
-                name='CDS',
-                description='CDS-wide-resources',
-                school=self.school_b,
-                is_available=True,
-                is_public=False,
-                is_allocatable=True
-            )
+            resource_type=generic,
+            parent_resource=None,
+            name="CDS",
+            description="CDS-wide-resources",
+            school=self.school_b,
+            is_available=True,
+            is_public=False,
+            is_allocatable=True,
+        )
         self.resource_uni = Resource.objects.create(
-                resource_type=cluster,
-                parent_resource=None,
-                name=GENERAL_RESOURCE_NAME,
-                description='General University HPC',
-                school=None,
-                is_available=True,
-                is_public=True,
-                is_allocatable=True
-            )
+            resource_type=cluster,
+            parent_resource=None,
+            name=GENERAL_RESOURCE_NAME,
+            description="General University HPC",
+            school=None,
+            is_available=True,
+            is_public=True,
+            is_allocatable=True,
+        )
 
     def test_allocation_form_restricts_resources_by_school(self):
         """Test that AllocationForm only includes resources from the same school as the project."""
         form = AllocationForm(self.user, self.project_a.pk)
-        available_resources = form.fields['resource'].queryset
+        available_resources = form.fields["resource"].queryset
 
-        self.assertIn(self.resource_a, available_resources)  # Resource A should be included
-        self.assertNotIn(self.resource_b, available_resources)  # Resource B should be excluded
-        self.assertIn(self.resource_uni, available_resources)  # University HPC should be always included
-
+        self.assertIn(
+            self.resource_a, available_resources
+        )  # Resource A should be included
+        self.assertNotIn(
+            self.resource_b, available_resources
+        )  # Resource B should be excluded
+        self.assertIn(
+            self.resource_uni, available_resources
+        )  # University HPC should be always included

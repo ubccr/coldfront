@@ -8,8 +8,8 @@ from coldfront.core.project.models import Project
 
 
 class ResearchOutput(TimeStampedModel):
-    """ A research output represents anything related a project that would not fall under the publication section. Examples include magazine or newspaper articles, media coverage, databases, software, or other products created.
-    
+    """A research output represents anything related a project that would not fall under the publication section. Examples include magazine or newspaper articles, media coverage, databases, software, or other products created.
+
     Attributes:
         project (Project): links project to research output
         title (str): title of research output
@@ -37,7 +37,7 @@ class ResearchOutput(TimeStampedModel):
     history = HistoricalRecords()
 
     def save(self, *args, **kwargs):
-        """ Saves the research output. """
+        """Saves the research output."""
         if not self.pk:
             # ensure that created_by is set initially - preventing most
             # accidental omission
@@ -46,7 +46,7 @@ class ResearchOutput(TimeStampedModel):
             # populated by the code that adds the ResearchOutput to the
             # database
             if not self.created_by:
-                raise ValueError('Model INSERT must set a created_by User')
+                raise ValueError("Model INSERT must set a created_by User")
 
         # since title is optional, we want to simplify and standardize "no title" entries
         # we do this at the model layer to ensure as consistent behavior as possible

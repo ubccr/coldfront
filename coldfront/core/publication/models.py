@@ -6,8 +6,8 @@ from coldfront.core.project.models import Project
 
 
 class PublicationSource(TimeStampedModel):
-    """ A publication source is a source that a publication is cited/ derived from. Examples include doi and adsabs.
-        
+    """A publication source is a source that a publication is cited/ derived from. Examples include doi and adsabs.
+
     Attributes:
         name (str): source name
         url (URL): links to the url of the source
@@ -21,8 +21,8 @@ class PublicationSource(TimeStampedModel):
 
 
 class Publication(TimeStampedModel):
-    """ A publication source is a source that a publication is cited/ derived from. Examples include doi and adsabs.
-        
+    """A publication source is a source that a publication is cited/ derived from. Examples include doi and adsabs.
+
     Attributes:
         project (Project): links the publication to its project
         title (str): publication title
@@ -42,15 +42,14 @@ class Publication(TimeStampedModel):
     unique_id = models.CharField(max_length=255, null=True, blank=True)
     source = models.ForeignKey(PublicationSource, on_delete=models.CASCADE)
     STATUS_CHOICES = (
-        ('Active', 'Active'),
-        ('Archived', 'Archived'),
+        ("Active", "Active"),
+        ("Archived", "Archived"),
     )
-    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default='Active')
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="Active")
     history = HistoricalRecords()
 
-
     class Meta:
-        unique_together = ('project', 'unique_id')
+        unique_together = ("project", "unique_id")
 
     def __str__(self):
         return self.title

@@ -6,4 +6,6 @@ from coldfront.core.research_output.models import ResearchOutput
 class ResearchOutputForm(ModelForm):
     class Meta:
         model = ResearchOutput
-        exclude = ['project', ]
+        exclude = [
+            "project",
+        ]
