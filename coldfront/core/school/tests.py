@@ -11,8 +11,8 @@ class TestSchool(TestCase):
 
         def __init__(self):
             self.initial_fields = {
-                'pk': 11,
-                'description': 'Rory Meyers College of Nursing',
+                "pk": 11,
+                "description": "Rory Meyers College of Nursing",
             }
 
             self.unsaved_object = School(**self.initial_fields)
@@ -38,14 +38,13 @@ class TestSchool(TestCase):
                 self.assertEqual(initial_value, saved_value)
         self.assertEqual(school_obj, retrieved_school)
 
-
     def test_description_maxlength(self):
         expected_maximum_length = 255
-        maximum_description = 'x' * expected_maximum_length
+        maximum_description = "x" * expected_maximum_length
 
         school_obj = self.data.unsaved_object
 
-        school_obj.description = maximum_description + 'x'
+        school_obj.description = maximum_description + "x"
         with self.assertRaises(ValidationError):
             school_obj.clean_fields()
 

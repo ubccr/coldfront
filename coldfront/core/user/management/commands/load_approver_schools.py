@@ -41,14 +41,21 @@ def load_approver_schools(json_data):
 
         # Ensure user is an approver
         if not user_profile.is_approver():
-            logger.info(f"Skipping {approver_username}: User does not have approver permission.")
+            logger.info(
+                f"Skipping {approver_username}: User does not have approver permission."
+            )
             continue
 
         # Create ApproverProfile if it does not exist
-        approver_profile, created = ApproverProfile.objects.get_or_create(user_profile=user_profile)
+        approver_profile, created = ApproverProfile.objects.get_or_create(
+            user_profile=user_profile
+        )
 
         # Ensure all schools exist before assigning
-        school_objects = [School.objects.get_or_create(description=desc)[0] for desc in school_descriptions]
+        school_objects = [
+            School.objects.get_or_create(description=desc)[0]
+            for desc in school_descriptions
+        ]
 
         # Update schools for the approver
         approver_profile.schools.set(school_objects)
@@ -57,27 +64,26 @@ def load_approver_schools(json_data):
         logger.info(f"Updated {approver_username} with schools: {school_descriptions}")
 
 
-
 class Command(BaseCommand):
-    help = 'Import approver-school mappings from JSON'
+    help = "Import approver-school mappings from JSON"
 
     def add_arguments(self, parser):
         default_path = os.path.join(
-            app_commands_dir, 'data', 'approver_schools_data.json'
+            app_commands_dir, "data", "approver_schools_data.json"
         )
         parser.add_argument(
-            '--json-file-path',
+            "--json-file-path",
             type=str,
             default=default_path,
-            help='Path to approver_schools_data.json'
+            help="Path to approver_schools_data.json",
         )
 
     def handle(self, *args, **options):
-        json_file_path = options['json_file_path']
-        self.stdout.write(f'Loading approver-school data from {json_file_path}…')
+        json_file_path = options["json_file_path"]
+        self.stdout.write(f"Loading approver-school data from {json_file_path}…")
 
-        with open(json_file_path, 'r', encoding='utf-8') as fp:
+        with open(json_file_path, "r", encoding="utf-8") as fp:
             json_data = json.load(fp)
             load_approver_schools(json_data)
 
-        self.stdout.write(self.style.SUCCESS('Finished adding approvers.'))
+        self.stdout.write(self.style.SUCCESS("Finished adding approvers."))

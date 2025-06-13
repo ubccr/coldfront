@@ -7,9 +7,11 @@ class IquotaError(Exception):
 
 class KerberosError(IquotaError):
     """Kerberos Auth error"""
+
     pass
 
 
 class MissingQuotaError(IquotaError):
     """User request error"""
+
     pass

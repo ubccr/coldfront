@@ -8,23 +8,24 @@ app_commands_dir = os.path.dirname(__file__)
 
 
 class Command(BaseCommand):
-    help = 'Import school data'
+    help = "Import school data"
+
     def add_arguments(self, parser):
-        default_path = os.path.join(app_commands_dir, 'data', 'school_data.csv')
+        default_path = os.path.join(app_commands_dir, "data", "school_data.csv")
         parser.add_argument(
-            '--csv-file-path',
+            "--csv-file-path",
             type=str,
             default=default_path,
-            help='Filesystem path to the tab‑delimited school_data.csv'
+            help="Filesystem path to the tab‑delimited school_data.csv",
         )
 
     def handle(self, *args, **options):
-        print('Adding schools ...')
-        file_path = options['csv_file_path']
+        print("Adding schools ...")
+        file_path = options["csv_file_path"]
         School.objects.all().delete()
-        with open(file_path, 'r') as fp:
+        with open(file_path, "r") as fp:
             for line in fp:
-                pk, description = line.strip().split('\t')
+                pk, description = line.strip().split("\t")
 
                 school = School(
                     pk=pk,
@@ -32,4 +33,4 @@ class Command(BaseCommand):
                 )
                 school.save()
 
-        print('Finished adding schools')
+        print("Finished adding schools")
