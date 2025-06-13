@@ -20,11 +20,11 @@ def import_from_settings(attr, *args):
             return getattr(settings, attr, args[0])
         return getattr(settings, attr)
     except AttributeError:
-        raise ImproperlyConfigured('Setting {0} not found'.format(attr))
+        raise ImproperlyConfigured("Setting {0} not found".format(attr))
 
 
 def get_domain_url(request):
-    return request.build_absolute_uri().replace(request.get_full_path(), '')
+    return request.build_absolute_uri().replace(request.get_full_path(), "")
 
 
 class Echo:
@@ -38,11 +38,11 @@ class Echo:
 
 
 def su_login_callback(user):
-    """Only superusers are allowed to login as other users
-    """
+    """Only superusers are allowed to login as other users"""
     if user.is_active and user.is_superuser:
         return True
 
     logger.warn(
-        'User {} requested to login as another user but does not have permissions', user)
+        "User {} requested to login as another user but does not have permissions", user
+    )
     return False

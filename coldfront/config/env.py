@@ -5,17 +5,17 @@ PROJECT_ROOT = environ.Path(__file__) - 3
 
 # Default paths to environment files
 env_paths = [
-    PROJECT_ROOT.path('.env'),
-    environ.Path('/etc/coldfront/coldfront.env'),
+    PROJECT_ROOT.path(".env"),
+    environ.Path("/etc/coldfront/coldfront.env"),
 ]
 
-if ENV.str('COLDFRONT_ENV', default='') != '':
-    env_paths.insert(0, environ.Path(ENV.str('COLDFRONT_ENV')))
+if ENV.str("COLDFRONT_ENV", default="") != "":
+    env_paths.insert(0, environ.Path(ENV.str("COLDFRONT_ENV")))
 
 # Read in any environment files
 for e in env_paths:
     try:
-        e.file('')
+        e.file("")
         ENV.read_env(e())
     except FileNotFoundError:
         pass

@@ -1,5 +1,8 @@
-from django.core.validators import (MaxLengthValidator, MaxValueValidator,
-                                    MinLengthValidator)
+from django.core.validators import (
+    MaxLengthValidator,
+    MaxValueValidator,
+    MinLengthValidator,
+)
 from django.db import models
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
@@ -7,9 +10,10 @@ from django.core.validators import RegexValidator
 
 from coldfront.core.project.models import Project
 
+
 class GrantFundingAgency(TimeStampedModel):
-    """ A grant funding agency is an agency that funds projects. Examples include Department of Defense (DoD) and National Aeronautics and Space Administration (NASA).
-    
+    """A grant funding agency is an agency that funds projects. Examples include Department of Defense (DoD) and National Aeronautics and Space Administration (NASA).
+
     Attributes:
         name (str): agency name
     """
@@ -27,14 +31,16 @@ class GrantFundingAgency(TimeStampedModel):
     def natural_key(self):
         return [self.name]
 
+
 class GrantStatusChoice(TimeStampedModel):
-    """ A grant status choice is an option a user has when setting the status of a grant. Examples include Active, Archived, and Pending.
-    
+    """A grant status choice is an option a user has when setting the status of a grant. Examples include Active, Archived, and Pending.
+
     Attributes:
         name (str): status name
     """
+
     class Meta:
-        ordering = ('name',)
+        ordering = ("name",)
 
     class GrantStatusManager(models.Manager):
         def get_by_natural_key(self, name):
@@ -48,15 +54,17 @@ class GrantStatusChoice(TimeStampedModel):
 
     def natural_key(self):
         return [self.name]
-    
+
+
 class MoneyField(models.IntegerField):
     def to_python(self, value):
         value = super().to_python(value)
         return value
-        
+
+
 class Grant(TimeStampedModel):
-    """ A grant is funding that a PI receives for their project.
-    
+    """A grant is funding that a PI receives for their project.
+
     Attributes:
         project (Project): links the project to the grant
         title (str): grant title
@@ -73,33 +81,35 @@ class Grant(TimeStampedModel):
         total_amount_awarded (int): indicates the total amount awarded
         status (GrantStatusChoice): represents the status of the grant
     """
-    
+
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     title = models.CharField(
         validators=[MinLengthValidator(3), MaxLengthValidator(255)],
         max_length=255,
     )
     grant_number = models.CharField(
-        'Grant Number from funding agency',
+        "Grant Number from funding agency",
         validators=[MinLengthValidator(3), MaxLengthValidator(255)],
         max_length=255,
     )
     ROLE_CHOICES = (
-        ('PI', 'Principal Investigator (PI)'),
-        ('CoPI', 'Co-Principal Investigator (CoPI)'),
-        ('SP', 'Senior Personnel (SP)'),
+        ("PI", "Principal Investigator (PI)"),
+        ("CoPI", "Co-Principal Investigator (CoPI)"),
+        ("SP", "Senior Personnel (SP)"),
     )
     role = models.CharField(
         max_length=10,
         choices=ROLE_CHOICES,
     )
 
-    grant_pi_full_name = models.CharField('Grant PI Full Name', max_length=255, blank=True)
+    grant_pi_full_name = models.CharField(
+        "Grant PI Full Name", max_length=255, blank=True
+    )
     funding_agency = models.ForeignKey(GrantFundingAgency, on_delete=models.CASCADE)
     other_funding_agency = models.CharField(max_length=255, blank=True)
     other_award_number = models.CharField(max_length=255, blank=True)
-    grant_start = models.DateField('Grant Start Date')
-    grant_end = models.DateField('Grant End Date')
+    grant_start = models.DateField("Grant Start Date")
+    grant_end = models.DateField("Grant End Date")
     percent_credit = models.FloatField(validators=[MaxValueValidator(100.0)])
     direct_funding = MoneyField()
     total_amount_awarded = MoneyField()
@@ -108,13 +118,13 @@ class Grant(TimeStampedModel):
 
     @property
     def grant_pi(self):
-        """ 
+        """
         Returns:
             str: the grant's PI's full name
         """
 
-        if self.role == 'PI':
-            return '{} {}'.format(self.project.pi.first_name, self.project.pi.last_name)
+        if self.role == "PI":
+            return "{} {}".format(self.project.pi.first_name, self.project.pi.last_name)
         else:
             return self.grant_pi_full_name
 
@@ -124,6 +134,4 @@ class Grant(TimeStampedModel):
     class Meta:
         verbose_name_plural = "Grants"
 
-        permissions = (
-            ("can_view_all_grants", "Can view all grants"),
-        )
+        permissions = (("can_view_all_grants", "Can view all grants"),)

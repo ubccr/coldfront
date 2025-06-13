@@ -1,1 +1,1 @@
-default_app_config = 'coldfront.plugins.freeipa.apps.IPAConfig'
+default_app_config = "coldfront.plugins.freeipa.apps.IPAConfig"

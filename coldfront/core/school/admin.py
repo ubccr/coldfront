@@ -5,7 +5,5 @@ from coldfront.core.school.models import School
 
 @admin.register(School)
 class SchoolAdmin(admin.ModelAdmin):
-    list_display = (
-        'description',
-    )
-    search_fields = ['description']
+    list_display = ("description",)
+    search_fields = ["description"]

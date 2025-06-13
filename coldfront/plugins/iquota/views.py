@@ -6,7 +6,7 @@ from coldfront.plugins.iquota.utils import Iquota
 
 def get_isilon_quota(request):
     if not request.user.is_authenticated:
-        return HttpResponse('401 Unauthorized', status=401)
+        return HttpResponse("401 Unauthorized", status=401)
 
     username = request.user.username
     groups = [group.name for group in request.user.groups.all()]
@@ -14,8 +14,8 @@ def get_isilon_quota(request):
     iquota = Iquota(username, groups)
 
     context = {
-        'user_quota': iquota.get_user_quota(),
-        'group_quotas': iquota.get_group_quotas(),
+        "user_quota": iquota.get_user_quota(),
+        "group_quotas": iquota.get_group_quotas(),
     }
 
     return render(request, "iquota/iquota.html", context)
