@@ -5,6 +5,7 @@
 """Unit tests for the allocation models"""
 
 import datetime
+from django.utils import timezone
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
@@ -55,7 +56,7 @@ class AllocationModelCleanMethodTests(TestCase):
 
     def test_status_is_expired_and_end_date_not_past_has_validation_error(self):
         """Test that an allocation with status 'expired' and end date in the future raises a validation error."""
-        end_date_in_the_future: datetime.date = (datetime.datetime.now() + datetime.timedelta(days=1)).date()
+        end_date_in_the_future: datetime.date = (timezone.now() + datetime.timedelta(days=1)).date()
         actual_allocation: Allocation = AllocationFactory.build(
             status=self.expired_status, end_date=end_date_in_the_future, project=self.project
         )
@@ -64,7 +65,7 @@ class AllocationModelCleanMethodTests(TestCase):
 
     def test_status_is_expired_and_start_date_after_end_date_has_validation_error(self):
         """Test that an allocation with status 'expired' and start date after end date raises a validation error."""
-        end_date: datetime.date = (datetime.datetime.now() + datetime.timedelta(days=1)).date()
+        end_date: datetime.date = (timezone.now() + datetime.timedelta(days=1)).date()
         start_date_after_end_date: datetime.date = end_date + datetime.timedelta(days=1)
 
         actual_allocation: Allocation = AllocationFactory.build(
@@ -75,7 +76,7 @@ class AllocationModelCleanMethodTests(TestCase):
 
     def test_status_is_expired_and_start_date_before_end_date_no_error(self):
         """Test that an allocation with status 'expired' and start date before end date does not raise a validation error."""
-        start_date: datetime.date = datetime.datetime(year=2023, month=11, day=2).date()
+        start_date: datetime.date = datetime.datetime(year=2023, month=11, day=2, tzinfo=timezone.get_current_timezone()).date()
         end_date: datetime.date = start_date + datetime.timedelta(days=40)
 
         actual_allocation: Allocation = AllocationFactory.build(
@@ -85,7 +86,8 @@ class AllocationModelCleanMethodTests(TestCase):
 
     def test_status_is_expired_and_start_date_equals_end_date_no_error(self):
         """Test that an allocation with status 'expired' and start date equal to end date does not raise a validation error."""
-        start_and_end_date: datetime.date = datetime.datetime(year=1997, month=4, day=20).date()
+        start_and_end_date: datetime.date = datetime.datetime(year=1997, month=4, day=20, tzinfo=timezone.get_current_timezone()).date()
+        
 
         actual_allocation: Allocation = AllocationFactory.build(
             status=self.expired_status, start_date=start_and_end_date, end_date=start_and_end_date, project=self.project
@@ -110,7 +112,7 @@ class AllocationModelCleanMethodTests(TestCase):
 
     def test_status_is_active_and_start_date_after_end_date_has_validation_error(self):
         """Test that an allocation with status 'active' and start date after end date raises a validation error."""
-        end_date: datetime.date = (datetime.datetime.now() + datetime.timedelta(days=1)).date()
+        end_date: datetime.date = (timezone.now() + datetime.timedelta(days=1)).date()
         start_date_after_end_date: datetime.date = end_date + datetime.timedelta(days=1)
 
         actual_allocation: Allocation = AllocationFactory.build(
@@ -121,7 +123,7 @@ class AllocationModelCleanMethodTests(TestCase):
 
     def test_status_is_active_and_start_date_before_end_date_no_error(self):
         """Test that an allocation with status 'active' and start date before end date does not raise a validation error."""
-        start_date: datetime.date = datetime.datetime(year=2001, month=5, day=3).date()
+        start_date: datetime.date = datetime.datetime(year=2001, month=5, day=3, tzinfo=timezone.get_current_timezone()).date()
         end_date: datetime.date = start_date + datetime.timedelta(days=160)
 
         actual_allocation: Allocation = AllocationFactory.build(
@@ -131,7 +133,7 @@ class AllocationModelCleanMethodTests(TestCase):
 
     def test_status_is_active_and_start_date_equals_end_date_no_error(self):
         """Test that an allocation with status 'active' and start date equal to end date does not raise a validation error."""
-        start_and_end_date: datetime.date = datetime.datetime(year=2005, month=6, day=3).date()
+        start_and_end_date: datetime.date = datetime.datetime(year=2005, month=6, day=3, tzinfo=timezone.get_current_timezone()).date()
 
         actual_allocation: Allocation = AllocationFactory.build(
             status=self.active_status, start_date=start_and_end_date, end_date=start_and_end_date, project=self.project
