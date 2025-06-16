@@ -56,6 +56,30 @@ class TestSignals(TestCase):
             self.project, self.user, self.form_data
         )
 
+    def _createSubAllocation(self):
+        sub_form_data = {
+            "storage_filesystem_path": "/this/path/should/filter",
+            "storage_export_path": "bar",
+            "storage_ticket": "ITSD-54321",
+            "storage_name": "baz",
+            "storage_quota": 7,
+            "protocols": ["nfs"],
+            "rw_users": ["test"],
+            "ro_users": ["test1"],
+            "cost_center": "Uncle Pennybags",
+            "billing_exempt": "No",
+            "department_number": "Time Travel Services",
+            "billing_cycle": "monthly",
+            "service_rate": "general",
+        }
+
+        return create_allocation(
+            project=self.project,
+            user=self.user,
+            form_data=sub_form_data,
+            parent=self.storage_allocation,
+        )
+
     @patch("coldfront.plugins.qumulo.signals.async_task")
     def test_allocation_activate_creates_allocation(
         self,
@@ -102,6 +126,7 @@ class TestSignals(TestCase):
         self,
         mock_QumuloAPI: MagicMock,
     ):
+        sub_alloc = self._createSubAllocation()
         qumulo_instance = mock_QumuloAPI.return_value
 
         allocation_change_approved.send(
@@ -117,6 +142,11 @@ class TestSignals(TestCase):
             name=mock_get_attribute("storage_name"),
             limit_in_bytes=mock_get_attribute("storage_quota") * (2**40),
         )
+
+        qumulo_instance.update_quota.assert_called_once_with(
+                fs_path=sub_alloc.get_attribute(name="storage_filesystem_path"),
+                limit_in_bytes=sub_alloc.get_attribute(name="storage_quota") * (2**40),
+            )
 
     def test_allocation_disable_removes_acls(
         self,

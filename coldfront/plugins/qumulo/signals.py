@@ -11,6 +11,7 @@ from coldfront.plugins.qumulo.tasks import reset_allocation_acls
 
 from coldfront.core.allocation.models import (
     Allocation,
+    AllocationLinkage
 )
 from coldfront.core.allocation.signals import (
     allocation_activate,
@@ -102,3 +103,17 @@ def on_allocation_change_approved(sender, **kwargs):
         name=name,
         limit_in_bytes=limit_in_bytes,
     )
+
+    try:
+        links = AllocationLinkage.objects.get(parent=kwargs["allocation_pk"])
+    except AllocationLinkage.DoesNotExist:
+        pass
+    if links is not None:
+        for child in links.children.all():
+            child_fs_path=child.get_attribute(name="storage_filesystem_path")
+            qumulo_api.update_quota(
+                fs_path=child_fs_path,
+                limit_in_bytes=limit_in_bytes,
+            )
+                     
+
