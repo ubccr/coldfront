@@ -54,8 +54,10 @@ def send_expiry_emails():
                 datetime.datetime.today() + datetime.timedelta(days=days_remaining)).date()
 
             for project_user in user.projectuser_set.filter(status__name="Active"):
-                project = project_user.project
+                if not project_user.enable_notifications:
+                    continue
 
+                project = project_user.project
                 if project.status.name == 'Active' and (project.end_date == expiring_in_days):
                     if not project.requires_review:
                         continue
