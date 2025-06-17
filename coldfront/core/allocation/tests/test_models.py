@@ -6,16 +6,20 @@
 
 import datetime
 from django.utils import timezone
-
+from django.utils.html import escape, format_html
 from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
 from django.utils.safestring import SafeString
-
-from coldfront.core.allocation.models import Allocation, AllocationStatusChoice
+from unittest.mock import patch
+from coldfront.core.allocation.models import Allocation, AllocationStatusChoice, AllocationAttribute
 from coldfront.core.project.models import Project
 from coldfront.core.test_helpers.factories import (
     AllocationFactory,
     AllocationStatusChoiceFactory,
+    AllocationAttributeFactory,
+    AllocationAttributeTypeFactory,
+    AAttributeTypeFactory,
+    AllocationAttributeUsageFactory,
     ProjectFactory,
     ResourceFactory,
 )
@@ -143,7 +147,6 @@ class AllocationModelCleanMethodTests(TestCase):
 
 class AllocationFuncOnExpireException(Exception):
     """Custom exception for testing allocation expiration function in the AllocationModelSaveMethodTests class."""
-
     pass
 
 
@@ -162,12 +165,10 @@ NUMBER_OF_INVOCATIONS = 12
 
 def count_invocations(*args, **kwargs):
     count_invocations.invocation_count = getattr(count_invocations, "invocation_count", 0) + 1
-    pass
 
 
 def count_invocations_negative(*args, **kwargs):
     count_invocations_negative.invocation_count = getattr(count_invocations_negative, "invocation_count", 0) - 1
-    pass
 
 
 def list_of_same_expire_funcs(func: callable, size=NUMBER_OF_INVOCATIONS) -> list[str]:
@@ -296,5 +297,127 @@ class AllocationModelSaveMethodTests(TestCase):
 
 
 class AllocationModelExpiresInTests(TestCase):
-    # going to skip ths until I know how datetimes should be handled
-    ...
+
+    mocked_today = datetime.date(2025, 1, 1)
+    three_years_after_mocked_today = datetime.date(2028, 1, 1)
+    four_years_after_mocked_today = datetime.date(2029, 1, 1)
+
+    def test_end_date_is_today_returns_zero(self):
+        """Test that the expires_in method returns 0 when the end date is today."""
+        allocation: Allocation = AllocationFactory(end_date=timezone.now().date())
+        self.assertEqual(allocation.expires_in, 0)
+
+    def test_end_date_tomorrow_returns_one(self):
+        """Test that the expires_in method returns 1 when the end date is tomorrow."""
+        tomorrow: datetime.date = (timezone.now() + datetime.timedelta(days=1)).date()
+        allocation: Allocation = AllocationFactory(end_date=tomorrow)
+        self.assertEqual(allocation.expires_in, 1)
+
+    def test_end_date_yesterday_returns_negative_one(self):
+        """Test that the expires_in method returns -1 when the end date is yesterday."""
+        yesterday: datetime.date = (timezone.now() - datetime.timedelta(days=1)).date()
+        allocation: Allocation = AllocationFactory(end_date=yesterday)
+        self.assertEqual(allocation.expires_in, -1)
+
+    def test_end_date_one_week_ago_returns_negative_seven(self):
+        """Test that the expires_in method returns -7 when the end date is one week ago."""
+        days_in_a_week: int = 7
+        one_week_ago: datetime.date = (timezone.now() - datetime.timedelta(days=days_in_a_week)).date()
+        allocation: Allocation = AllocationFactory(end_date=one_week_ago)
+        self.assertEqual(allocation.expires_in, -days_in_a_week)
+
+    def test_end_date_in_one_week_returns_seven(self):
+        """Test that the expires_in method returns 7 when the end date is in one week."""
+        days_in_a_week: int = 7
+        one_week_from_now: datetime.date = (timezone.now() + datetime.timedelta(days=days_in_a_week)).date()
+        allocation: Allocation = AllocationFactory(end_date=one_week_from_now)
+        self.assertEqual(allocation.expires_in, days_in_a_week)
+
+    def test_end_date_in_three_years_without_leap_day_returns_days_including_no_leap_day(self):
+        """Test that the expires_in method returns the correct number of days in three years when those years did not have a leap year."""
+        days_in_three_years_excluding_leap_year = 365 * 3
+
+        with patch("coldfront.core.allocation.models.datetime") as mock_datetime:
+            mock_datetime.date.today.return_value = self.mocked_today
+
+            allocation: Allocation = AllocationFactory(end_date=self.three_years_after_mocked_today)
+
+            self.assertEqual(allocation.expires_in, days_in_three_years_excluding_leap_year)
+
+    def test_end_date_in_four_years_returns_days_including_leap_day(self):
+        """Test that the expires_in method accounts for the extra day of a leap year."""
+        days_in_four_years_including_leap_year = (365 * 4) + 1
+
+        with patch("coldfront.core.allocation.models.datetime") as mock_datetime:
+            mock_datetime.date.today.return_value = self.mocked_today
+
+            allocation: Allocation = AllocationFactory(end_date=self.four_years_after_mocked_today)
+
+            self.assertEqual(allocation.expires_in, days_in_four_years_including_leap_year)
+    
+
+
+class AllocationModelGetInformationTests(TestCase):
+
+    def test_no_allocation_attributes_returns_empty_string(self):
+        """Test that the get_information method returns an empty string if there are no allocation attributes."""
+        allocation: Allocation = AllocationFactory()
+        self.assertEqual(allocation.get_information, "")
+
+    def test_attribute_value_is_not_a_number_returns_invalid_value_string(self):
+        """Test that the get_information method returns an empty string if the only attribute has value not parsable to a number."""
+        allocation: Allocation = AllocationFactory()
+        text_not_parsable_to_number = "this is not parsable to a number"
+        allocation_attribute: AllocationAttribute = AllocationAttributeFactory(allocation=allocation, value=text_not_parsable_to_number)
+        self.assertEqual(allocation.get_information, "")
+
+    def test_attribute_value_is_zero_returns_100_percent_string(self):
+        allocation: Allocation = AllocationFactory()
+        allocation_attribute: AllocationAttribute = AllocationAttributeFactory(allocation=allocation, value=0)
+        allocation_attribute_usage = AllocationAttributeUsageFactory(allocation_attribute=allocation_attribute, value=10)
+
+        allocation_attribute_type_name: str = allocation_attribute.allocation_attribute_type.name
+        allocation_attribute_usage_value: float = float(allocation_attribute_usage.value)
+        allocation_attribute_value: str = allocation_attribute.value
+        expected_percent = 100
+
+        expected_information: SafeString = format_html(
+            "{}: {}/{} ({} %) <br>",
+            allocation_attribute_type_name,
+            allocation_attribute_usage_value,
+            allocation_attribute_value,
+            expected_percent,
+        )
+
+        self.assertEqual(allocation.get_information, expected_information)
+
+    def test_multiple_attributes_with_same_type_returns_combined_information(self):
+        """Test that the get_information method returns combined information for multiple attributes."""
+        allocation: Allocation = AllocationFactory()
+        allocation_attribute_type = AllocationAttributeTypeFactory()
+
+        allocation_attribute_1: AllocationAttribute = AllocationAttributeFactory(
+            allocation=allocation, allocation_attribute_type=allocation_attribute_type, value=100
+        )
+        allocation_attribute_2: AllocationAttribute = AllocationAttributeFactory(
+            allocation=allocation, allocation_attribute_type=allocation_attribute_type, value=1000
+        )
+        allocation_attribute_usage_1 = AllocationAttributeUsageFactory(allocation_attribute=allocation_attribute_1, value=50)
+        allocation_attribute_usage_2 = AllocationAttributeUsageFactory(allocation_attribute=allocation_attribute_2, value=500)
+
+        percent_1 = round( (float(allocation_attribute_usage_1.value) / float(allocation_attribute_1.value)) * 10_000 ) / 100
+        percent_2 = round( (float(allocation_attribute_usage_2.value) / float(allocation_attribute_2.value)) * 10_000 ) / 100
+
+        expected_information: SafeString = format_html(
+            "{}: {}/{} ({} %) <br>{}: {}/{} ({} %) <br>",
+            allocation_attribute_type.name,
+            float(allocation_attribute_usage_1.value),
+            allocation_attribute_1.value,
+            percent_1,
+            allocation_attribute_type.name,
+            float(allocation_attribute_usage_2.value),
+            allocation_attribute_2.value,
+            percent_2,
+        )
+
+        self.assertEqual(allocation.get_information, expected_information)
