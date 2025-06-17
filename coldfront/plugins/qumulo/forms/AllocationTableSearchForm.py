@@ -14,6 +14,10 @@ class AllocationTableSearchForm(forms.Form):
         label="PI Given Name", max_length=100, required=False
     )
 
+    pi_user_name = forms.CharField(
+        label="PI WashU Key", max_length=100, required=False
+    )
+
     status = forms.ModelMultipleChoiceField(
         widget=forms.CheckboxSelectMultiple,
         queryset=AllocationStatusChoice.objects.all().order_by(Lower("name")),
@@ -25,6 +29,10 @@ class AllocationTableSearchForm(forms.Form):
     )
 
     itsd_ticket = forms.CharField(label="ITSD Ticket", max_length=100, required=False)
+
+    allocation_name = forms.CharField(
+        label="Allocation Name", max_length=100, required=False
+    )
 
     no_grouping = forms.BooleanField(
         label="No Grouping",
