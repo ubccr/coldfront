@@ -5,21 +5,22 @@
 """Unit tests for the allocation models"""
 
 import datetime
-from django.utils import timezone
-from django.utils.html import escape, format_html
+from unittest.mock import patch
+
 from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
+from django.utils import timezone
+from django.utils.html import format_html
 from django.utils.safestring import SafeString
-from unittest.mock import patch
-from coldfront.core.allocation.models import Allocation, AllocationStatusChoice, AllocationAttribute
+
+from coldfront.core.allocation.models import Allocation, AllocationAttribute, AllocationStatusChoice
 from coldfront.core.project.models import Project
 from coldfront.core.test_helpers.factories import (
-    AllocationFactory,
-    AllocationStatusChoiceFactory,
     AllocationAttributeFactory,
     AllocationAttributeTypeFactory,
-    AAttributeTypeFactory,
     AllocationAttributeUsageFactory,
+    AllocationFactory,
+    AllocationStatusChoiceFactory,
     ProjectFactory,
     ResourceFactory,
 )
@@ -91,7 +92,6 @@ class AllocationModelCleanMethodTests(TestCase):
     def test_status_is_expired_and_start_date_equals_end_date_no_error(self):
         """Test that an allocation with status 'expired' and start date equal to end date does not raise a validation error."""
         start_and_end_date: datetime.date = datetime.datetime(year=1997, month=4, day=20, tzinfo=timezone.utc).date()
-        
 
         actual_allocation: Allocation = AllocationFactory.build(
             status=self.expired_status, start_date=start_and_end_date, end_date=start_and_end_date, project=self.project
@@ -147,6 +147,7 @@ class AllocationModelCleanMethodTests(TestCase):
 
 class AllocationFuncOnExpireException(Exception):
     """Custom exception for testing allocation expiration function in the AllocationModelSaveMethodTests class."""
+
     pass
 
 
@@ -297,7 +298,6 @@ class AllocationModelSaveMethodTests(TestCase):
 
 
 class AllocationModelExpiresInTests(TestCase):
-
     mocked_today = datetime.date(2025, 1, 1)
     three_years_after_mocked_today = datetime.date(2028, 1, 1)
     four_years_after_mocked_today = datetime.date(2029, 1, 1)
@@ -354,11 +354,9 @@ class AllocationModelExpiresInTests(TestCase):
             allocation: Allocation = AllocationFactory(end_date=self.four_years_after_mocked_today)
 
             self.assertEqual(allocation.expires_in, days_in_four_years_including_leap_year)
-    
 
 
 class AllocationModelGetInformationTests(TestCase):
-
     def test_no_allocation_attributes_returns_empty_string(self):
         """Test that the get_information method returns an empty string if there are no allocation attributes."""
         allocation: Allocation = AllocationFactory()
@@ -368,13 +366,17 @@ class AllocationModelGetInformationTests(TestCase):
         """Test that the get_information method returns an empty string if the only attribute has value not parsable to a number."""
         allocation: Allocation = AllocationFactory()
         text_not_parsable_to_number = "this is not parsable to a number"
-        allocation_attribute: AllocationAttribute = AllocationAttributeFactory(allocation=allocation, value=text_not_parsable_to_number)
+        allocation_attribute: AllocationAttribute = AllocationAttributeFactory(  # noqa: F841
+            allocation=allocation, value=text_not_parsable_to_number
+        )
         self.assertEqual(allocation.get_information, "")
 
     def test_attribute_value_is_zero_returns_100_percent_string(self):
         allocation: Allocation = AllocationFactory()
         allocation_attribute: AllocationAttribute = AllocationAttributeFactory(allocation=allocation, value=0)
-        allocation_attribute_usage = AllocationAttributeUsageFactory(allocation_attribute=allocation_attribute, value=10)
+        allocation_attribute_usage = AllocationAttributeUsageFactory(
+            allocation_attribute=allocation_attribute, value=10
+        )
 
         allocation_attribute_type_name: str = allocation_attribute.allocation_attribute_type.name
         allocation_attribute_usage_value: float = float(allocation_attribute_usage.value)
@@ -402,11 +404,19 @@ class AllocationModelGetInformationTests(TestCase):
         allocation_attribute_2: AllocationAttribute = AllocationAttributeFactory(
             allocation=allocation, allocation_attribute_type=allocation_attribute_type, value=1000
         )
-        allocation_attribute_usage_1 = AllocationAttributeUsageFactory(allocation_attribute=allocation_attribute_1, value=50)
-        allocation_attribute_usage_2 = AllocationAttributeUsageFactory(allocation_attribute=allocation_attribute_2, value=500)
+        allocation_attribute_usage_1 = AllocationAttributeUsageFactory(
+            allocation_attribute=allocation_attribute_1, value=50
+        )
+        allocation_attribute_usage_2 = AllocationAttributeUsageFactory(
+            allocation_attribute=allocation_attribute_2, value=500
+        )
 
-        percent_1 = round( (float(allocation_attribute_usage_1.value) / float(allocation_attribute_1.value)) * 10_000 ) / 100
-        percent_2 = round( (float(allocation_attribute_usage_2.value) / float(allocation_attribute_2.value)) * 10_000 ) / 100
+        percent_1 = (
+            round((float(allocation_attribute_usage_1.value) / float(allocation_attribute_1.value)) * 10_000) / 100
+        )
+        percent_2 = (
+            round((float(allocation_attribute_usage_2.value) / float(allocation_attribute_2.value)) * 10_000) / 100
+        )
 
         expected_information: SafeString = format_html(
             "{}: {}/{} ({} %) <br>{}: {}/{} ({} %) <br>",
