@@ -24,6 +24,7 @@ from coldfront.core.test_helpers.factories import (
     ProjectFactory,
     ResourceFactory,
 )
+import typing
 
 
 class AllocationModelTests(TestCase):
@@ -165,14 +166,14 @@ NUMBER_OF_INVOCATIONS = 12
 
 
 def count_invocations(*args, **kwargs):
-    count_invocations.invocation_count = getattr(count_invocations, "invocation_count", 0) + 1
+    count_invocations.invocation_count = getattr(count_invocations, "invocation_count", 0) + 1 # type: ignore
 
 
 def count_invocations_negative(*args, **kwargs):
-    count_invocations_negative.invocation_count = getattr(count_invocations_negative, "invocation_count", 0) - 1
+    count_invocations_negative.invocation_count = getattr(count_invocations_negative, "invocation_count", 0) - 1 # type: ignore
 
 
-def list_of_same_expire_funcs(func: callable, size=NUMBER_OF_INVOCATIONS) -> list[str]:
+def list_of_same_expire_funcs(func: typing.Callable, size=NUMBER_OF_INVOCATIONS) -> list[str]:
     return [get_dotted_path(func) for _ in range(size)]
 
 
@@ -195,8 +196,8 @@ def list_of_different_expire_funcs() -> list[str]:
 
 class AllocationModelSaveMethodTests(TestCase):
     def setUp(self):
-        count_invocations.invocation_count = 0
-        count_invocations_negative.invocation_count = 0
+        count_invocations.invocation_count = 0 # type: ignore
+        count_invocations_negative.invocation_count = 0 # type: ignore
 
     @classmethod
     def setUpTestData(cls):
@@ -224,7 +225,7 @@ class AllocationModelSaveMethodTests(TestCase):
         allocation = AllocationFactory(status=self.active_status)
         allocation.status = self.expired_status
         allocation.save()
-        self.assertEqual(count_invocations.invocation_count, NUMBER_OF_INVOCATIONS)
+        self.assertEqual(count_invocations.invocation_count, NUMBER_OF_INVOCATIONS) # type: ignore
 
     @override_settings(ALLOCATION_FUNCS_ON_EXPIRE=list_of_different_expire_funcs())
     def test_on_expiration_calls_multiple_different_funcs_in_funcs_on_expire(self):
@@ -240,13 +241,13 @@ class AllocationModelSaveMethodTests(TestCase):
         if NUMBER_OF_INVOCATIONS % 2 == 0:
             expected_positive_invocations = NUMBER_OF_INVOCATIONS // 2
             expected_negative_invocations = -((NUMBER_OF_INVOCATIONS // 2) - 1)
-            self.assertEqual(count_invocations.invocation_count, expected_positive_invocations)
-            self.assertEqual(count_invocations_negative.invocation_count, expected_negative_invocations)
+            self.assertEqual(count_invocations.invocation_count, expected_positive_invocations) # type: ignore
+            self.assertEqual(count_invocations_negative.invocation_count, expected_negative_invocations) # type: ignore
         else:
             expected_positive_invocations = NUMBER_OF_INVOCATIONS // 2
             expected_negative_invocations = -(NUMBER_OF_INVOCATIONS // 2)
-            self.assertEqual(count_invocations.invocation_count, expected_positive_invocations)
-            self.assertEqual(count_invocations_negative.invocation_count, expected_negative_invocations)
+            self.assertEqual(count_invocations.invocation_count, expected_positive_invocations) # type: ignore
+            self.assertEqual(count_invocations_negative.invocation_count, expected_negative_invocations) # type: ignore
 
     @override_settings(ALLOCATION_FUNCS_ON_EXPIRE=list_of_same_expire_funcs(allocation_func_on_expire_exception, 1))
     def test_no_expire_no_funcs_on_expire_called(self):
