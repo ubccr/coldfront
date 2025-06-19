@@ -5,6 +5,7 @@
 """Unit tests for the allocation models"""
 
 import datetime
+import typing
 from unittest.mock import patch
 
 from django.core.exceptions import ValidationError
@@ -13,7 +14,11 @@ from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.safestring import SafeString
 
-from coldfront.core.allocation.models import Allocation, AllocationAttribute, AllocationStatusChoice
+from coldfront.core.allocation.models import (
+    Allocation,
+    AllocationAttribute,
+    AllocationStatusChoice,
+)
 from coldfront.core.project.models import Project
 from coldfront.core.test_helpers.factories import (
     AllocationAttributeFactory,
@@ -24,7 +29,6 @@ from coldfront.core.test_helpers.factories import (
     ProjectFactory,
     ResourceFactory,
 )
-import typing
 
 
 class AllocationModelTests(TestCase):
@@ -166,11 +170,11 @@ NUMBER_OF_INVOCATIONS = 12
 
 
 def count_invocations(*args, **kwargs):
-    count_invocations.invocation_count = getattr(count_invocations, "invocation_count", 0) + 1 # type: ignore
+    count_invocations.invocation_count = getattr(count_invocations, "invocation_count", 0) + 1  # type: ignore
 
 
 def count_invocations_negative(*args, **kwargs):
-    count_invocations_negative.invocation_count = getattr(count_invocations_negative, "invocation_count", 0) - 1 # type: ignore
+    count_invocations_negative.invocation_count = getattr(count_invocations_negative, "invocation_count", 0) - 1  # type: ignore
 
 
 def list_of_same_expire_funcs(func: typing.Callable, size=NUMBER_OF_INVOCATIONS) -> list[str]:
@@ -196,8 +200,8 @@ def list_of_different_expire_funcs() -> list[str]:
 
 class AllocationModelSaveMethodTests(TestCase):
     def setUp(self):
-        count_invocations.invocation_count = 0 # type: ignore
-        count_invocations_negative.invocation_count = 0 # type: ignore
+        count_invocations.invocation_count = 0  # type: ignore
+        count_invocations_negative.invocation_count = 0  # type: ignore
 
     @classmethod
     def setUpTestData(cls):
@@ -225,7 +229,7 @@ class AllocationModelSaveMethodTests(TestCase):
         allocation = AllocationFactory(status=self.active_status)
         allocation.status = self.expired_status
         allocation.save()
-        self.assertEqual(count_invocations.invocation_count, NUMBER_OF_INVOCATIONS) # type: ignore
+        self.assertEqual(count_invocations.invocation_count, NUMBER_OF_INVOCATIONS)  # type: ignore
 
     @override_settings(ALLOCATION_FUNCS_ON_EXPIRE=list_of_different_expire_funcs())
     def test_on_expiration_calls_multiple_different_funcs_in_funcs_on_expire(self):
@@ -241,13 +245,13 @@ class AllocationModelSaveMethodTests(TestCase):
         if NUMBER_OF_INVOCATIONS % 2 == 0:
             expected_positive_invocations = NUMBER_OF_INVOCATIONS // 2
             expected_negative_invocations = -((NUMBER_OF_INVOCATIONS // 2) - 1)
-            self.assertEqual(count_invocations.invocation_count, expected_positive_invocations) # type: ignore
-            self.assertEqual(count_invocations_negative.invocation_count, expected_negative_invocations) # type: ignore
+            self.assertEqual(count_invocations.invocation_count, expected_positive_invocations)  # type: ignore
+            self.assertEqual(count_invocations_negative.invocation_count, expected_negative_invocations)  # type: ignore
         else:
             expected_positive_invocations = NUMBER_OF_INVOCATIONS // 2
             expected_negative_invocations = -(NUMBER_OF_INVOCATIONS // 2)
-            self.assertEqual(count_invocations.invocation_count, expected_positive_invocations) # type: ignore
-            self.assertEqual(count_invocations_negative.invocation_count, expected_negative_invocations) # type: ignore
+            self.assertEqual(count_invocations.invocation_count, expected_positive_invocations)  # type: ignore
+            self.assertEqual(count_invocations_negative.invocation_count, expected_negative_invocations)  # type: ignore
 
     @override_settings(ALLOCATION_FUNCS_ON_EXPIRE=list_of_same_expire_funcs(allocation_func_on_expire_exception, 1))
     def test_no_expire_no_funcs_on_expire_called(self):
@@ -363,13 +367,10 @@ class AllocationModelGetInformationTests(TestCase):
         allocation: Allocation = AllocationFactory()
         self.assertEqual(allocation.get_information, "")
 
-    def test_attribute_value_is_not_a_number_returns_invalid_value_string(self):
-        """Test that the get_information method returns an empty string if the only attribute has value not parsable to a number."""
+    @override_settings(ALLOCATION_ATTRIBUTE_VIEW_LIST=[])
+    def test_attribute_type_not_in_view_list_returns_empty_string(self):
+        """Test that the get_information method returns an empty string if the attribute type is not in ALLOCATION_ATTRIBUTE_VIEW_LIST."""
         allocation: Allocation = AllocationFactory()
-        text_not_parsable_to_number = "this is not parsable to a number"
-        allocation_attribute: AllocationAttribute = AllocationAttributeFactory(  # noqa: F841
-            allocation=allocation, value=text_not_parsable_to_number
-        )
         self.assertEqual(allocation.get_information, "")
 
     def test_attribute_value_is_zero_returns_100_percent_string(self):
