@@ -115,7 +115,6 @@ def on_allocation_change_approved(sender, **kwargs):
             # child_name = child.get_attribute(name="storage_name")
             qumulo_api.update_quota(
                 fs_path=child_fs_path,
-
                 limit_in_bytes=limit_in_bytes,
             )
             # qumulo_api.update_allocation(
