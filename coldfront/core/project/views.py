@@ -821,6 +821,7 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
             initial_data.append({
                 'pk': allocation.pk,
                 'resource': allocation.get_parent_resource.name,
+                'details': allocation.get_information,
                 'resource_type': allocation.get_parent_resource.resource_type.name,
                 'status': allocation.status.name
             })

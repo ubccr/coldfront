@@ -60,6 +60,7 @@ class ProjectAddUsersToAllocationForm(forms.Form):
     pk = forms.IntegerField(disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
     resource = forms.CharField(max_length=50, disabled=True)
+    details = forms.CharField(max_length=300, disabled=True, required=False)
     resource_type = forms.CharField(max_length=50, disabled=True)
     status = forms.CharField(max_length=50, disabled=True)
     role = forms.ChoiceField(choices=(('', '----'),), disabled=True, required=False)

@@ -33,6 +33,7 @@
                 <th><input type="checkbox" class="check" id="selectAllAllocations"></th>
                 <th scope="col">#</th>
                 <th scope="col">Resource</th>
+                <th scope="col">Details</th>
                 <th scope="col">Resource Type</th>
                 <th scope="col">Status</th>
                 <th scope="col">Role</th>
@@ -44,6 +45,7 @@
                   <td>{{ form.selected }}</td>
                   <td><a href="{% url 'allocation-detail' form.pk.value %}" target="_blank">{{ form.pk.value }}</a></td>
                   <td>{{ form.resource.value }}</td>
+                  <td>{{ form.details.value }}</td>
                   <td>{{ form.resource_type.value }}</td>
                   <td>{{ form.status.value }}</td>
                   <td>{{ form.role }}</td>
