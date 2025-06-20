@@ -62,7 +62,7 @@ class TestSignals(TestCase):
             "storage_export_path": "bar",
             "storage_ticket": "ITSD-54321",
             "storage_name": "baz",
-            "storage_quota": 7,
+            "storage_quota": 4,
             "protocols": ["nfs"],
             "rw_users": ["test"],
             "ro_users": ["test1"],
@@ -135,17 +135,18 @@ class TestSignals(TestCase):
             allocation_change_pk=1,
         )
 
+        byte_limit = mock_get_attribute("storage_quota") * (2**40)
         qumulo_instance.update_allocation.assert_called_once_with(
             protocols=["nfs"],
             fs_path=mock_get_attribute("storage_filesystem_path"),
             export_path=mock_get_attribute("storage_export_path"),
             name=mock_get_attribute("storage_name"),
-            limit_in_bytes=mock_get_attribute("storage_quota") * (2**40),
+            limit_in_bytes=byte_limit,
         )
 
         qumulo_instance.update_quota.assert_called_once_with(
                 fs_path=sub_alloc.get_attribute(name="storage_filesystem_path"),
-                limit_in_bytes=sub_alloc.get_attribute(name="storage_quota") * (2**40),
+                limit_in_bytes=byte_limit,
             )
 
     def test_allocation_disable_removes_acls(

@@ -95,7 +95,6 @@ def on_allocation_change_approved(sender, **kwargs):
     protocols = json.loads(allocation_obj.get_attribute(name="storage_protocols"))
     name = allocation_obj.get_attribute(name="storage_name")
     limit_in_bytes = allocation_obj.get_attribute(name="storage_quota") * (2**40)
-
     qumulo_api.update_allocation(
         protocols=protocols,
         export_path=export_path,
@@ -111,9 +110,20 @@ def on_allocation_change_approved(sender, **kwargs):
     if links is not None:
         for child in links.children.all():
             child_fs_path=child.get_attribute(name="storage_filesystem_path")
+            # child_export_path = child.get_attribute(name="storage_export_path")
+            # child_protocols = json.loads(child.get_attribute(name="storage_protocols"))
+            # child_name = child.get_attribute(name="storage_name")
             qumulo_api.update_quota(
                 fs_path=child_fs_path,
+
                 limit_in_bytes=limit_in_bytes,
             )
+            # qumulo_api.update_allocation(
+            #     protocols=child_protocols,
+            #     export_path=child_export_path,
+            #     fs_path=child_fs_path,
+            #     name=child_name,
+            #     limit_in_bytes=limit_in_bytes,
+            # )
                      
 
