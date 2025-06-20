@@ -19,23 +19,7 @@ class DepartmentSelector(models.Manager):
         to labs that are Coldfront projects.
         """
         # get organization ids for all projects
-        child_id_search_list = set(
-            ProjectOrganization.objects.all().values_list('organization_id')
-        )
-        child_parent_ids = {}
-        while True:
-            # collect all parents of organizations in child_id_search_list
-            orgrelations = OrgRelation.objects.filter(child_id__in=child_id_search_list)
-            # collect parent and child ids
-            if orgrelations:
-                for relation in orgrelations:
-                    child_parent_ids[relation.child_id] = relation.parent_id
-                # replace child_ids with ids of orgs
-                child_id_search_list = {relation.parent_id for relation in orgrelations}
-            else:
-                break
-        dept_ids = set(parent_id for parent_id in child_parent_ids.values())
-        return super().get_queryset().filter(id__in=dept_ids, org_tree='Research Computing Storage Billing')
+        return super().get_queryset().filter(org_tree='Research Computing Storage Billing')
 
 
 class Department(Organization):
