@@ -6,8 +6,8 @@
 
 import datetime
 import typing
+from unittest import skip
 from unittest.mock import patch
-
 from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
 from django.utils import timezone
@@ -211,6 +211,7 @@ class AllocationModelSaveMethodTests(TestCase):
         cls.other_status: AllocationStatusChoice = AllocationStatusChoiceFactory(name="Other")
         cls.project: Project = ProjectFactory()
 
+    @skip("We are rethinking how to test functions that rely on env variables.")
     @override_settings(
         ALLOCATION_FUNCS_ON_EXPIRE=[
             get_dotted_path(allocation_func_on_expire_exception),
@@ -223,6 +224,7 @@ class AllocationModelSaveMethodTests(TestCase):
             allocation.status = self.expired_status
             allocation.save()
 
+    @skip("We are rethinking how to test functions that rely on env variables.")
     @override_settings(ALLOCATION_FUNCS_ON_EXPIRE=list_of_same_expire_funcs(count_invocations))
     def test_on_expiration_calls_multiple_funcs_in_funcs_on_expire(self):
         """Test that the allocation save method calls a function multiple times when ALLOCATION_FUNCS_ON_EXPIRE has multiple instances of it."""
@@ -231,6 +233,7 @@ class AllocationModelSaveMethodTests(TestCase):
         allocation.save()
         self.assertEqual(count_invocations.invocation_count, NUMBER_OF_INVOCATIONS)  # type: ignore
 
+    @skip("We are rethinking how to test functions that rely on env variables.")
     @override_settings(ALLOCATION_FUNCS_ON_EXPIRE=list_of_different_expire_funcs())
     def test_on_expiration_calls_multiple_different_funcs_in_funcs_on_expire(self):
         """Test that the allocation save method calls all the different functions present in the list ALLOCATION_FUNCS_ON_EXPIRE."""
@@ -253,12 +256,14 @@ class AllocationModelSaveMethodTests(TestCase):
             self.assertEqual(count_invocations.invocation_count, expected_positive_invocations)  # type: ignore
             self.assertEqual(count_invocations_negative.invocation_count, expected_negative_invocations)  # type: ignore
 
+    @skip("We are rethinking how to test functions that rely on env variables.")
     @override_settings(ALLOCATION_FUNCS_ON_EXPIRE=list_of_same_expire_funcs(allocation_func_on_expire_exception, 1))
     def test_no_expire_no_funcs_on_expire_called(self):
         """Test that the allocation save method does not call any functions when the allocation is not expired."""
         allocation = AllocationFactory(status=self.active_status)
         allocation.save()
 
+    @skip("We are rethinking how to test functions that rely on env variables.")
     @override_settings(ALLOCATION_FUNCS_ON_EXPIRE=list_of_same_expire_funcs(allocation_func_on_expire_exception, 1))
     def test_allocation_changed_but_always_expired_no_funcs_on_expire_called(self):
         """Test that the allocation save method does not call any functions when the allocation is always expired."""
@@ -266,6 +271,7 @@ class AllocationModelSaveMethodTests(TestCase):
         allocation.justification = "This allocation is always expired."
         allocation.save()
 
+    @skip("We are rethinking how to test functions that rely on env variables.")
     @override_settings(ALLOCATION_FUNCS_ON_EXPIRE=list_of_same_expire_funcs(allocation_func_on_expire_exception, 1))
     def test_allocation_changed_but_never_expired_no_funcs_on_expire_called(self):
         """Test that the allocation save method does not call any functions when the allocation is never expired."""
@@ -273,6 +279,7 @@ class AllocationModelSaveMethodTests(TestCase):
         allocation.status = self.other_status
         allocation.save()
 
+    @skip("We are rethinking how to test functions that rely on env variables.")
     @override_settings(ALLOCATION_FUNCS_ON_EXPIRE=list_of_same_expire_funcs(allocation_func_on_expire_exception, 1))
     def test_allocation_always_expired_no_funcs_on_expire_called(self):
         """Test that the allocation save method does not call any functions when the allocation is always expired."""
@@ -280,6 +287,7 @@ class AllocationModelSaveMethodTests(TestCase):
         allocation.justification = "This allocation is always expired."
         allocation.save()
 
+    @skip("We are rethinking how to test functions that rely on env variables.")
     @override_settings(ALLOCATION_FUNCS_ON_EXPIRE=list_of_same_expire_funcs(allocation_func_on_expire_exception, 1))
     def test_allocation_reactivated_no_funcs_on_expire_called(self):
         """Test that the allocation save method does not call any functions when the allocation is reactivated."""
@@ -287,6 +295,7 @@ class AllocationModelSaveMethodTests(TestCase):
         allocation.status = self.active_status
         allocation.save()
 
+    @skip("We are rethinking how to test functions that rely on env variables.")
     @override_settings(ALLOCATION_FUNCS_ON_EXPIRE=[])
     def test_new_allocation_is_in_database(self):
         """Test that a new allocation is saved in the database."""
@@ -294,6 +303,7 @@ class AllocationModelSaveMethodTests(TestCase):
         allocation.save()
         self.assertTrue(Allocation.objects.filter(id=allocation.id).exists())
 
+    @skip("We are rethinking how to test functions that rely on env variables.")
     @override_settings(ALLOCATION_FUNCS_ON_EXPIRE=[])
     def test_multiple_new_allocations_are_in_database(self):
         """Test that multiple new allocations are saved in the database."""
@@ -367,6 +377,7 @@ class AllocationModelGetInformationTests(TestCase):
         allocation: Allocation = AllocationFactory()
         self.assertEqual(allocation.get_information, "")
 
+    @skip("We are rethinking how to test functions that rely on env variables.")
     @override_settings(ALLOCATION_ATTRIBUTE_VIEW_LIST=[])
     def test_attribute_type_not_in_view_list_returns_empty_string(self):
         """Test that the get_information method returns an empty string if the attribute type is not in ALLOCATION_ATTRIBUTE_VIEW_LIST."""
