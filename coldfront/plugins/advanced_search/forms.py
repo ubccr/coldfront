@@ -60,7 +60,7 @@ class AllocationAttributeSearchForm(forms.Form):
         label='Allocation Attribute Name',
         queryset=AllocationAttributeType.objects.none() ,
         help_text=(
-            f'To display the list of allocation attributes at least one resource must be selected.'
+            'To display the list of allocation attributes at least one resource must be selected.'
         ),
         required=False,
     )
@@ -159,6 +159,13 @@ class ProjectSearchForm(forms.Form):
     )
     display__project__created = forms.BooleanField(required=False)
 
+    project__end_date = forms.DateField(
+        widget=forms.TextInput(attrs={'class': 'datepicker'}),
+        label="Project End Date",
+        required=False,
+    )
+    display__project__end_date = forms.BooleanField(required=False)
+
     projects_using_ai = forms.BooleanField(label='Only AI', required=False)
     display__project__resources = forms.BooleanField(required=False)
 
@@ -187,6 +194,7 @@ class ProjectSearchForm(forms.Form):
                             css_class='row'
                         )
                     ),
+                    'project__end_date',
                     active=False,
                 ),
             ),
@@ -205,6 +213,7 @@ class ProjectSearchForm(forms.Form):
                     'display__project__users',
                     'display__project__total_users',
                     'display__project__created',
+                    'display__project__end_date',
                     'display__project__resources',
                     active=False,
                 ),
@@ -368,6 +377,13 @@ class AllocationSearchForm(forms.Form):
     )
     display__project__created = forms.BooleanField(required=False)
 
+    project__end_date = forms.DateField(
+        widget=forms.TextInput(attrs={'class': 'datepicker'}),
+        label="Project End Date",
+        required=False,
+    )
+    display__project__end_date = forms.BooleanField(required=False)
+
     display__project__users = forms.BooleanField(
         required=False,
         help_text='Active users. Enable by selecting "only search projects". Enables the user profiles section.'
@@ -445,12 +461,13 @@ class AllocationSearchForm(forms.Form):
                             'project__type__name',
                             'project__class_number',
                             Fieldset('Created Date Range',
-                            Div(
-                                Div('project__created_after_date', css_class='col'),
-                                Div('project__created_before_date', css_class='col'),
-                                css_class='row'
-                            )
-                    ),
+                                Div(
+                                    Div('project__created_after_date', css_class='col'),
+                                    Div('project__created_before_date', css_class='col'),
+                                    css_class='row'
+                                ),
+                            ),
+                            'project__end_date',
                             active=False,
                         ),
                     ),
@@ -466,6 +483,7 @@ class AllocationSearchForm(forms.Form):
                             'display__project__type__name',
                             'display__project__class_number',
                             'display__project__created',
+                            'display__project__end_date',
                             active=False,
                         ),
                     ),

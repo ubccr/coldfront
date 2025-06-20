@@ -70,6 +70,8 @@ class ProjectTable:
             projects = projects.filter(created__gt=data.get('project__created_after_date'))
         if data.get('project__created_before_date'):
             projects = projects.filter(created__lt=data.get('project__created_before_date'))
+        if data.get('project__end_date'):
+            projects = projects.filter(end_date=data.get('project__end_date'))
 
         self.project_queryset = projects
 
@@ -111,7 +113,7 @@ class ProjectTable:
             if current_attribute is None:
                 current_attribute = ''
 
-            if type(current_attribute) == datetime.datetime:
+            if type(current_attribute) in [datetime.datetime, datetime.date]:
                 current_attribute = current_attribute.isoformat()
             
             row.append(current_attribute)
@@ -242,6 +244,8 @@ class AllocationTable:
             projects = projects.filter(created__gt=data.get('project__created_after_date'))
         if data.get('project__created_before_date'):
             projects = projects.filter(created__lt=data.get('project__created_before_date'))
+        if data.get('project__end_date'):
+            projects = projects.filter(end_date=data.get('project__end_date'))
 
         return projects
 
@@ -444,7 +448,7 @@ class AllocationTable:
             if current_attribute is None:
                 current_attribute = ""
 
-            if type(current_attribute) == datetime.datetime:
+            if type(current_attribute) in [datetime.datetime, datetime.date]:
                 current_attribute = current_attribute.isoformat()
 
             row.append(current_attribute)
