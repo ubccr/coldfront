@@ -6,16 +6,15 @@
 
 import datetime
 import typing
-from unittest import skip
 from unittest.mock import patch
+
 from django.core.exceptions import ValidationError
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.safestring import SafeString
 
 from coldfront.core.allocation.models import (
-    ALLOCATION_FUNCS_ON_EXPIRE,
     Allocation,
     AllocationAttribute,
     AllocationStatusChoice,
@@ -200,6 +199,8 @@ def list_of_different_expire_funcs() -> list[str]:
 
 
 class AllocationModelSaveMethodTests(TestCase):
+    path_to_allocation_models_funcs_on_expire: str = "coldfront.core.allocation.models.ALLOCATION_FUNCS_ON_EXPIRE"
+
     def setUp(self):
         count_invocations.invocation_count = 0  # type: ignore
         count_invocations_negative.invocation_count = 0  # type: ignore
@@ -212,7 +213,7 @@ class AllocationModelSaveMethodTests(TestCase):
         cls.other_status: AllocationStatusChoice = AllocationStatusChoiceFactory(name="Other")
         cls.project: Project = ProjectFactory()
 
-    @patch('coldfront.core.allocation.models.ALLOCATION_FUNCS_ON_EXPIRE', list_of_same_expire_funcs(allocation_func_on_expire_exception, 1))
+    @patch(path_to_allocation_models_funcs_on_expire, list_of_same_expire_funcs(allocation_func_on_expire_exception, 1))
     def test_on_expiration_calls_single_func_in_funcs_on_expire(self):
         """Test that the allocation save method calls the functions specified in ALLOCATION_FUNCS_ON_EXPIRE when it expires."""
         allocation = AllocationFactory(status=self.active_status)
@@ -220,7 +221,7 @@ class AllocationModelSaveMethodTests(TestCase):
             allocation.status = self.expired_status
             allocation.save()
 
-    @patch('coldfront.core.allocation.models.ALLOCATION_FUNCS_ON_EXPIRE', list_of_same_expire_funcs(count_invocations))
+    @patch(path_to_allocation_models_funcs_on_expire, list_of_same_expire_funcs(count_invocations))
     def test_on_expiration_calls_multiple_funcs_in_funcs_on_expire(self):
         """Test that the allocation save method calls a function multiple times when ALLOCATION_FUNCS_ON_EXPIRE has multiple instances of it."""
         allocation = AllocationFactory(status=self.active_status)
@@ -228,7 +229,7 @@ class AllocationModelSaveMethodTests(TestCase):
         allocation.save()
         self.assertEqual(count_invocations.invocation_count, NUMBER_OF_INVOCATIONS)  # type: ignore
 
-    @patch('coldfront.core.allocation.models.ALLOCATION_FUNCS_ON_EXPIRE', list_of_different_expire_funcs())
+    @patch(path_to_allocation_models_funcs_on_expire, list_of_different_expire_funcs())
     def test_on_expiration_calls_multiple_different_funcs_in_funcs_on_expire(self):
         """Test that the allocation save method calls all the different functions present in the list ALLOCATION_FUNCS_ON_EXPIRE."""
         allocation = AllocationFactory(status=self.active_status)
@@ -250,48 +251,48 @@ class AllocationModelSaveMethodTests(TestCase):
             self.assertEqual(count_invocations.invocation_count, expected_positive_invocations)  # type: ignore
             self.assertEqual(count_invocations_negative.invocation_count, expected_negative_invocations)  # type: ignore
 
-    @patch('coldfront.core.allocation.models.ALLOCATION_FUNCS_ON_EXPIRE', list_of_same_expire_funcs(allocation_func_on_expire_exception, 1))
+    @patch(path_to_allocation_models_funcs_on_expire, list_of_same_expire_funcs(allocation_func_on_expire_exception, 1))
     def test_no_expire_no_funcs_on_expire_called(self):
         """Test that the allocation save method does not call any functions when the allocation is not expired."""
         allocation = AllocationFactory(status=self.active_status)
         allocation.save()
 
-    @patch('coldfront.core.allocation.models.ALLOCATION_FUNCS_ON_EXPIRE', list_of_same_expire_funcs(allocation_func_on_expire_exception, 1))
+    @patch(path_to_allocation_models_funcs_on_expire, list_of_same_expire_funcs(allocation_func_on_expire_exception, 1))
     def test_allocation_changed_but_always_expired_no_funcs_on_expire_called(self):
         """Test that the allocation save method does not call any functions when the allocation is always expired."""
         allocation = AllocationFactory(status=self.expired_status)
         allocation.justification = "This allocation is always expired."
         allocation.save()
 
-    @patch('coldfront.core.allocation.models.ALLOCATION_FUNCS_ON_EXPIRE', list_of_same_expire_funcs(allocation_func_on_expire_exception, 1))
+    @patch(path_to_allocation_models_funcs_on_expire, list_of_same_expire_funcs(allocation_func_on_expire_exception, 1))
     def test_allocation_changed_but_never_expired_no_funcs_on_expire_called(self):
         """Test that the allocation save method does not call any functions when the allocation is never expired."""
         allocation = AllocationFactory(status=self.active_status)
         allocation.status = self.other_status
         allocation.save()
 
-    @patch('coldfront.core.allocation.models.ALLOCATION_FUNCS_ON_EXPIRE', list_of_same_expire_funcs(allocation_func_on_expire_exception, 1))
+    @patch(path_to_allocation_models_funcs_on_expire, list_of_same_expire_funcs(allocation_func_on_expire_exception, 1))
     def test_allocation_always_expired_no_funcs_on_expire_called(self):
         """Test that the allocation save method does not call any functions when the allocation is always expired."""
         allocation = AllocationFactory(status=self.expired_status)
         allocation.justification = "This allocation is always expired."
         allocation.save()
 
-    @patch('coldfront.core.allocation.models.ALLOCATION_FUNCS_ON_EXPIRE', list_of_same_expire_funcs(allocation_func_on_expire_exception, 1))
+    @patch(path_to_allocation_models_funcs_on_expire, list_of_same_expire_funcs(allocation_func_on_expire_exception, 1))
     def test_allocation_reactivated_no_funcs_on_expire_called(self):
         """Test that the allocation save method does not call any functions when the allocation is reactivated."""
         allocation = AllocationFactory(status=self.expired_status)
         allocation.status = self.active_status
         allocation.save()
 
-    @patch('coldfront.core.allocation.models.ALLOCATION_FUNCS_ON_EXPIRE', list())
+    @patch(path_to_allocation_models_funcs_on_expire, list())
     def test_new_allocation_is_in_database(self):
         """Test that a new allocation is saved in the database."""
         allocation: Allocation = AllocationFactory(status=self.active_status)
         allocation.save()
         self.assertTrue(Allocation.objects.filter(id=allocation.id).exists())
 
-    @patch('coldfront.core.allocation.models.ALLOCATION_FUNCS_ON_EXPIRE', list())
+    @patch(path_to_allocation_models_funcs_on_expire, list())
     def test_multiple_new_allocations_are_in_database(self):
         """Test that multiple new allocations are saved in the database."""
         allocations = [AllocationFactory(status=self.active_status) for _ in range(25)]
@@ -359,12 +360,16 @@ class AllocationModelExpiresInTests(TestCase):
 
 
 class AllocationModelGetInformationTests(TestCase):
+    path_to_allocation_models_allocation_attribute_view_list: str = (
+        "coldfront.core.allocation.models.ALLOCATION_ATTRIBUTE_VIEW_LIST"
+    )
+
     def test_no_allocation_attributes_returns_empty_string(self):
         """Test that the get_information method returns an empty string if there are no allocation attributes."""
         allocation: Allocation = AllocationFactory()
         self.assertEqual(allocation.get_information, "")
 
-    @patch('coldfront.core.allocation.models.ALLOCATION_ATTRIBUTE_VIEW_LIST', list())
+    @patch(path_to_allocation_models_allocation_attribute_view_list, list())
     def test_attribute_type_not_in_view_list_returns_empty_string(self):
         """Test that the get_information method returns an empty string if the attribute type is not in ALLOCATION_ATTRIBUTE_VIEW_LIST."""
         allocation: Allocation = AllocationFactory()
