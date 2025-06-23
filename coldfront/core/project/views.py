@@ -17,6 +17,7 @@ from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
+from django_renderpdf.views import PDFView
 
 from coldfront.core.allocation.utils import generate_guauge_data_from_usage
 from coldfront.core.allocation.models import (
@@ -97,10 +98,8 @@ def produce_filter_parameter(key, value):
 logger = logging.getLogger(__name__)
 
 
-class ProjectStorageReportView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
-    model = Project
+class ProjectStorageReportView(LoginRequiredMixin, UserPassesTestMixin, PDFView):
     template_name = 'project/project_storagereport.html'
-    context_object_name = 'project'
 
     def test_func(self):
         """UserPassesTestMixin Tests"""
@@ -117,10 +116,12 @@ class ProjectStorageReportView(LoginRequiredMixin, UserPassesTestMixin, DetailVi
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        project_users = self.object.projectuser_set.filter(
+
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        project_users = project_obj.projectuser_set.filter(
                     status__name='Active').order_by('user__username')
 
-        storage_allocations = self.object.allocation_set.filter(
+        storage_allocations = project_obj.allocation_set.filter(
             status__name__in=['Active', 'Paid', 'Ready for Review','Payment Requested'],
             resources__resource_type__name='Storage'
         ).distinct().prefetch_related('resources').order_by('-pk')
@@ -136,6 +137,7 @@ class ProjectStorageReportView(LoginRequiredMixin, UserPassesTestMixin, DetailVi
                 allocation.allocationuser_set.count()
             )
 
+        context['project'] = project_obj
         context['storage_allocations'] = storage_allocations
         context['allocation_total'] = allocation_total
         context['project_users'] = project_users
