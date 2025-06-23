@@ -24,7 +24,7 @@ EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
 CENTER_BASE_URL = import_from_settings('CENTER_BASE_URL')
 
 
-def send_email(subject, body, sender, receiver_list, cc=[]):
+def send_email(subject, body, sender, receiver_list, cc=None, attachments=None):
     """Helper function for sending emails
     """
 
@@ -48,7 +48,7 @@ def send_email(subject, body, sender, receiver_list, cc=[]):
             cc = EMAIL_DEVELOPMENT_EMAIL_LIST
 
     try:
-        email = EmailMessage(subject, body, sender, receiver_list, cc=cc)
+        email = EmailMessage(subject, body, sender, receiver_list, cc=cc, attachments=attachments)
         email.send(fail_silently=False)
     except SMTPException as e:
         logger.exception('Failed to send email to %s from %s with subject %s: %s',
@@ -56,7 +56,7 @@ def send_email(subject, body, sender, receiver_list, cc=[]):
 
 
 def send_email_template(
-    subject, template_name, template_context, sender, receiver_list, cc=[]
+    subject, template_name, template_context, sender, receiver_list, cc=None, attachments=None
 ):
     """Helper function for sending emails from a template
     """
@@ -65,7 +65,7 @@ def send_email_template(
         "sent email with subject %s to receivers %s and ccs %s from sender %s",
         subject, receiver_list, cc, sender
     )
-    return send_email(subject, body, sender, receiver_list, cc=cc)
+    return send_email(subject, body, sender, receiver_list, cc=cc, attachments=attachments)
 
 
 def email_template_context(extra_context=None):
