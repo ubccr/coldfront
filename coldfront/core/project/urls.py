@@ -25,5 +25,6 @@ urlpatterns = [
     path('<int:pk>/project-attribute-create/', project_views.ProjectAttributeCreateView.as_view(), name='project-attribute-create'),
     path('<int:pk>/project-attribute-delete/', project_views.ProjectAttributeDeleteView.as_view(), name='project-attribute-delete'),
     path('<int:pk>/project-attribute-update/<int:project_attribute_pk>', project_views.ProjectAttributeUpdateView.as_view(), name='project-attribute-update'),
+    path('<int:pk>/report', project_views.ProjectStorageReportView.as_view(), name='project-report')
 
 ]

@@ -1,0 +1,193 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+{% load static %}
+{% load common_tags %}
+
+
+{% block title %}
+Project Detail
+{% endblock %}
+
+
+{% block content %}
+
+<div id="alert_div">
+</div>
+
+<div class="mb-3">
+  <h2 class="text-justify">{{ project.title }}</h2>
+  <hr>
+</div>
+
+<!-- Start Project Heading -->
+<div class="card mb-3">
+  <div class="card-body">
+    <h3 class="card-title">
+      Principal Investigator:
+      {{ project.pi.first_name }}
+      {{ project.pi.last_name }}
+      ({{ project.pi.username }})
+    </h3>
+    <p class="card-text text-justify"><strong>Description: </strong>{{ project.description }}</p>
+    <p class="card-text text-justify"><strong>Field of Science: </strong>{{ project.field_of_science }}</p>
+    <p class="card-text text-justify"><strong>Project Status: </strong>{{ project.status }}
+      {% if project.last_project_review and project.last_project_review.status.name == 'Pending' %}
+        <span class="badge badge-pill badge-info">project review pending</span>
+      {% endif %}
+    </p>
+    <p class="card-text text-justify"><strong>Created: </strong>{{ project.created|date:"M. d, Y" }}</p>
+  </div>
+</div>
+<!-- End Project Heading -->
+
+<!-- Start Project Invoice/Allocations -->
+<div class="html2pdf__page-break"></div>
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="d-inline"><i class="fas fa-list" aria-hidden="true"></i> Project Allocations</h3>
+    <span class="badge badge-secondary">{{ allocations.count }}</span>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      {% if storage_allocations %}
+        <table id="invoice_table" class="table table-hover">
+          <h4>Storage &nbsp;
+            {% if project.sf_zone %}
+              <a class="btn btn-success"
+                 href="https://starfish.rc.fas.harvard.edu/#/browser?zone={{ project.sf_zone }}"
+                 role="button"> View detailed storage allocation information on Starfish 
+              </a>
+            {% endif %}
+          </h4>
+          <thead>
+            <tr>
+              <th scope="col">Resource Name</th>
+              <th scope="col">Location</th>
+              <th scope="col">Users</th>
+              <th scope="col">Quota</th>
+              <th scope="col">Used</th>
+              <th scope="col">Monthly Cost
+                <a class="info-button" title="Monthly Cost" data-toggle="popover" data-trigger="hover" data-content="Monthly cost for each allocation as determined by quota size. Not necessarily billed to project.">
+                  <i class="fas fa-info-circle" aria-hidden="true"></i>
+                </a>
+              </th>
+              <th scope="col" class="nosort">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for allocation in storage_allocations %}
+              {% if allocation.status.name == 'Active' %}
+                <tr style="background-color:#FFFFFF">
+                  <td>{{ allocation.get_parent_resource.name }}</td>
+                  <td>{{ allocation.path }}</td>
+                  <td>{{ allocation.allocationuser_set.count }}</td>
+                  <td>{{ allocation.size|floatformat:1 }} {{ allocation.get_parent_resource.quantity_label }}</td>
+                  <td>{{ allocation.usage|floatformat:1 }}</td>
+                  <td>
+                    {% if allocation.requires_payment %}
+                      ${{ allocation.cost|floatformat:2}}
+                    {% endif %}
+                  </td>
+                  <td>
+                    <a href="{% url 'allocation-detail' allocation.pk %}">
+                      <span class="badge badge-success">
+                        <i class="fas fa-search" aria-hidden="true"></i>
+                        View Details
+                      </span>
+                    </a>
+                    <br/>
+                  </td>
+                </tr>
+              {% endif %}
+            {% endfor %}
+          </tbody>
+          {% if storage_allocations|length > 1 %}
+            <tfoot>
+              <tr style="background-color:#C2C2C2;font-weight:bold">
+                  <td>Total Storage</td>
+                  <td>{{ allocation_total.path }}</td>
+                  <td>{{ allocation_total.allocation_user_count }}</td>
+                  <td>{{ allocation_total.size|floatformat:1}}</td>
+                  <td>{{ allocation_total.usage|floatformat:1}}</td>
+                  <td>${{ allocation_total.cost|floatformat:2 }}</td>
+                  <td></td>
+                  <td></td>
+              </tr>
+            </tfoot>
+          {% endif %}
+        </table>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+<!-- End Project Invoice/Allocations -->
+
+
+
+<!-- Start Project Users -->
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="d-inline" id="users"><i class="fas fa-users" aria-hidden="true"></i> Users</h3>
+    <span class="badge badge-secondary">{{ project_users.count }}</span>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table id="projectuser_table" class="table table-hover" filter="off">
+        <thead>
+          <tr>
+            <th scope="col">Username</th>
+            <th scope="col">Name</th>
+            <th scope="col">Email</th>
+            <th scope="col" class="text-nowrap">Role
+              <a class="info-button" title="User Role" data-toggle="popover" data-trigger="click"
+                 data-content="For details about User Roles, visit FASRC's <a href='https://docs.rc.fas.harvard.edu/kb/coldfront-allocation-management/' title='ColdFront User Guide'>ColdFront User Guide.">
+                <i class="fas fa-info-circle" aria-hidden="true"></i>
+              </a>
+            </th>
+            <!-- This is what I want to add - a usage column; -->
+            <th scope="col" class="nosort">
+              <input type="checkbox" class="check" id="selectAll" style="margin-right: 5px;">Notifications On
+              <a class="info-button" title="Enable Notifications" data-toggle="popover"
+                 data-trigger="click"
+                 data-content="When disabled, user will not receive notifications regarding allocation requests and expirations or cloud usage (if applicable).">
+                <i class="fas fa-info-circle" aria-hidden="true"></i>
+              </a>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- where is project_users coming from?
+          it's coming from views.py under class ProjectDetailView; rendered project_user object -->
+          <!-- project_user is giving out userid -->
+          {% for user in project_users %}
+            <tr status="{{ user.status }}">
+              <td>{{ user.user.username }}</td>
+              <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
+              <td>{{ user.user.email }}</td>
+              <td>{{ user.role.name }}</td>
+              <td>
+                  <input type="checkbox"
+                         id="email_notifications_for_user_id_{{ user.id }}"
+                         name="email_notifications_checkbox"
+                         value="{{ user.enable_notifications }}"
+                          {% if user.enable_notifications %} checked {% endif %}
+                         disabled>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<!-- End Project Users -->
+
+
+<link rel="stylesheet" type="text/css"
+      href="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.css"/>
+<script type="text/javascript"
+        src="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.js"></script>
+
+{% endblock %}

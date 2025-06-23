@@ -97,6 +97,52 @@ def produce_filter_parameter(key, value):
 logger = logging.getLogger(__name__)
 
 
+class ProjectStorageReportView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    model = Project
+    template_name = 'project/project_storagereport.html'
+    context_object_name = 'project'
+
+    def test_func(self):
+        """UserPassesTestMixin Tests"""
+        if self.request.user.has_perm('project.can_view_all_projects'):
+            return True
+
+        project_obj = self.get_object()
+        if project_obj.has_perm(self.request.user, ProjectPermission.USER):
+            return True
+
+        err = 'You do not have permission to view the previous page.'
+        messages.error(self.request, err)
+        return False
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        project_users = self.object.projectuser_set.filter(
+                    status__name='Active').order_by('user__username')
+
+        storage_allocations = self.object.allocation_set.filter(
+            status__name__in=['Active', 'Paid', 'Ready for Review','Payment Requested'],
+            resources__resource_type__name='Storage'
+        ).distinct().prefetch_related('resources').order_by('-pk')
+        allocation_total = {'allocation_user_count': 0, 'size': 0, 'cost': 0, 'usage':0}
+        for allocation in storage_allocations:
+            if allocation.cost and allocation.requires_payment:
+                allocation_total['cost'] += allocation.cost
+            if allocation.size:
+                allocation_total['size'] += allocation.size
+            if allocation.usage:
+                allocation_total['usage'] += allocation.usage
+            allocation_total['allocation_user_count'] += int(
+                allocation.allocationuser_set.count()
+            )
+
+        context['storage_allocations'] = storage_allocations
+        context['allocation_total'] = allocation_total
+        context['project_users'] = project_users
+        return context
+
+
+
 class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     model = Project
     template_name = 'project/project_detail.html'
