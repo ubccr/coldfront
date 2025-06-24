@@ -156,7 +156,7 @@ Project Detail
         </a>
       </p>
     {% endif %}
-    <p class="card-text text-justify"><strong>Description: </strong>{{ project.description }}</p>
+    <p class="card-text text-justify"><strong>Description: </strong>{{ project.description|linebreaks }}</p>
     <!-- <p class="card-text text-justify"><strong>Field of Science: </strong>{{ project.field_of_science}}</p> -->
     <p class="card-text text-justify"><strong>Project Type: </strong>{{ project.type.name }}</p>
     <p class="card-text text-justify"><strong>Project ID: </strong>{{ project.pk }}</p>
