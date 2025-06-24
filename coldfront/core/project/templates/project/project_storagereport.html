@@ -148,12 +148,9 @@ Project Detail
               <td>{{ user.user.email }}</td>
               <td>{{ user.role.name }}</td>
               <td>
-                  <input type="checkbox"
-                         id="email_notifications_for_user_id_{{ user.id }}"
-                         name="email_notifications_checkbox"
-                         value="{{ user.enable_notifications }}"
-                          {% if user.enable_notifications %} checked {% endif %}
-                         disabled>
+                {% if user.enable_notifications %}<i class="fa-solid fa-check" style="color: lime;"></i>
+                {% else %}<i class="fa-solid fa-times" style="color: red;"></i>
+                {% endif %}
               </td>
             </tr>
           {% endfor %}
