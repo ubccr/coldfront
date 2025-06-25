@@ -50,73 +50,68 @@ Project Detail
     {% if project.sf_zone %}
       <a class="btn btn-success"
          href="https://starfish.rc.fas.harvard.edu/#/browser?zone={{ project.sf_zone }}"
-         role="button"> View detailed storage allocation information on Starfish 
+         role="button"> View detailed allocation information on Starfish
       </a>
     {% endif %}
   </div>
   <div class="card-body">
-    <div class="table-responsive">
-      <table id="invoice_table" class="table table-hover">
-        <thead>
-          <tr>
-            <th scope="col">Resource Name</th>
-            <th scope="col">Location</th>
-            <th scope="col">Users</th>
-            <th scope="col">Quota</th>
-            <th scope="col">Used</th>
-            <th scope="col">Monthly Cost</th>
-            <th scope="col" class="nosort">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for allocation in storage_allocations %}
-            {% if allocation.status.name == 'Active' %}
-              <tr style="background-color:#FFFFFF">
-                <td>{{ allocation.get_parent_resource.name }}</td>
-                <td>{{ allocation.path }}</td>
-                <td>{{ allocation.allocationuser_set.count }}</td>
-                <td>{{ allocation.size|floatformat:1 }} {{ allocation.get_parent_resource.quantity_label }}</td>
-                <td>{{ allocation.usage|floatformat:1 }}</td>
-                <td>
-                  {% if allocation.requires_payment %}
-                    ${{ allocation.cost|floatformat:2}}
-                  {% endif %}
-                </td>
-                <td>
-                  <a href="{% url 'allocation-detail' allocation.pk %}">
-                    <span class="badge badge-success">
-                      <i class="fas fa-search" aria-hidden="true"></i>
-                      View Details
-                    </span>
-                  </a>
-                  <br/>
-                </td>
-              </tr>
-            {% endif %}
-          {% endfor %}
-        </tbody>
-        {% if storage_allocations|length > 1 %}
-          <tfoot>
-            <tr style="background-color:#C2C2C2;font-weight:bold">
-                <td>Total Storage</td>
-                <td>{{ allocation_total.path }}</td>
-                <td>{{ allocation_total.allocation_user_count }}</td>
-                <td>{{ allocation_total.size|floatformat:1}}</td>
-                <td>{{ allocation_total.usage|floatformat:1}}</td>
-                <td>${{ allocation_total.cost|floatformat:2 }}</td>
-                <td></td>
-                <td></td>
+    <table id="invoice_table" class="table table-hover">
+      <thead>
+        <tr>
+          <th scope="col">Resource Name</th>
+          <th scope="col">Location</th>
+          <th scope="col">Users</th>
+          <th scope="col">Quota</th>
+          <th scope="col">Used</th>
+          <th scope="col">Monthly Cost</th>
+          <th scope="col" class="nosort">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for allocation in storage_allocations %}
+          {% if allocation.status.name == 'Active' %}
+            <tr style="background-color:#FFFFFF">
+              <td>{{ allocation.get_parent_resource.name }}</td>
+              <td>{{ allocation.path }}</td>
+              <td>{{ allocation.allocationuser_set.count }}</td>
+              <td>{{ allocation.size|floatformat:1 }} {{ allocation.get_parent_resource.quantity_label }}</td>
+              <td>{{ allocation.usage|floatformat:1 }}</td>
+              <td>
+                {% if allocation.requires_payment %}
+                  ${{ allocation.cost|floatformat:2}}
+                {% endif %}
+              </td>
+              <td>
+                <a href="{% url 'allocation-detail' allocation.pk %}">
+                  <span class="badge badge-success">
+                    <i class="fas fa-search" aria-hidden="true"></i>
+                    View Details
+                  </span>
+                </a>
+                <br/>
+              </td>
             </tr>
-          </tfoot>
-        {% endif %}
-      </table>
-    </div>
-
+          {% endif %}
+        {% endfor %}
+      </tbody>
+      {% if storage_allocations|length > 1 %}
+        <tfoot>
+          <tr style="background-color:#C2C2C2;font-weight:bold">
+              <td>Total Storage</td>
+              <td>{{ allocation_total.path }}</td>
+              <td>{{ allocation_total.allocation_user_count }}</td>
+              <td>{{ allocation_total.size|floatformat:1}}</td>
+              <td>{{ allocation_total.usage|floatformat:1}}</td>
+              <td>${{ allocation_total.cost|floatformat:2 }}</td>
+              <td></td>
+              <td></td>
+          </tr>
+        </tfoot>
+      {% endif %}
+    </table>
   </div>
 </div>
 <!-- End Project Invoice/Allocations -->
-
-
 
 <!-- Start Project Users -->
 <div class="card mb-3">
@@ -125,38 +120,32 @@ Project Detail
     <span class="badge badge-secondary">{{ project_users.count }}</span>
   </div>
   <div class="card-body">
-    <div class="table-responsive">
-      <table id="projectuser_table" class="table table-hover" filter="off">
-        <thead>
-          <tr>
-            <th scope="col">Username</th>
-            <th scope="col">Name</th>
-            <th scope="col">Email</th>
-            <th scope="col" class="text-nowrap">Role</th>
-            <!-- This is what I want to add - a usage column; -->
-            <th scope="col" class="nosort">Notifications On</th>
+    <table id="projectuser_table" class="table table-hover" filter="off">
+      <thead>
+        <tr>
+          <th scope="col">Username</th>
+          <th scope="col">Name</th>
+          <th scope="col">Email</th>
+          <th scope="col" class="text-nowrap">Role</th>
+          <th scope="col" class="nosort">Notifications On</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in project_users %}
+          <tr status="{{ user.status }}">
+            <td>{{ user.user.username }}</td>
+            <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
+            <td>{{ user.user.email }}</td>
+            <td>{{ user.role.name }}</td>
+            <td>
+              {% if user.enable_notifications %}<i class="fa-solid fa-check" style="color: lime;"></i>
+              {% else %}<i class="fa-solid fa-times" style="color: red;"></i>
+              {% endif %}
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          <!-- where is project_users coming from?
-          it's coming from views.py under class ProjectDetailView; rendered project_user object -->
-          <!-- project_user is giving out userid -->
-          {% for user in project_users %}
-            <tr status="{{ user.status }}">
-              <td>{{ user.user.username }}</td>
-              <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
-              <td>{{ user.user.email }}</td>
-              <td>{{ user.role.name }}</td>
-              <td>
-                {% if user.enable_notifications %}<i class="fa-solid fa-check" style="color: lime;"></i>
-                {% else %}<i class="fa-solid fa-times" style="color: red;"></i>
-                {% endif %}
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 </div>
 <!-- End Project Users -->

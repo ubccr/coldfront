@@ -20,10 +20,10 @@ def send_storage_report_emails():
         allocation__status__name="Active"
     )
     for project in projects:
-        send_pdf(project)
+        send_storagereport_pdf(project)
 
 
-def send_pdf(project, context=None):
+def send_storagereport_pdf(project, context=None):
     """
     Renders the ReportPdfView to PDF and emails it to `to_email`.
     `context` will be passed to the view when rendering.
