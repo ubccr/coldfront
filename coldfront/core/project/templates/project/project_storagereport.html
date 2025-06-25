@@ -4,6 +4,43 @@
 {% load static %}
 {% load common_tags %}
 
+{% block ifx_head %}
+
+<style type="text/css">
+  /* 1) Force all Bootstrap flex or overflow containers to behave:
+     remove flex so children CAN break across pages, kill overflow-x  */
+  .table-responsive,
+  .card-body,
+  .card {
+    display: block !important;
+    overflow: visible !important;
+  }
+
+  /* 2) Tell WeasyPrint that tables may break inside, and rows should not split in half */
+  table {
+    page-break-inside: auto;
+    break-inside: auto;
+  }
+  thead {
+    /* repeat on every page */
+    display: table-header-group;
+  }
+  tfoot {
+    /* repeat on every page if you need footers */
+    display: table-footer-group;
+  }
+  tr {
+    /* don’t slice a row in half */
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  tbody {
+    /* allow breaking between rows */
+    display: table-row-group;
+  }
+</style>
+{% endblock %}
+
 
 {% block title %}
 Project Detail
@@ -151,9 +188,5 @@ Project Detail
 <!-- End Project Users -->
 
 
-<link rel="stylesheet" type="text/css"
-      href="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.css"/>
-<script type="text/javascript"
-        src="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.js"></script>
 
 {% endblock %}
