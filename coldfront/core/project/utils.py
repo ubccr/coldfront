@@ -3,12 +3,10 @@ from datetime import date
 from django.db.models import Q
 from ifxbilling.models import BillingRecord
 
-from coldfront.config.env import ENV
 from coldfront.core.utils.common import import_from_settings
 from coldfront.plugins.ifx.models import ProjectOrganization
 
 EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
-TESTUSER = ENV.str('TESTUSER')
 
 
 def generate_usage_history_graph(project):
