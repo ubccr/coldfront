@@ -129,7 +129,7 @@ def remove_existing_publications(project_obj, publications):
     filtered_publications = []
     existing_unique_ids = project_obj.publication_set.filter().values_list('unique_id', flat=True)
     for publication in publications:
-        if not publication.get('unique_id') in existing_unique_ids:
+        if publication.get('unique_id') not in existing_unique_ids:
             filtered_publications.append(publication)
 
     return filtered_publications
@@ -139,17 +139,12 @@ def add_publication(project_obj, publication):
     """
     Creates a new publication for the provided project.
     """
-    source_obj, _ = PublicationSource.objects.get_or_create(
-        name='aa'
-    )
-    author = publication.get('author')
-    if len(author) > 1024: author = author[:1024]
-    publication_obj = Publication.objects.create(
+    Publication.objects.create(
         project=project_obj,
         title=publication.get('title'),
-        author=author,
+        author=publication.get('author')[:1024],
         year=publication.get('year'),
         journal=publication.get('journal'),
         unique_id=publication.get('unique_id'),
-        source=source_obj 
+        source=PublicationSource.objects.get(name='aa') 
     )
