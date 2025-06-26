@@ -85,10 +85,12 @@ Project Detail
     <h3 class="d-inline"><i class="fas fa-list" aria-hidden="true"></i> Storage Allocations</h3>
     <span class="badge badge-secondary">{{ allocations.count }}</span>
     {% if project.sf_zone %}
-      <a class="btn btn-success"
-         href="https://starfish.rc.fas.harvard.edu/#/browser?zone={{ project.sf_zone }}"
-         role="button"> View detailed allocation information on Starfish
-      </a>
+      <div class="float-right">
+        <a class="btn btn-success"
+           href="https://starfish.rc.fas.harvard.edu/#/browser?zone={{ project.sf_zone }}"
+           role="button"> View detailed allocation information on Starfish
+        </a>
+      </div>
     {% endif %}
   </div>
   <div class="card-body">
@@ -122,7 +124,7 @@ Project Detail
                 <a href="{{ CENTER_BASE_URL }}/allocation/{{allocation.pk}}/">
                   <span class="badge badge-success">
                     <i class="fas fa-search" aria-hidden="true"></i>
-                    View Details
+                    Review
                   </span>
                 </a>
                 <br/>
@@ -155,6 +157,14 @@ Project Detail
   <div class="card-header">
     <h3 class="d-inline" id="users"><i class="fas fa-users" aria-hidden="true"></i> Users</h3>
     <span class="badge badge-secondary">{{ project_users.count }}</span>
+    <div class="float-right">
+      <a class="btn btn-success" href="{{ CENTER_BASE_URL }}/project/{{ project.pk }}/add-users-search/" role="button">
+          <i class="fas fa-user-plus" aria-hidden="true"></i> Add Users
+        </a>
+        <a class="btn btn-danger" href="{{ CENTER_BASE_URL }}/project/{{ project.pk }}/remove-users/" role="button">
+          <i class="fas fa-user-times" aria-hidden="true"></i> Remove Users
+        </a>
+    </div>
   </div>
   <div class="card-body">
     <table id="projectuser_table" class="table table-hover" filter="off">
