@@ -242,7 +242,11 @@ class Allocation(TimeStampedModel):
                 size = self.size_exact/divisor
                 return size
             return None
-        except TypeError:
+        except TypeError as e:
+            logger.exception('error retrieving size for allocation %s: %s', self.pk, e)
+            return None
+        except ValueError as e:
+            logger.exception('error retrieving size for allocation %s: %s', self.pk, e)
             return None
 
     @property
