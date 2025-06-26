@@ -35,6 +35,20 @@ plugin_configs = {
     'PLUGIN_ISILON': 'plugins/isilon.py',
 }
 
+WEASYPRINT_OPTIONS = {
+    'zoom': 0.75,
+    'presentational_hints': True,
+    'optimize_images': True,
+    'jpeg_quality': 85,
+    'dpi': 96,
+    'pdf_version': '1.7',
+    'uncompressed_pdf': True,
+    'attachments': None,
+    'pdf_forms': False,
+    'hinting': False,
+    'cache': None,
+}
+
 # This allows plugins to be enabled via environment variables. Can alternatively
 # add the relevant configs to local_settings.py
 for key, pc in plugin_configs.items():

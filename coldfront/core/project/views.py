@@ -17,6 +17,7 @@ from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
+from django_renderpdf.views import PDFView
 
 from coldfront.core.allocation.utils import generate_guauge_data_from_usage
 from coldfront.core.allocation.models import (
@@ -95,6 +96,54 @@ def produce_filter_parameter(key, value):
     return f'{key}={value}&'
 
 logger = logging.getLogger(__name__)
+
+
+class ProjectStorageReportView(LoginRequiredMixin, UserPassesTestMixin, PDFView):
+    template_name = 'project/project_storagereport.html'
+
+    def test_func(self):
+        """UserPassesTestMixin Tests"""
+        if self.request.user.has_perm('project.can_view_all_projects'):
+            return True
+
+        project_obj = self.get_object()
+        if project_obj.has_perm(self.request.user, ProjectPermission.USER):
+            return True
+
+        err = 'You do not have permission to view the previous page.'
+        messages.error(self.request, err)
+        return False
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        project_users = project_obj.projectuser_set.filter(
+                    status__name='Active').order_by('user__username')
+
+        storage_allocations = project_obj.allocation_set.filter(
+            status__name__in=['Active', 'Paid', 'Ready for Review','Payment Requested'],
+            resources__resource_type__name='Storage'
+        ).distinct().prefetch_related('resources').order_by('-pk')
+        allocation_total = {'allocation_user_count': 0, 'size': 0, 'cost': 0, 'usage':0}
+        for allocation in storage_allocations:
+            if allocation.cost and allocation.requires_payment:
+                allocation_total['cost'] += allocation.cost
+            if allocation.size:
+                allocation_total['size'] += allocation.size
+            if allocation.usage:
+                allocation_total['usage'] += allocation.usage
+            allocation_total['allocation_user_count'] += int(
+                allocation.allocationuser_set.count()
+            )
+
+        context['project'] = project_obj
+        context['storage_allocations'] = storage_allocations
+        context['allocation_total'] = allocation_total
+        context['project_users'] = project_users
+        context['CENTER_BASE_URL'] = import_from_settings('CENTER_BASE_URL', '')
+        return context
+
 
 
 class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):

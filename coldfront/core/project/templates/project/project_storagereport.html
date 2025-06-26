@@ -1,0 +1,202 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+{% load static %}
+{% load common_tags %}
+
+{% block ifx_head %}
+
+<style type="text/css">
+  /* 1) Force all Bootstrap flex or overflow containers to behave:
+     remove flex so children CAN break across pages, kill overflow-x  */
+  .table-responsive,
+  .card-body,
+  .card {
+    display: block !important;
+    overflow: visible !important;
+  }
+
+  /* 2) Tell WeasyPrint that tables may break inside, and rows should not split in half */
+  table {
+    page-break-inside: auto;
+    break-inside: auto;
+  }
+  thead {
+    /* repeat on every page */
+    display: table-header-group;
+  }
+  tfoot {
+    /* repeat on every page if you need footers */
+    display: table-footer-group;
+  }
+  tr {
+    /* don’t slice a row in half */
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  tbody {
+    /* allow breaking between rows */
+    display: table-row-group;
+  }
+</style>
+{% endblock %}
+
+
+{% block title %}
+Project Detail
+{% endblock %}
+
+
+{% block content %}
+
+<div id="alert_div">
+</div>
+
+<div class="mb-3">
+  <h2 class="text-justify">{{ project.title }}</h2>
+  <hr>
+</div>
+
+<!-- Start Project Heading -->
+<div class="card mb-3">
+  <div class="card-body">
+    <h3 class="card-title">
+      Principal Investigator:
+      {{ project.pi.first_name }}
+      {{ project.pi.last_name }}
+      ({{ project.pi.username }})
+    </h3>
+    <p class="card-text text-justify"><strong>Description: </strong>{{ project.description }}</p>
+    <p class="card-text text-justify"><strong>Field of Science: </strong>{{ project.field_of_science }}</p>
+    <p class="card-text text-justify"><strong>Project Status: </strong>{{ project.status }}
+      {% if project.last_project_review and project.last_project_review.status.name == 'Pending' %}
+        <span class="badge badge-pill badge-info">project review pending</span>
+      {% endif %}
+    </p>
+    <p class="card-text text-justify"><strong>Created: </strong>{{ project.created|date:"M. d, Y" }}</p>
+  </div>
+</div>
+<!-- End Project Heading -->
+
+<!-- Start Project Invoice/Allocations -->
+<div class="html2pdf__page-break"></div>
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="d-inline"><i class="fas fa-list" aria-hidden="true"></i> Storage Allocations</h3>
+    <span class="badge badge-secondary">{{ allocations.count }}</span>
+    {% if project.sf_zone %}
+      <div class="float-right">
+        <a class="btn btn-success"
+           href="https://starfish.rc.fas.harvard.edu/#/browser?zone={{ project.sf_zone }}"
+           role="button"> View detailed allocation information on Starfish
+        </a>
+      </div>
+    {% endif %}
+  </div>
+  <div class="card-body">
+    <table id="invoice_table" class="table table-hover">
+      <thead>
+        <tr>
+          <th scope="col">Resource Name</th>
+          <th scope="col">Location</th>
+          <th scope="col">Users</th>
+          <th scope="col">Quota</th>
+          <th scope="col">Used</th>
+          <th scope="col">Monthly Cost</th>
+          <th scope="col" class="nosort">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for allocation in storage_allocations %}
+          {% if allocation.status.name == 'Active' %}
+            <tr style="background-color:#FFFFFF">
+              <td>{{ allocation.get_parent_resource.name }}</td>
+              <td>{{ allocation.path }}</td>
+              <td>{{ allocation.allocationuser_set.count }}</td>
+              <td>{{ allocation.size|floatformat:1 }} {{ allocation.get_parent_resource.quantity_label }}</td>
+              <td>{{ allocation.usage|floatformat:1 }}</td>
+              <td>
+                {% if allocation.requires_payment %}
+                  ${{ allocation.cost|floatformat:2}}
+                {% endif %}
+              </td>
+              <td>
+                <a href="{{ CENTER_BASE_URL }}/allocation/{{allocation.pk}}/">
+                  <span class="badge badge-success">
+                    <i class="fas fa-search" aria-hidden="true"></i>
+                    Review
+                  </span>
+                </a>
+                <br/>
+              </td>
+            </tr>
+          {% endif %}
+        {% endfor %}
+      </tbody>
+      {% if storage_allocations|length > 1 %}
+        <tfoot>
+          <tr style="background-color:#C2C2C2;font-weight:bold">
+              <td>Total Storage</td>
+              <td>{{ allocation_total.path }}</td>
+              <td>{{ allocation_total.allocation_user_count }}</td>
+              <td>{{ allocation_total.size|floatformat:1}}</td>
+              <td>{{ allocation_total.usage|floatformat:1}}</td>
+              <td>${{ allocation_total.cost|floatformat:2 }}</td>
+              <td></td>
+              <td></td>
+          </tr>
+        </tfoot>
+      {% endif %}
+    </table>
+  </div>
+</div>
+<!-- End Project Invoice/Allocations -->
+
+<!-- Start Project Users -->
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="d-inline" id="users"><i class="fas fa-users" aria-hidden="true"></i> Users</h3>
+    <span class="badge badge-secondary">{{ project_users.count }}</span>
+    <div class="float-right">
+      <a class="btn btn-success" href="{{ CENTER_BASE_URL }}/project/{{ project.pk }}/add-users-search/" role="button">
+          <i class="fas fa-user-plus" aria-hidden="true"></i> Add Users
+        </a>
+        <a class="btn btn-danger" href="{{ CENTER_BASE_URL }}/project/{{ project.pk }}/remove-users/" role="button">
+          <i class="fas fa-user-times" aria-hidden="true"></i> Remove Users
+        </a>
+    </div>
+  </div>
+  <div class="card-body">
+    <table id="projectuser_table" class="table table-hover" filter="off">
+      <thead>
+        <tr>
+          <th scope="col">Username</th>
+          <th scope="col">Name</th>
+          <th scope="col">Email</th>
+          <th scope="col" class="text-nowrap">Role</th>
+          <th scope="col" class="nosort">Notifications On</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in project_users %}
+          <tr status="{{ user.status }}">
+            <td>{{ user.user.username }}</td>
+            <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
+            <td>{{ user.user.email }}</td>
+            <td>{{ user.role.name }}</td>
+            <td>
+              {% if user.enable_notifications %}<i class="fa-solid fa-check" style="color: lime;"></i>
+              {% else %}<i class="fa-solid fa-times" style="color: red;"></i>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<!-- End Project Users -->
+
+
+
+{% endblock %}

@@ -140,7 +140,7 @@ class Allocation(TimeStampedModel):
     @property
     def unit_label(self):
         label = self.get_parent_resource.quantity_label
-        if '20T increments' in label:
+        if label and '20T increments' in label:
             label = label.replace(' in 20T increments', '')
         return label
 
@@ -242,7 +242,11 @@ class Allocation(TimeStampedModel):
                 size = self.size_exact/divisor
                 return size
             return None
-        except TypeError:
+        except TypeError as e:
+            logger.exception('error retrieving size for allocation %s: %s', self.pk, e)
+            return None
+        except ValueError as e:
+            logger.exception('error retrieving size for allocation %s: %s', self.pk, e)
             return None
 
     @property
