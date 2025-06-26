@@ -40,9 +40,8 @@ def format_author(author):
     for author in authors_split:
         author_split = author.split(',')
         try:
-            if not len(author_split):
-                author_split = author.split(' ')
-                formatted_author = f'{author_split[0].strip()} {author_split[1].strip()}'
+            if len(author_split) == 1:
+                formatted_author = author
             else:
                 formatted_author = f'{author_split[1].strip()} {author_split[0].strip()}'
         except IndexError:
