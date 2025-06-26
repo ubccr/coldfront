@@ -1,6 +1,6 @@
 Please review the latest monthly report for {{project_title}}. Included in this report is a list of the users associated with the group and the latest usage and limits for storage allocations. 
 
-If you would like to modify your storage allocations, or add and remove users from your account, please visit the ColdFront website: https://coldfront.rc.fas.harvard.edu 
+If you would like to modify your storage allocations or add and remove users from your account, please visit your project page on the ColdFront website: {{ project_detail_url }}
 
 Further questions or concerns should be directed to rdm@rc.fas.harvard.edu. 
 

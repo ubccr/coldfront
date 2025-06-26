@@ -7,10 +7,10 @@ from coldfront.config.env import ENV
 from coldfront.core.project.models import Project
 from coldfront.core.project.views import ProjectStorageReportView
 from coldfront.core.utils.common import import_from_settings
-from coldfront.core.utils.mail import send_email_template, email_template_context
+from coldfront.core.utils.mail import send_email_template, email_template_context, build_link
 
 EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
-TESTUSER = ENV.str('TESTUSER')
+TESTUSER = ENV.str('TESTUSER', '')
 
 def send_storage_report_emails():
     """Send monthly email with project storage reports"""
@@ -34,7 +34,10 @@ def send_storagereport_pdf(project, context=None):
     year = datetime.now().year
     title = project.title
     subject = f'Monthly ColdFront Storage Allocation Report for {title} [{month} {year}]'
-    context = email_template_context(extra_context={'project_title': title})
+    context = email_template_context(extra_context={
+        'project_title': title,
+        'project_detail_url': build_link(f'project/{project.pk}/')
+    })
     # 1) build a fake GET request, set any necessary attributes
     factory = RequestFactory()
     request = factory.get(f'project/{project.pk}/report')
