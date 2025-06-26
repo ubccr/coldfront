@@ -56,6 +56,11 @@ Q_CLUSTER = {
 }
 
 #------------------------------------------------------------------------------
+# user for automated testing
+#------------------------------------------------------------------------------
+TESTUSER = ENV.str('TESTUSER', default='testuser')
+
+#------------------------------------------------------------------------------
 # Allow user to select account name for allocation
 #------------------------------------------------------------------------------
 ALLOCATION_ACCOUNT_ENABLED = ENV.bool('ALLOCATION_ACCOUNT_ENABLED', default=False)
