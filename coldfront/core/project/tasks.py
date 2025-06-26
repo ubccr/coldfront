@@ -1,4 +1,5 @@
 from datetime import datetime
+import logging
 
 from django.contrib.auth import get_user_model
 from django.test import RequestFactory
@@ -11,6 +12,8 @@ from coldfront.core.utils.mail import send_email_template, email_template_contex
 
 EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
 TESTUSER = ENV.str('TESTUSER', '')
+
+logger = logging.getLogger(__name__)
 
 def send_storage_report_emails():
     """Send monthly email with project storage reports"""
@@ -56,6 +59,17 @@ def send_storagereport_pdf(project, context=None):
     receivers = project.projectuser_set.filter(role__name__in=['PI','General Manager'])
     receiver_list = [receiver.user.email for receiver in receivers]
     attachment = (f'{title}_{month}_{year}_storagereport.pdf', pdf_bytes, 'application/pdf')
-    send_email_template(
-        subject, 'email/storage_report.txt', context, EMAIL_SENDER, receiver_list, attachments=(attachment,)
-    )
+    try:
+        send_email_template(
+            subject,
+            'email/storage_report.txt',
+            context,
+            EMAIL_SENDER,
+            receiver_list,
+            attachments=(attachment,)
+        )
+    except Exception as e:
+        logger.exception(
+            'could not send storage report email for project %s to receivers %s from sender %s: %s',
+            title, receiver_list, EMAIL_SENDER, e
+        )

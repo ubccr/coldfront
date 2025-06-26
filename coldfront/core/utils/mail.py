@@ -62,7 +62,7 @@ def send_email_template(
     """
     body = render_to_string(template_name, template_context)
     logger.info(
-        "sent email with subject %s to receivers %s and ccs %s from sender %s",
+        "sending email with subject %s to receivers %s and ccs %s from sender %s",
         subject, receiver_list, cc, sender
     )
     return send_email(subject, body, sender, receiver_list, cc=cc, attachments=attachments)
