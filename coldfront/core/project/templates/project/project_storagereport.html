@@ -119,7 +119,7 @@ Project Detail
                 {% endif %}
               </td>
               <td>
-                <a href="{% url 'allocation-detail' allocation.pk %}">
+                <a href="{{ CENTER_BASE_URL }}/allocation/{{allocation.pk}}/">
                   <span class="badge badge-success">
                     <i class="fas fa-search" aria-hidden="true"></i>
                     View Details

@@ -141,6 +141,7 @@ class ProjectStorageReportView(LoginRequiredMixin, UserPassesTestMixin, PDFView)
         context['storage_allocations'] = storage_allocations
         context['allocation_total'] = allocation_total
         context['project_users'] = project_users
+        context['CENTER_BASE_URL'] = import_from_settings('CENTER_BASE_URL', '')
         return context
 
 

@@ -33,7 +33,7 @@ def send_storagereport_pdf(project, context=None):
     month = datetime.now().strftime("%B")
     year = datetime.now().year
     title = project.title
-    subject = f'Monthly Coldfront {month} Report for {title}'
+    subject = f'Monthly ColdFront Storage Allocation Report for {title} [{month} {year}]'
     context = email_template_context(extra_context={'project_title': title})
     # 1) build a fake GET request, set any necessary attributes
     factory = RequestFactory()
