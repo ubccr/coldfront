@@ -55,8 +55,8 @@ def send_storagereport_pdf(project, context=None):
     else:
         pdf_bytes = response.content
 
-    receivers = project.projectuser_set.filter(role__name__in=['PI','General Manager'])
-    receiver_list = [receiver.user.email for receiver in receivers]
+    receivers = project.projectuser_set.filter(role__name='General Manager', status__name='Active')
+    receiver_list = [receiver.user.email for receiver in receivers] + [project.pi.email]
     attachment = (f'{title}_{month}_{year}_storagereport.pdf', pdf_bytes, 'application/pdf')
     try:
         send_email_template(
