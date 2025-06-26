@@ -38,7 +38,7 @@ def send_storagereport_pdf(project, context=None):
     subject = f'Monthly ColdFront Storage Allocation Report for {title} [{month} {year}]'
     context = email_template_context(extra_context={
         'project_title': title,
-        'project_detail_url': build_link(f'project/{project.pk}/')
+        'project_detail_url': build_link(f'/project/{project.pk}/')
     })
     # 1) build a fake GET request, set any necessary attributes
     factory = RequestFactory()
