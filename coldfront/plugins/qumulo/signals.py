@@ -11,6 +11,7 @@ from coldfront.plugins.qumulo.tasks import reset_allocation_acls
 
 from coldfront.core.allocation.models import (
     Allocation,
+    AllocationLinkage, AllocationAttribute
 )
 from coldfront.core.allocation.signals import (
     allocation_activate,
@@ -88,12 +89,12 @@ def on_allocation_disable(sender, **kwargs):
 def on_allocation_change_approved(sender, **kwargs):
     qumulo_api = QumuloAPI()
     allocation_obj = Allocation.objects.get(pk=kwargs["allocation_pk"])
-
     fs_path = allocation_obj.get_attribute(name="storage_filesystem_path")
     export_path = allocation_obj.get_attribute(name="storage_export_path")
     protocols = json.loads(allocation_obj.get_attribute(name="storage_protocols"))
     name = allocation_obj.get_attribute(name="storage_name")
     limit_in_bytes = allocation_obj.get_attribute(name="storage_quota") * (2**40)
+    limit_in_tb = allocation_obj.get_attribute(name="storage_quota")
 
     qumulo_api.update_allocation(
         protocols=protocols,
@@ -102,3 +103,29 @@ def on_allocation_change_approved(sender, **kwargs):
         name=name,
         limit_in_bytes=limit_in_bytes,
     )
+
+    try:
+        allocation_link = AllocationLinkage.objects.get(parent=kwargs["allocation_pk"])
+    except AllocationLinkage.DoesNotExist:
+        return
+
+    
+    children = allocation_link.children.all()
+    for child in children:
+        child_fs_path = child.get_attribute(name="storage_filesystem_path")
+        
+        AllocationAttribute.objects.filter(
+            allocation=child,
+            allocation_attribute_type__name="storage_quota",
+        ).update(value=limit_in_tb)
+        
+        try:
+            qumulo_api.update_quota(
+                fs_path=child_fs_path,
+                limit_in_bytes=limit_in_bytes,
+            )
+        except:
+            print("Quota update for {child} unsuccesful")
+
+                     
+
