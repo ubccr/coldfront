@@ -11,7 +11,7 @@ from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.mail import send_email_template, email_template_context, build_link
 
 EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
-TESTUSER = ENV.str('TESTUSER', '')
+TESTUSER = ENV.str('TESTUSER', default='')
 
 logger = logging.getLogger(__name__)
 
