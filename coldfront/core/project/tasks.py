@@ -20,7 +20,7 @@ def send_storage_report_emails():
         status__name='Active',
         allocation__resources__resource_type__name="Storage",
         allocation__status__name="Active"
-    )
+    ).distinct()
     for project in projects:
         send_storagereport_pdf(project)
 
