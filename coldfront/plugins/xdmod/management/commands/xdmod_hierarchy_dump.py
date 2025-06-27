@@ -47,7 +47,7 @@ class Command(BaseCommand):
         all_allocations = Allocation.objects.all()
         today: str = date.today().isoformat()
 
-        with open(os.path.join(out_dir, "hierarchy" + today + ".csv"), "w") as csvfile:
+        with open(os.path.join(out_dir, "hierarchy-" + today + ".csv"), "w") as csvfile:
             hierarchy_writer = csv.writer(
                 csvfile,
                 delimiter=",",
@@ -83,7 +83,7 @@ class Command(BaseCommand):
                 )
 
         with open(
-            os.path.join(out_dir, "group-to-hierarchy" + today + ".csv"), "w"
+            os.path.join(out_dir, "group-to-hierarchy-" + today + ".csv"), "w"
         ) as csvfile:
             hierarchy_writer = csv.writer(
                 csvfile,
