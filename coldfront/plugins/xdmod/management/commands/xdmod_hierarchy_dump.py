@@ -45,7 +45,13 @@ class Command(BaseCommand):
         all_allocations = Allocation.objects.all()
 
         with open(os.path.join(out_dir, "hierarchy.csv"), "w") as csvfile:
-            hierarchy_writer = csv.writer(csvfile, delimiter=",")
+            hierarchy_writer = csv.writer(
+                csvfile,
+                delimiter=",",
+                dialect="unix",
+                quotechar='"',
+                quoting=csv.QUOTE_ALL,
+            )
 
             # the only unit we use (top level)
             logging.info("Writing top level unit")
@@ -70,7 +76,13 @@ class Command(BaseCommand):
                 )
 
         with open(os.path.join(out_dir, "group-to-hierarchy.csv"), "w") as csvfile:
-            hierarchy_writer = csv.writer(csvfile, delimiter=",")
+            hierarchy_writer = csv.writer(
+                csvfile,
+                delimiter=",",
+                dialect="unix",
+                quotechar='"',
+                quoting=csv.QUOTE_ALL,
+            )
 
             logging.info("Writing allocations as groups to map to themselves")
             # each allocation is a department (bottom level)
