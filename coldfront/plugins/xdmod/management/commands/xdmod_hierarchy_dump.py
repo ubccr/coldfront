@@ -1,6 +1,7 @@
 import logging
 import csv
 import os
+from datetime import date
 
 from django.core.management.base import BaseCommand
 from coldfront.core.allocation.models import Allocation
@@ -43,8 +44,9 @@ class Command(BaseCommand):
 
         all_schools = School.objects.all()
         all_allocations = Allocation.objects.all()
+        today: str = date.today().isoformat()
 
-        with open(os.path.join(out_dir, "hierarchy.csv"), "w") as csvfile:
+        with open(os.path.join(out_dir, "hierarchy" + today + ".csv"), "w") as csvfile:
             hierarchy_writer = csv.writer(
                 csvfile,
                 delimiter=",",
@@ -75,7 +77,9 @@ class Command(BaseCommand):
                     ]
                 )
 
-        with open(os.path.join(out_dir, "group-to-hierarchy.csv"), "w") as csvfile:
+        with open(
+            os.path.join(out_dir, "group-to-hierarchy" + today + ".csv"), "w"
+        ) as csvfile:
             hierarchy_writer = csv.writer(
                 csvfile,
                 delimiter=",",
