@@ -1,10 +1,13 @@
 import logging
 import csv
 import os
+from datetime import date
 
 from django.core.management.base import BaseCommand
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.school.models import School
+
+import school_abbreviations
 
 logger = logging.getLogger(__name__)
 
@@ -43,9 +46,16 @@ class Command(BaseCommand):
 
         all_schools = School.objects.all()
         all_allocations = Allocation.objects.all()
+        today: str = date.today().isoformat()
 
-        with open(os.path.join(out_dir, "hierarchy.csv"), "w") as csvfile:
-            hierarchy_writer = csv.writer(csvfile, delimiter=",")
+        with open(os.path.join(out_dir, "hierarchy" + today + ".csv"), "w") as csvfile:
+            hierarchy_writer = csv.writer(
+                csvfile,
+                delimiter=",",
+                dialect="unix",
+                quotechar='"',
+                quoting=csv.QUOTE_ALL,
+            )
 
             # the only unit we use (top level)
             logging.info("Writing top level unit")
@@ -55,7 +65,11 @@ class Command(BaseCommand):
             logging.info("Writing schools as middle level units")
             for school in all_schools:
                 hierarchy_writer.writerow(
-                    [school.description, school.description, "NYU"]
+                    [
+                        school_abbreviations.sch_abbrv[school.description],
+                        school.description,
+                        "NYU",
+                    ]
                 )
 
             # each allocation is a department (bottom level)
@@ -65,12 +79,20 @@ class Command(BaseCommand):
                     [
                         allocation.get_attribute("slurm_account_name"),
                         allocation.get_attribute("slurm_account_name"),
-                        allocation.project.school.description,
+                        school_abbreviations.sch_abbrv[school.description],
                     ]
                 )
 
-        with open(os.path.join(out_dir, "group-to-hierarchy.csv"), "w") as csvfile:
-            hierarchy_writer = csv.writer(csvfile, delimiter=",")
+        with open(
+            os.path.join(out_dir, "group-to-hierarchy" + today + ".csv"), "w"
+        ) as csvfile:
+            hierarchy_writer = csv.writer(
+                csvfile,
+                delimiter=",",
+                dialect="unix",
+                quotechar='"',
+                quoting=csv.QUOTE_ALL,
+            )
 
             logging.info("Writing allocations as groups to map to themselves")
             # each allocation is a department (bottom level)
