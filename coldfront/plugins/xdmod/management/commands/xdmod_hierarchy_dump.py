@@ -7,6 +7,8 @@ from django.core.management.base import BaseCommand
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.school.models import School
 
+import school_abbreviations
+
 logger = logging.getLogger(__name__)
 
 
@@ -63,7 +65,11 @@ class Command(BaseCommand):
             logging.info("Writing schools as middle level units")
             for school in all_schools:
                 hierarchy_writer.writerow(
-                    [school.description, school.description, "NYU"]
+                    [
+                        school_abbreviations.sch_abbrv[school.description],
+                        school.description,
+                        "NYU",
+                    ]
                 )
 
             # each allocation is a department (bottom level)
@@ -73,7 +79,7 @@ class Command(BaseCommand):
                     [
                         allocation.get_attribute("slurm_account_name"),
                         allocation.get_attribute("slurm_account_name"),
-                        allocation.project.school.description,
+                        school_abbreviations.sch_abbrv[school.description],
                     ]
                 )
 
