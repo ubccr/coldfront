@@ -6,8 +6,7 @@ from datetime import date
 from django.core.management.base import BaseCommand
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.school.models import School
-
-import school_abbreviations
+from coldfront.plugins.xdmod.management.commands.school_abbreviations import sch_abbrv
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +65,7 @@ class Command(BaseCommand):
             for school in all_schools:
                 hierarchy_writer.writerow(
                     [
-                        school_abbreviations.sch_abbrv[school.description],
+                        sch_abbrv[school.description],
                         school.description,
                         "NYU",
                     ]
@@ -79,7 +78,7 @@ class Command(BaseCommand):
                     [
                         allocation.get_attribute("slurm_account_name"),
                         allocation.get_attribute("slurm_account_name"),
-                        school_abbreviations.sch_abbrv[school.description],
+                        sch_abbrv[school.description],
                     ]
                 )
 
