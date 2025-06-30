@@ -78,7 +78,7 @@ class Command(BaseCommand):
                     [
                         allocation.get_attribute("slurm_account_name"),
                         allocation.get_attribute("slurm_account_name"),
-                        sch_abbrv[school.description],
+                        sch_abbrv[allocation.project.school.description],
                     ]
                 )
 
