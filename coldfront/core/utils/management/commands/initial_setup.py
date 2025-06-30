@@ -14,7 +14,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "-f", "--force_overwrite", help="Force intial_setup script to run with no warning.", action="store_true"
+            "-f", "--force_overwrite", help="Force initial_setup script to run with no warning.", action="store_true"
         )
 
     def handle(self, *args, **options):
@@ -22,15 +22,17 @@ class Command(BaseCommand):
             run_setup()
 
         else:
-            print(
-                """WARNING: Running this command initializes the ColdFront database and may modify/delete data in your existing ColdFront database. This command is typically only run once."""
+            self.stdout.write(
+                self.style.WARNING(
+                    """WARNING: Running this command initializes the ColdFront database and may modify/delete data in your existing ColdFront database. This command is typically only run once."""
+                )
             )
             user_response = input("Do you want to proceed?(yes):")
 
             if user_response == "yes":
                 run_setup()
             else:
-                print("Please enter 'yes' if you wish to run intital setup.")
+                self.stdout.write("Please enter 'yes' if you wish to run initial setup.")
 
 
 def run_setup():
