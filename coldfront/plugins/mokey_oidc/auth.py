@@ -43,7 +43,7 @@ class OIDCMokeyAuthenticationBackend(OIDCAuthenticationBackend):
             return None
 
         if not email:
-            logger.warn(
+            logger.warning(
                 "Creating user with no email. Could not find email for user %s in mokey oidc id_token claims: %s",
                 username,
                 claims,
@@ -69,7 +69,7 @@ class OIDCMokeyAuthenticationBackend(OIDCAuthenticationBackend):
         if email and len(email) > 0:
             user.email = email
         else:
-            logger.warn(
+            logger.warning(
                 "Failed to update email. Could not find email for user %s in mokey oidc id_token claims: %s",
                 username,
                 claims,

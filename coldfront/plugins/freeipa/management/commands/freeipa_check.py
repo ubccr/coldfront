@@ -60,7 +60,7 @@ class Command(BaseCommand):
                 res = api.Command.group_add_member(group, user=[user.username])
                 check_ipa_group_error(res)
             except AlreadyMemberError:
-                logger.warn("User %s is already a member of group %s", user.username, group)
+                logger.warning("User %s is already a member of group %s", user.username, group)
             except Exception as e:
                 logger.error("Failed adding user %s to group %s: %s", user.username, group, e)
             else:
@@ -81,7 +81,7 @@ class Command(BaseCommand):
                 res = api.Command.group_remove_member(group, user=[user.username])
                 check_ipa_group_error(res)
             except NotMemberError:
-                logger.warn("User %s is not a member of group %s", user.username, group)
+                logger.warning("User %s is not a member of group %s", user.username, group)
             except Exception as e:
                 logger.error("Failed removing user %s from group %s: %s", user.username, group, e)
             else:
@@ -170,10 +170,10 @@ class Command(BaseCommand):
             return
 
         if freeipa_status == "Disabled" and user.is_active:
-            logger.warn("User is active in coldfront but disabled in FreeIPA: %s", user.username)
+            logger.warning("User is active in coldfront but disabled in FreeIPA: %s", user.username)
             self.sync_user_status(user, active=False)
         elif freeipa_status == "Enabled" and not user.is_active:
-            logger.warn("User is not active in coldfront but enabled in FreeIPA: %s", user.username)
+            logger.warning("User is not active in coldfront but enabled in FreeIPA: %s", user.username)
             self.sync_user_status(user, active=True)
 
         for g in active_groups:
@@ -253,22 +253,22 @@ class Command(BaseCommand):
         elif verbosity == 3:
             root_logger.setLevel(logging.DEBUG)
         else:
-            root_logger.setLevel(logging.WARN)
+            root_logger.setLevel(logging.WARNING)
 
         self.noop = FREEIPA_NOOP
         if options["noop"]:
             self.noop = True
-            logger.warn("NOOP enabled")
+            logger.warning("NOOP enabled")
 
         self.sync = False
         if options["sync"]:
             self.sync = True
-            logger.warn("Syncing FreeIPA with ColdFront")
+            logger.warning("Syncing FreeIPA with ColdFront")
 
         self.disable = False
         if options["disable"]:
             self.disable = True
-            logger.warn("Disabling users in ColdFront that are disabled in FreeIPA")
+            logger.warning("Disabling users in ColdFront that are disabled in FreeIPA")
 
         header = [
             "action",

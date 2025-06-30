@@ -30,7 +30,7 @@ LOGGING = {
     },
     "loggers": {
         "django_auth_ldap": {
-            "level": "WARN",
+            "level": "WARNING",
             # 'handlers': ['console', 'file'],
             "handlers": [
                 "console",

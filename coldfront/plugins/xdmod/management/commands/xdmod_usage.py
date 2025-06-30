@@ -94,12 +94,12 @@ class Command(BaseCommand):
         for s in allocations.distinct():
             account_name = s.get_attribute(XDMOD_STORAGE_GROUP_ATTRIBUTE_NAME)
             if not account_name:
-                logger.warn("%s attribute not found for allocation: %s", XDMOD_STORAGE_GROUP_ATTRIBUTE_NAME, s)
+                logger.warning("%s attribute not found for allocation: %s", XDMOD_STORAGE_GROUP_ATTRIBUTE_NAME, s)
                 continue
 
             cpu_hours = s.get_attribute(XDMOD_STORAGE_ATTRIBUTE_NAME)
             if not cpu_hours:
-                logger.warn("%s attribute not found for allocation: %s", XDMOD_STORAGE_ATTRIBUTE_NAME, s)
+                logger.warning("%s attribute not found for allocation: %s", XDMOD_STORAGE_ATTRIBUTE_NAME, s)
                 continue
 
             resources = []
@@ -117,7 +117,7 @@ class Command(BaseCommand):
                 resources.append(rname)
 
             if len(resources) == 0:
-                logger.warn(
+                logger.warning(
                     "%s attribute not found on any resouces for allocation: %s", XDMOD_RESOURCE_ATTRIBUTE_NAME, s
                 )
                 continue
@@ -127,12 +127,12 @@ class Command(BaseCommand):
                     s.start_date, s.end_date, account_name, resources=resources, statistics="avg_physical_usage"
                 )
             except XdmodNotFoundError:
-                logger.warn(
+                logger.warning(
                     "No data in XDMoD found for allocation %s account %s resources %s", s, account_name, resources
                 )
                 continue
 
-            logger.warn(
+            logger.warning(
                 "Total GB = %s for allocation %s account %s GB %s resources %s",
                 usage,
                 s,
@@ -199,12 +199,12 @@ class Command(BaseCommand):
         for s in allocations.distinct():
             account_name = s.get_attribute(XDMOD_ACCOUNT_ATTRIBUTE_NAME)
             if not account_name:
-                logger.warn("%s attribute not found for allocation: %s", XDMOD_ACCOUNT_ATTRIBUTE_NAME, s)
+                logger.warning("%s attribute not found for allocation: %s", XDMOD_ACCOUNT_ATTRIBUTE_NAME, s)
                 continue
 
             cpu_hours = s.get_attribute(XDMOD_ACC_HOURS_ATTRIBUTE_NAME)
             if not cpu_hours:
-                logger.warn("%s attribute not found for allocation: %s", XDMOD_ACC_HOURS_ATTRIBUTE_NAME, s)
+                logger.warning("%s attribute not found for allocation: %s", XDMOD_ACC_HOURS_ATTRIBUTE_NAME, s)
                 continue
 
             resources = []
@@ -222,7 +222,7 @@ class Command(BaseCommand):
                 resources.append(rname)
 
             if len(resources) == 0:
-                logger.warn(
+                logger.warning(
                     "%s attribute not found on any resouces for allocation: %s", XDMOD_RESOURCE_ATTRIBUTE_NAME, s
                 )
                 continue
@@ -232,12 +232,12 @@ class Command(BaseCommand):
                     s.start_date, s.end_date, account_name, resources=resources, statistics="total_gpu_hours"
                 )
             except XdmodNotFoundError:
-                logger.warn(
+                logger.warning(
                     "No data in XDMoD found for allocation %s account %s resources %s", s, account_name, resources
                 )
                 continue
 
-            logger.warn(
+            logger.warning(
                 "Total Accelerator hours = %s for allocation %s account %s gpu_hours %s resources %s",
                 usage,
                 s,
@@ -299,12 +299,12 @@ class Command(BaseCommand):
         for s in allocations.distinct():
             account_name = s.get_attribute(XDMOD_ACCOUNT_ATTRIBUTE_NAME)
             if not account_name:
-                logger.warn("%s attribute not found for allocation: %s", XDMOD_ACCOUNT_ATTRIBUTE_NAME, s)
+                logger.warning("%s attribute not found for allocation: %s", XDMOD_ACCOUNT_ATTRIBUTE_NAME, s)
                 continue
 
             cpu_hours = s.get_attribute(XDMOD_CPU_HOURS_ATTRIBUTE_NAME)
             if not cpu_hours:
-                logger.warn("%s attribute not found for allocation: %s", XDMOD_CPU_HOURS_ATTRIBUTE_NAME, s)
+                logger.warning("%s attribute not found for allocation: %s", XDMOD_CPU_HOURS_ATTRIBUTE_NAME, s)
                 continue
 
             resources = []
@@ -322,7 +322,7 @@ class Command(BaseCommand):
                 resources.append(rname)
 
             if len(resources) == 0:
-                logger.warn(
+                logger.warning(
                     "%s attribute not found on any resouces for allocation: %s", XDMOD_RESOURCE_ATTRIBUTE_NAME, s
                 )
                 continue
@@ -330,12 +330,12 @@ class Command(BaseCommand):
             try:
                 usage = xdmod_fetch_total_cpu_hours(s.start_date, s.end_date, account_name, resources=resources)
             except XdmodNotFoundError:
-                logger.warn(
+                logger.warning(
                     "No data in XDMoD found for allocation %s account %s resources %s", s, account_name, resources
                 )
                 continue
 
-            logger.warn(
+            logger.warning(
                 "Total CPU hours = %s for allocation %s account %s cpu_hours %s resources %s",
                 usage,
                 s,
@@ -397,12 +397,12 @@ class Command(BaseCommand):
         for s in allocations.distinct():
             project_name = s.get_attribute(XDMOD_CLOUD_PROJECT_ATTRIBUTE_NAME)
             if not project_name:
-                logger.warn("%s attribute not found for allocation: %s", XDMOD_CLOUD_PROJECT_ATTRIBUTE_NAME, s)
+                logger.warning("%s attribute not found for allocation: %s", XDMOD_CLOUD_PROJECT_ATTRIBUTE_NAME, s)
                 continue
 
             core_time = s.get_attribute(XDMOD_CLOUD_CORE_TIME_ATTRIBUTE_NAME)
             if not core_time:
-                logger.warn("%s attribute not found for allocation: %s", XDMOD_CLOUD_CORE_TIME_ATTRIBUTE_NAME, s)
+                logger.warning("%s attribute not found for allocation: %s", XDMOD_CLOUD_CORE_TIME_ATTRIBUTE_NAME, s)
                 continue
 
             resources = []
@@ -420,7 +420,7 @@ class Command(BaseCommand):
                 resources.append(rname)
 
             if len(resources) == 0:
-                logger.warn(
+                logger.warning(
                     "%s attribute not found on any resouces for allocation: %s", XDMOD_RESOURCE_ATTRIBUTE_NAME, s
                 )
                 continue
@@ -428,12 +428,12 @@ class Command(BaseCommand):
             try:
                 usage = xdmod_fetch_cloud_core_time(s.start_date, s.end_date, project_name, resources=resources)
             except XdmodNotFoundError:
-                logger.warn(
+                logger.warning(
                     "No data in XDMoD found for allocation %s project %s resources %s", s, project_name, resources
                 )
                 continue
 
-            logger.warn(
+            logger.warning(
                 "Cloud core time = %s for allocation %s project %s core_time %s resources %s",
                 usage,
                 s,
@@ -467,12 +467,12 @@ class Command(BaseCommand):
         elif verbosity == 3:
             root_logger.setLevel(logging.DEBUG)
         else:
-            root_logger.setLevel(logging.WARN)
+            root_logger.setLevel(logging.WARNING)
 
         self.sync = False
         if options["sync"]:
             self.sync = True
-            logger.warn("Syncing ColdFront with XDMoD")
+            logger.warning("Syncing ColdFront with XDMoD")
 
         statistic = "total_cpu_hours"
         self.filter_user = ""
