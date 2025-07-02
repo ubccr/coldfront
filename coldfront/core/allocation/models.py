@@ -144,7 +144,6 @@ class Allocation(TimeStampedModel):
             label = label.replace(' in 20T increments', '')
         return label
 
-
     @property
     def offer_letter_code(self):
         return self.get_attribute('Offer Letter Code')
@@ -225,29 +224,33 @@ class Allocation(TimeStampedModel):
             return None
         return size_attr_name
 
+    def _return_size_from_size_exact(self):
+        if self.size_exact:
+            label_divisor = {'TB':1000000000000, 'TiB':1099511627776}
+            divisor = label_divisor[self.unit_label]
+            size = self.size_exact/divisor
+            if 'nesetape' in self.get_parent_resource.name:
+                size = round(size, -1)
+            return size
+        return 0
+
     @property
     def size(self):
         size_attr_name = self._return_size_attr_name()
         if not size_attr_name:
-            return None
+            logger.warning('no size attribute name for allocation %s', self.pk)
+            return self._return_size_from_size_exact()
         try:
             return float(self.get_attribute(size_attr_name))
-        except ObjectDoesNotExist:
-            if self.size_exact:
-                label_divisor = {'TB':1000000000000, 'TiB':1099511627776}
-                divisor = label_divisor[self.unit_label]
-                size = self.size_exact/divisor
-                if 'nesetape' in self.get_parent_resource.name:
-                    size = round(size, -1)
-                size = self.size_exact/divisor
-                return size
-            return None
+        except ObjectDoesNotExist as e:
+            logger.exception('objectdoesnotexist error retrieving size for allocation %s: %s', self.pk, e)
+            return self._return_size_from_size_exact()
         except TypeError as e:
-            logger.exception('error retrieving size for allocation %s: %s', self.pk, e)
-            return None
+            logger.exception('typeerror retrieving size for allocation %s: %s', self.pk, e)
+            return self._return_size_from_size_exact()
         except ValueError as e:
-            logger.exception('error retrieving size for allocation %s: %s', self.pk, e)
-            return None
+            logger.exception('valueerror retrieving size for allocation %s: %s', self.pk, e)
+            return self._return_size_from_size_exact()
 
     @property
     def usage(self):
@@ -271,11 +274,12 @@ class Allocation(TimeStampedModel):
     def size_exact(self):
         size_attr_name = self._return_size_attr_name(s_type='exact')
         if not size_attr_name:
-            return None
+            logger.warning('no size_exact attribute name for allocation %s', self.pk)
+            return 0
         try:
             return self.get_attribute(size_attr_name, typed=True)
         except ObjectDoesNotExist:
-            return None
+            return 0
 
     @property
     def usage_exact(self):
