@@ -508,7 +508,10 @@ def collect_update_project_status_membership():
             missing_projectusers = present_project_ifxusers.exclude(
                 pk__in=[pu.user.pk for pu in present_projectusers]
             )
-            logger.debug("missing_projectusers - ifxusers in present_project_ifxusers who are not ")
+            logger.debug(
+                "missing_projectusers - ifxusers in present_project_ifxusers who are not projectusers in project %s: %s",
+                group.project.title, [u.username for u in missing_projectusers]
+            )
             ProjectUser.objects.bulk_create([
                 ProjectUser(
                     project=group.project,
@@ -687,12 +690,13 @@ def identify_ad_group(sender, **kwargs):
         ad_conn = LDAPConn()
         members, manager = ad_conn.return_group_members_manager(project_title)
     except Exception as e:
-        logger.exception(e)
-        raise ValueError(f"ldap connection error: {e}")
+        logger.exception("error encountered retrieving members and manager for Project %s: %s", project_title, e)
+        raise ValueError(f"ldap error: {e}") from e
+
     try:
         ifx_pi = get_user_model().objects.get(username=manager['sAMAccountName'][0])
     except Exception as e:
-        raise ValueError(f"issue retrieving pi's ifxuser entry: {e}")
+        raise ValueError(f"issue retrieving pi's ifxuser entry: {e}") from e
     return ifx_pi
 
 @receiver(project_post_create)
