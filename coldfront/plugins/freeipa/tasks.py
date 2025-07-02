@@ -24,11 +24,11 @@ logger = logging.getLogger(__name__)
 def add_user_group(allocation_user_pk):
     allocation_user = AllocationUser.objects.get(pk=allocation_user_pk)
     if allocation_user.allocation.status.name != "Active":
-        logger.warn("Allocation is not active. Will not add groups")
+        logger.warning("Allocation is not active. Will not add groups")
         return
 
     if allocation_user.status.name != "Active":
-        logger.warn("Allocation user status is not 'Active'. Will not add groups.")
+        logger.warning("Allocation user status is not 'Active'. Will not add groups.")
         return
 
     groups = allocation_user.allocation.get_attribute_list(UNIX_GROUP_ATTRIBUTE_NAME)
@@ -39,7 +39,7 @@ def add_user_group(allocation_user_pk):
     os.environ["KRB5_CLIENT_KTNAME"] = CLIENT_KTNAME
     for g in groups:
         if FREEIPA_NOOP:
-            logger.warn(
+            logger.warning(
                 "NOOP - FreeIPA adding user %s to group %s for allocation %s",
                 allocation_user.user.username,
                 g,
@@ -51,7 +51,7 @@ def add_user_group(allocation_user_pk):
             res = api.Command.group_add_member(g, user=[allocation_user.user.username])
             check_ipa_group_error(res)
         except AlreadyMemberError:
-            logger.warn("User %s is already a member of group %s", allocation_user.user.username, g)
+            logger.warning("User %s is already a member of group %s", allocation_user.user.username, g)
         except Exception as e:
             logger.error("Failed adding user %s to group %s: %s", allocation_user.user.username, g, e)
             set_allocation_user_status_to_error(allocation_user_pk)
@@ -66,11 +66,11 @@ def remove_user_group(allocation_user_pk):
         "Pending",
         "Inactive (Renewed)",
     ]:
-        logger.warn("Allocation is not active or pending. Will not remove groups.")
+        logger.warning("Allocation is not active or pending. Will not remove groups.")
         return
 
     if allocation_user.status.name != "Removed":
-        logger.warn("Allocation user status is not 'Removed'. Will not remove groups.")
+        logger.warning("Allocation user status is not 'Removed'. Will not remove groups.")
         return
 
     groups = allocation_user.allocation.get_attribute_list(UNIX_GROUP_ATTRIBUTE_NAME)
@@ -107,7 +107,7 @@ def remove_user_group(allocation_user_pk):
     os.environ["KRB5_CLIENT_KTNAME"] = CLIENT_KTNAME
     for g in groups:
         if FREEIPA_NOOP:
-            logger.warn(
+            logger.warning(
                 "NOOP - FreeIPA removing user %s from group %s for allocation %s",
                 allocation_user.user.username,
                 g,
@@ -119,7 +119,7 @@ def remove_user_group(allocation_user_pk):
             res = api.Command.group_remove_member(g, user=[allocation_user.user.username])
             check_ipa_group_error(res)
         except NotMemberError:
-            logger.warn("User %s is not a member of group %s", allocation_user.user.username, g)
+            logger.warning("User %s is not a member of group %s", allocation_user.user.username, g)
         except Exception as e:
             logger.error("Failed removing user %s from group %s: %s", allocation_user.user.username, g, e)
             set_allocation_user_status_to_error(allocation_user_pk)

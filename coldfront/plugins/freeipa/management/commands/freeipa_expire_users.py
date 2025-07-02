@@ -47,17 +47,17 @@ class Command(BaseCommand):
         elif verbosity == 3:
             root_logger.setLevel(logging.DEBUG)
         else:
-            root_logger.setLevel(logging.WARN)
+            root_logger.setLevel(logging.WARNING)
 
         self.sync = False
         if options["sync"]:
             self.sync = True
-            logger.warn("Syncing FreeIPA with ColdFront")
+            logger.warning("Syncing FreeIPA with ColdFront")
 
         self.noop = FREEIPA_NOOP
         if options["noop"]:
             self.noop = True
-            logger.warn("NOOP enabled")
+            logger.warning("NOOP enabled")
 
         header = [
             "username",

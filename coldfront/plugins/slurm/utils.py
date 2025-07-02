@@ -40,7 +40,7 @@ class SlurmError(Exception):
 
 def _run_slurm_cmd(cmd, noop=True):
     if noop:
-        logger.warn("NOOP - Slurm cmd: %s", cmd)
+        logger.warning("NOOP - Slurm cmd: %s", cmd)
         return
 
     try:
@@ -48,11 +48,11 @@ def _run_slurm_cmd(cmd, noop=True):
     except subprocess.CalledProcessError as e:
         if "Nothing deleted" in str(e.stdout):
             # We tried to delete something that didn't exist. Don't throw error
-            logger.warn("Nothing to delete: %s", cmd)
+            logger.warning("Nothing to delete: %s", cmd)
             return e.stdout
         if "Nothing new added" in str(e.stdout):
             # We tried to add something that already exists. Don't throw error
-            logger.warn("Nothing new to add: %s", cmd)
+            logger.warning("Nothing new to add: %s", cmd)
             return e.stdout
 
         logger.error("Slurm command failed: %s", cmd)

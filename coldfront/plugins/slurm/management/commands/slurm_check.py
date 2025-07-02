@@ -252,17 +252,17 @@ class Command(BaseCommand):
         elif verbosity == 3:
             root_logger.setLevel(logging.DEBUG)
         else:
-            root_logger.setLevel(logging.WARN)
+            root_logger.setLevel(logging.WARNING)
 
         self.sync = False
         if options["sync"]:
             self.sync = True
-            logger.warn("Syncing Slurm with ColdFront")
+            logger.warning("Syncing Slurm with ColdFront")
 
         self.noop = SLURM_NOOP
         if options["noop"]:
             self.noop = True
-            logger.warn("NOOP enabled")
+            logger.warning("NOOP enabled")
 
         if options["cluster"]:
             slurm_cluster = self._cluster_from_dump(options["cluster"])
@@ -277,7 +277,7 @@ class Command(BaseCommand):
             sys.exit(1)
 
         if slurm_cluster.name in SLURM_IGNORE_CLUSTERS:
-            logger.warn("Ignoring cluster %s. Nothing to do.", slurm_cluster.name)
+            logger.warning("Ignoring cluster %s. Nothing to do.", slurm_cluster.name)
             sys.exit(0)
 
         try:

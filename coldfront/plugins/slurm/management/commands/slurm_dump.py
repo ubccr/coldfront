@@ -31,7 +31,7 @@ class Command(BaseCommand):
         elif verbosity == 3:
             root_logger.setLevel(logging.DEBUG)
         else:
-            root_logger.setLevel(logging.WARN)
+            root_logger.setLevel(logging.WARNING)
 
         out_dir = None
         if options["output"]:
@@ -39,7 +39,7 @@ class Command(BaseCommand):
             if not os.path.isdir(out_dir):
                 os.mkdir(out_dir, 0o0700)
 
-            logger.warn("Writing output to directory: %s", out_dir)
+            logger.warning("Writing output to directory: %s", out_dir)
 
         for attr in ResourceAttribute.objects.filter(resource_attribute_type__name=SLURM_CLUSTER_ATTRIBUTE_NAME):
             if options["cluster"] and options["cluster"] != attr.value:
