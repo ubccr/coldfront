@@ -6,6 +6,7 @@ SPDX-PackageDownloadLocation = "https://github.com/ubccr/coldfront"
 path = [
     ".python-version",
     "Dockerfile",
+    ".dockerignore",
     "MANIFEST.in",
     "docs/pages/.pages",
     "pyproject.toml",
