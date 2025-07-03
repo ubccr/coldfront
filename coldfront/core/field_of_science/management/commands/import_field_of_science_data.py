@@ -15,7 +15,7 @@ class Command(BaseCommand):
     help = "Import field of science data"
 
     def handle(self, *args, **options):
-        print("Adding field of science ...")
+        self.stdout.write("Adding field of science ...")
         file_path = os.path.join(app_commands_dir, "data", "field_of_science_data.csv")
         FieldOfScience.objects.all().delete()
         with open(file_path, "r") as fp:
@@ -38,4 +38,4 @@ class Command(BaseCommand):
                     fos.parent_id = parent_fos
                     fos.save()
 
-        print("Finished adding field of science")
+        self.stdout.write("Finished adding field of science")
