@@ -6,6 +6,7 @@
 
 import datetime
 
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone
@@ -20,6 +21,7 @@ from coldfront.core.test_helpers.factories import (
     AllocationStatusChoiceFactory,
     ProjectFactory,
     ResourceFactory,
+    UserFactory,
 )
 
 
@@ -140,3 +142,88 @@ class AllocationModelCleanMethodTests(TestCase):
             status=self.active_status, start_date=start_and_end_date, end_date=start_and_end_date, project=self.project
         )
         actual_allocation.full_clean()
+
+
+class AllocationModelStrTests(TestCase):
+    """Tests for Allocation.__str__"""
+
+    def setUp(self):
+        self.allocation = AllocationFactory()
+        self.resource = ResourceFactory()
+        self.allocation.resources.add(self.resource)
+
+    def test_allocation_str_only_contains_parent_resource_and_project_pi(self):
+        """Test that the allocation's str only contains self.allocation.get_parent_resource.name and self.allocation.project.pi"""
+        parent_resource_name: str = self.allocation.get_parent_resource.name
+        project_pi: str = self.allocation.project.pi
+        expected: str = f"{parent_resource_name} ({project_pi})"
+        actual = str(self.allocation)
+        self.assertEqual(actual, expected)
+
+    def test_parent_resource_name_updated_changes_str(self):
+        """Test that when the name of the parent resource changes the str changes"""
+        project_pi: str = self.allocation.project.pi
+
+        new_name: str = "This is the new name"
+        self.resource.name = new_name
+        self.resource.save()
+
+        expected: str = f"{new_name} ({project_pi})"
+        actual = str(self.allocation)
+        self.assertEqual(actual, expected)
+
+    def test_project_pi_name_updated_changes_str(self):
+        """Test that if the name of the PI is updated that the str changes"""
+        pi: User = self.allocation.project.pi
+        new_username: str = "This is a new username!"
+        pi.username = new_username
+        pi.save()
+
+        parent_resource_name: str = self.allocation.get_parent_resource.name
+        expected: str = f"{parent_resource_name} ({pi})"
+        actual = str(self.allocation)
+        self.assertEqual(actual, expected)
+
+    def test_parent_resource_changed_changes_str(self):
+        """When the original parent resource is removed and replaced with another the str changes"""
+        original_pi: User = self.allocation.project.pi
+
+        original_string = str(self.allocation)
+
+        self.allocation.resources.clear()
+        new_resource = ResourceFactory()
+        self.allocation.resources.add(new_resource)
+        new_string = str(self.allocation)
+
+        expected_new_string = f"{new_resource.name} ({original_pi})"
+
+        self.assertNotEqual(original_string, new_string)
+        self.assertIn(new_string, expected_new_string)
+
+    def test_project_changed_changes_str(self):
+        """When the project associated with this allocation changes the str should change"""
+        original_string = str(self.allocation)
+
+        new_project = ProjectFactory()
+        self.allocation.project = new_project
+        self.allocation.save()
+
+        new_string = str(self.allocation)
+        expected_new_string = f"{self.resource.name} ({new_project.pi})"
+
+        self.assertNotEqual(original_string, new_string)
+        self.assertEqual(new_string, expected_new_string)
+
+    def test_project_pi_changed_changes_str(self):
+        """When the project associated with this allocation has its PI change the str should change"""
+        original_string = str(self.allocation)
+
+        new_pi = UserFactory()
+        self.allocation.project.pi = new_pi
+        self.allocation.save()
+
+        new_string = str(self.allocation)
+        expected_new_string = f"{self.resource.name} ({new_pi})"
+
+        self.assertNotEqual(original_string, new_string)
+        self.assertEqual(new_string, expected_new_string)
