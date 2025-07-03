@@ -22,7 +22,7 @@ To do this django signals are used, which fire upon actions in the Coldfront Web
 
 The plugin uses a bind user (which the site has to setup with appropriate write access) and _python ldap3_ to write changes to OpenLDAP.
 
-The **bind user** will **write to a project project OU** and **potentially an archive OU** (if defined by the site admin).
+The **bind user** will **write to a project OU** and **potentially an archive OU** (if defined by the site admin, using the relevant environment variable).
 
 The OpenLDAP server (slapd) must be operational and ready to accept changes via the configured bind user.
 
@@ -99,7 +99,7 @@ classDiagram
 
 
 
-### Syncronization and management command usage
+### Synchronization and management command usage
 
 Should Coldfront continue creating or modifying projects whilst the OpenLDAP server is unavailable, corrective action will likely be needed. A management command is provided to perform checks and synchronize changes required. This should only be used when Coldfront and OpenLDAP are (or are suspected) to be out of sync.
 
@@ -155,7 +155,7 @@ PROJECT_CODE_PADDING=4
 ### Usage - Example setup
 
 An example setup might look something like this. 
-- The institution feature usage is not required or mandated.
+- The institution feature usage is not required or mandated. If it is enabled, it will appear in the description field of the OpenLDAP posixgroup.
 - Here we are setup to use the Archive OU and not delete per project OUs upon Coldfront archive action in WebUI
 
 **NOTE:** Security (e.g. SSL + TLS) configuration is the responsibility of the site administrator - these aren't production settings below, only a starting point.
@@ -189,7 +189,7 @@ PROJECT_INSTITUTION_EMAIL_MAP=coldfront.ac.uk=ColdfrontUniversity
 
 | Option | Type | Default | Description |
 |--- | --- | --- | --- |
-| `PLUGIN_PROJECT_OPENLDAP` | Bool | True | Enable the plugin, required to be set as True (bool). |
+| `PLUGIN_PROJECT_OPENLDAP` | Bool | False, not defined | Enable the plugin, required to be set as True (bool). |
 
 **Required:**
 | Option | Type | Default | Description |
@@ -234,7 +234,7 @@ PROJECT_INSTITUTION_EMAIL_MAP=coldfront.ac.uk=ColdfrontUniversity
 An example of a project posixgroup and OU (see further down for OU).
 
 - Using 8000 as the start GID, this is project 11 (pk=11), so 8000+11 is the resultant gidNumber.
-- Within the OpenLDAP description _INSTITUTE_ gets populated if possible, the plugin doesn't require the institution feature is enabled though.  _INSTITUTE: NotDefined_ will be seen if not enabled.
+- Within the OpenLDAP description _INSTITUTE_ gets populated if possible, the plugin doesn't require the institution feature is enabled though. _INSTITUTE: NotDefined_ will be seen if enabled and there isn't a match.
 <br>
 
 ```
