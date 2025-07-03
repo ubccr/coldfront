@@ -88,8 +88,7 @@ ALLOCATION_DEFAULT_ALLOCATION_LENGTH = import_from_settings(
 
 EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings('EMAIL_DIRECTOR_EMAIL_ADDRESS')
 EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
-EMAIL_ACCOUNT_TICKET_EMAIL = import_from_settings('EMAIL_ACCOUNT_TICKET_EMAIL')
-
+EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
 
 def produce_filter_parameter(key, value):
     if isinstance(value, list):
@@ -817,7 +816,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
         context['project'] = get_object_or_404(Project, pk=pk)
         context['users_no_removal'] = users_no_removal
-        context['EMAIL_ACCOUNT_TICKET_EMAIL'] = EMAIL_ACCOUNT_TICKET_EMAIL
+        context['EMAIL_TICKET_SYSTEM_ADDRESS'] = EMAIL_TICKET_SYSTEM_ADDRESS
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):

@@ -1,8 +1,15 @@
-Please review the latest monthly report for {{project_title}}. Included in this report is a list of the users associated with the group and the latest usage and limits for storage allocations. 
+Please review the latest monthly report for {{project_title}}. Included in this report is a list of the users associated with the group and the latest usage and limits for the group's storage allocations.
+
+This is NOT A BILL. This is an informative report generated monthly to ensure the list of users and storage allocations are up to date.
 
 If you would like to modify your storage allocations or add and remove users from your account, please visit your project page on the ColdFront website: {{ project_detail_url }}
 
-Further questions or concerns should be directed to rdm@rc.fas.harvard.edu. 
+If you are unable to modify the user list, please email {{ EMAIL_TICKET_SYSTEM_ADDRESS }}.
+
+You can login to the Coldfront dashboard using your FASRC account name and password. Please visit the FASRC website if you require a new password or a password reset. We recommend accessing the Coldfront dashboard using the FASRC VPN.
+
+Further questions or concerns should be directed to {{ EMAIL_TICKET_SYSTEM_ADDRESS }}.
 
 Thank you,
+
 {{ signature }}

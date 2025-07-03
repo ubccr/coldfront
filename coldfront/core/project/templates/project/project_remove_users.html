@@ -19,7 +19,7 @@
       <p>
         To be removed from a lab, the user must not have the lab as their primary
         group. If you would like to remove a user that has your lab as their primary
-        group, please <a href="mailto:{{ EMAIL_ACCOUNT_TICKET_EMAIL }}?subject=User removal request for Project {{ project.title }}">
+        group, please <a href="mailto:{{ EMAIL_TICKET_SYSTEM_ADDRESS }}?subject=User removal request for Project {{ project.title }}">
         contact FASRC support</a>.
       </p>
       <form action="{% url 'project-remove-users' project.pk %}" method="post">

@@ -1,12 +1,9 @@
 import re
-import sys
-import traceback
 import logging
 import datetime
 from datetime import date
 
 from io import BytesIO
-from lib2to3.fixes.fix_input import context
 import requests
 
 from xhtml2pdf import pisa

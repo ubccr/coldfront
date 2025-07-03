@@ -11,6 +11,7 @@ from coldfront.core.utils.mail import send_email_template, email_template_contex
 
 EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
 TESTUSER = import_from_settings('TESTUSER')
+EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
 
 logger = logging.getLogger(__name__)
 
@@ -30,15 +31,15 @@ def send_storagereport_pdf(project, context=None):
     Renders the ReportPdfView to PDF and emails it to `to_email`.
     `context` will be passed to the view when rendering.
     """
-
     system_user = get_user_model().objects.get(username=TESTUSER)
     month = datetime.now().strftime("%B")
     year = datetime.now().year
     title = project.title
     subject = f'Monthly ColdFront Storage Allocation Report for {title} [{month} {year}]'
     context = email_template_context(extra_context={
+        'EMAIL_TICKET_SYSTEM_ADDRESS': EMAIL_TICKET_SYSTEM_ADDRESS,
         'project_title': title,
-        'project_detail_url': build_link(f'/project/{project.pk}/')
+        'project_detail_url': build_link(f'project/{project.pk}/')
     })
     # 1) build a fake GET request, set any necessary attributes
     factory = RequestFactory()
