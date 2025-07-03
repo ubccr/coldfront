@@ -106,6 +106,7 @@ We do not have information about your research. Please provide a detailed descri
     history = HistoricalRecords()
     objects = ProjectManager()
     project_code = models.CharField(max_length=10, blank=True)
+    institution = models.CharField(max_length=80, blank=True, default="None")
 
     def clean(self):
         """Validates the project and raises errors if the project is invalid."""

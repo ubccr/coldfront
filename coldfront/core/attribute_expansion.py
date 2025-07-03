@@ -114,7 +114,7 @@ def get_attribute_parameter_value(argument, attribute_parameter_dict, error_text
             return tmpstr
         else:
             # Bad string literal
-            logger.warn(
+            logger.warning(
                 "Bad string literal '{}' found while processing {}; missing final single quote".format(
                     argument, error_text
                 )
@@ -167,7 +167,7 @@ def get_attribute_parameter_value(argument, attribute_parameter_dict, error_text
             value = float(argument)
             return value
         except ValueError:
-            logger.warn(
+            logger.warning(
                 "Unable to evaluate argument '{arg}' while processing {etxt}, returning None".format(
                     arg=argument, etxt=error_text
                 )
@@ -214,12 +214,12 @@ def process_attribute_parameter_operation(opcode, oldvalue, argument, error_text
     """
     # Argument should never be None
     if argument is None:
-        logger.warn("Operator {}= acting on None argument in {}, returning None".format(opcode, error_text))
+        logger.warning("Operator {}= acting on None argument in {}, returning None".format(opcode, error_text))
         return None
     # Assignment and default operations allow oldvalue to be None
     if oldvalue is None:
         if opcode != ":" and opcode != "|":
-            logger.warn("Operator {}= acting on oldvalue=None in {}, returning None".format(opcode, error_text))
+            logger.warning("Operator {}= acting on oldvalue=None in {}, returning None".format(opcode, error_text))
             return None
 
     try:
@@ -241,7 +241,7 @@ def process_attribute_parameter_operation(opcode, oldvalue, argument, error_text
                 newval = oldvalue + argument
                 return newval
             else:
-                logger.warn(
+                logger.warning(
                     "Operator {}= acting on parameter of type {} in {}, returning None".format(
                         opcode, type(oldvalue), error_text
                     )
@@ -267,7 +267,7 @@ def process_attribute_parameter_operation(opcode, oldvalue, argument, error_text
         # If reached here, we do not recognize opcode
         logger.error("Unrecognized operation {}= in {}, returning None".format(opcode, error_text))
     except Exception:
-        logger.warn(
+        logger.warning(
             "Error performing operator {op}= on oldvalue='{old}' and argument={arg} in {errtext}".format(
                 op=opcode, old=oldvalue, arg=argument, errtext=error_text
             )
