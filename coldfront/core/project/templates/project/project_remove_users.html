@@ -12,14 +12,14 @@
   <div class="card border-light">
     <div class="card-body">
       <p>
-        Project users have the ability to access project allocations. Removing a user here
-        will remove the user's access to your project's allocations, but will not
+        Project users have the ability to access storage allocations. Removing a user here
+        will remove the user's access to your project's storage allocations, but will not
         remove that user's data from the allocations.
       </p>
       <p>
         To be removed from a lab, the user must not have the lab as their primary
         group. If you would like to remove a user that has your lab as their primary
-        group, please <a href="https://portal.rc.fas.harvard.edu/rcrt/submit_ticket">
+        group, please <a href="mailto:{{ EMAIL_TICKET_SYSTEM_ADDRESS }}?subject=User removal request for Project {{ project.title }}">
         contact FASRC support</a>.
       </p>
       <form action="{% url 'project-remove-users' project.pk %}" method="post">
