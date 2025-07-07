@@ -6,6 +6,7 @@
 
 import datetime
 from unittest.mock import patch
+from unittest import skip
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -287,3 +288,21 @@ class AllocationModelExpiresInTests(TestCase):
             allocation: Allocation = AllocationFactory(end_date=self.four_years_after_mocked_today)
 
             self.assertEqual(allocation.expires_in, days_in_four_years_including_leap_year)
+
+class AllocationModelGetEulaTests(TestCase):
+    def test_no_resources_with_eula_attribute_returns_none(self):
+        """Test that None is returned when there are no Resources associated with this allocation that have any ResourceAttributes with a ResourceAttributeType of 'eula'."""
+        allocation = AllocationFactory()
+
+    def test_only_resources_with_eula_for_other_allocations_returns_none(self):
+        """Test that None is returned when there are other allocations with eulas but this allocation does not have any Resources with a eula."""
+        ...
+
+    def test_one_resource_with_eula_returns_eula_resource_attribute_expanded_value(self):
+        """Test that when there is only one Resource with a eula ResourceAttribute associated with this allocation that thr expanded value for that ResourceAttribute is returned."""
+        ...
+
+    @skip("Currently no ordering is taking place, so the result when there are multiple will always be non-deterministic")
+    def test_multiple_resources_with_eula_returns_first_according_to_ordering(self):
+        """Test that when there are multiple resources with EULAs that they return the first ResourceAttribute according to the ordering."""
+        ...
