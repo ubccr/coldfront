@@ -300,7 +300,14 @@ class AllocationModelGetEulaTests(TestCase):
 
     def test_one_resource_with_eula_returns_eula_resource_attribute_expanded_value(self):
         """Test that when there is only one Resource with a eula ResourceAttribute associated with this allocation that thr expanded value for that ResourceAttribute is returned."""
-        ...
+        resource = ResourceFactory()
+        resource_attributes = resource.resourceattribute_set.all()
+        print(len(resource_attributes))
+        for resource_attribute in resource_attributes:
+            attr_type = resource_attribute.resource_attribute_type
+            print(f"The resource_attribute was: {resource_attribute}")
+            print(f"The attr_type was: {attr_type}")
+            print()
 
     @skip("Currently no ordering is taking place, so the result when there are multiple will always be non-deterministic")
     def test_multiple_resources_with_eula_returns_first_according_to_ordering(self):
