@@ -16,56 +16,36 @@ ColdFront requires Python 3+
 
 ## Installation Methods
 
-### Install via pip (recommended)
+### Install via uv (recommended)
 
-The recommended way of installing ColdFront is via pip inside a virtual
-environment:
+The recommended way of installing ColdFront is via [uv](https://docs.astral.sh/uv/):
+
+```
+$ uv tool install coldfront[ldap,freeipa,oidc]
+```
+
+### Install via pip
+
+ColdFront can be installed via pip inside a virtual environment:
 
 ```
 $ python3 -mvenv venv
 $ source venv/bin/activate
 $ pip install --upgrade pip
-$ pip install coldfront
+# Adjust extras to suite your needs
+$ pip install coldfront[ldap,freeipa,oidc,pg]
 ```
 We recommend you install ColdFront in a test environment first;
 however, if you want to jump right to instructions for installing and deploying
 in a production environment, [go here](deploy.md)
 
-### Install via source distribution
-
-We recommend installing via pip, but if you prefer to install via a source
-distribution you can download ColdFront releases via
-[PyPI](https://pypi.org/project/coldfront/#files) or
-[GitHub](https://github.com/ubccr/coldfront/releases). We also recommend
-installing this in a virtual environment.
+### Install from source
 
 ```
-$ tar xvzf coldfront-x.x.x.tar.gz
-$ cd coldfront-x.x.x
-$ pip install .
-```
-
-### Developing ColdFront
-
-If you're interested in hacking on the ColdFront source code you can install by
-cloning our GitHub repo and install via pip development mode. Note the master
-branch is the bleeding edge version and may be unstable. You can also checkout
-one of the tagged releases.
-```
-$ python3 -mvenv venv
-$ source venv/bin/activate
-$ pip install --upgrade pip
 $ git clone https://github.com/ubccr/coldfront.git
 $ cd coldfront
-$ pip install -e .
+$ uv sync --group dev
 ```
-
-!!! info "Recommended"
-    Checkout a tagged release by running:
-    ```
-    git tag -l
-    git checkout v1.x.x
-    ```
 
 ## Configuring ColdFront
 
@@ -75,7 +55,26 @@ a python file which can be used for more advanced configuration settings.
 ColdFront requires a database and if you don't configure one it will use SQLite
 by default.
 
-## Initializing the ColdFront database
+## Developing ColdFront
+
+If you're interested in hacking on the ColdFront source code you can install by
+cloning our GitHub repo and install via uv. Note the master branch is the
+bleeding edge version and may be unstable. You can also checkout one of the
+tagged releases.
+```
+$ git clone https://github.com/ubccr/coldfront.git
+$ cd coldfront
+$ uv sync --group dev
+```
+
+!!! info "Recommended"
+    Checkout a tagged release by running:
+    ```
+    git tag -l
+    git checkout v1.x.x
+    ```
+
+### Initializing the ColdFront database
 
 ColdFront supports MariaDB/MySQL, PostgreSQL, and SQLite. See the complete
 guide on [configuring ColdFront](config.md) for more details. By default, ColdFront will use
@@ -85,7 +84,7 @@ After configuring your database of choice you must first initialize the
 ColdFront database. This should only be done once:
 
 ```
-$ coldfront initial_setup
+$ uv run coldfront initial_setup
 Running migrations:
   Applying contenttypes.0001_initial... OK
   Applying auth.0001_initial... OK
@@ -95,24 +94,24 @@ Running migrations:
 
 After the above command completes the ColdFront database is ready for use.
 
-## Creating the super user account
+### Creating the super user account
 
 Run the command below to create a new super user account:
 
 ```
-$ coldfront createsuperuser
+$ uv run coldfront createsuperuser
 ```
 !!! Tip  
     This command should prompt you to select a username, password, and email address for your super user account.  
 
-## Running ColdFront server
+### Running ColdFront server
 
 ColdFront is a Django application and comes with a simple web server to get
 started quickly. This is good for evaluating ColdFront and testing/demo
 purposes. Run the following command to start the development web server:
 
 ```
-$ DEBUG=True coldfront runserver
+$ DEBUG=True uv run coldfront runserver
 ```
 
 Point your browser to http://localhost:8000 and login with the super user
@@ -122,14 +121,14 @@ account you created.
     Do not run this in production. For more information on deploying ColdFront
     in production [see here](deploy.md).
 
-## Loading the sample test data
+### Loading the sample test data
 
 If you're interested in evaluating ColdFront we provide an easy way to load
 some test data so you can get a feel for how ColdFront works. Run this command
 to load the test data set:
 
 ```
-$ coldfront load_test_data
+$ uv run coldfront load_test_data
 ```
 
 - You can log in as `admin` with password `test1234`.

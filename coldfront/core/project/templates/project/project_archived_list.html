@@ -86,6 +86,9 @@ Project List
               <br> <strong>Description: </strong>{{ project.description }}</td>
             <td>{{ project.field_of_science.description }}</td>
             <td>{{ project.status.name }}</td>
+            {% if PROJECT_INSTITUTION_EMAIL_MAP %}
+                <p class="card-text text-justify"><strong>Institution: </strong>{{ project.institution }}</p>
+            {% endif %}
           </tr>
         {% endfor %}
       </tbody>
