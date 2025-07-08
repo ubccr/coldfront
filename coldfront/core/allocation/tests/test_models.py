@@ -5,11 +5,12 @@
 """Unit tests for the allocation models"""
 
 import datetime
-from unittest import skip
 from collections.abc import Iterable
+from unittest import skip
 from unittest.mock import patch
+
 from django.core.exceptions import ValidationError
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from django.utils import timezone
 
 from coldfront.core.allocation.models import (
@@ -144,9 +145,11 @@ class AllocationModelCleanMethodTests(TestCase):
         )
         actual_allocation.full_clean()
 
-class AllocationModelGetResourcesAsStringTests(TestCase):
 
-    @skip("Is it ever valid to have an allocation without a resource? This constraint is not enforced and this test does work. ")
+class AllocationModelGetResourcesAsStringTests(TestCase):
+    @skip(
+        "Is it ever valid to have an allocation without a resource? This constraint is not enforced and this test does work. "
+    )
     def test_no_resources_with_allocation_returns_empty_string(self):
         """Test that when an Allocation has no resources that the empty string is returned."""
         allocation = AllocationFactory()
@@ -162,13 +165,13 @@ class AllocationModelGetResourcesAsStringTests(TestCase):
         self.assertEqual(expected, allocation.get_resources_as_string)
 
     def test_two_resources_with_allocation_returns_string_with_both_separated_by_one_comma(self):
-        """Test that when two separate resources as associated with an Allocation that both names are returned in the string separated by a comma. """
+        """Test that when two separate resources as associated with an Allocation that both names are returned in the string separated by a comma."""
         allocation = AllocationFactory()
         resource_1 = ResourceFactory()
         resource_2 = ResourceFactory()
         allocation.resources.add(resource_1, resource_2)
 
-        expected_characters: Iterable = f"{resource_1.name}, {resource_2.name}" 
+        expected_characters: Iterable = f"{resource_1.name}, {resource_2.name}"
         actual: str = allocation.get_resources_as_string
         self.assertCountEqual(expected_characters, actual)
 
@@ -183,12 +186,12 @@ class AllocationModelGetResourcesAsStringTests(TestCase):
 
         num_irrelevant_resources = 12
         for _ in range(num_irrelevant_resources):
-            irrelevant_resource = ResourceFactory()
-        
+            irrelevant_resource = ResourceFactory()  # noqa: F841
+
         resource_2 = ResourceFactory(name="this is another super unique name")
         allocation.resources.add(resource_2)
 
-        expected_characters: Iterable = f"{resource_1.name}, {resource_2.name}" 
+        expected_characters: Iterable = f"{resource_1.name}, {resource_2.name}"
         actual: str = allocation.get_resources_as_string
         self.assertCountEqual(expected_characters, actual)
 
@@ -213,11 +216,10 @@ class AllocationModelGetResourcesAsStringTests(TestCase):
             with self.subTest(alloc=alloc, res=res):
                 self.assertEqual(alloc.get_resources_as_string, res.name)
 
-
     def test_allocation_with_many_resources_exact_number_names_found_in_string(self):
         allocation = AllocationFactory()
         large_number = 33
-        large_number_of_resources = [ResourceFactory(name=str(i)) for i in range(large_number)]
+        large_number_of_resources = [ResourceFactory(name=f"Resource {i}") for i in range(large_number)]
 
         res_set = set(large_number_of_resources)
         self.assertEqual(large_number, len(res_set))
@@ -234,19 +236,20 @@ class AllocationModelGetResourcesAsStringTests(TestCase):
         actual_number_resource_names = len(resources_as_string.split(", "))
         self.assertEqual(expected_number_resource_names, actual_number_resource_names)
 
-
     @skip("The setting ALLOCATION_RESOURCE_ORDERING is currently broken.")
     # @override_settings(ALLOCATION_RESOURCE_ORDERING=["-is_allocatable", "name"])
-    @patch('coldfront.core.allocation.models.ALLOCATION_RESOURCE_ORDERING', ["-is_allocatable", "name"])
+    @patch("coldfront.core.allocation.models.ALLOCATION_RESOURCE_ORDERING", ["-is_allocatable", "name"])
     def test_default_allocation_resource_ordering_determines_string_order(self):
-        """Test that the string returned is properly ordered when the default value ALLOCATION_RESOURCE_ORDERING=["-is_allocatable", "name"] is used. """
+        """Test that the string returned is properly ordered when the default value ALLOCATION_RESOURCE_ORDERING=["-is_allocatable", "name"] is used."""
         expected_resource_1 = ResourceFactory(is_allocatable=True, name="Alice")
-        expected_resource_2 = ResourceFactory(is_allocatable=True, name="Bob") 
+        expected_resource_2 = ResourceFactory(is_allocatable=True, name="Bob")
         expected_resource_3 = ResourceFactory(is_allocatable=True, name="Sally")
         expected_resource_4 = ResourceFactory(is_allocatable=False, name="Bart")
         expected_resource_5 = ResourceFactory(is_allocatable=False, name="Charlie")
         allocation = AllocationFactory()
-        allocation.resources.add(expected_resource_1, expected_resource_2, expected_resource_3, expected_resource_4, expected_resource_5)
+        allocation.resources.add(
+            expected_resource_1, expected_resource_2, expected_resource_3, expected_resource_4, expected_resource_5
+        )
 
         expected_string = "Alice, Bob, Sally, Bart, Charlie"
         actual_string = allocation.get_resources_as_string
@@ -255,7 +258,7 @@ class AllocationModelGetResourcesAsStringTests(TestCase):
 
     @skip("The setting ALLOCATION_RESOURCE_ORDERING is currently broken.")
     # @override_settings(ALLOCATION_RESOURCE_ORDERING=["-is_available", "-is_public", "name"])
-    @patch('coldfront.core.allocation.models.ALLOCATION_RESOURCE_ORDERING', ["-is_available", "-is_public", "name"])
+    @patch("coldfront.core.allocation.models.ALLOCATION_RESOURCE_ORDERING", ["-is_available", "-is_public", "name"])
     def test_custom_allocation_resource_ordering_determines_string_order(self):
         """Test that the string returned is properly ordered when a custom value ALLOCATION_RESOURCE_ORDERING is used."""
         expected_resource_1 = ResourceFactory(is_available=True, is_public=True, name="Alice")
@@ -267,7 +270,15 @@ class AllocationModelGetResourcesAsStringTests(TestCase):
         expected_resource_7 = ResourceFactory(is_available=False, is_public=False, name="John")
 
         allocation = AllocationFactory()
-        allocation.resources.add(expected_resource_1, expected_resource_2, expected_resource_3, expected_resource_4, expected_resource_5, expected_resource_6, expected_resource_7)
+        allocation.resources.add(
+            expected_resource_1,
+            expected_resource_2,
+            expected_resource_3,
+            expected_resource_4,
+            expected_resource_5,
+            expected_resource_6,
+            expected_resource_7,
+        )
 
         expected_string = "Alice, Bob, Andrew, Charlie, Xavier, Bart, John"
         actual_string = allocation.get_resources_as_string
@@ -279,7 +290,7 @@ class AllocationModelGetResourcesAsStringTests(TestCase):
 
         resource_1 = ResourceFactory(name="this is a super unique name")
         resource_2 = ResourceFactory(name="this is another super unique name")
-        
+
         expected_resources = f"{resource_1.name}, {resource_2.name}"
 
         num_allocs = 4
@@ -299,7 +310,7 @@ class AllocationModelGetResourcesAsListTests(TestCase):
         allocation = AllocationFactory()
         expected = []
         self.assertEqual(expected, allocation.get_resources_as_list)
-    
+
     def test_single_resource_with_allocation_returns_list_with_just_one_resource(self):
         """Test that when an Allocation only has a single resource associated with it just the name of that Resource is returned in a list."""
         allocation = AllocationFactory()
@@ -330,8 +341,8 @@ class AllocationModelGetResourcesAsListTests(TestCase):
 
         num_irrelevant_resources = 12
         for _ in range(num_irrelevant_resources):
-            irrelevant_resource = ResourceFactory()
-        
+            irrelevant_resource = ResourceFactory()  # noqa: F841
+
         expected = [resource_1, resource_2]
         actual = allocation.get_resources_as_list
         self.assertCountEqual(expected, actual)
@@ -341,9 +352,9 @@ class AllocationModelGetResourcesAsListTests(TestCase):
         num_unique_pairs = 14
         pairs: list[tuple[Allocation, Resource]] = []
         for i in range(num_unique_pairs):
-            unique_allocation_project = ProjectFactory(title=str(i))
+            unique_allocation_project = ProjectFactory(title=f"Project {i}")
             unique_allocation = AllocationFactory(project=unique_allocation_project)
-            unique_resource = ResourceFactory(name=str(i))
+            unique_resource = ResourceFactory(name=f"Resource {i}")
             unique_allocation.resources.add(unique_resource)
             pair = (unique_allocation, unique_resource)
             pairs.append(pair)
@@ -357,7 +368,7 @@ class AllocationModelGetResourcesAsListTests(TestCase):
         """Test that when an Allocation has many Resources that the exact number is found in the list."""
         allocation = AllocationFactory()
         large_number = 33
-        large_number_of_resources = [ResourceFactory(name=str(i)) for i in range(large_number)]
+        large_number_of_resources = [ResourceFactory(name=f"Resource {i}") for i in range(large_number)]
         allocation.resources.add(*large_number_of_resources)
 
         self.assertCountEqual(large_number_of_resources, allocation.get_resources_as_list)
@@ -365,12 +376,14 @@ class AllocationModelGetResourcesAsListTests(TestCase):
     def test_resources_in_list_follow_default_ordering(self):
         """Test that the resources in the list follow the default ordering."""
         expected_resource_1 = ResourceFactory(is_allocatable=True, name="Alice")
-        expected_resource_2 = ResourceFactory(is_allocatable=True, name="Jason") 
+        expected_resource_2 = ResourceFactory(is_allocatable=True, name="Jason")
         expected_resource_3 = ResourceFactory(is_allocatable=True, name="Clare")
         expected_resource_4 = ResourceFactory(is_allocatable=False, name="Bart")
         expected_resource_5 = ResourceFactory(is_allocatable=False, name="Charlie")
         allocation = AllocationFactory()
-        allocation.resources.add(expected_resource_2, expected_resource_5, expected_resource_3, expected_resource_4, expected_resource_1)
+        allocation.resources.add(
+            expected_resource_2, expected_resource_5, expected_resource_3, expected_resource_4, expected_resource_1
+        )
 
         expected_ordered_resources_allocatable = [expected_resource_1, expected_resource_2, expected_resource_3]
         expected_ordered_resources_not_allocatable = [expected_resource_4, expected_resource_5]
@@ -387,7 +400,7 @@ class AllocationModelGetResourcesAsListTests(TestCase):
 
         resource_1 = ResourceFactory(name="this is a super unique name")
         resource_2 = ResourceFactory(name="this is another super unique name")
-        
+
         expected_resources = [resource_1, resource_2]
 
         num_allocs = 4
