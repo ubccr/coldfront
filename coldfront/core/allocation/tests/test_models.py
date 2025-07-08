@@ -201,9 +201,9 @@ class AllocationModelGetResourcesAsStringTests(TestCase):
         num_unique_pairs = 14
         pairs: list[tuple[Allocation, Resource]] = []
         for i in range(num_unique_pairs):
-            unique_allocation_project = ProjectFactory(title=str(i))
+            unique_allocation_project = ProjectFactory(title=f"Project {i}")
             unique_allocation = AllocationFactory(project=unique_allocation_project)
-            unique_resource = ResourceFactory(name=str(i))
+            unique_resource = ResourceFactory(name=f"Resource {i}")
             unique_allocation.resources.add(unique_resource)
             pair = (unique_allocation, unique_resource)
             pairs.append(pair)
@@ -273,6 +273,25 @@ class AllocationModelGetResourcesAsStringTests(TestCase):
         actual_string = allocation.get_resources_as_string
 
         self.assertEqual(expected_string, actual_string)
+
+    def test_multiple_allocations_share_two_resources_all_have_both_resources_in_string(self):
+        """Test that when two Allocations share two Resources that both Resources are included in the string for each Allocation."""
+
+        resource_1 = ResourceFactory(name="this is a super unique name")
+        resource_2 = ResourceFactory(name="this is another super unique name")
+        
+        expected_resources = f"{resource_1.name}, {resource_2.name}"
+
+        num_allocs = 4
+        for i in range(num_allocs):
+            unique_allocation_project = ProjectFactory(title=f"Project {i}")
+            unique_allocation = AllocationFactory(project=unique_allocation_project)
+            unique_allocation.resources.add(resource_1, resource_2)
+
+        for alloc in Allocation.objects.all():
+            with self.subTest(alloc=alloc):
+                self.assertCountEqual(alloc.get_resources_as_string, expected_resources)
+
 
 class AllocationModelGetResourcesAsListTests(TestCase):
     def test_no_resources_with_allocation_returns_empty_list(self):
