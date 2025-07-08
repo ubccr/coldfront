@@ -273,3 +273,110 @@ class AllocationModelGetResourcesAsStringTests(TestCase):
         actual_string = allocation.get_resources_as_string
 
         self.assertEqual(expected_string, actual_string)
+
+class AllocationModelGetResourcesAsListTests(TestCase):
+    def test_no_resources_with_allocation_returns_empty_list(self):
+        """Test that when an Allocation with no resources that the empty list is returned."""
+        allocation = AllocationFactory()
+        expected = []
+        self.assertEqual(expected, allocation.get_resources_as_list)
+    
+    def test_single_resource_with_allocation_returns_list_with_just_one_resource(self):
+        """Test that when an Allocation only has a single resource associated with it just the name of that Resource is returned in a list."""
+        allocation = AllocationFactory()
+        resource = ResourceFactory()
+        allocation.resources.add(resource)
+        expected = [resource]
+        self.assertEqual(expected, allocation.get_resources_as_list)
+
+    def test_two_resources_with_allocation_returns_list_with_both_resources(self):
+        """Test that when two separate resources as associated with an Allocation that both names are returned in the list."""
+        allocation = AllocationFactory()
+        resource_1 = ResourceFactory(name="qwertyuiop")
+        resource_2 = ResourceFactory(name="asdfghjkl")
+        allocation.resources.add(resource_1, resource_2)
+
+        expected = [resource_1, resource_2]
+        actual = allocation.get_resources_as_list
+        self.assertCountEqual(expected, actual)
+
+    def test_multiple_resources_not_associated_with_allocation_not_included(self):
+        """Test that resources not associated with the Allocation are not included in the list."""
+        allocation = AllocationFactory()
+
+        resource_1 = ResourceFactory(name="this is a super unique name")
+        allocation.resources.add(resource_1)
+        resource_2 = ResourceFactory(name="this is another super unique name")
+        allocation.resources.add(resource_2)
+
+        num_irrelevant_resources = 12
+        for _ in range(num_irrelevant_resources):
+            irrelevant_resource = ResourceFactory()
+        
+        expected = [resource_1, resource_2]
+        actual = allocation.get_resources_as_list
+        self.assertCountEqual(expected, actual)
+
+    def test_multiple_allocations_with_a_resource_do_not_conflict(self):
+        """Test that when there are multiple Allocations that each have a unique associated Resource only their respective Resource is included."""
+        num_unique_pairs = 14
+        pairs: list[tuple[Allocation, Resource]] = []
+        for i in range(num_unique_pairs):
+            unique_allocation_project = ProjectFactory(title=str(i))
+            unique_allocation = AllocationFactory(project=unique_allocation_project)
+            unique_resource = ResourceFactory(name=str(i))
+            unique_allocation.resources.add(unique_resource)
+            pair = (unique_allocation, unique_resource)
+            pairs.append(pair)
+
+        for pair in pairs:
+            alloc, res = pair
+            with self.subTest(alloc=alloc, res=res):
+                self.assertEqual(alloc.get_resources_as_list, [res])
+
+    def test_allocation_with_many_resources_exact_number_found_in_list(self):
+        """Test that when an Allocation has many Resources that the exact number is found in the list."""
+        allocation = AllocationFactory()
+        large_number = 33
+        large_number_of_resources = [ResourceFactory(name=str(i)) for i in range(large_number)]
+        allocation.resources.add(*large_number_of_resources)
+
+        self.assertCountEqual(large_number_of_resources, allocation.get_resources_as_list)
+
+    def test_resources_in_list_follow_default_ordering(self):
+        """Test that the resources in the list follow the default ordering."""
+        expected_resource_1 = ResourceFactory(is_allocatable=True, name="Alice")
+        expected_resource_2 = ResourceFactory(is_allocatable=True, name="Jason") 
+        expected_resource_3 = ResourceFactory(is_allocatable=True, name="Clare")
+        expected_resource_4 = ResourceFactory(is_allocatable=False, name="Bart")
+        expected_resource_5 = ResourceFactory(is_allocatable=False, name="Charlie")
+        allocation = AllocationFactory()
+        allocation.resources.add(expected_resource_2, expected_resource_5, expected_resource_3, expected_resource_4, expected_resource_1)
+
+        expected_ordered_resources_allocatable = [expected_resource_1, expected_resource_2, expected_resource_3]
+        expected_ordered_resources_not_allocatable = [expected_resource_4, expected_resource_5]
+
+        actual_ordered_resources = allocation.get_resources_as_list
+        actual_first_three = actual_ordered_resources[0:3]
+        actual_last_two = actual_ordered_resources[-2:]
+
+        self.assertCountEqual(expected_ordered_resources_allocatable, actual_first_three)
+        self.assertCountEqual(expected_ordered_resources_not_allocatable, actual_last_two)
+
+    def test_multiple_allocations_share_two_resources_all_have_both_resources_in_list(self):
+        """Test that when two Allocations share two Resources that both Resources are included in the list for each Allocation."""
+
+        resource_1 = ResourceFactory(name="this is a super unique name")
+        resource_2 = ResourceFactory(name="this is another super unique name")
+        
+        expected_resources = [resource_1, resource_2]
+
+        num_allocs = 4
+        for i in range(num_allocs):
+            unique_allocation_project = ProjectFactory(title=f"Project {i}")
+            unique_allocation = AllocationFactory(project=unique_allocation_project)
+            unique_allocation.resources.add(resource_1, resource_2)
+
+        for alloc in Allocation.objects.all():
+            with self.subTest(alloc=alloc):
+                self.assertCountEqual(alloc.get_resources_as_list, expected_resources)
