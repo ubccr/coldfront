@@ -234,13 +234,13 @@ class AllocationAttributeEditForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['attribute_pk'].widget = forms.HiddenInput()
+        self.fields["attribute_pk"].widget = forms.HiddenInput()
 
     def clean(self):
         cleaned_data = super().clean()
-        allocation_attribute = AllocationAttribute.objects.get(pk=cleaned_data.get('attribute_pk'))
+        allocation_attribute = AllocationAttribute.objects.get(pk=cleaned_data.get("attribute_pk"))
 
-        allocation_attribute.value = cleaned_data.get('value')
+        allocation_attribute.value = cleaned_data.get("value")
         allocation_attribute.clean()
 
 

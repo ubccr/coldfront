@@ -23,16 +23,17 @@ from django.views import View
 from django.views.generic import ListView, TemplateView
 from django.views.generic.edit import CreateView, FormView, UpdateView
 
+from coldfront.config.core import ALLOCATION_EULA_ENABLE
 from coldfront.core.allocation.forms import (
     AllocationAccountForm,
     AllocationAddUserForm,
+    AllocationAttributeChangeForm,
     AllocationAttributeCreateForm,
     AllocationAttributeDeleteForm,
+    AllocationAttributeEditForm,
+    AllocationAttributeUpdateForm,
     AllocationChangeForm,
     AllocationChangeNoteForm,
-    AllocationAttributeChangeForm,
-    AllocationAttributeUpdateForm,
-    AllocationAttributeEditForm,
     AllocationForm,
     AllocationInvoiceNoteDeleteForm,
     AllocationInvoiceUpdateForm,
@@ -43,30 +44,30 @@ from coldfront.core.allocation.forms import (
 )
 from coldfront.core.allocation.models import (
     Allocation,
-    AllocationPermission,
     AllocationAccount,
     AllocationAttribute,
+    AllocationAttributeChangeRequest,
     AllocationAttributeType,
     AllocationChangeRequest,
     AllocationChangeStatusChoice,
-    AllocationAttributeChangeRequest,
+    AllocationPermission,
     AllocationStatusChoice,
     AllocationUser,
     AllocationUserNote,
     AllocationUserStatusChoice,
 )
 from coldfront.core.allocation.signals import (
-    allocation_new,
     allocation_activate,
     allocation_activate_user,
-    allocation_disable,
-    allocation_remove_user,
-    allocation_change_created,
-    allocation_change_approved,
     allocation_attribute_changed,
+    allocation_change_approved,
+    allocation_change_created,
+    allocation_disable,
+    allocation_new,
+    allocation_remove_user,
 )
 from coldfront.core.allocation.utils import generate_guauge_data_from_usage, get_user_resources
-from coldfront.core.project.models import Project, ProjectUser, ProjectPermission, ProjectUserStatusChoice
+from coldfront.core.project.models import Project, ProjectPermission, ProjectUser, ProjectUserStatusChoice
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import (
