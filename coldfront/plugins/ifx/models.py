@@ -419,13 +419,3 @@ def get_resource_allocation_authorization_map():
         result.append(row)
 
     return result
-
-class PreferredUsername(models.Model):
-    '''
-    Preferred username for a user
-    '''
-    ifxid = models.CharField(max_length=255)
-    preferred_username = models.CharField(max_length=255)
-
-    def __str__(self):
-        return f'{self.ifxid} - {self.preferred_username}'
