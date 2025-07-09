@@ -148,13 +148,7 @@ class UpdateAllocationView(AllocationView):
 
         allocation = Allocation.objects.get(pk=self.kwargs.get("allocation_id"))
 
-        allocation_change_request = AllocationChangeRequest.objects.create(
-            allocation=allocation,
-            status=AllocationChangeStatusChoice.objects.get(name="Pending"),
-            justification="updating",
-            notes="updating",
-            end_date_extension=10,
-        )
+        allocation_change_request = None
 
         # NOTE - "storage_protocols" will have special handling
         attributes_to_check = [
@@ -172,16 +166,31 @@ class UpdateAllocationView(AllocationView):
         form_values = [form_data.get(field_name) for field_name in attributes_to_check]
 
         # handle "storage_protocols" separately
-        attributes_to_check.append("storage_protocols")
-        form_values.append(json.dumps(form_data.get("protocols")))
+        if json.dumps(form_data.get("protocols")) != "null":
+            attributes_to_check.append("storage_protocols")
+            form_values.append(json.dumps(form_data.get("protocols")))
 
-        for attribute_name, form_value in zip(attributes_to_check, form_values):
-            UpdateAllocationView._handle_attribute_change(
+        attribute_changes = list(zip(attributes_to_check, form_values))
+        attribute_changes = [
+            change for change in attribute_changes if change[1] is not None
+        ]
+
+        if len(attribute_changes):
+            allocation_change_request = AllocationChangeRequest.objects.create(
                 allocation=allocation,
-                allocation_change_request=allocation_change_request,
-                attribute_name=attribute_name,
-                form_value=form_value,
+                status=AllocationChangeStatusChoice.objects.get(name="Pending"),
+                justification="updating",
+                notes="updating",
+                end_date_extension=10,
             )
+
+            for attribute_name, form_value in zip(attributes_to_check, form_values):
+                UpdateAllocationView._handle_attribute_change(
+                    allocation=allocation,
+                    allocation_change_request=allocation_change_request,
+                    attribute_name=attribute_name,
+                    form_value=form_value,
+                )
 
         # RW and RO users are not handled via an AllocationChangeRequest
         access_keys = ["rw", "ro"]
@@ -236,9 +245,10 @@ class UpdateAllocationView(AllocationView):
 
         users_to_add = list(set(access_users) - set(allocation_usernames))
         create_group_time = datetime.now()
-        async_task(
-            addMembersToADGroup, users_to_add, access_allocation, create_group_time
-        )
+        if users_to_add:
+            async_task(
+                addMembersToADGroup, users_to_add, access_allocation, create_group_time
+            )
 
         users_to_remove = set(allocation_usernames) - set(access_users)
         for allocation_username in users_to_remove:
