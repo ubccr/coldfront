@@ -31,7 +31,6 @@ from ifxmail.client import send
 from ifxuser import models as ifxuser_models
 from coldfront.plugins.ifx.calculator import NewColdfrontBillingCalculator
 from coldfront.plugins.ifx.permissions import AdminPermissions
-from coldfront.plugins.ifx.models import PreferredUsername
 
 logger = logging.getLogger(__name__)
 
@@ -39,19 +38,7 @@ def get_preferred_user(ifxid):
     '''
     Get the IfxUser with the preferred username
     '''
-    users = ifxuser_models.IfxUser.objects.filter(ifxid=ifxid)
-    if not users:
-        raise Exception(f'User cannot be found using ifxid {ifxid}')
-    try:
-        pu = PreferredUsername.objects.get(ifxid=ifxid)
-        users = users.filter(username=pu.preferred_username)
-    except PreferredUsername.DoesNotExist:
-        pass
-    except PreferredUsername.MultipleObjectsReturned:
-        raise Exception(f'Multiple preferred usernames found for ifxid {ifxid}')
-    if len(users) > 1:
-        raise Exception(f'Multiple users found for ifxid {ifxid} and no preferred username is set')
-    return users[0]
+    return ifxuser_models.IfxUser.get_preferred_user(ifxid)
 
 
 @login_required
