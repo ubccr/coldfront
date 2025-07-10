@@ -852,7 +852,7 @@ class ColdfrontRebalance(Rebalance):
         # Figure out the organization that needs to be rebalanced from the account_data
         organization = None
         try:
-            account = Account.objects.filter(ifxacct=account_data[0]['account']).first()
+            account = Account.objects.get(ifxacct=account_data[0]['account'])
             organization = account.organization
         except Account.DoesNotExist:
             raise Exception(f'Account {account_data[0]["account"]} not found')
@@ -873,7 +873,7 @@ class ColdfrontRebalance(Rebalance):
         # Figure out the organization that needs to be rebalanced from the account_data
         organization = None
         try:
-            account = Account.objects.filter(ifxacct=account_data[0]['account']).first()
+            account = Account.objects.get(ifxacct=account_data[0]['account'])
             organization = account.organization
         except Account.DoesNotExist:
             raise Exception(f'Account {account_data[0]["account"]} not found')
