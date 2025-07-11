@@ -842,57 +842,7 @@ class ColdfrontRebalance(Rebalance):
     Coldfront Rebalance.  Does not do a user-specific rebalance, but rather the entire organization so that offer letter reprocessing is done.
     '''
 
-    def get_recalculate_body(self, user, account_data):
-        '''
-        Get the body of the recalculate POST
-        '''
-        if not account_data or not len(account_data):
-            raise Exception('No account data provided')
-
-        # Figure out the organization that needs to be rebalanced from the account_data
-        organization = None
-        try:
-            account = Account.objects.filter(ifxacct=account_data[0]['account']).first()
-            organization = account.organization
-        except Account.DoesNotExist:
-            raise Exception(f'Account {account_data[0]["account"]} not found')
-
-        return {
-            'recalculate': False,
-            'user_ifxorg': organization.ifxorg,
-        }
-
-    def remove_billing_records(self, user, account_data):
-        '''
-        Remove the billing records for the given facility, year, month, and organization (as determined by the account_data)
-        Need to clear out the whole org so that offer letter allocations can be properly credited
-        '''
-        if not account_data or not len(account_data):
-            raise Exception('No account data provided')
-
-        # Figure out the organization that needs to be rebalanced from the account_data
-        organization = None
-        try:
-            account = Account.objects.filter(ifxacct=account_data[0]['account']).first()
-            organization = account.organization
-        except Account.DoesNotExist:
-            raise Exception(f'Account {account_data[0]["account"]} not found')
-
-        if not organization:
-            raise Exception(f'Organization not found for account {account_data[0]["account"]}')
-
-        # Remove the billing records for the organization
-        billing_records = BillingRecord.objects.filter(
-            product_usage__product__facility=self.facility,
-            account__organization=organization,
-            year=self.year,
-            month=self.month,
-        ).exclude(current_state='FINAL')
-
-        for br in billing_records:
-            br.delete()
-
-    def recalculate_billing_records(self, user, account_data):
+    def recalculate_billing_records(self, organization, account_data):
         '''
         Recalculate the billing records for the given facility, user, year, and month
         '''
@@ -906,7 +856,7 @@ class ColdfrontRebalance(Rebalance):
             'Authorization': self.auth_token_str,
             'Content-Type': 'application/json',
         }
-        data = self.get_recalculate_body(user, account_data)
+        data = self.get_recalculate_body(organization, account_data)
         response = requests.post(url, headers=headers, json=data, timeout=None)
         response_data = None
         try:
@@ -919,9 +869,10 @@ class ColdfrontRebalance(Rebalance):
                 error_message = ','.join(str(k) for k in response_data.values())
             else:
                 error_message = response.text
-            raise Exception(f'Error recalculating billing records for {user.full_name} for {self.month}/{self.year}: {error_message}')
+            logger.error(f'Error recalculating billing records for {organization.name} for {self.month}/{self.year}: {error_message}')
+            raise Exception(f'Error recalculating billing records for {organization.name} for {self.month}/{self.year}: {error_message}')
 
         if response_data != 'OK' and response_data.get('errors', None):
             error_message = ','.join(set(response_data['errors']))
-            raise Exception(f'Error recalculating billing records for {user.full_name} for {self.month}/{self.year}: {error_message}')
-
+            logger.error(f'Error recalculating billing records for {organization.name} for {self.month}/{self.year}: {error_message}')
+            raise Exception(f'Error recalculating billing records for {organization.name} for {self.month}/{self.year}: {error_message}')

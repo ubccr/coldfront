@@ -6,7 +6,7 @@ Views
 # pylint: disable=broad-exception-raised,broad-exception-caught,line-too-long,logging-fstring-interpolation
 import logging
 import json
-from django.shortcuts import render, redirect
+from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import get_user_model
@@ -20,25 +20,18 @@ from rest_framework.decorators import api_view, permission_classes, authenticati
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication, TokenAuthentication
+from ifxmail.client import send
 from ifxreport.views import run_report as ifxreport_run_report
 from ifxbilling import models as ifxbilling_models
 from ifxbilling.calculator import getClassFromName
 from ifxbilling.views import get_billing_record_list as ifxbilling_get_billing_record_list
 from ifxbilling import views as ifxbilling_views
 from ifxbilling.fiine import update_user_accounts
-from ifxbilling.calculator import get_rebalancer_class
-from ifxmail.client import send
 from ifxuser import models as ifxuser_models
 from coldfront.plugins.ifx.calculator import NewColdfrontBillingCalculator
 from coldfront.plugins.ifx.permissions import AdminPermissions
 
 logger = logging.getLogger(__name__)
-
-def get_preferred_user(ifxid):
-    '''
-    Get the IfxUser with the preferred username
-    '''
-    return ifxuser_models.IfxUser.get_preferred_user(ifxid)
 
 
 @login_required
@@ -170,42 +163,42 @@ def calculate_billing_month(request, invoice_prefix, year, month):
     '''
     Calculate billing month view
     '''
-    logger.error('Calculating billing records for month %d of year %d', month, year)
-    recalculate = False
-    user_ifxorg = None
     try:
-        data = request.data
-        recalculate = data.get('recalculate') and data['recalculate'].lower() == 'true'
-        if data and 'user_ifxorg' in data:
-            user_ifxorg = data['user_ifxorg']
+        recalculate = False
+        user_ifxorg = None
+        try:
+            data = request.data
+            recalculate = data.get('recalculate') and data['recalculate'].lower() == 'true'
+            if data and 'user_ifxorg' in data:
+                user_ifxorg = data['user_ifxorg']
+        except Exception as e:
+            logger.exception(e)
+            return Response(data={'error': 'Cannot parse request body'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            organizations = ifxuser_models.Organization.objects.filter(org_tree='Harvard')
+            if user_ifxorg:
+                organizations = [ifxuser_models.Organization.objects.get(ifxorg=user_ifxorg)]
+
+            email = request.user.email
+            if not email:
+                return Response(data={'error': 'User email is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+            async_task(
+                'coldfront.plugins.ifx.views.calculate_billing_month_task',
+                year,
+                month,
+                email,
+                recalculate=recalculate,
+                user_ifxorg=user_ifxorg
+            )
+            return Response('OK', status=status.HTTP_200_OK)
+        except ifxuser_models.Organization.DoesNotExist as e:
+            logger.exception(e)
+            return Response(data={ 'error': f'Organization with ifxorg {user_ifxorg} cannot be found' }, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         logger.exception(e)
-        return Response(data={'error': 'Cannot parse request body'}, status=status.HTTP_400_BAD_REQUEST)
-
-    logger.debug('Calculating billing records for month %d of year %d, with recalculate flag %s', month, year, str(recalculate))
-
-    try:
-        organizations = ifxuser_models.Organization.objects.filter(org_tree='Harvard')
-        if user_ifxorg:
-            organizations = [ifxuser_models.Organization.objects.get(ifxorg=user_ifxorg)]
-
-        email = request.user.email
-        if not email:
-            return Response(data={'error': 'User email is required'}, status=status.HTTP_400_BAD_REQUEST)
-
-        async_task(
-            'coldfront.plugins.ifx.views.calculate_billing_month_task',
-            year,
-            month,
-            email,
-            recalculate=recalculate,
-            user_ifxorg=user_ifxorg
-        )
-
-        return Response('OK', status=status.HTTP_200_OK)
-    except ifxuser_models.Organization.DoesNotExist as e:
-        logger.exception(e)
-        return Response(data={ 'error': f'Organization with ifxorg {user_ifxorg} cannot be found' }, status=status.HTTP_400_BAD_REQUEST)
+        return Response(data={ 'error': f'Billing month calculation failed {str(e)}' }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @login_required
 @api_view(['GET',])
@@ -420,71 +413,6 @@ def lab_billing_summary(request):
     token = request.user.auth_token.key
     return render(request, 'plugins/ifx/lab_billing_summary.html', { 'auth_token': token })
 
-
-@api_view(('POST', ))
-def rebalance(request):
-    '''
-    Rebalance the billing records for the given facility, user, year, and month.
-
-    *** This is a copy of the ifxbilling view modified to handle preferred usernames ***
-    '''
-    try:
-        data = json.loads(request.body.decode('utf-8'))
-    except json.JSONDecodeError as e:
-        logger.exception(e)
-        return Response(data={'error': 'Cannot parse request body'}, status=status.HTTP_400_BAD_REQUEST)
-
-    invoice_prefix = data.get('invoice_prefix', None)
-    ifxid = data.get('ifxid', None)
-    year = data.get('year', None)
-    month = data.get('month', None)
-    account_data = data.get('account_data', None)
-    requestor_ifxid = data.get('requestor_ifxid', None)
-
-    if not invoice_prefix:
-        return Response(data={ 'error': 'invoice_prefix is required' }, status=status.HTTP_400_BAD_REQUEST)
-    if not ifxid:
-        return Response(data={ 'error': 'ifxid is required' }, status=status.HTTP_400_BAD_REQUEST)
-    if not requestor_ifxid:
-        return Response(data={ 'error': 'requestor_ifxid is required' }, status=status.HTTP_400_BAD_REQUEST)
-    try:
-        year = int(year)
-    except ValueError:
-        return Response(data={ 'error': 'year must be an integer' }, status=status.HTTP_400_BAD_REQUEST)
-    try:
-        month = int(month)
-    except ValueError:
-        return Response(data={ 'error': 'month must be an integer' }, status=status.HTTP_400_BAD_REQUEST)
-
-
-    try:
-        facility = ifxbilling_models.Facility.objects.get(invoice_prefix=invoice_prefix)
-    except ifxbilling_models.Facility.DoesNotExist:
-        return Response(data={ 'error': f'Facility cannot be found using invoice_prefix {invoice_prefix}' }, status=status.HTTP_400_BAD_REQUEST)
-
-    try:
-        user = get_preferred_user(ifxid)
-    except Exception as e:
-        return Response(data={ 'error': f'Error getting user with ifxid {ifxid}: {e}' }, status=status.HTTP_400_BAD_REQUEST)
-
-    try:
-        requestor = get_preferred_user(requestor_ifxid)
-    except Exception as e:
-        return Response(data={ 'error': f'Error getting requestor with ifxid {requestor_ifxid}: {e}' }, status=status.HTTP_400_BAD_REQUEST)
-
-
-    auth_token_str = request.META.get('HTTP_AUTHORIZATION')
-    rebalancer = get_rebalancer_class()(year, month, facility, auth_token_str, requestor)
-    try:
-        rebalancer.rebalance_user_billing_month(user, account_data)
-        result = f'Rebalance of accounts for {user.full_name} for billing month {month}/{year} was successful.'
-        rebalancer.send_result_notification(result)
-        return Response(data={ 'success':  result })
-    except Exception as e:
-        logger.exception(e)
-        result = f'Rebalance of accounts for {user.full_name} for billing month {month}/{year} failed: {e}'
-        rebalancer.send_result_notification(result)
-        return Response(data={ 'error': f'Rebalance failed {e}' }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(('GET',))
 def user_account_list(request):
