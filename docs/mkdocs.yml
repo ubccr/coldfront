@@ -31,6 +31,7 @@ plugins:
             show_signature: false
 
 markdown_extensions:
+  - attr_list
   - footnotes
   - admonition
   - codehilite:
