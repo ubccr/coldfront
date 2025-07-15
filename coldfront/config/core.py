@@ -48,6 +48,7 @@ ALLOCATION_FUNCS_ON_EXPIRE = [
 
 # This is in days
 ALLOCATION_DEFAULT_ALLOCATION_LENGTH = ENV.int("ALLOCATION_DEFAULT_ALLOCATION_LENGTH", default=365)
+ALLOCATION_RESOURCE_ORDERING = ENV.list("ALLOCATION_RESOURCE_ORDERING", default=["-is_allocatable", "name"])
 
 # ------------------------------------------------------------------------------
 # Allow user to select account name for allocation
