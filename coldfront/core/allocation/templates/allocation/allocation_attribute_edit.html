@@ -1,0 +1,81 @@
+{% extends "common/base.html" %} {% load crispy_forms_tags %} {% load static %}
+{% block title %} Allocation Change Detail {% endblock %} {% block content %}
+
+<h2>
+  Edit attributes for {{ allocation.get_parent_resource }} for project: {{ allocation.project.title }}
+</h2>
+<hr />
+<form method="post">
+  <div class="card mb-3">
+    <div class="card-header">
+      <h3 class="d-inline">
+        <i class="fas fa-info-circle" aria-hidden="true"></i> Allocation
+        Attributes
+      </h3>
+    </div>
+    <div class="card-body">
+      {% if attributes %} {% csrf_token %}
+      <div class="table-responsive">
+        <table class="table table-bordered table-sm">
+          <thead>
+            <tr class="d-flex">
+              <th class="col-6" scope="col">Attribute</th>
+              <th class="col-6" scope="col">Set New Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for form in formset %}
+            <tr class="d-flex">
+              <td class="col-6">{{form.name.value}}</td>
+              <td class="col-6">
+                {{form.value}}
+                <span
+                  class="d-none"
+                  id="change-indicator-{{form.attribute_pk.value}}"
+                >
+                  <i class="fas fa-info-circle" aria-hidden="true"></i>
+                  Value changed
+                </span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="alert alert-info" role="alert">
+        <i class="fas fa-info-circle" aria-hidden="true"></i>
+        This allocation has no attributes.
+      </div>
+      {% endif %}
+
+      {% if attributes %}
+        <input class="btn btn-success" type="submit" value="Confirm" />
+      {% endif %}
+      <a
+        class="btn btn-secondary"
+        href="{% url 'allocation-detail' allocation.pk %}"
+        role="button"
+        >Cancel</a
+      >
+      {{ formset.management_form }}
+    </div>
+  </div>
+</form>
+
+<script>
+  $(document).ready(function() {
+    {% for form in formset %}
+    $("#{{form.value.auto_id}}").on("input", function(){
+      let change_indicator = $("#change-indicator-{{form.attribute_pk.value}}");
+      if ($(this).val() != "{{form.orig_value.value|escapejs}}") {
+        change_indicator.removeClass("d-none");
+      } else {
+        change_indicator.addClass("d-none");
+      }
+    });
+    $("#{{form.value.auto_id}}").trigger("input");
+    {% endfor %}
+  })
+</script>
+{% endblock %}
