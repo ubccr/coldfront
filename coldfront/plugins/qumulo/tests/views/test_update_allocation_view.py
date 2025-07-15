@@ -428,6 +428,7 @@ class UpdateAllocationViewTests(TestCase):
         view = UpdateAllocationView(form=form, user_id=self.user.id)
         view.setup(request, allocation_id=storage_allocation_missing_contacts.id)
         view.success_id = 1
+        breakpoint()
 
         view.form_valid(form)
 
@@ -560,19 +561,21 @@ class UpdateAllocationViewTests(TestCase):
         mock_async_task: MagicMock,
         mock_file_system_service: MagicMock,
     ):
+        mock_active_directory_api = mock_ActiveDirectoryAPI.return_value
         request = RequestFactory().post(
             "/irrelevant",
         )
         request.user = self.user
         form = UpdateAllocationForm(data=self.form_data, user_id=self.user.id)
         form.cleaned_data = {
-            "rw_users": ["test"],
-            "ro_users": ["test1"],
+            "rw_users": ["test", "test1"],
+            "ro_users": ["test2"],
         }
         # form.clean()
         view = UpdateAllocationView(form=form, user_id=self.user.id)
         view.setup(request, allocation_id=1)
-        view.success_id = 1
+        # view.success_id = 1
+        # breakpoint()
         view.form_valid(form)
 
         alloc = self.storage_allocation
@@ -581,8 +584,32 @@ class UpdateAllocationViewTests(TestCase):
         rw_alloc = access_allocations[0]
         ro_alloc = access_allocations[1]
 
-        rw_user = AllocationUser.objects.get(allocation=rw_alloc).user
+        rw_user = AllocationUser.objects.filter(allocation=rw_alloc).values("id")
+        # breakpoint()
+        ro_user = AllocationUser.objects.filter(allocation=ro_alloc)
 
-        ro_user = AllocationUser.objects.get(allocation=ro_alloc).user
+        self.assertEqual(rw_user, "test1")
 
-        self.assertEqual(rw_user, "test")
+    def test_identify_new_form_values(
+        self,
+        mock_ActiveDirectoryAPI: MagicMock,
+        mock_async_task: MagicMock,
+        mock_file_system_service: MagicMock,
+    ):
+        form_data = self.form_data
+
+        alloc = self.storage_allocation
+
+        attributes_to_check = [
+            "cost_center",
+            "billing_exempt",
+            "department_number",
+            "billing_cycle",
+            "technical_contact",
+            "billing_contact",
+            "service_rate",
+            "storage_ticket",
+            "storage_quota",
+        ]
+
+        new_values = UpdateAllocationView._identify_new_form_values(alloc, form_data)

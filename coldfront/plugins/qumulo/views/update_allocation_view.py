@@ -141,6 +141,27 @@ class UpdateAllocationView(AllocationView):
         )
         messages.add_message(self.request, messages.SUCCESS, self._acl_reset_message())
 
+    def _identify_new_form_values(
+        allocation: Allocation,
+        attributes_to_check,
+        attribute_changes
+    ):
+        new_values = []
+        for attribute_name in attributes_to_check:
+            attribute, _ = AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=AllocationAttributeType.objects.get(
+                    name=attribute_name
+                ),
+                allocation=allocation,
+                defaults={"value": ""},
+            )
+        for change in attribute_changes:
+        # storage quota needs to be compared as an integer
+            comparand = int(attribute.value) if type(change[1]) is int else attribute.value
+            if comparand != change[1]:
+                new_values.append((change[0], change[1]))
+        return new_values
+
     def _updated_fields_handler(
         self, form: UpdateAllocationForm, parent_allocation: Optional[Allocation] = None
     ):
@@ -174,6 +195,12 @@ class UpdateAllocationView(AllocationView):
         attribute_changes = [
             change for change in attribute_changes if change[1] is not None
         ]
+        print(attribute_changes)
+        comparand = int(attribute.value) if type(form_value) is int else attribute.value
+        if comparand != form_value:
+            new_values.append((attribute_name, form_value))
+        for attribute_name, form_value in zip(attributes_to_check, form_values):
+
 
         if len(attribute_changes):
             allocation_change_request = AllocationChangeRequest.objects.create(
