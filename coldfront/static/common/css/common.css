@@ -3,20 +3,6 @@
   background: #E2E2E2;
 }
 
-/*.navbar-custom {
-  background-color: #FFFFFF;
-  font-weight: bold;
-  height: 50px;
-}
-
-.navbar-custom > .navbar-nav > .active {
-  background: #E2E2E2;
-}
-
-*/
-
-
-
 html {
   position: relative;
   min-height: 100%;
@@ -30,6 +16,22 @@ main {
     padding-top: 40px;
     padding-bottom: 40px;
 }
+
+
+.bg-primary {
+  background-color: #1f1d1d !important;
+}
+
+.text-primary {
+  color: #1f1d1d !important;
+
+}
+
+.border-primary {
+  border-color: #1f1d1d !important;
+}
+
+
 
 #brand .container {
   margin-bottom: 1px;
@@ -64,6 +66,7 @@ main {
 
 .banner-name {
     padding-top: 25px;
+    color: #ffffff;
 }
 
 .banner-logo {
@@ -71,7 +74,6 @@ main {
     max-height: 75px !important;
     margin-bottom: 5px;
 }
-
 
 body > main > form > div.alert.alert-block.alert-danger > ul > li {
   list-style: none;
