@@ -193,6 +193,48 @@ class AllocationChangeViewTest(AllocationViewBaseTest):
         self.assertEqual(len(AllocationChangeRequest.objects.all()), 0)
 
 
+class AllocationAttributeEditViewTest(AllocationViewBaseTest):
+    """Tests for AllocationAttributeEditView"""
+
+    def setUp(self):
+        self.client.force_login(self.admin_user, backend=BACKEND)
+        self.url = f"/allocation/{self.allocation.pk}/allocationattribute/edit"
+        self.post_data = {
+            "attributeform-0-value": self.allocation.get_attribute("Storage Quota (TB)"),
+            "attributeform-INITIAL_FORMS": "1",
+            "attributeform-MAX_NUM_FORMS": "1",
+            "attributeform-MIN_NUM_FORMS": "0",
+            "attributeform-TOTAL_FORMS": "1",
+        }
+
+    def test_allocationattributeeditview_access(self):
+        """Test get request"""
+        self.allocation_access_tstbase(self.url)  # Admin/superuser can access
+        utils.test_user_cannot_access(self, self.pi_user, self.url)  # Manager can access
+        utils.test_user_cannot_access(self, self.allocation_user, self.url)  # user can't access
+
+    def test_allocationattributeeditview_post_change_attr(self):
+        """Test post request to change attribute"""
+
+        self.assertEqual(self.allocation.get_attribute("Storage Quota (TB)"), 100)
+
+        self.post_data["attributeform-0-value"] = 200
+        response = self.client.post(self.url, data=self.post_data, follow=True)
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(self.allocation.get_attribute("Storage Quota (TB)"), 200)
+
+    def test_allocationattributeeditview_post_no_change(self):
+        """Test post request with no change"""
+
+        self.assertEqual(self.allocation.get_attribute("Storage Quota (TB)"), 100)
+
+        response = self.client.post(self.url, data=self.post_data, follow=True)
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(self.allocation.get_attribute("Storage Quota (TB)"), 100)
+
+
 class AllocationDetailViewTest(AllocationViewBaseTest):
     """Tests for AllocationDetailView"""
 
@@ -214,12 +256,15 @@ class AllocationDetailViewTest(AllocationViewBaseTest):
     def test_allocationattribute_button_visibility(self):
         """Test visibility of "Add Attribute" button for different user types"""
         # admin
+        utils.page_contains_for_user(self, self.admin_user, self.url, "Edit Allocation Attribute")
         utils.page_contains_for_user(self, self.admin_user, self.url, "Add Allocation Attribute")
         utils.page_contains_for_user(self, self.admin_user, self.url, "Delete Allocation Attribute")
         # pi
+        utils.page_does_not_contain_for_user(self, self.pi_user, self.url, "Edit Allocation Attribute")
         utils.page_does_not_contain_for_user(self, self.pi_user, self.url, "Add Allocation Attribute")
         utils.page_does_not_contain_for_user(self, self.pi_user, self.url, "Delete Allocation Attribute")
         # allocation user
+        utils.page_does_not_contain_for_user(self, self.allocation_user, self.url, "Edit Allocation Attribute")
         utils.page_does_not_contain_for_user(self, self.allocation_user, self.url, "Add Allocation Attribute")
         utils.page_does_not_contain_for_user(self, self.allocation_user, self.url, "Delete Allocation Attribute")
 
