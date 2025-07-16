@@ -142,9 +142,7 @@ class UpdateAllocationView(AllocationView):
         messages.add_message(self.request, messages.SUCCESS, self._acl_reset_message())
 
     def _identify_new_form_values(
-        allocation: Allocation,
-        attributes_to_check,
-        attribute_changes
+        allocation: Allocation, attributes_to_check, attribute_changes
     ):
         new_values = []
         for attribute_name in attributes_to_check:
@@ -156,8 +154,15 @@ class UpdateAllocationView(AllocationView):
                 defaults={"value": ""},
             )
         for change in attribute_changes:
-        # storage quota needs to be compared as an integer
-            comparand = int(attribute.value) if type(change[1]) is int else attribute.value
+            # storage quota needs to be compared as an integer
+            current_attribute = AllocationAttribute.objects.get(
+                allocation_attribute_type__name=change[0], allocation=allocation
+            )
+            comparand = (
+                int(current_attribute.value)
+                if type(change[1]) is int
+                else current_attribute.value
+            )
             if comparand != change[1]:
                 new_values.append((change[0], change[1]))
         return new_values
@@ -187,20 +192,13 @@ class UpdateAllocationView(AllocationView):
         form_values = [form_data.get(field_name) for field_name in attributes_to_check]
 
         # handle "storage_protocols" separately
-        if json.dumps(form_data.get("protocols")) != "null":
-            attributes_to_check.append("storage_protocols")
-            form_values.append(json.dumps(form_data.get("protocols")))
+        attributes_to_check.append("storage_protocols")
+        form_values.append(json.dumps(form_data.get("protocols")))
 
         attribute_changes = list(zip(attributes_to_check, form_values))
-        attribute_changes = [
-            change for change in attribute_changes if change[1] is not None
-        ]
-        print(attribute_changes)
-        comparand = int(attribute.value) if type(form_value) is int else attribute.value
-        if comparand != form_value:
-            new_values.append((attribute_name, form_value))
-        for attribute_name, form_value in zip(attributes_to_check, form_values):
-
+        attribute_changes = UpdateAllocationView._identify_new_form_values(
+            allocation, attributes_to_check, attribute_changes
+        )
 
         if len(attribute_changes):
             allocation_change_request = AllocationChangeRequest.objects.create(
@@ -212,11 +210,14 @@ class UpdateAllocationView(AllocationView):
             )
 
             for attribute_name, form_value in zip(attributes_to_check, form_values):
-                UpdateAllocationView._handle_attribute_change(
+                attribute = AllocationAttribute.objects.get(
+                    allocation_attribute_type__name=attribute_name,
                     allocation=allocation,
+                )
+                AllocationAttributeChangeRequest.objects.create(
+                    allocation_attribute=attribute,
                     allocation_change_request=allocation_change_request,
-                    attribute_name=attribute_name,
-                    form_value=form_value,
+                    new_value=form_value,
                 )
 
         # RW and RO users are not handled via an AllocationChangeRequest
@@ -227,33 +228,6 @@ class UpdateAllocationView(AllocationView):
 
         # needed for redirect logic to work
         self.success_id = str(allocation.id)
-
-    @staticmethod
-    def _handle_attribute_change(
-        allocation: Allocation,
-        allocation_change_request: AllocationChangeRequest,
-        attribute_name: str,
-        form_value: Union[str, int],
-    ) -> None:
-        # some attributes are optional and so may not exist
-        # if they don't, we want to create them with an empty
-        # value so the change request flow will work
-        attribute, _ = AllocationAttribute.objects.get_or_create(
-            allocation_attribute_type=AllocationAttributeType.objects.get(
-                name=attribute_name
-            ),
-            allocation=allocation,
-            defaults={"value": ""},
-        )
-
-        # storage quota needs to be compared as an integer
-        comparand = int(attribute.value) if type(form_value) is int else attribute.value
-        if comparand != form_value:
-            AllocationAttributeChangeRequest.objects.create(
-                allocation_attribute=attribute,
-                allocation_change_request=allocation_change_request,
-                new_value=form_value,
-            )
 
     @staticmethod
     def set_access_users(

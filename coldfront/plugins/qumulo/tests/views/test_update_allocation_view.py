@@ -1,6 +1,7 @@
 from django.test import Client, TestCase, RequestFactory
 from django.contrib import messages
 from unittest.mock import patch, MagicMock
+import json
 
 from coldfront.core.allocation.models import AllocationUser
 
@@ -596,7 +597,23 @@ class UpdateAllocationViewTests(TestCase):
         mock_async_task: MagicMock,
         mock_file_system_service: MagicMock,
     ):
-        form_data = self.form_data
+        form_data = {
+            "storage_filesystem_path": "foo",
+            "storage_export_path": "bar",
+            "storage_ticket": "ITSD-54321",
+            "storage_name": "baz",
+            "storage_quota": 7,
+            "protocols": ["nfs"],
+            "rw_users": ["test"],
+            "ro_users": [],
+            "cost_center": "Caroline Cost Center",
+            "billing_exempt": "No",
+            "department_number": "Time Travel Services",
+            "billing_cycle": "monthly",
+            "service_rate": "consumption",
+            "technical_contact": "it.guru",
+            "billing_contact": "finance.guru",
+        }
 
         alloc = self.storage_allocation
 
@@ -612,4 +629,13 @@ class UpdateAllocationViewTests(TestCase):
             "storage_quota",
         ]
 
-        new_values = UpdateAllocationView._identify_new_form_values(alloc, form_data)
+        form_values = [form_data.get(field_name) for field_name in attributes_to_check]
+
+        attributes_to_check.append("storage_protocols")
+        form_values.append(json.dumps(form_data.get("protocols")))
+
+        attribute_changes = list(zip(attributes_to_check, form_values))
+
+        new_values = UpdateAllocationView._identify_new_form_values(
+            alloc, attributes_to_check, attribute_changes
+        )
