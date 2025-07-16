@@ -5,6 +5,8 @@
 """Unit tests for the allocation models"""
 
 import datetime
+from unittest import skip
+from unittest.mock import patch
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase
@@ -140,3 +142,154 @@ class AllocationModelCleanMethodTests(TestCase):
             status=self.active_status, start_date=start_and_end_date, end_date=start_and_end_date, project=self.project
         )
         actual_allocation.full_clean()
+
+
+class AllocationModelGetParentResourceTests(TestCase):
+    def test_allocation_has_no_resources_none_is_returned(self):
+        """Test that an exception is thrown when get_parent_resource is called when the Allocation has no resources."""
+        allocation = AllocationFactory()
+        self.assertIsNone(allocation.get_parent_resource)
+
+    def test_all_resources_removed_none_is_returned(self):
+        """Test that when an Allocation originally has resources but then they are all removed that None is returned."""
+        allocation = AllocationFactory()
+        magic_constant = 10
+        resources = [ResourceFactory() for _ in range(magic_constant)]
+
+        allocation.resources.add(*resources)
+        self.assertIsNotNone(allocation.get_parent_resource)
+
+        allocation.resources.remove(*resources)
+        self.assertIsNone(allocation.get_parent_resource)
+
+    def test_allocation_has_one_resource_that_resource_is_returned(self):
+        """The Allocation's only resource is returned."""
+        allocation = AllocationFactory()
+        resource = ResourceFactory()
+        allocation.resources.add(resource)
+
+        self.assertEqual(resource, allocation.get_parent_resource)
+
+    def test_multiple_allocations_share_one_parent_resource_that_resource_is_returned(self):
+        """All Allocations that share the same parent resource return it as parent."""
+        magic_constant = 10
+        allocations = [AllocationFactory() for _ in range(magic_constant)]
+
+        resource = ResourceFactory()
+
+        for allocation in allocations:
+            allocation.resources.add(resource)
+
+        for allocation in allocations:
+            with self.subTest(allocation=allocation, resource=resource):
+                self.assertEqual(resource, allocation.get_parent_resource)
+
+    def test_other_allocations_have_no_resources_parent_resource_is_returned_no_interference(self):
+        """When other Allocations have no resources but this one does, the parent is returned fine and that all the others still return None."""
+        magic_constant = 10
+        other_allocations = [AllocationFactory() for _ in range(magic_constant)]
+
+        tested_allocation = AllocationFactory()
+        resource = ResourceFactory()
+        tested_allocation.resources.add(resource)
+
+        self.assertEqual(resource, tested_allocation.get_parent_resource)
+
+        for other_allocation in other_allocations:
+            with self.subTest(other_allocation=other_allocation):
+                self.assertIsNone(other_allocation.get_parent_resource)
+
+    def test_after_resource_removal_remaining_resource_returned(self):
+        allocation = AllocationFactory()
+        magic_constant = 10
+        all_resources = [ResourceFactory() for _ in range(magic_constant)]
+
+        allocation.resources.add(*all_resources)
+        self.assertIsNotNone(allocation.get_parent_resource)
+
+        remaining_resource = all_resources.pop()
+        resources_to_remove = all_resources
+        allocation.resources.remove(*resources_to_remove)
+
+        self.assertEqual(remaining_resource, allocation.get_parent_resource)
+
+    def test_parent_resource_changed_resource_still_returned(self):
+        """Test that making changes to the resource itself does not alter which resource is returned by get_parent_resource."""
+        resource = ResourceFactory(name="First Name", is_available=False, is_public=True)
+
+        allocation = AllocationFactory()
+        allocation.resources.add(resource)
+
+        original_name = allocation.get_parent_resource.name
+        original_is_available = allocation.get_parent_resource.is_available
+        original_is_public = allocation.get_parent_resource.is_public
+        original_pk = resource.pk
+
+        self.assertEqual(resource.name, original_name)
+        self.assertEqual(resource.is_available, original_is_available)
+        self.assertEqual(resource.is_public, original_is_public)
+        self.assertEqual(resource.pk, original_pk)
+
+        resource.name = changed_name = "A different name"
+        resource.is_available = changed_is_available = True
+        resource.is_public = changed_is_public = False
+        resource.save()
+
+        actual_resource = allocation.get_parent_resource
+
+        self.assertEqual(actual_resource.name, changed_name)
+        self.assertEqual(actual_resource.is_available, changed_is_available)
+        self.assertEqual(actual_resource.is_public, changed_is_public)
+        self.assertEqual(actual_resource.pk, original_pk)
+
+    def test_other_allocation_removed_resource_this_allocation_unchanged(self):
+        """Test that an Allocation is not affected when another Allocation removes a shared parent resource as its resource."""
+        this_allocation = AllocationFactory()
+        other_allocation = AllocationFactory()
+
+        shared_resource = ResourceFactory()
+        this_allocation.resources.add(shared_resource)
+        other_allocation.resources.add(shared_resource)
+
+        self.assertEqual(this_allocation.get_parent_resource, shared_resource)
+        self.assertEqual(other_allocation.get_parent_resource, shared_resource)
+
+        other_allocation.resources.remove(shared_resource)
+
+        self.assertEqual(this_allocation.get_parent_resource, shared_resource)
+        self.assertIsNone(other_allocation.get_parent_resource)
+
+    @skip("Currently the setting ALLOCATION_RESOURCE_ORDERING is broken.")
+    # @override_settings(ALLOCATION_RESOURCE_ORDERING=["-is_allocatable", "name"])
+    @patch("coldfront.core.allocation.models.ALLOCATION_RESOURCE_ORDERING", ["-is_allocatable", "name"])
+    def test_multiple_resources_first_by_default_order_is_returned(self):
+        resource_1 = ResourceFactory(is_allocatable=True, name="Alice")
+        resource_2 = ResourceFactory(is_allocatable=True, name="Daniel")
+        resource_3 = ResourceFactory(is_allocatable=False, name="Benjamin")
+        resource_4 = ResourceFactory(is_allocatable=False, name="Naomi")
+        resource_5 = ResourceFactory(is_allocatable=False, name="Pauline")
+        resource_6 = ResourceFactory(is_allocatable=False, name="Zeus")
+
+        allocation = AllocationFactory()
+        allocation.resources.add(resource_6, resource_1, resource_2, resource_5, resource_4, resource_3)
+
+        self.assertEqual(resource_1, allocation.get_parent_resource)
+
+    @skip("Currently the setting ALLOCATION_RESOURCE_ORDERING is broken.")
+    # @override_settings(ALLOCATION_RESOURCE_ORDERING=["-is_allocatable", "name"])
+    @patch(
+        "coldfront.core.allocation.models.ALLOCATION_RESOURCE_ORDERING", ["requires_payment", "-is_allocatable", "name"]
+    )
+    def test_multiple_resources_first_by_custom_order_is_returned(self):
+        resource_1 = ResourceFactory(requires_payment=False, is_allocatable=True, name="Daniel")
+        resource_2 = ResourceFactory(requires_payment=False, is_allocatable=True, name="Zuri")
+        resource_3 = ResourceFactory(requires_payment=False, is_allocatable=False, name="Alexander")
+        resource_4 = ResourceFactory(requires_payment=True, is_allocatable=False, name="Naomi")
+        resource_5 = ResourceFactory(requires_payment=True, is_allocatable=False, name="Pauline")
+        resource_6 = ResourceFactory(requires_payment=True, is_allocatable=False, name="Zeus")
+
+        allocation = AllocationFactory()
+
+        allocation.resources.add(resource_3, resource_6, resource_4, resource_1, resource_2, resource_5)
+
+        self.assertEqual(resource_1, allocation.get_parent_resource)
