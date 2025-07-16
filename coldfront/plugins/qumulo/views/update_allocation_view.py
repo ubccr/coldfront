@@ -209,15 +209,15 @@ class UpdateAllocationView(AllocationView):
                 end_date_extension=10,
             )
 
-            for attribute_name, form_value in zip(attributes_to_check, form_values):
+            for change in attribute_changes:
                 attribute = AllocationAttribute.objects.get(
-                    allocation_attribute_type__name=attribute_name,
+                    allocation_attribute_type__name=change[0],
                     allocation=allocation,
                 )
                 AllocationAttributeChangeRequest.objects.create(
                     allocation_attribute=attribute,
                     allocation_change_request=allocation_change_request,
-                    new_value=form_value,
+                    new_value=change[1],
                 )
 
         # RW and RO users are not handled via an AllocationChangeRequest
