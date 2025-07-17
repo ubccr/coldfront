@@ -66,6 +66,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 FROM cfimage
 
 RUN  apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN groupadd -r python && useradd -r -g python python
 COPY --from=builder --chown=python:python /python /python
 COPY --from=builder /app /app
 ENV PATH="/app/.venv/bin:$PATH"
