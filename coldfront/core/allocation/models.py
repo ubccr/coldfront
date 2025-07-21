@@ -10,8 +10,9 @@ from enum import Enum
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.utils.html import mark_safe
+from django.utils.html import escape, format_html
 from django.utils.module_loading import import_string
+from django.utils.safestring import SafeString
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
@@ -147,16 +148,17 @@ class Allocation(TimeStampedModel):
         return (self.end_date - datetime.date.today()).days
 
     @property
-    def get_information(self):
+    def get_information(self) -> SafeString:
         """
         Returns:
-            str: the allocation's attribute type, usage out of total value, and usage out of total value as a percentage
+            SafeString: the allocation's attribute type, usage out of total value, and usage out of total value as a percentage
         """
 
-        html_string = ""
+        html_string = escape("")
         for attribute in self.allocationattribute_set.all():
             if attribute.allocation_attribute_type.name in ALLOCATION_ATTRIBUTE_VIEW_LIST:
-                html_string += "%s: %s <br>" % (attribute.allocation_attribute_type.name, attribute.value)
+                html_substring = format_html("{}: {} <br>", attribute.allocation_attribute_type.name, attribute.value)
+                html_string += html_substring
 
             if hasattr(attribute, "allocationattributeusage"):
                 try:
@@ -175,15 +177,16 @@ class Allocation(TimeStampedModel):
                         "Allocation attribute '%s' == 0 but has a usage", attribute.allocation_attribute_type.name
                     )
 
-                string = "{}: {}/{} ({} %) <br>".format(
+                html_substring = format_html(
+                    "{}: {}/{} ({} %) <br>",
                     attribute.allocation_attribute_type.name,
                     attribute.allocationattributeusage.value,
                     attribute.value,
                     percent,
                 )
-                html_string += string
+                html_string += html_substring
 
-        return mark_safe(html_string)
+        return html_string
 
     @property
     def get_resources_as_string(self):
