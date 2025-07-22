@@ -31,3 +31,7 @@
 - Cecilia Lau
 - Ria Gupta
 - Shreyas Sridhar
+- David Simpson
+- Eric Butcher
+- Matthew Kusz
+- John LaGrone
