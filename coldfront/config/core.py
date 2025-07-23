@@ -126,3 +126,16 @@ PROJECT_CODE_PADDING = ENV.int("PROJECT_CODE_PADDING", default=None)
 # ------------------------------------------------------------------------------
 
 PROJECT_INSTITUTION_EMAIL_MAP = ENV.dict("PROJECT_INSTITUTION_EMAIL_MAP", default={})
+
+# ------------------------------------------------------------------------------
+# Configure Project fields that project managers can update
+# ------------------------------------------------------------------------------
+
+PROJECT_UPDATE_FIELDS = ENV.list(
+    "PROJECT_UPDATE_FIELDS",
+    default=[
+        "title",
+        "description",
+        "field_of_science",
+    ],
+)
