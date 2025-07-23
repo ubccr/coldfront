@@ -82,6 +82,14 @@ if EMAIL_ENABLED:
 
 PROJECT_CODE = import_from_settings("PROJECT_CODE", False)
 PROJECT_CODE_PADDING = import_from_settings("PROJECT_CODE_PADDING", False)
+PROJECT_UPDATE_FIELDS = import_from_settings(
+    "PROJECT_UPDATE_FIELDS",
+    [
+        "title",
+        "description",
+        "field_of_science",
+    ],
+)
 
 logger = logging.getLogger(__name__)
 PROJECT_INSTITUTION_EMAIL_MAP = import_from_settings("PROJECT_INSTITUTION_EMAIL_MAP", False)
@@ -615,11 +623,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Project
     template_name_suffix = "_update_form"
-    fields = [
-        "title",
-        "description",
-        "field_of_science",
-    ]
+    fields = PROJECT_UPDATE_FIELDS
     success_message = "Project updated."
 
     def test_func(self):

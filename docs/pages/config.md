@@ -101,9 +101,10 @@ The following settings are ColdFront specific settings related to the core appli
 | RESEARCH_OUTPUT_ENABLE                 | Enable or disable research outputs. Default True |
 | GRANT_ENABLE                           | Enable or disable grants. Default True           |
 | PUBLICATION_ENABLE                     | Enable or disable publications. Default True     |
-| PROJECT_CODE                                 | Specifies a custom internal project identifier. Default False, provide string value to enable.|  
+| PROJECT_CODE                                 | Specifies a custom internal project identifier. Default False, provide string value to enable.|
 | PROJECT_CODE_PADDING                         | Defines a optional padding value to be added before the Primary Key section of PROJECT_CODE. Default False, provide integer value to enable.|
-| PROJECT_INSTITUTION_EMAIL_MAP                | Defines a dictionary where PI domain email addresses are keys and their corresponding institutions are values. Default is False, provide key-value pairs to enable this feature.|  
+| PROJECT_INSTITUTION_EMAIL_MAP                | Defines a dictionary where PI domain email addresses are keys and their corresponding institutions are values. Default is False, provide key-value pairs to enable this feature.|
+| PROJECT_UPDATE_FIELDS                        | Defines a list of Project fields that project managers are able to update. Default is ['title', 'description', 'field_of_science']. |
 ### Database settings
 
 The following settings configure the database server to use, if not set will default to using SQLite:
