@@ -25,6 +25,7 @@ from coldfront.core.test_helpers.factories import (
     ResourceFactory,
     UserFactory,
 )
+import pickle
 
 
 class AllocationModelTests(TestCase):
@@ -150,7 +151,7 @@ class AllocationModelStrTests(TestCase):
     """Tests for Allocation.__str__"""
 
     def setUp(self):
-        self.allocation = AllocationFactory()
+        self.allocation= AllocationFactory()
         self.resource = ResourceFactory()
         self.allocation.resources.add(self.resource)
 
@@ -290,24 +291,45 @@ class AllocationModelExpiresInTests(TestCase):
             self.assertEqual(allocation.expires_in, days_in_four_years_including_leap_year)
 
 class AllocationModelGetEulaTests(TestCase):
-    def test_no_resources_with_eula_attribute_returns_none(self):
-        """Test that None is returned when there are no Resources associated with this allocation that have any ResourceAttributes with a ResourceAttributeType of 'eula'."""
+    def test_no_resources_with_eula_attribute_does_nothing(self):
+        """
+        Test that None is returned and no modifications are made to the Allocation when 
+        there are no Resources associated with this allocation that have 
+        any ResourceAttributes with a ResourceAttributeType of 'eula'.
+        """
         allocation = AllocationFactory()
+        magic_number = 10
+        for i in range(magic_number):
+            resource_attribute = ResourceAttributeFactory()
+
+        non_eula_resources = [ResourceFactory(name="eula") for i in range(magic_number)]
+
+        allocation.resources.add(*non_eula_resources)
+
+        before_state = pickle.dumps(allocation)
+
+        actual = allocation.get_eula()
+
+        after_state = pickle.dumps(allocation)
+
+        self.assertIsNone(actual)
+        self.assertEqual(before_state, after_state)
 
     def test_only_resources_with_eula_for_other_allocations_returns_none(self):
         """Test that None is returned when there are other allocations with eulas but this allocation does not have any Resources with a eula."""
         ...
 
     def test_one_resource_with_eula_returns_eula_resource_attribute_expanded_value(self):
-        """Test that when there is only one Resource with a eula ResourceAttribute associated with this allocation that thr expanded value for that ResourceAttribute is returned."""
-        resource = ResourceFactory()
-        resource_attributes = resource.resourceattribute_set.all()
-        print(len(resource_attributes))
-        for resource_attribute in resource_attributes:
-            attr_type = resource_attribute.resource_attribute_type
-            print(f"The resource_attribute was: {resource_attribute}")
-            print(f"The attr_type was: {attr_type}")
-            print()
+        """Test that when there is only one Resource with a eula ResourceAttribute associated with this allocation that the expanded value for that ResourceAttribute is returned."""
+        # resource = ResourceFactory()
+        # resource_attributes = resource.resourceattribute_set.all()
+        # print(len(resource_attributes))
+        # for resource_attribute in resource_attributes:
+        #     attr_type = resource_attribute.resource_attribute_type
+        #     print(f"The resource_attribute was: {resource_attribute}")
+        #     print(f"The attr_type was: {attr_type}")
+        #     print()
+        ...
 
     @skip("Currently no ordering is taking place, so the result when there are multiple will always be non-deterministic")
     def test_multiple_resources_with_eula_returns_first_according_to_ordering(self):
