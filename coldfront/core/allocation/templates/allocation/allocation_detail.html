@@ -336,6 +336,54 @@ Allocation Detail
   </div>
 </div>
 
+<!-- CPU Usage data from XDMoD -->
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="d-inline"><i class="fas fa-server" aria-hidden="true"></i> CPU Usage</h3>
+  </div>
+  <div class="card-body">
+    {% autoescape off %}
+    {% if has_cpu_usage %}
+      {{ cpu_usage_plots }}
+    {% else %}
+      Usage data is not available! This is likely due to the fact  that there is no usage for this allocation.
+    {% endif %}
+    {% endautoescape %}
+   </div>
+</div>
+
+<!-- GPU Usage data from XDMoD -->
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="d-inline"><i class="fas fa-server" aria-hidden="true"></i> GPU Usage</h3>
+  </div>
+  <div class="card-body">
+    {% autoescape off %}
+    {% if has_gpu_usage %}
+      {{ gpu_usage_plots }}
+    {% else %}
+      Usage data is not available! This is likely due to the fact  that there is no usage for this allocation.
+    {% endif %}
+    {% endautoescape %}
+   </div>
+</div>
+
+<!-- Wait time data from XDMoD -->
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="d-inline"><i class="fas fa-clock" aria-hidden="true"></i> Wait time</h3>
+  </div>
+  <div class="card-body">
+    {% autoescape off %}
+    {% if has_wait_usage %}
+      {{ wait_usage_plots }}
+    {% else %}
+      Usage data is not available! This is likely due to the fact  that there is no usage for this allocation.
+    {% endif %}
+    {% endautoescape %}
+   </div>
+</div>
+
 <!-- Start Admin Messages -->
 <div class="card mb-3">
   <div class="card-header">
