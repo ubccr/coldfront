@@ -182,12 +182,12 @@ Allocation Change Detail
       <div class="card-body">
         {% csrf_token %}
         {{note_form.notes | as_crispy_field}}
-        <div style="display: inline-block; float: right;">
+        <div class="d-inline float-right">
           {% if allocation_change.status.name == 'Pending' %}
-            <button type="submit" name="action" value="approve" class="btn btn-success float-end">Approve</button>
-            <button type="submit" name="action" value="deny" class="btn btn-danger float-end">Deny</button>
+            <button type="submit" name="action" value="approve" class="btn btn-success float-right">Approve</button>
+            <button type="submit" name="action" value="deny" class="btn btn-danger float-right">Deny</button>
           {% endif %}
-            <button type="submit" name="action" value="update" class="btn btn-primary float-end">
+            <button type="submit" name="action" value="update" class="btn btn-primary float-right">
               <i class="fas fa-sync" aria-hidden="true"></i> Update
             </button>
         </div>
