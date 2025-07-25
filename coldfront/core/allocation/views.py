@@ -167,7 +167,6 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         for a in invalid_attributes:
             attributes_with_usage.remove(a)
 
-
         context["allocation_users"] = allocation_users
         context["guage_data"] = guage_data
         context["attributes_with_usage"] = attributes_with_usage
@@ -181,7 +180,9 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         # Can the user edit allocation change requests?
         # condition was taken from core.allocation.views.AllocationChangeDetailView;
         # maybe better to make a static method that test_func() in that class will call?
-        context["can_edit_allocation_changes"] = self.request.user.has_perm("allocation.can_view_all_allocations") or allocation_obj.has_perm(self.request.user, AllocationPermission.MANAGER)
+        context["can_edit_allocation_changes"] = self.request.user.has_perm(
+            "allocation.can_view_all_allocations"
+        ) or allocation_obj.has_perm(self.request.user, AllocationPermission.MANAGER)
 
         noteset = allocation_obj.allocationusernote_set
         notes = noteset.all() if self.request.user.is_superuser else noteset.filter(is_private=False)
