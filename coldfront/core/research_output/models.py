@@ -23,7 +23,7 @@ class ResearchOutput(TimeStampedModel):
 
     # core fields
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    title = models.CharField(max_length=128, blank=True)
+    title = models.CharField(max_length=128)
     description = models.TextField(
         validators=[MinLengthValidator(3)],
     )
