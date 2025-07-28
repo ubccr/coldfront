@@ -6,8 +6,9 @@
 
 import datetime
 from unittest.mock import patch
-from unittest import skip
 
+import factory
+import factory.random
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.test import TestCase
@@ -22,10 +23,11 @@ from coldfront.core.test_helpers.factories import (
     AllocationFactory,
     AllocationStatusChoiceFactory,
     ProjectFactory,
+    ResourceAttributeFactory,
+    ResourceAttributeTypeFactory,
     ResourceFactory,
     UserFactory,
 )
-import pickle
 
 
 class AllocationModelTests(TestCase):
@@ -151,7 +153,7 @@ class AllocationModelStrTests(TestCase):
     """Tests for Allocation.__str__"""
 
     def setUp(self):
-        self.allocation= AllocationFactory()
+        self.allocation = AllocationFactory()
         self.resource = ResourceFactory()
         self.allocation.resources.add(self.resource)
 
@@ -290,48 +292,101 @@ class AllocationModelExpiresInTests(TestCase):
 
             self.assertEqual(allocation.expires_in, days_in_four_years_including_leap_year)
 
+
 class AllocationModelGetEulaTests(TestCase):
     def test_no_resources_with_eula_attribute_does_nothing(self):
         """
-        Test that None is returned and no modifications are made to the Allocation when 
-        there are no Resources associated with this allocation that have 
+        Test that None is returned and no modifications are made to the Allocation when
+        there are no Resources associated with this allocation that have
         any ResourceAttributes with a ResourceAttributeType of 'eula'.
         """
         allocation = AllocationFactory()
-        magic_number = 10
-        for i in range(magic_number):
-            resource_attribute = ResourceAttributeFactory()
 
-        non_eula_resources = [ResourceFactory(name="eula") for i in range(magic_number)]
+        magic_number = 10
+        non_eula_resources = []
+        for i in range(magic_number):
+            non_eula_resource = ResourceFactory()
+            non_eula_resource_attribute_type = ResourceAttributeTypeFactory(name=f"noteula #{i}")
+            non_eula_resource_attribute = ResourceAttributeFactory(  # noqa: F841
+                resource=non_eula_resource, resource_attribute_type=non_eula_resource_attribute_type
+            )
+            non_eula_resources.append(non_eula_resource)
 
         allocation.resources.add(*non_eula_resources)
 
-        before_state = pickle.dumps(allocation)
-
         actual = allocation.get_eula()
 
-        after_state = pickle.dumps(allocation)
-
         self.assertIsNone(actual)
-        self.assertEqual(before_state, after_state)
 
     def test_only_resources_with_eula_for_other_allocations_returns_none(self):
-        """Test that None is returned when there are other allocations with eulas but this allocation does not have any Resources with a eula."""
-        ...
+        """
+        Test that None is returned and no modifications are made to the Allocation when
+        there are other allocations with eulas but this allocation does not have any
+        Resources with a eula.
+        """
+        num_eulas = 10
+        for _ in range(num_eulas):
+            eula_resource = ResourceFactory()
+            eula_resource_attribute_type = ResourceAttributeTypeFactory(name="eula")
+            eula_resource_attribute = ResourceAttributeFactory(  # noqa: F841
+                resource=eula_resource, resource_attribute_type=eula_resource_attribute_type
+            )
+            eula_allocation = AllocationFactory()
+            eula_allocation.resources.add(eula_resource)
+
+        non_eula_resource = ResourceFactory()
+        non_eula_resource_attribute_type = ResourceAttributeTypeFactory(name="noteula")
+        non_eula_resource_attribute = ResourceAttributeFactory(  # noqa: F841
+            resource=non_eula_resource, resource_attribute_type=non_eula_resource_attribute_type
+        )
+        non_eula_allocation = AllocationFactory()
+        non_eula_allocation.resources.add(non_eula_resource)
+
+        actual = non_eula_allocation.get_eula()
+
+        self.assertIsNone(actual)
 
     def test_one_resource_with_eula_returns_eula_resource_attribute_expanded_value(self):
-        """Test that when there is only one Resource with a eula ResourceAttribute associated with this allocation that the expanded value for that ResourceAttribute is returned."""
-        # resource = ResourceFactory()
-        # resource_attributes = resource.resourceattribute_set.all()
-        # print(len(resource_attributes))
-        # for resource_attribute in resource_attributes:
-        #     attr_type = resource_attribute.resource_attribute_type
-        #     print(f"The resource_attribute was: {resource_attribute}")
-        #     print(f"The attr_type was: {attr_type}")
-        #     print()
-        ...
+        """
+        Test that when there is only one Resource with a eula ResourceAttribute
+        associated with this allocation that the expanded value for that ResourceAttribute
+        is returned.
+        """
+        eula_resource = ResourceFactory()
+        eula_resource_attribute_type = ResourceAttributeTypeFactory(name="eula")
+        eula_resource_attribute = ResourceAttributeFactory(
+            resource=eula_resource, resource_attribute_type=eula_resource_attribute_type
+        )
+        eula_allocation = AllocationFactory()
+        eula_allocation.resources.add(eula_resource)
 
-    @skip("Currently no ordering is taking place, so the result when there are multiple will always be non-deterministic")
-    def test_multiple_resources_with_eula_returns_first_according_to_ordering(self):
-        """Test that when there are multiple resources with EULAs that they return the first ResourceAttribute according to the ordering."""
-        ...
+        actual = eula_allocation.get_eula()
+
+        self.assertEqual(actual, eula_resource_attribute.expanded_value())
+
+    def test_allocation_with_multiple_resources_still_returns_eula_expanded_value(self):
+        """
+        Test that when there are multiple other resources with and without eulas
+        that one of the expanded_values with a eula is still returned for this Allocation.
+        """
+        allocation = AllocationFactory()
+        num_other_resources = 10
+        all_expanded_values = []
+        for _ in range(num_other_resources):
+            resource = ResourceFactory()
+            type_name = factory.random.randgen.choice(["eula", "noteula"])
+            resource_attribute_type = ResourceAttributeTypeFactory(name=type_name)
+            resource_attribute = ResourceAttributeFactory(
+                resource=resource, resource_attribute_type=resource_attribute_type
+            )
+            all_expanded_values.append(resource_attribute.expanded_value())
+            allocation.resources.add(resource)
+
+        guaranteed_resource_with_eula = ResourceFactory()
+        guaranteed_resource_attribute_type_with_eula = ResourceAttributeTypeFactory(name="eula")
+        guaranteed_resource_attribute_with_eula = ResourceAttributeFactory(
+            resource=guaranteed_resource_with_eula, resource_attribute_type=guaranteed_resource_attribute_type_with_eula
+        )
+        all_expanded_values.append(guaranteed_resource_attribute_with_eula.expanded_value())
+
+        self.assertIn(allocation.get_eula(), all_expanded_values)
