@@ -296,7 +296,7 @@ class AllocationModelExpiresInTests(TestCase):
 class AllocationModelGetEulaTests(TestCase):
     def test_no_resources_with_eula_attribute_does_nothing(self):
         """
-        Test that None is returned when there are no Resources associated 
+        Test that None is returned when there are no Resources associated
         with this allocation that have any ResourceAttributes with a ResourceAttributeType of 'eula'.
         """
         allocation = AllocationFactory()
@@ -319,7 +319,7 @@ class AllocationModelGetEulaTests(TestCase):
 
     def test_only_resources_with_eula_for_other_allocations_returns_none(self):
         """
-        Test that None is returned when there are other allocations with eulas but 
+        Test that None is returned when there are other allocations with eulas but
         this allocation does not have any Resources with a eula.
         """
         num_eulas = 10
