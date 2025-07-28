@@ -329,7 +329,7 @@ class AllocationModelGetEulaTests(TestCase):
             eula_resource_attribute = ResourceAttributeFactory(  # noqa: F841
                 resource=eula_resource, resource_attribute_type=eula_resource_attribute_type
             )
-            eula_allocation = AllocationFactory(name=f"eula allocation {i}")
+            eula_allocation = AllocationFactory(description=f"eula allocation {i}")
             eula_allocation.resources.add(eula_resource)
 
         non_eula_resource = ResourceFactory()
@@ -337,7 +337,7 @@ class AllocationModelGetEulaTests(TestCase):
         non_eula_resource_attribute = ResourceAttributeFactory(  # noqa: F841
             resource=non_eula_resource, resource_attribute_type=non_eula_resource_attribute_type
         )
-        non_eula_allocation = AllocationFactory(name="No eula here.")
+        non_eula_allocation = AllocationFactory(description="No eula here.")
         non_eula_allocation.resources.add(non_eula_resource)
 
         actual = non_eula_allocation.get_eula()
