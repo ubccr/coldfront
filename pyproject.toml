@@ -51,6 +51,8 @@ dependencies = [
     "requests>=2.32.3",
     "python-dateutil>=2.9.0",
     "httpx>=0.28.1",
+    "plotly[express]>=6.2.0",
+    "xdmod-data>=1.1.0",
 ]
 
 [project.optional-dependencies]

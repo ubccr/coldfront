@@ -76,6 +76,10 @@ from coldfront.core.utils.mail import (
     send_allocation_customer_email,
 )
 
+from coldfront.plugins.xdmod.utils import get_usage_data
+import plotly.express as px
+from plotly.offline import plot
+
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
     "ALLOCATION_ENABLE_ALLOCATION_RENEWAL", True
 )
@@ -192,6 +196,36 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context["ALLOCATION_ENABLE_ALLOCATION_RENEWAL"] = (
             ALLOCATION_ENABLE_ALLOCATION_RENEWAL
         )
+
+        # Fetch usage data from XDMoD
+        slurm_account_name = allocation_obj.get_attribute("slurm_account_name")
+        usage_cpu_hours = get_usage_data("avg_cpu_hours", slurm_account_name)
+        if usage_cpu_hours is not None:
+            plot_cpu_hours = px.bar(usage_cpu_hours)
+            plot_div_cpu_hours = plot(plot_cpu_hours, output_type="div")
+            context["has_cpu_usage"] = True
+            context["cpu_usage_plots"] = plot_div_cpu_hours
+        else:
+            context["has_cpu_usage"] = False
+
+        usage_gpu_hours = get_usage_data("avg_gpu_hours", slurm_account_name)
+        if usage_gpu_hours is not None:
+            plot_gpu_hours = px.bar(usage_gpu_hours)
+            plot_div_gpu_hours = plot(plot_gpu_hours, output_type="div")
+            context["has_gpu_usage"] = True
+            context["gpu_usage_plots"] = plot_div_gpu_hours
+        else:
+            context["has_gpu_usage"] = False
+
+        usage_wait_hours = get_usage_data("avg_waitduration_hours", slurm_account_name)
+        if usage_wait_hours is not None:
+            plot_wait_hours = px.bar(usage_wait_hours)
+            plot_div_wait_hours = plot(plot_wait_hours, output_type="div")
+            context["has_wait_usage"] = True
+            context["wait_usage_plots"] = plot_div_wait_hours
+        else:
+            context["has_wait_usage"] = False
+
         return context
 
     def get(self, request, *args, **kwargs):
