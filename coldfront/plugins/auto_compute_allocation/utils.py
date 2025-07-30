@@ -109,7 +109,7 @@ def allocation_auto_compute_fairshare_institute(project_obj, allocation_obj):
             {project_obj.institution},
         )
         logger.info(
-            "Additional message - this issue was encountered with project pk",
+            "Additional message - this issue was encountered with project pk: %s",
             {project_obj.pk},
         )
         return None

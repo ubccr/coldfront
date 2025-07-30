@@ -50,7 +50,7 @@ def update_statuses():
         sub_obj.status = expired_status_choice
         sub_obj.save()
 
-    logger.info("Allocations set to expired: {}".format(allocations_to_expire.count()))
+    logger.info("Allocations set to expired: %s", allocations_to_expire.count())
 
 
 def send_eula_reminders():
@@ -82,7 +82,7 @@ def send_eula_reminders():
                     EMAIL_SENDER,
                     email_receiver_list,
                 )
-                logger.debug(f"Allocation(s) EULA reminder sent to users {email_receiver_list}.")
+                logger.debug("Allocation(s) EULA reminder sent to users %s.", email_receiver_list)
 
 
 def send_expiry_emails():
@@ -164,7 +164,7 @@ def send_expiry_emails():
                 email_receiver_list,
             )
 
-            logger.debug(f"Allocation(s) expiring in soon, email sent to user {user}.")
+            logger.debug("Allocation(s) expiring in soon, email sent to user %s.", user)
 
     # Allocations expired
     admin_projectdict = {}
@@ -242,7 +242,7 @@ def send_expiry_emails():
                 email_receiver_list,
             )
 
-            logger.debug(f"Allocation(s) expired email sent to user {user}.")
+            logger.debug("Allocation(s) expired email sent to user %s.", user)
 
     if EMAIL_ADMINS_ON_ALLOCATION_EXPIRE:
         if admin_projectdict:
