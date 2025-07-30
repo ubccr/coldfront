@@ -90,15 +90,15 @@ def remove_project(project_obj):
     if PROJECT_OPENLDAP_REMOVE_PROJECT and not PROJECT_OPENLDAP_ARCHIVE_OU:
         # remove project's group, then project's ou
         posixgroup_dn = construct_dn_str(project_obj)
-        logger.info(f"Project POSIXGROUP {posixgroup_dn} is going to be REMOVED from OpenLDAP...")
+        logger.info("Project POSIXGROUP %s is going to be REMOVED from OpenLDAP...", posixgroup_dn)
         remove_dn_from_openldap(posixgroup_dn)
 
-        logger.info(f"Project OU {ou_dn} is going to be REMOVED from OpenLDAP...")
+        logger.info("Project OU %s is going to be REMOVED from OpenLDAP...", ou_dn)
         remove_dn_from_openldap(ou_dn)
     # ...otherwise if archive_ou is defined, archive in OpenLDAP
     else:
         relative_dn = construct_per_project_ou_relative_dn_str(project_obj)
-        logger.info(f"Project OU {ou_dn} is going to be ARCHIVED in OpenLDAP at {PROJECT_OPENLDAP_ARCHIVE_OU}...")
+        logger.info("Project OU %s is going to be ARCHIVED in OpenLDAP at %s...", ou_dn, PROJECT_OPENLDAP_ARCHIVE_OU)
         archive_project_in_openldap(ou_dn, relative_dn, PROJECT_OPENLDAP_ARCHIVE_OU)
 
 

@@ -115,9 +115,9 @@ def get_attribute_parameter_value(argument, attribute_parameter_dict, error_text
         else:
             # Bad string literal
             logger.warning(
-                "Bad string literal '{}' found while processing {}; missing final single quote".format(
-                    argument, error_text
-                )
+                "Bad string literal '%s' found while processing %s; missing final single quote",
+                argument,
+                error_text,
             )
             return None
 
@@ -167,11 +167,7 @@ def get_attribute_parameter_value(argument, attribute_parameter_dict, error_text
             value = float(argument)
             return value
         except ValueError:
-            logger.warning(
-                "Unable to evaluate argument '{arg}' while processing {etxt}, returning None".format(
-                    arg=argument, etxt=error_text
-                )
-            )
+            logger.warning("Unable to evaluate argument '%s' while processing %s, returning None", argument, error_text)
             return None
 
     # Should not reach here
@@ -214,12 +210,12 @@ def process_attribute_parameter_operation(opcode, oldvalue, argument, error_text
     """
     # Argument should never be None
     if argument is None:
-        logger.warning("Operator {}= acting on None argument in {}, returning None".format(opcode, error_text))
+        logger.warning("Operator %s= acting on None argument in %s, returning None", opcode, error_text)
         return None
     # Assignment and default operations allow oldvalue to be None
     if oldvalue is None:
         if opcode != ":" and opcode != "|":
-            logger.warning("Operator {}= acting on oldvalue=None in {}, returning None".format(opcode, error_text))
+            logger.warning("Operator %s= acting on oldvalue=None in %s, returning None", opcode, error_text)
             return None
 
     try:
@@ -242,9 +238,10 @@ def process_attribute_parameter_operation(opcode, oldvalue, argument, error_text
                 return newval
             else:
                 logger.warning(
-                    "Operator {}= acting on parameter of type {} in {}, returning None".format(
-                        opcode, type(oldvalue), error_text
-                    )
+                    "Operator %s= acting on parameter of type %s in %s, returning None",
+                    opcode,
+                    type(oldvalue),
+                    error_text,
                 )
                 return None
         if opcode == "-":
@@ -261,17 +258,20 @@ def process_attribute_parameter_operation(opcode, oldvalue, argument, error_text
                 newval = math.floor(oldvalue)
             else:
                 logger.error(
-                    "Unrecognized function named {} in {}= for {}, returning None".format(argument, opcode, error_text)
+                    "Unrecognized function named %s in %s= for %s, returning None", argument, opcode, error_text
                 )
                 return None
         # If reached here, we do not recognize opcode
-        logger.error("Unrecognized operation {}= in {}, returning None".format(opcode, error_text))
+        logger.error("Unrecognized operation %s= in %s, returning None", opcode, error_text)
     except Exception:
         logger.warning(
-            "Error performing operator {op}= on oldvalue='{old}' and argument={arg} in {errtext}".format(
-                op=opcode, old=oldvalue, arg=argument, errtext=error_text
-            )
+            "Error performing operator %s= on oldvalue='%s' and argument=%s in %s",
+            opcode,
+            oldvalue,
+            argument,
+            error_text,
         )
+
         return None
 
 
@@ -320,9 +320,11 @@ def process_attribute_parameter_string(
         # No '=' found, so invalid format of parmstr
         # Log error and return unmodified attribute_parameter_dict
         logger.error(
-            "Invalid parameter string '{pstr}', no '=', while "
+            "Invalid parameter string '%s', no '=', while "
             "creating attribute parameter dictionary for expanding "
-            "attribute {aname}".format(aname=attribute_name, pstr=parameter_string)
+            "attribute %s",
+            attribute_name,
+            parameter_string,
         )
         return attribute_parameter_dict
     pname = tmp[0]
@@ -463,7 +465,7 @@ def expand_attribute(raw_value, attribute_name, attriblist_string, resources=[],
         # referencing a parameter not defined in apdict to divide by
         # zero errors in processing apdict.  We just log it and then
         # return raw_value
-        logger.error("Error expanding {aname}: {error}".format(aname=attribute_name, error=xcept))
+        logger.error("Error expanding %s: %s", attribute_name, xcept)
         return raw_value
 
 
@@ -485,7 +487,7 @@ def convert_type(value, type_name, error_text="unknown"):
     future "Attribute Expanded ..." types.
     """
     if type_name is None:
-        logger.error("No AttributeType found for {}".format(error_text))
+        logger.error("No AttributeType found for %s", error_text)
         return value
 
     if type_name.endswith("Text"):
@@ -493,7 +495,7 @@ def convert_type(value, type_name, error_text="unknown"):
             newval = str(value)
             return newval
         except ValueError:
-            logger.error('Error converting "{}" to {} in {}'.format(value, "Text", error_text))
+            logger.error('Error converting "%s" to %s in %s', value, "Text", error_text)
             return value
 
     if type_name.endswith("Int"):
@@ -501,7 +503,7 @@ def convert_type(value, type_name, error_text="unknown"):
             newval = int(value)
             return newval
         except ValueError:
-            logger.error('Error converting "{}" to {} in {}'.format(value, "Int", error_text))
+            logger.error('Error converting "%s" to %s in %s', value, "Int", error_text)
             return value
 
     if type_name.endswith("Float"):
@@ -509,7 +511,7 @@ def convert_type(value, type_name, error_text="unknown"):
             newval = float(value)
             return newval
         except ValueError:
-            logger.error('Error converting "{}" to {} in {}'.format(value, "Float", error_text))
+            logger.error('Error converting "%s" to %s in %s', value, "Float", error_text)
             return value
 
     # If not any of the above, just return the value (probably a string)
