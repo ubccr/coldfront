@@ -18,6 +18,7 @@ from coldfront.core.allocation.models import (
 )
 from coldfront.core.project.models import Project
 from coldfront.core.test_helpers.factories import (
+    AllocationChangeRequestFactory,
     AllocationFactory,
     AllocationStatusChoiceFactory,
     ProjectFactory,
@@ -287,3 +288,60 @@ class AllocationModelExpiresInTests(TestCase):
             allocation: Allocation = AllocationFactory(end_date=self.four_years_after_mocked_today)
 
             self.assertEqual(allocation.expires_in, days_in_four_years_including_leap_year)
+
+
+class AllocationChangeRequestTests(TestCase):
+    def test_only_one_resource_that_resource_is_returned(self):
+        """When there is only one Resource associated with th Allocation associated with this AllocationChangeRequest then return that resource."""
+        allocation = AllocationFactory()
+        resource = ResourceFactory()
+        allocation.resources.add(resource)
+        allocation_change_request = AllocationChangeRequestFactory(allocation=allocation)
+
+        self.assertEqual(resource, allocation_change_request.get_parent_resource)
+
+    def test_multiple_resources_only_one_resource_is_allocatable_that_resource_is_returned(self):
+        allocation = AllocationFactory()
+        resource1 = ResourceFactory(is_allocatable=False)
+        resource2 = ResourceFactory(is_allocatable=True)
+        resource3 = ResourceFactory(is_allocatable=False)
+        resource4 = ResourceFactory(is_allocatable=False)
+        allocation.resources.add(resource1, resource2, resource3, resource4)
+        allocation_change_request = AllocationChangeRequestFactory(allocation=allocation)
+        self.assertEqual(resource2, allocation_change_request.get_parent_resource)
+
+    def test_multiple_resources_no_allocatable_resources_returns_none(self):
+        """When there are multiple resources associated with the AllocationChangeRequest and none of them are allocatable then return None."""
+        allocation = AllocationFactory()
+        resource1 = ResourceFactory(is_allocatable=False)
+        resource2 = ResourceFactory(is_allocatable=False)
+        resource3 = ResourceFactory(is_allocatable=False)
+        allocation.resources.add(resource1, resource2, resource3)
+        allocation_change_request = AllocationChangeRequestFactory(allocation=allocation)
+
+        self.assertIsNone(allocation_change_request.get_parent_resource)
+
+    def test_no_resources_returns_none(self):
+        """When there are no resources associated with the AllocationChangeRequest then return None."""
+        allocation = AllocationFactory()
+        allocation_change_request = AllocationChangeRequestFactory(allocation=allocation)
+
+        self.assertIsNone(allocation_change_request.get_parent_resource)
+
+    def test_multiple_resources_some_allocatable_and_some_not_allocatable_returns_one_of_allocatable(self):
+        """When there are multiple resources associated with the AllocationChangeRequest and some are allocatable and some are not, return the first allocatable resource."""
+        allocation = AllocationFactory()
+        magic_number = 10
+        allocatable_resources = []
+        for i in range(magic_number):
+            if i % 2 == 0:
+                resource = ResourceFactory(is_allocatable=True)
+                allocatable_resources.append(resource)
+            else:
+                resource = ResourceFactory(is_allocatable=False)
+            allocation.resources.add(resource)
+
+        allocation_change_request = AllocationChangeRequestFactory(allocation=allocation)
+
+        self.assertIsNotNone(allocation_change_request.get_parent_resource)
+        self.assertIn(allocation_change_request.get_parent_resource, allocatable_resources)
