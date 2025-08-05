@@ -38,8 +38,7 @@ RUN pip install django-prometheus gunicorn
 ENV PYTHONPATH /usr/src/app:/usr/src/app/ifxreport:/usr/src/app/ifxbilling:/usr/src/app/fiine.client:/usr/src/app/ifxurls:/usr/src/app/nanites.client:/usr/src/app/ifxuser:/usr/src/app/ifxmail.client:/usr/src/app/ifxec
 
 RUN mkdir -p /usr/src/app/media/reports
-
-RUN printf "deb http://ftp.us.debian.org/debian buster main" > /etc/apt/sources.list.d/backports.list && \
+RUN printf "deb http://archive.debian.org/debian buster main" > /etc/apt/sources.list.d/backports.list && \
     apt-get update && apt-get install libreadline7 && \
     rm -rf /var/lib/apt/lists/*
 
