@@ -117,6 +117,7 @@ class Command(BaseCommand):
             ('h-nfs20-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1, True, True),
             ('boslfs02', 'complimentary lab storage', True, storage, 'Tier 0', 1, False, False),
             ('holylabs', 'complimentary lab storage', True, storage, 'Tier 0', 1, False, False),
+            ('vast-holylabs', 'complimentary lab storage', True, storage, 'Tier 0', 1, False, False),
         ):
 
             resource_defaults = {
