@@ -32,6 +32,7 @@ class Command(BaseCommand):
         quota_bytes_aa_type = AllocationAttributeType.objects.get(name='Quota_In_Bytes')
         quota_tib_aa_type = AllocationAttributeType.objects.get(name='Storage Quota (TiB)')
         path_aa_type = AllocationAttributeType.objects.get(name='Subdirectory')
+        group_names = []
         for quota_dict in quotas['results']:
             if VASTAUTHORIZER == 'AD':
                 if quota_dict['entity']['identifier_type'] == 'gid':
@@ -39,15 +40,17 @@ class Command(BaseCommand):
                     group_result = ad.search_groups({'gidNumber': gid}, attributes=['sAMAccountName'])
                     if group_result:
                         group_name = group_result[0]['sAMAccountName'][0]
-                        quota_dict['entity']['name'] = group_name
                     else:
                         logger.error("could not find matching AD group for quota_dict %s", quota_dict)
                         print(f"could not find matching AD group for quota_dict {quota_dict}")
+                        continue
                 elif quota_dict['entity']['identifier_type'] == 'groupname':
-                    quota_dict['entity']['name'] = quota_dict['entity']['identifier']
+                    group_name = quota_dict['entity']['identifier']
                 else:
                     print(f"Unhandled identifier type: {quota_dict['entity']['identifier_type']}")
                     continue
+                quota_dict['entity']['name'] = group_name
+                group_names.append(group_name)
                 quota_bytes = quota_dict['hard_limit']
                 usage_bytes = quota_dict['used_capacity']
                 try:
@@ -91,3 +94,15 @@ class Command(BaseCommand):
                             allocation_attribute_type=path_aa_type,
                             defaults={'value': f'C/{allocation.project.title}'},
                     )
+        # check for active vast-resource coldfront allocations that haven't been updated
+        allocations = Allocation.objects.filter(
+                resources=vast_resource,
+                status__name="Active"
+        )
+        for allocation in allocations:
+            if allocation.project.title not in group_names:
+                logger.warning("Allocation %s for project %s is not in VAST quotas, deactivating",
+                               allocation.id, allocation.project.title)
+                allocation.status = AllocationStatusChoice.objects.get(name="Inactive")
+                allocation.save()
+                print(f"Allocation {allocation.id} for project {allocation.project.title} is not in VAST quotas, removing")
