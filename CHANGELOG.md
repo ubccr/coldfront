@@ -1,5 +1,19 @@
 # ColdFront Changelog
 
+## [1.1.7] - 2025-07-22
+
+- Automatically change default Slurm account if removal causes conflicts [#597](https://github.com/ubccr/coldfront/pull/597)
+- Fix allocation request list displays incorrect date for allocation renewals [#647](https://github.com/ubccr/coldfront/issues/647)
+- Add allocation limits for a resource [#667](https://github.com/ubccr/coldfront/pull/667)
+- Add REST API [#632](https://github.com/ubccr/coldfront/pull/632)
+- Migrate to UV [#677](https://github.com/ubccr/coldfront/pull/677)
+- Add EULA enforcement [#671](https://github.com/ubccr/coldfront/pull/671)
+- Contiguous Internal Project ID [#646](https://github.com/ubccr/coldfront/pull/646)
+- Add auto-compute allocation plugin [#698](https://github.com/ubccr/coldfront/pull/698)
+- Add project openldap plugin [#696](https://github.com/ubccr/coldfront/pull/696)
+- Add institution feature [#670](https://github.com/ubccr/coldfront/pull/670)
+- Update Dockerfile [#715](https://github.com/ubccr/coldfront/pull/715)
+
 ## [1.1.6] - 2024-03-27
 
 - Upgrade to Django 4.2 LTS [#601](https://github.com/ubccr/coldfront/pull/601)
@@ -148,4 +162,5 @@
 [1.1.4]: https://github.com/ubccr/coldfront/releases/tag/v1.1.4
 [1.1.5]: https://github.com/ubccr/coldfront/releases/tag/v1.1.5
 [1.1.6]: https://github.com/ubccr/coldfront/releases/tag/v1.1.6
-[Unreleased]: https://github.com/ubccr/coldfront/compare/v1.1.6...HEAD
+[1.1.7]: https://github.com/ubccr/coldfront/releases/tag/v1.1.7
+[Unreleased]: https://github.com/ubccr/coldfront/compare/v1.1.7...HEAD

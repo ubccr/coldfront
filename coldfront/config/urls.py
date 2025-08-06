@@ -8,6 +8,8 @@ ColdFront URL Configuration
 
 from django.conf import settings
 from django.contrib import admin
+from django.core import serializers
+from django.http import HttpResponse
 from django.urls import include, path
 from django.views.generic import TemplateView
 
@@ -49,3 +51,12 @@ if "mozilla_django_oidc" in settings.INSTALLED_APPS:
 
 if "django_su.backends.SuBackend" in settings.AUTHENTICATION_BACKENDS:
     urlpatterns.append(path("su/", include("django_su.urls")))
+
+
+def export_as_json(modeladmin, request, queryset):
+    response = HttpResponse(content_type="application/json")
+    serializers.serialize("json", queryset, stream=response)
+    return response
+
+
+admin.site.add_action(export_as_json, "export_as_json")

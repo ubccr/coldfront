@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "coldfront"
-version = "1.1.6"
+version = "1.1.7"
 requires-python = ">=3.9"
 authors = [
     { name = "Andrew E. Bruno" },
@@ -89,7 +89,6 @@ dev = [
 docs = [
     "mkdocs>=1.6.1",
     "mkdocs-awesome-pages-plugin>=2.10.1",
-    "mkdocs-material>=9.6.11",
     "mkdocstrings>=0.29.1",
     "mkdocstrings-python>=1.16.10",
     "pygments",

@@ -1,24 +1,20 @@
 site_name: ColdFront
 docs_dir: 'pages'
 site_description: 'HPC Resource Allocation Management System'
-site_url: 'https://coldfront.readthedocs.io'
-copyright: 'Copyright &copy; 2021 Center for Computational Research, University at Buffalo'
+site_url: 'https://docs.coldfront.dev'
+copyright: 'Copyright &copy; University at Buffalo Center for Computational Research'
 repo_name: 'ubccr/coldfront'
 repo_url: 'https://github.com/ubccr/coldfront'
 edit_uri: ''
 
-theme:
-  name: 'material'
-  logo: 'images/logo.png'
-  favicon: 'images/favicon.png'
-  palette:
-        primary: 'blue'
+extra_css:
+  - assets/styles.css
 
-  features:
-    - toc.integrate
-    - navigation.tabs
-    - navigation.tabs.sticky
-    - navigation.indexes
+theme:
+  logo: assets/cf-icon.png
+  name: readthedocs
+  prev_next_buttons_location: 'none'
+  highlightjs: true
 
 plugins: 
   - search
@@ -31,6 +27,7 @@ plugins:
             show_signature: false
 
 markdown_extensions:
+  - attr_list
   - footnotes
   - admonition
   - codehilite:
