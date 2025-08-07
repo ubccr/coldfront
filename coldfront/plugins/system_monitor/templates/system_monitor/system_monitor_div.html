@@ -36,6 +36,8 @@
 
 <!-- End System Monitor -->
 
+{{ utilization_data|json_script:"utilization-data"}}
+{{ jobs_data|json_script:"jobs-data" }}
 
 <script>
     
@@ -44,8 +46,8 @@
         drawJobs();
     });
 
-    var utilization_data = {{ utilization_data | safe }};
-    var jobs_data = {{ jobs_data | safe }};
+    var utilization_data = JSON.parse(document.getElementById('utilization-data').textContent);
+    var jobs_data = JSON.parse(document.getElementById('jobs-data').textContent);
 
     function drawUtilization() {
 

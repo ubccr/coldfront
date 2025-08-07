@@ -87,6 +87,10 @@ Center Summary
 </div>
 <!-- End Allocation Charts -->
 
+{{ grants_agency_chart_data|json_script:"grants-agency-chart-data" }}
+{{ publication_by_year_bar_chart_data|json_script:"publication-by-year-bar-chart-data" }}
+
+
 <script>
   $("#navbar-main > ul > li.active").removeClass("active")
   $("#navbar-center-summary").addClass("active")
@@ -150,8 +154,8 @@ Center Summary
     }
   }
 
-  var grants_agency_chart_data = {{ grants_agency_chart_data | safe }}
-  var publication_by_year_bar_chart_data = {{ publication_by_year_bar_chart_data | safe }}
+  var grants_agency_chart_data = JSON.parse(document.getElementById('grants-agency-chart-data').textContent);
+  var publication_by_year_bar_chart_data = JSON.parse(document.getElementById('publication-by-year-bar-chart-data').textContent);
 
   function get_allocation_summary() {
     $.ajax({
