@@ -122,9 +122,14 @@ def calculate_billing_month_task(year, month, email, recalculate=False, user_ifx
             organizations = [ifxuser_models.Organization.objects.get(ifxorg=user_ifxorg)]
 
         if recalculate:
-            for br in ifxbilling_models.BillingRecord.objects.filter(year=year, month=month):
-                br.delete()
-            ifxbilling_models.ProductUsageProcessing.objects.filter(product_usage__year=year, product_usage__month=month).delete()
+            pus = ifxbilling_models.ProductUsage.objects.filter(year=year, month=month)
+            if user_ifxorg:
+                pus = pus.filter(organization__ifxorg=user_ifxorg)
+            for pu in pus:
+                for br in pu.billingrecord_set.all():
+                    br.delete()
+                for pup in pu.productusageprocessing_set.all():
+                    pup.delete()
 
         calculator = NewColdfrontBillingCalculator()
         resultinator = calculator.calculate_billing_month(year, month, organizations=organizations, recalculate=recalculate)
