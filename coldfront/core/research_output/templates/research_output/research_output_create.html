@@ -9,6 +9,7 @@ Create Research Output
 
 
 {% block content %}
+<h2>Creating research output for project: {{ project.title }}</h2>
 <form method="post">
   {% csrf_token %}
   {{ form|crispy }}

@@ -10,6 +10,7 @@ Create Grant
 
 
 {% block content %}
+<h2>Creating grant for project: {{ project.title }}</h2>
   <form method="post">{% csrf_token %}
     {{ form|crispy }}
     <input class="btn btn-primary" type="submit" value="Save" />
