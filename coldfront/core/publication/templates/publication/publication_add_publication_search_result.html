@@ -36,7 +36,7 @@
         </div>
         {{ formset.management_form }}
         <div>
-          <button type="submit" class="btn btn-primary"><i class="fas fa-user-minus" aria-hidden="true"></i> Add Selected Publications to Project</button>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-plus" aria-hidden="true"></i> Add Selected Publications to Project</button>
           <a class="btn btn-secondary" href="{% url 'project-detail' project_pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a>
           <input id="search_ids" type="hidden" name="search_ids" value="{{search_ids}}">
           <input id="pubs" type="hidden" name="pubs" value="{{pubs}}">

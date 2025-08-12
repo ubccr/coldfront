@@ -13,7 +13,7 @@
       <ul class="list-group">
         {% for project in project_list %}
           <li class="list-group-item">
-            <a href="{% url 'project-detail' project.pk %}"><i class="fa fa-folder fa-lg" aria-hidden="true"></i>{{project.title}}</a>
+            <a href="{% url 'project-detail' project.pk %}"><i class="fa fa-folder fa-lg" aria-hidden="true"></i> {{project.title}}</a>
             {% if project.needs_review %}
               <a href="{% url 'project-review' project.pk %}"><span class="badge badge-warning">Needs Review</span></a>
             {% endif %}

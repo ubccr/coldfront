@@ -9,6 +9,7 @@ Update Grant
 
 
 {% block content %}
+<h2>Updating grant for project: {{ project.title }}</h2>
 <form method="post">
   {% csrf_token %}
   {{ form|crispy }}
