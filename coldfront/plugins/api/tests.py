@@ -33,7 +33,7 @@ class ColdfrontAPI(APITestCase):
         allocation.resources.add(ResourceFactory(name="test"))
         self.pi_user = project.pi
 
-        for i in range(0, 10):
+        for i in range(10):
             project = ProjectFactory(status=ProjectStatusChoiceFactory(name="Active"))
             allocation = AllocationFactory(project=project)
             allocation.resources.add(ResourceFactory(name="test"))
