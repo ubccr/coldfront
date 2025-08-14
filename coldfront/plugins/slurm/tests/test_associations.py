@@ -19,7 +19,7 @@ class AssociationTest(TestCase):
         call_command("import_field_of_science_data")
         call_command("add_default_grant_options")
         call_command("add_default_project_choices")
-        call_command("add_default_allocation_choices")
+        call_command("add_allocation_defaults")
         call_command("add_default_publication_sources")
         super(AssociationTest, cls).setUpClass()
 
