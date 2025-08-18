@@ -162,6 +162,7 @@ Create file `/etc/systemd/system/gunicorn.service`:
 [Unit]
 Description=Gunicorn instance to serve Coldfront
 After=syslog.target network.target mariadb.service
+Requires=mariadb.service
 
 [Service]
 User=coldfront
@@ -176,7 +177,7 @@ WantedBy=multi-user.target
 
 !!! note
     If using `uv tool` change the paths above accordingly.  Adjust the number
-    of workers for your site specific needs using the `--workers` flag above.
+    of workers for your site-specific needs using the `--workers` flag above.
 
 ## Start/enable ColdFront Gunicorn workers
 
@@ -189,9 +190,12 @@ $ systemctl status gunicorn.service
 ```
 
 ## Create systemd unit file for ColdFront qcluster scheduled tasks
-ColdFront uses Django Q to run scheduled tasks such as sending allocation expiration
+ColdFront uses DjangoQ to run scheduled tasks such as sending allocation expiration
 warning emails. We need to create a unit file to run the qserver process or these
 tasks will never run.
+
+!!! note
+    DjangoQ requires Redis to work - make sure to [install Redis](https://redis.io/docs/latest/operate/oss_and_stack/install/archive/install-redis/install-redis-on-linux/) first.
 
 Create file `/etc/systemd/system/coldfrontq.service`:
 
@@ -199,6 +203,7 @@ Create file `/etc/systemd/system/coldfrontq.service`:
 [Unit]
 Description=DjangoQ instance to run Coldfront scheduled tasks
 After=syslog.target network.target mariadb.service gunicorn.service
+Requires=redis.service
 
 [Service]
 User=coldfront
