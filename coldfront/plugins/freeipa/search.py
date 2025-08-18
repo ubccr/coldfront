@@ -37,8 +37,7 @@ class LDAPUserSearch(UserSearch):
 
         if not self.conn.bind():
             raise ImproperlyConfigured("Failed to bind to LDAP server: {}".format(self.conn.result))
-        else:
-            logger.info("LDAP bind successful: %s", self.conn.extend.standard.who_am_i())
+        logger.info("LDAP bind successful: %s", self.conn.extend.standard.who_am_i())
 
     def parse_ldap_entry(self, entry):
         entry_dict = json.loads(entry.entry_to_json()).get("attributes")

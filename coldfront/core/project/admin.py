@@ -85,22 +85,19 @@ class ProjectUserAdmin(SimpleHistoryAdmin):
     def get_fields(self, request, obj):
         if obj is None:
             return super().get_fields(request)
-        else:
-            return self.fields_change
+        return self.fields_change
 
     def get_readonly_fields(self, request, obj):
         if obj is None:
             # We are adding an object
             return super().get_readonly_fields(request)
-        else:
-            return self.readonly_fields_change
+        return self.readonly_fields_change
 
     def get_inline_instances(self, request, obj=None):
         if obj is None:
             # We are adding an object
             return super().get_inline_instances(request)
-        else:
-            return [inline(self.model, self.admin_site) for inline in self.inlines]
+        return [inline(self.model, self.admin_site) for inline in self.inlines]
 
 
 class ProjectUserInline(admin.TabularInline):
@@ -184,6 +181,8 @@ class UsageValueFilter(admin.SimpleListFilter):
         if self.value() == ">1000":
             return queryset.filter(allocationattributeusage__value__gte=1000)
 
+        return queryset
+
 
 @admin.register(ProjectAttribute)
 class ProjectAttributeAdmin(SimpleHistoryAdmin):
@@ -222,8 +221,7 @@ class ProjectAttributeAdmin(SimpleHistoryAdmin):
     def usage(self, obj):
         if hasattr(obj, "projectattributeusage"):
             return obj.projectattributeusage.value
-        else:
-            return "N/A"
+        return "N/A"
 
     def project_status(self, obj):
         return obj.project.status
@@ -240,22 +238,19 @@ class ProjectAttributeAdmin(SimpleHistoryAdmin):
     def get_fields(self, request, obj):
         if obj is None:
             return super().get_fields(request)
-        else:
-            return self.fields_change
+        return self.fields_change
 
     def get_readonly_fields(self, request, obj):
         if obj is None:
             # We are adding an object
             return super().get_readonly_fields(request)
-        else:
-            return self.readonly_fields_change
+        return self.readonly_fields_change
 
     def get_inline_instances(self, request, obj=None):
         if obj is None:
             # We are adding an object
             return []
-        else:
-            return super().get_inline_instances(request)
+        return super().get_inline_instances(request)
 
 
 class ValueFilter(admin.SimpleListFilter):
@@ -283,6 +278,8 @@ class ValueFilter(admin.SimpleListFilter):
 
         if self.value() == ">1000":
             return queryset.filter(value__gt=1000)
+
+        return queryset
 
 
 @admin.register(ProjectAttributeUsage)
@@ -346,22 +343,19 @@ class ProjectAdmin(SimpleHistoryAdmin):
     def get_fields(self, request, obj):
         if obj is None:
             return super().get_fields(request)
-        else:
-            return self.fields_change
+        return self.fields_change
 
     def get_readonly_fields(self, request, obj):
         if obj is None:
             # We are adding an object
             return super().get_readonly_fields(request)
-        else:
-            return self.readonly_fields_change
+        return self.readonly_fields_change
 
     def get_inline_instances(self, request, obj=None):
         if obj is None:
             # We are adding an object
             return []
-        else:
-            return super().get_inline_instances(request)
+        return super().get_inline_instances(request)
 
     def get_list_display(self, request):
         if not (PROJECT_CODE or PROJECT_INSTITUTION_EMAIL_MAP):

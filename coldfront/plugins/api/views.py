@@ -97,8 +97,7 @@ class AllocationRequestFilter(filters.FilterSet):
     def filter_fulfilled(self, queryset, name, value):
         if value:
             return queryset.filter(fulfilled_date__isnull=False)
-        else:
-            return queryset.filter(fulfilled_date__isnull=True)
+        return queryset.filter(fulfilled_date__isnull=True)
 
     def filter_time_to_fulfillment(self, queryset, name, value):
         if value.start is not None:
@@ -191,8 +190,7 @@ class AllocationChangeRequestFilter(filters.FilterSet):
     def filter_fulfilled(self, queryset, name, value):
         if value:
             return queryset.filter(status__name="Approved")
-        else:
-            return queryset.filter(status__name__in=["Pending", "Denied"])
+        return queryset.filter(status__name__in=["Pending", "Denied"])
 
     def filter_time_to_fulfillment(self, queryset, name, value):
         if value.start is not None:

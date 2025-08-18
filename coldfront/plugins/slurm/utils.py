@@ -41,7 +41,7 @@ class SlurmError(Exception):
 def _run_slurm_cmd(cmd, noop=True):
     if noop:
         logger.warning("NOOP - Slurm cmd: %s", cmd)
-        return
+        return None
 
     try:
         result = subprocess.run(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)

@@ -52,8 +52,7 @@ class ChangesOnlyOnActiveProjectMixin:
         ]:
             messages.error(request, "You cannot modify an archived project.")
             return HttpResponseRedirect(reverse("project-detail", kwargs={"pk": project_obj.pk}))
-        else:
-            return super().dispatch(request, *args, **kwargs)
+        return super().dispatch(request, *args, **kwargs)
 
 
 class UserActiveManagerOrHigherMixin(LoginRequiredMixin, UserPassesTestMixin):
@@ -71,3 +70,5 @@ class UserActiveManagerOrHigherMixin(LoginRequiredMixin, UserPassesTestMixin):
             user=self.request.user, role__name="Manager", status__name="Active"
         ).exists():
             return True
+
+        return False
