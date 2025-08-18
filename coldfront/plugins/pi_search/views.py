@@ -38,7 +38,7 @@ class PISearchResultsView(LoginRequiredMixin, ListView):
         projects = Project.objects.prefetch_related('pi', 'status',).filter(
             pi__username=pi_username,
             projectuser__status__name='Active',
-            status__name__in=['New', 'Active', ],
+            status__name__in=['New', 'Active', 'Review Pending'],
             private=False
         ).distinct()
 
