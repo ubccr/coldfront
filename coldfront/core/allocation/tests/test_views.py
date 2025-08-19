@@ -75,7 +75,7 @@ class AllocationListViewTest(AllocationViewBaseTest):
     @classmethod
     def setUpTestData(cls):
         """Set up users and project for testing"""
-        super(AllocationListViewTest, cls).setUpTestData()
+        super().setUpTestData()
         cls.additional_allocations = [AllocationFactory() for i in list(range(100))]
         for allocation in cls.additional_allocations:
             allocation.resources.add(ResourceFactory(name="holylfs09/tier1"))

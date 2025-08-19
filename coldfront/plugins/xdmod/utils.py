@@ -53,9 +53,9 @@ def xdmod_fetch_total_cpu_hours(start, end, account, resources=None, statistics=
     if resources is None:
         resources = []
 
-    url = "{}{}".format(XDMOD_API_URL, _ENDPOINT_CORE_HOURS)
+    url = f"{XDMOD_API_URL}{_ENDPOINT_CORE_HOURS}"
     payload = _DEFAULT_PARAMS
-    payload["pi_filter"] = '"{}"'.format(account)
+    payload["pi_filter"] = f'"{account}"'
     payload["resource_filter"] = '"{}"'.format(",".join(resources))
     payload["start_date"] = start
     payload["end_date"] = end
@@ -72,7 +72,7 @@ def xdmod_fetch_total_cpu_hours(start, end, account, resources=None, statistics=
         error = r.json()
         # XXX fix me. Here we assume any json response is bad as we're
         # expecting xml but XDMoD should just return json always.
-        raise XdmodNotFoundError("Got json response but expected XML: {}".format(error))
+        raise XdmodNotFoundError(f"Got json response but expected XML: {error}")
     except json.decoder.JSONDecodeError:
         pass
     except requests.exceptions.JSONDecodeError:
@@ -81,11 +81,11 @@ def xdmod_fetch_total_cpu_hours(start, end, account, resources=None, statistics=
     try:
         root = ET.fromstring(r.text)
     except ET.ParserError as e:
-        raise XdmodError("Invalid XML data returned from XDMoD API: {}".format(e))
+        raise XdmodError(f"Invalid XML data returned from XDMoD API: {e}")
 
     rows = root.find("rows")
     if len(rows) != 1:
-        raise XdmodNotFoundError("Rows not found for {} - {}".format(account, resources))
+        raise XdmodNotFoundError(f"Rows not found for {account} - {resources}")
 
     cells = rows.find("row").findall("cell")
     if len(cells) != 2:
@@ -103,9 +103,9 @@ def xdmod_fetch_total_storage(start, end, account, resources=None, statistics="p
     payload_end = end
     if payload_end is None:
         payload_end = "2099-01-01"
-    url = "{}{}".format(XDMOD_API_URL, _ENDPOINT_CORE_HOURS)
+    url = f"{XDMOD_API_URL}{_ENDPOINT_CORE_HOURS}"
     payload = _DEFAULT_PARAMS
-    payload["pi_filter"] = '"{}"'.format(account)
+    payload["pi_filter"] = f'"{account}"'
     payload["resource_filter"] = "{}".format(",".join(resources))
     payload["start_date"] = start
     payload["end_date"] = payload_end
@@ -121,11 +121,11 @@ def xdmod_fetch_total_storage(start, end, account, resources=None, statistics="p
     try:
         root = ET.fromstring(r.text)
     except ET.ParserError as e:
-        raise XdmodError("Invalid XML data returned from XDMoD API: {}".format(e))
+        raise XdmodError(f"Invalid XML data returned from XDMoD API: {e}")
 
     rows = root.find("rows")
     if len(rows) != 1:
-        raise XdmodNotFoundError("Rows not found for {} - {}".format(account, resources))
+        raise XdmodNotFoundError(f"Rows not found for {account} - {resources}")
 
     cells = rows.find("row").findall("cell")
     if len(cells) != 2:
@@ -140,7 +140,7 @@ def xdmod_fetch_cloud_core_time(start, end, project, resources=None):
     if resources is None:
         resources = []
 
-    url = "{}{}".format(XDMOD_API_URL, _ENDPOINT_CORE_HOURS)
+    url = f"{XDMOD_API_URL}{_ENDPOINT_CORE_HOURS}"
     payload = _DEFAULT_PARAMS
     payload["project_filter"] = project
     payload["resource_filter"] = '"{}"'.format(",".join(resources))
@@ -159,18 +159,18 @@ def xdmod_fetch_cloud_core_time(start, end, project, resources=None):
         error = r.json()
         # XXX fix me. Here we assume any json response is bad as we're
         # expecting xml but XDMoD should just return json always.
-        raise XdmodNotFoundError("Got json response but expected XML: {}".format(error))
+        raise XdmodNotFoundError(f"Got json response but expected XML: {error}")
     except json.decoder.JSONDecodeError:
         pass
 
     try:
         root = ET.fromstring(r.text)
     except ET.ParserError as e:
-        raise XdmodError("Invalid XML data returned from XDMoD API: {}".format(e))
+        raise XdmodError(f"Invalid XML data returned from XDMoD API: {e}")
 
     rows = root.find("rows")
     if len(rows) != 1:
-        raise XdmodNotFoundError("Rows not found for {} - {}".format(project, resources))
+        raise XdmodNotFoundError(f"Rows not found for {project} - {resources}")
 
     cells = rows.find("row").findall("cell")
     if len(cells) != 2:

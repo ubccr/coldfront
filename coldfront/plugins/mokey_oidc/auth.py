@@ -93,7 +93,7 @@ class OIDCMokeyAuthenticationBackend(OIDCAuthenticationBackend):
             return self.UserModel.objects.none()
 
     def verify_claims(self, claims):
-        verified = super(OIDCMokeyAuthenticationBackend, self).verify_claims(claims)
+        verified = super().verify_claims(claims)
 
         if len(ALLOWED_GROUPS) == 0 and len(DENY_GROUPS) == 0:
             return verified and True

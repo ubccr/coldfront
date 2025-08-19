@@ -36,7 +36,7 @@ try:
     api.Backend.rpcclient.connect()
 except Exception as e:
     logger.error("Failed to initialze FreeIPA lib: %s", e)
-    raise ImproperlyConfigured("Failed to initialze FreeIPA: {0}".format(e))
+    raise ImproperlyConfigured(f"Failed to initialze FreeIPA: {e}")
 
 
 def check_ipa_group_error(res):

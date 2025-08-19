@@ -340,9 +340,9 @@ class ProjectListView(LoginRequiredMixin, ListView):
                 if value:
                     if isinstance(value, list):
                         for ele in value:
-                            filter_parameters += "{}={}&".format(key, ele)
+                            filter_parameters += f"{key}={ele}&"
                     else:
-                        filter_parameters += "{}={}&".format(key, value)
+                        filter_parameters += f"{key}={value}&"
             context["project_search_form"] = project_search_form
         else:
             filter_parameters = None
@@ -351,7 +351,8 @@ class ProjectListView(LoginRequiredMixin, ListView):
         order_by = self.request.GET.get("order_by")
         if order_by:
             direction = self.request.GET.get("direction")
-            filter_parameters_with_order_by = filter_parameters + "order_by=%s&direction=%s&" % (order_by, direction)
+            filter_parameters_string = "" if not filter_parameters else filter_parameters
+            filter_parameters_with_order_by = filter_parameters_string + f"order_by={order_by}&direction={direction}&"
         else:
             filter_parameters_with_order_by = filter_parameters
 
@@ -483,9 +484,9 @@ class ProjectArchivedListView(LoginRequiredMixin, ListView):
                 if value:
                     if isinstance(value, list):
                         for ele in value:
-                            filter_parameters += "{}={}&".format(key, ele)
+                            filter_parameters += f"{key}={ele}&"
                     else:
-                        filter_parameters += "{}={}&".format(key, value)
+                        filter_parameters += f"{key}={value}&"
             context["project_search_form"] = project_search_form
         else:
             filter_parameters = None
@@ -494,7 +495,8 @@ class ProjectArchivedListView(LoginRequiredMixin, ListView):
         order_by = self.request.GET.get("order_by")
         if order_by:
             direction = self.request.GET.get("direction")
-            filter_parameters_with_order_by = filter_parameters + "order_by=%s&direction=%s&" % (order_by, direction)
+            filter_parameters_string = "" if not filter_parameters else filter_parameters
+            filter_parameters_with_order_by = filter_parameters_string + f"order_by={order_by}&direction={direction}&"
         else:
             filter_parameters_with_order_by = filter_parameters
 
@@ -888,7 +890,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                                 sender=self.__class__, allocation_user_pk=allocation_user_obj.pk
                             )
 
-            messages.success(request, "Added {} users to project.".format(added_users_count))
+            messages.success(request, f"Added {added_users_count} users to project.")
         else:
             if not formset.is_valid():
                 for error in formset.errors:
@@ -1010,9 +1012,9 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                             )
 
             if remove_users_count == 1:
-                messages.success(request, "Removed {} user from project.".format(remove_users_count))
+                messages.success(request, f"Removed {remove_users_count} user from project.")
             else:
-                messages.success(request, "Removed {} users from project.".format(remove_users_count))
+                messages.success(request, f"Removed {remove_users_count} users from project.")
         else:
             for error in formset.errors:
                 messages.error(request, error)
@@ -1192,7 +1194,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         context["project_review_form"] = project_review_form
         context["project_users"] = ", ".join(
             [
-                "{} {}".format(ele.user.first_name, ele.user.last_name)
+                f"{ele.user.first_name} {ele.user.last_name}"
                 for ele in project_obj.projectuser_set.filter(status__name="Active").order_by("user__last_name")
             ]
         )
@@ -1282,7 +1284,7 @@ class ProjectReviewCompleteView(LoginRequiredMixin, UserPassesTestMixin, View):
         project_review_obj.project.project_needs_review = False
         project_review_obj.save()
 
-        messages.success(request, "Project review for {} has been completed".format(project_review_obj.project.title))
+        messages.success(request, f"Project review for {project_review_obj.project.title} has been completed")
 
         return HttpResponseRedirect(reverse("project-review-list"))
 
@@ -1335,11 +1337,7 @@ class ProjectReviewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         messages.success(
             self.request,
-            "Email sent to {} {} ({})".format(
-                project_review_obj.project.pi.first_name,
-                project_review_obj.project.pi.last_name,
-                project_review_obj.project.pi.username,
-            ),
+            f"Email sent to {project_review_obj.project.pi.first_name} {project_review_obj.project.pi.last_name} ({project_review_obj.project.pi.username})",
         )
         return super().form_valid(form)
 
@@ -1501,7 +1499,7 @@ class ProjectAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Templa
 
                     proj_attr.delete()
 
-            messages.success(request, "Deleted {} attributes from project.".format(attributes_deleted_count))
+            messages.success(request, f"Deleted {attributes_deleted_count} attributes from project.")
         else:
             for error in formset.errors:
                 messages.error(request, error)

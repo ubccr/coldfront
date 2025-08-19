@@ -152,7 +152,7 @@ class Grant(TimeStampedModel):
         """
 
         if self.role == "PI":
-            return "{} {}".format(self.project.pi.first_name, self.project.pi.last_name)
+            return f"{self.project.pi.first_name} {self.project.pi.last_name}"
         else:
             return self.grant_pi_full_name
 

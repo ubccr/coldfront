@@ -56,8 +56,7 @@ class ProjectAddUsersToAllocationForm(forms.Form):
         allocation_choices = [
             (
                 allocation.id,
-                "%s (%s) %s"
-                % (
+                "{} ({}) {}".format(
                     allocation.get_parent_resource.name,
                     allocation.get_parent_resource.resource_type.name,
                     allocation.description if allocation.description else "",
@@ -108,7 +107,7 @@ class ProjectReviewForm(forms.Form):
     def __init__(self, project_pk, *args, **kwargs):
         super().__init__(*args, **kwargs)
         project_obj = get_object_or_404(Project, pk=project_pk)
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
 
         if project_obj.grant_set.exists():
             latest_grant = project_obj.grant_set.order_by("-modified")[0]
@@ -135,11 +134,9 @@ class ProjectReviewEmailForm(forms.Form):
     def __init__(self, pk, *args, **kwargs):
         super().__init__(*args, **kwargs)
         project_review_obj = get_object_or_404(ProjectReview, pk=int(pk))
-        self.fields["email_body"].initial = "Dear {} {} \n{}".format(
-            project_review_obj.project.pi.first_name,
-            project_review_obj.project.pi.last_name,
-            EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL,
-        )
+        self.fields[
+            "email_body"
+        ].initial = f"Dear {project_review_obj.project.pi.first_name} {project_review_obj.project.pi.last_name} \n{EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL}"
         self.fields["cc"].initial = ", ".join([EMAIL_DIRECTOR_EMAIL_ADDRESS] + EMAIL_ADMIN_LIST)
 
 
@@ -152,7 +149,7 @@ class ProjectAttributeAddForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        super(ProjectAttributeAddForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         user = (kwargs.get("initial")).get("user")
         self.fields["proj_attr_type"].queryset = self.fields["proj_attr_type"].queryset.order_by(Lower("name"))
         if not user.is_superuser:

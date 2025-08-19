@@ -44,7 +44,7 @@ def get_attriblist_str(attribute_name, resources=[], allocations=[]):
     attriblist attributes are found, we return None.
     """
 
-    attriblist_name = "{aname}{suffix}".format(aname=attribute_name, suffix=ATTRIBUTE_EXPANSION_ATTRIBLIST_SUFFIX)
+    attriblist_name = f"{attribute_name}{ATTRIBUTE_EXPANSION_ATTRIBLIST_SUFFIX}"
     attriblist = None
 
     # Check resources first
@@ -115,9 +115,7 @@ def get_attribute_parameter_value(argument, attribute_parameter_dict, error_text
         else:
             # Bad string literal
             logger.warning(
-                "Bad string literal '{}' found while processing {}; missing final single quote".format(
-                    argument, error_text
-                )
+                f"Bad string literal '{argument}' found while processing {error_text}; missing final single quote"
             )
             return None
 
@@ -167,11 +165,7 @@ def get_attribute_parameter_value(argument, attribute_parameter_dict, error_text
             value = float(argument)
             return value
         except ValueError:
-            logger.warning(
-                "Unable to evaluate argument '{arg}' while processing {etxt}, returning None".format(
-                    arg=argument, etxt=error_text
-                )
-            )
+            logger.warning(f"Unable to evaluate argument '{argument}' while processing {error_text}, returning None")
             return None
 
     # Should not reach here
@@ -214,12 +208,12 @@ def process_attribute_parameter_operation(opcode, oldvalue, argument, error_text
     """
     # Argument should never be None
     if argument is None:
-        logger.warning("Operator {}= acting on None argument in {}, returning None".format(opcode, error_text))
+        logger.warning(f"Operator {opcode}= acting on None argument in {error_text}, returning None")
         return None
     # Assignment and default operations allow oldvalue to be None
     if oldvalue is None:
         if opcode != ":" and opcode != "|":
-            logger.warning("Operator {}= acting on oldvalue=None in {}, returning None".format(opcode, error_text))
+            logger.warning(f"Operator {opcode}= acting on oldvalue=None in {error_text}, returning None")
             return None
 
     try:
@@ -242,9 +236,7 @@ def process_attribute_parameter_operation(opcode, oldvalue, argument, error_text
                 return newval
             else:
                 logger.warning(
-                    "Operator {}= acting on parameter of type {} in {}, returning None".format(
-                        opcode, type(oldvalue), error_text
-                    )
+                    f"Operator {opcode}= acting on parameter of type {type(oldvalue)} in {error_text}, returning None"
                 )
                 return None
         if opcode == "-":
@@ -260,17 +252,13 @@ def process_attribute_parameter_operation(opcode, oldvalue, argument, error_text
             if argument == "floor":
                 newval = math.floor(oldvalue)
             else:
-                logger.error(
-                    "Unrecognized function named {} in {}= for {}, returning None".format(argument, opcode, error_text)
-                )
+                logger.error(f"Unrecognized function named {argument} in {opcode}= for {error_text}, returning None")
                 return None
         # If reached here, we do not recognize opcode
-        logger.error("Unrecognized operation {}= in {}, returning None".format(opcode, error_text))
+        logger.error(f"Unrecognized operation {opcode}= in {error_text}, returning None")
     except Exception:
         logger.warning(
-            "Error performing operator {op}= on oldvalue='{old}' and argument={arg} in {errtext}".format(
-                op=opcode, old=oldvalue, arg=argument, errtext=error_text
-            )
+            f"Error performing operator {opcode}= on oldvalue='{oldvalue}' and argument={argument} in {error_text}"
         )
         return None
 
@@ -320,9 +308,9 @@ def process_attribute_parameter_string(
         # No '=' found, so invalid format of parmstr
         # Log error and return unmodified attribute_parameter_dict
         logger.error(
-            "Invalid parameter string '{pstr}', no '=', while "
+            f"Invalid parameter string '{parameter_string}', no '=', while "
             "creating attribute parameter dictionary for expanding "
-            "attribute {aname}".format(aname=attribute_name, pstr=parameter_string)
+            f"attribute {attribute_name}"
         )
         return attribute_parameter_dict
     pname = tmp[0]
@@ -338,8 +326,8 @@ def process_attribute_parameter_string(
         value = argument
     else:
         # Extra text to display in diagnostics if error occurs
-        error_text = "processing attribute_parameter_string={pstr} for expansion of attribute {aname}".format(
-            pstr=parameter_string, aname=attribute_name
+        error_text = (
+            f"processing attribute_parameter_string={parameter_string} for expansion of attribute {attribute_name}"
         )
         value = get_attribute_parameter_value(
             argument=argument,
@@ -463,7 +451,7 @@ def expand_attribute(raw_value, attribute_name, attriblist_string, resources=[],
         # referencing a parameter not defined in apdict to divide by
         # zero errors in processing apdict.  We just log it and then
         # return raw_value
-        logger.error("Error expanding {aname}: {error}".format(aname=attribute_name, error=xcept))
+        logger.error(f"Error expanding {attribute_name}: {xcept}")
         return raw_value
 
 
@@ -485,7 +473,7 @@ def convert_type(value, type_name, error_text="unknown"):
     future "Attribute Expanded ..." types.
     """
     if type_name is None:
-        logger.error("No AttributeType found for {}".format(error_text))
+        logger.error(f"No AttributeType found for {error_text}")
         return value
 
     if type_name.endswith("Text"):

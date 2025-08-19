@@ -24,7 +24,7 @@ def import_from_settings(attr, *args):
             return getattr(settings, attr, args[0])
         return getattr(settings, attr)
     except AttributeError:
-        raise ImproperlyConfigured("Setting {0} not found".format(attr))
+        raise ImproperlyConfigured(f"Setting {attr} not found")
 
 
 def get_domain_url(request):

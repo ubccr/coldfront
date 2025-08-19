@@ -77,10 +77,10 @@ class ProjectUserAdmin(SimpleHistoryAdmin):
         return textwrap.shorten(obj.project.title, width=50)
 
     def PI(self, obj):
-        return "{} {} ({})".format(obj.project.pi.first_name, obj.project.pi.last_name, obj.project.pi.username)
+        return f"{obj.project.pi.first_name} {obj.project.pi.last_name} ({obj.project.pi.username})"
 
     def User(self, obj):
-        return "{} {} ({})".format(obj.user.first_name, obj.user.last_name, obj.user.username)
+        return f"{obj.user.first_name} {obj.user.last_name} ({obj.user.username})"
 
     def get_fields(self, request, obj):
         if obj is None:
@@ -229,7 +229,7 @@ class ProjectAttributeAdmin(SimpleHistoryAdmin):
         return obj.project.status
 
     def pi(self, obj):
-        return "{} {} ({})".format(obj.project.pi.first_name, obj.project.pi.last_name, obj.project.pi.username)
+        return f"{obj.project.pi.first_name} {obj.project.pi.last_name} ({obj.project.pi.username})"
 
     def project(self, obj):
         return textwrap.shorten(obj.project.title, width=50)
@@ -341,7 +341,7 @@ class ProjectAdmin(SimpleHistoryAdmin):
     ]
 
     def PI(self, obj):
-        return "{} {} ({})".format(obj.pi.first_name, obj.pi.last_name, obj.pi.username)
+        return f"{obj.pi.first_name} {obj.pi.last_name} ({obj.pi.username})"
 
     def get_fields(self, request, obj):
         if obj is None:
@@ -398,4 +398,4 @@ class ProjectReviewAdmin(SimpleHistoryAdmin):
     list_filter = ("status",)
 
     def PI(self, obj):
-        return "{} {} ({})".format(obj.project.pi.first_name, obj.project.pi.last_name, obj.project.pi.username)
+        return f"{obj.project.pi.first_name} {obj.project.pi.last_name} ({obj.project.pi.username})"

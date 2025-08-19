@@ -50,7 +50,7 @@ def update_statuses():
         sub_obj.status = expired_status_choice
         sub_obj.save()
 
-    logger.info("Allocations set to expired: {}".format(allocations_to_expire.count()))
+    logger.info(f"Allocations set to expired: {allocations_to_expire.count()}")
 
 
 def send_eula_reminders():

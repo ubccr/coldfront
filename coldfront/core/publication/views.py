@@ -114,9 +114,7 @@ class PublicationSearchResultView(LoginRequiredMixin, UserPassesTestMixin, Templ
 
             elif source.name == "adsabs":
                 try:
-                    url = "http://adsabs.harvard.edu/cgi-bin/nph-bib_query?bibcode={}&data_type=BIBTEX".format(
-                        unique_id
-                    )
+                    url = f"http://adsabs.harvard.edu/cgi-bin/nph-bib_query?bibcode={unique_id}&data_type=BIBTEX"
                     r = requests.get(url, timeout=5)
                     bp = BibTexParser(interpolate_strings=False)
                     bib_database = bp.parse(r.text)
@@ -167,7 +165,7 @@ class PublicationSearchResultView(LoginRequiredMixin, UserPassesTestMixin, Templ
         else:
             # fallback: clearly indicate that data was absent
             source_name = matching_source_obj.name
-            journal = "[no journal info from {}]".format(source_name.upper())
+            journal = f"[no journal info from {source_name.upper()}]"
 
         pub_dict = {}
         pub_dict["author"] = author
@@ -408,7 +406,7 @@ class PublicationDeletePublicationsView(LoginRequiredMixin, UserPassesTestMixin,
                     publication_obj.delete()
                     publications_deleted_count += 1
 
-            messages.success(request, "Deleted {} publications from project.".format(publications_deleted_count))
+            messages.success(request, f"Deleted {publications_deleted_count} publications from project.")
         else:
             for error in formset.errors:
                 messages.error(request, error)

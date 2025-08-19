@@ -185,7 +185,7 @@ class ResourceAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Templ
                     resource_attribute = ResourceAttribute.objects.get(pk=form_data["pk"])
                     resource_attribute.delete()
 
-            messages.success(request, "Deleted {} attributes from resource.".format(attributes_deleted_count))
+            messages.success(request, f"Deleted {attributes_deleted_count} attributes from resource.")
         else:
             for error in formset.errors:
                 messages.error(request, error)
@@ -288,9 +288,9 @@ class ResourceListView(LoginRequiredMixin, ListView):
                 if value:
                     if isinstance(value, list):
                         for ele in value:
-                            filter_parameters += "{}={}&".format(key, ele)
+                            filter_parameters += f"{key}={ele}&"
                     else:
-                        filter_parameters += "{}={}&".format(key, value)
+                        filter_parameters += f"{key}={value}&"
             context["resource_search_form"] = resource_search_form
         else:
             filter_parameters = None
@@ -299,7 +299,8 @@ class ResourceListView(LoginRequiredMixin, ListView):
         order_by = self.request.GET.get("order_by")
         if order_by:
             direction = self.request.GET.get("direction")
-            filter_parameters_with_order_by = filter_parameters + "order_by=%s&direction=%s&" % (order_by, direction)
+            filter_parameters_string = "" if not filter_parameters else filter_parameters
+            filter_parameters_with_order_by = filter_parameters_string + f"order_by={order_by}&direction={direction}&"
         else:
             filter_parameters_with_order_by = filter_parameters
 

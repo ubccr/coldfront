@@ -86,7 +86,7 @@ class UserFactory(DjangoModelFactory):
     last_name = factory.Faker("last_name")
     # username = factory.Faker('username')
     username = factory.LazyAttribute(lambda o: f"{o.first_name}{o.last_name}")
-    email = factory.LazyAttribute(lambda o: "%s@example.com" % o.username)
+    email = factory.LazyAttribute(lambda o: f"{o.username}@example.com")
 
 
 class UserProfileFactory(DjangoModelFactory):

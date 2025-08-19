@@ -30,10 +30,10 @@ def generate_total_grants_by_agency_chart_data(total_grants_by_agency):
 
 def generate_resources_chart_data(allocations_count_by_resource_type):
     if allocations_count_by_resource_type:
-        cluster_label = "Cluster: %d" % (allocations_count_by_resource_type.get("Cluster", 0))
-        cloud_label = "Cloud: %d" % (allocations_count_by_resource_type.get("Cloud", 0))
-        server_label = "Server: %d" % (allocations_count_by_resource_type.get("Server", 0))
-        storage_label = "Storage: %d" % (allocations_count_by_resource_type.get("Storage", 0))
+        cluster_label = f"Cluster: {allocations_count_by_resource_type.get('Cluster', 0)}"
+        cloud_label = f"Cloud: {allocations_count_by_resource_type.get('Cloud', 0)}"
+        server_label = f"Server: {allocations_count_by_resource_type.get('Server', 0)}"
+        storage_label = f"Storage: {allocations_count_by_resource_type.get('Storage', 0)}"
 
         resource_plot_data = {
             "columns": [
@@ -65,10 +65,10 @@ def generate_allocations_chart_data():
     start_time = datetime.date(now.year - 1, 1, 1)
     expired_count = Allocation.objects.filter(status__name="Expired", end_date__gte=start_time).count()
 
-    active_label = "Active: %d" % (active_count)
-    new_label = "New: %d" % (new_count)
-    renewal_requested_label = "Renewal Requested: %d" % (renewal_requested_count)
-    expired_label = "Expired: %d" % (expired_count)
+    active_label = f"Active: {active_count}"
+    new_label = f"New: {new_count}"
+    renewal_requested_label = f"Renewal Requested: {renewal_requested_count}"
+    expired_label = f"Expired: {expired_count}"
 
     allocation_chart_data = {
         "columns": [

@@ -168,7 +168,7 @@ We do not have information about your research. Please provide a detailed descri
         if self.status.name == "Archived":
             return False
 
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
 
         if self.force_review is True:
             return True
@@ -384,7 +384,7 @@ class ProjectUser(TimeStampedModel):
     history = HistoricalRecords()
 
     def __str__(self):
-        return "%s %s (%s)" % (self.user.first_name, self.user.last_name, self.user.username)
+        return f"{self.user.first_name} {self.user.last_name} ({self.user.username})"
 
     class Meta:
         unique_together = ("user", "project")
@@ -432,7 +432,7 @@ class ProjectAttributeType(TimeStampedModel):
     history = HistoricalRecords()
 
     def __str__(self):
-        return "%s (%s)" % (self.name, self.attribute_type.name)
+        return f"{self.name} ({self.attribute_type.name})"
 
     def __repr__(self) -> str:
         return str(self)
@@ -470,7 +470,7 @@ class ProjectAttribute(TimeStampedModel):
             self.proj_attr_type.is_unique
             and self.project.projectattribute_set.filter(proj_attr_type=self.proj_attr_type).exists()
         ):
-            raise ValidationError("'{}' attribute already exists for this project.".format(self.proj_attr_type))
+            raise ValidationError(f"'{self.proj_attr_type}' attribute already exists for this project.")
 
         expected_value_type = self.proj_attr_type.attribute_type.name.strip()
 
@@ -486,7 +486,7 @@ class ProjectAttribute(TimeStampedModel):
             validator.validate_date()
 
     def __str__(self):
-        return "%s" % (self.proj_attr_type.name)
+        return str(self.proj_attr_type.name)
 
 
 class ProjectAttributeUsage(TimeStampedModel):
@@ -502,4 +502,4 @@ class ProjectAttributeUsage(TimeStampedModel):
     history = HistoricalRecords()
 
     def __str__(self):
-        return "{}: {}".format(self.project_attribute.proj_attr_type.name, self.value)
+        return f"{self.project_attribute.proj_attr_type.name}: {self.value}"

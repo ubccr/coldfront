@@ -148,8 +148,8 @@ def send_allocation_eula_customer_email(
     ctx = email_template_context()
     ctx["resource"] = allocation_obj.get_parent_resource
     ctx["url"] = url
-    ctx["allocation_user"] = "{} {} ({})".format(
-        allocation_user.user.first_name, allocation_user.user.last_name, allocation_user.user.username
+    ctx["allocation_user"] = (
+        f"{allocation_user.user.first_name} {allocation_user.user.last_name} ({allocation_user.user.username})"
     )
     if include_eula:
         ctx["eula"] = allocation_obj.get_eula()
