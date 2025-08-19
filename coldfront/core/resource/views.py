@@ -199,7 +199,7 @@ class ResourceListView(LoginRequiredMixin, ListView):
     context_object_name = "resource_list"
     paginate_by = 25
 
-    def get_queryset(self):
+    def get_queryset(self):  # noqa: C901 # FIXME: method is too complex
         order_by = self.request.GET.get("order_by", "id")
         direction = self.request.GET.get("direction", "asc")
         if order_by != "name":

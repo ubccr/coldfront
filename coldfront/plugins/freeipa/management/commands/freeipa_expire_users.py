@@ -35,7 +35,7 @@ class Command(BaseCommand):
             os.dup2(devnull, sys.stdout.fileno())
             sys.exit(1)
 
-    def handle(self, *args, **options):
+    def handle(self, *args, **options):  # noqa: C901 # FIXME: method is too complex
         os.environ["KRB5_CLIENT_KTNAME"] = CLIENT_KTNAME
 
         verbosity = int(options["verbosity"])

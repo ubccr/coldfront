@@ -242,7 +242,7 @@ class Command(BaseCommand):
 
         return slurm_cluster
 
-    def handle(self, *args, **options):
+    def handle(self, *args, **options):  # noqa: C901 # FIXME: method is too complex
         verbosity = int(options["verbosity"])
         root_logger = logging.getLogger("")
         if verbosity == 0:

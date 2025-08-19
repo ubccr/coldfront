@@ -67,7 +67,7 @@ def get_attriblist_str(attribute_name, resources=[], allocations=[]):
     return attriblist
 
 
-def get_attribute_parameter_value(argument, attribute_parameter_dict, error_text, resources=[], allocations=[]):
+def get_attribute_parameter_value(argument, attribute_parameter_dict, error_text, resources=[], allocations=[]):  # noqa: C901 # FIXME: function is too complex
     """Evaluates the argument for a attribute parameter statement.
 
     This is called by process_attribute_parameter_string and handles
@@ -178,7 +178,7 @@ def get_attribute_parameter_value(argument, attribute_parameter_dict, error_text
     return None
 
 
-def process_attribute_parameter_operation(opcode, oldvalue, argument, error_text):
+def process_attribute_parameter_operation(opcode, oldvalue, argument, error_text):  # noqa: C901 # FIXME: method is too complex
     """Process the specified operation for attribute_parameter_dict.
 
     This is called by process_attribute_parameter_string and handles

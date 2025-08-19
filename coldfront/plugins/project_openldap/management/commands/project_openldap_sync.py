@@ -232,7 +232,7 @@ class Command(BaseCommand):
                             f"Exception removing {project.project_code}, DN: {project_ou_dn} in OpenLDAP: {e}"
                         )
 
-    def handle_description_update(
+    def handle_description_update(  # noqa: C901 # FIXME: method is too complex
         self,
         project,
         project_dn="",
@@ -299,7 +299,7 @@ class Command(BaseCommand):
             members.extend(entry.memberUid.values)
         return tuple(members)
 
-    def sync_members(
+    def sync_members(  # noqa: C901 # FIXME: method is too complex
         self,
         project,
         cf_members,
@@ -400,7 +400,7 @@ class Command(BaseCommand):
                             )
 
     # N.B. this is the main function to check projects...
-    def sync_check_project(
+    def sync_check_project(  # noqa: C901 # FIXME: method is too complex
         self,
         project_group,
         sync=False,
@@ -619,7 +619,7 @@ class Command(BaseCommand):
 
     # --------------------------------
 
-    def handle(self, *args, **options):
+    def handle(self, *args, **options):  # noqa: C901 # FIXME: method is too complex
         verbosity = int(options["verbosity"])
         root_logger = logging.getLogger("")
         if verbosity == 0:

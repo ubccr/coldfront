@@ -59,7 +59,7 @@ def add_user_group(allocation_user_pk):
             logger.info("Added user %s to group %s successfully", allocation_user.user.username, g)
 
 
-def remove_user_group(allocation_user_pk):
+def remove_user_group(allocation_user_pk):  # noqa: C901 # FIXME: function is too complex
     allocation_user = AllocationUser.objects.get(pk=allocation_user_pk)
     if allocation_user.allocation.status.name not in [
         "Active",
