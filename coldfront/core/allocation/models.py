@@ -175,12 +175,7 @@ class Allocation(TimeStampedModel):
                         "Allocation attribute '%s' == 0 but has a usage", attribute.allocation_attribute_type.name
                     )
 
-                string = "{}: {}/{} ({} %) <br>".format(
-                    attribute.allocation_attribute_type.name,
-                    attribute.allocationattributeusage.value,
-                    attribute.value,
-                    percent,
-                )
+                string = f"{attribute.allocation_attribute_type.name}: {attribute.allocationattributeusage.value}/{attribute.value} ({percent} %) <br>"
                 html_string += string
 
         return mark_safe(html_string)
@@ -340,7 +335,7 @@ class Allocation(TimeStampedModel):
         return perm in perms
 
     def __str__(self):
-        return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)
+        return f"{self.get_parent_resource.name} ({self.project.pi})"
 
     def get_eula(self):
         if self.get_resources_as_list:
@@ -428,7 +423,7 @@ class AllocationAttributeType(TimeStampedModel):
     history = HistoricalRecords()
 
     def __str__(self):
-        return "%s" % (self.name)
+        return self.name
 
     class Meta:
         ordering = [
@@ -469,40 +464,34 @@ class AllocationAttribute(TimeStampedModel):
             .exclude(id=self.pk)
             .exists()
         ):
-            raise ValidationError(
-                "'{}' attribute already exists for this allocation.".format(self.allocation_attribute_type)
-            )
+            raise ValidationError(f"'{self.allocation_attribute_type}' attribute already exists for this allocation.")
 
         expected_value_type = self.allocation_attribute_type.attribute_type.name.strip()
 
         if expected_value_type == "Int" and not isinstance(literal_eval(self.value), int):
             raise ValidationError(
-                'Invalid Value "%s" for "%s". Value must be an integer.'
-                % (self.value, self.allocation_attribute_type.name)
+                f'Invalid Value "{self.value}" for "{self.allocation_attribute_type.name}". Value must be an integer.'
             )
         elif expected_value_type == "Float" and not (
             isinstance(literal_eval(self.value), float) or isinstance(literal_eval(self.value), int)
         ):
             raise ValidationError(
-                'Invalid Value "%s" for "%s". Value must be a float.'
-                % (self.value, self.allocation_attribute_type.name)
+                f'Invalid Value "{self.value}" for "{self.allocation_attribute_type.name}". Value must be a float.'
             )
         elif expected_value_type == "Yes/No" and self.value not in ["Yes", "No"]:
             raise ValidationError(
-                'Invalid Value "%s" for "%s". Allowed inputs are "Yes" or "No".'
-                % (self.value, self.allocation_attribute_type.name)
+                f'Invalid Value "{self.value}" for "{self.allocation_attribute_type.name}". Allowed inputs are "Yes" or "No".'
             )
         elif expected_value_type == "Date":
             try:
                 datetime.datetime.strptime(self.value.strip(), "%Y-%m-%d")
             except ValueError:
                 raise ValidationError(
-                    'Invalid Value "%s" for "%s". Date must be in format YYYY-MM-DD'
-                    % (self.value, self.allocation_attribute_type.name)
+                    f'Invalid Value "{self.value}" for "{self.allocation_attribute_type.name}". Date must be in format YYYY-MM-DD'
                 )
 
     def __str__(self):
-        return "%s" % (self.allocation_attribute_type.name)
+        return self.allocation_attribute_type.name
 
     def typed_value(self):
         """
@@ -572,7 +561,7 @@ class AllocationAttributeUsage(TimeStampedModel):
     history = HistoricalRecords()
 
     def __str__(self):
-        return "{}: {}".format(self.allocation_attribute.allocation_attribute_type.name, self.value)
+        return f"{self.allocation_attribute.allocation_attribute_type.name}: {self.value}"
 
 
 class AllocationUserStatusChoice(TimeStampedModel):
@@ -631,7 +620,7 @@ class AllocationUser(TimeStampedModel):
         return self.status.name == "Active" and self.allocation.status.name in active_allocation_statuses
 
     def __str__(self):
-        return "%s" % (self.user)
+        return str(self.user)
 
     class Meta:
         verbose_name_plural = "Allocation User Status"
@@ -711,7 +700,7 @@ class AllocationChangeRequest(TimeStampedModel):
             return self.allocation.resources.filter(is_allocatable=True).first()
 
     def __str__(self):
-        return "%s (%s)" % (self.get_parent_resource.name, self.allocation.project.pi)
+        return f"{self.get_parent_resource.name} ({self.allocation.project.pi})"
 
 
 class AllocationAttributeChangeRequest(TimeStampedModel):
@@ -729,4 +718,4 @@ class AllocationAttributeChangeRequest(TimeStampedModel):
     history = HistoricalRecords()
 
     def __str__(self):
-        return "%s" % (self.allocation_attribute.allocation_attribute_type.name)
+        return str(self.allocation_attribute.allocation_attribute_type.name)

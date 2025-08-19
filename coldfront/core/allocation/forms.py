@@ -45,7 +45,10 @@ class AllocationForm(forms.Form):
         user_query_set = user_query_set.exclude(user=project_obj.pi)
         if user_query_set:
             self.fields["users"].choices = (
-                (user.user.username, "%s %s (%s)" % (user.user.first_name, user.user.last_name, user.user.username))
+                (
+                    user.user.username,
+                    f"{user.user.first_name} {user.user.last_name} ({user.user.username})",
+                )
                 for user in user_query_set
             )
             self.fields["users"].help_text = "<br/>Select users in your project to add to this allocation."
@@ -229,7 +232,7 @@ class AllocationAttributeUpdateForm(forms.Form):
 class AllocationChangeForm(forms.Form):
     EXTENSION_CHOICES = [(0, "No Extension")]
     for choice in ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS:
-        EXTENSION_CHOICES.append((choice, "{} days".format(choice)))
+        EXTENSION_CHOICES.append((choice, f"{choice} days"))
 
     end_date_extension = forms.TypedChoiceField(
         label="Request End Date Extension",
@@ -265,7 +268,7 @@ class AllocationAttributeCreateForm(forms.ModelForm):
         fields = "__all__"
 
     def __init__(self, *args, **kwargs):
-        super(AllocationAttributeCreateForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields["allocation_attribute_type"].queryset = self.fields["allocation_attribute_type"].queryset.order_by(
             Lower("name")
         )

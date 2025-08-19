@@ -21,7 +21,7 @@ class AssociationTest(TestCase):
         call_command("add_default_project_choices")
         call_command("add_default_allocation_choices")
         call_command("add_default_publication_sources")
-        super(AssociationTest, cls).setUpClass()
+        super().setUpClass()
 
     def test_allocations_to_slurm(self):
         resource = Resource.objects.get(name="University HPC")

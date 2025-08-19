@@ -29,7 +29,7 @@ class Command(BaseCommand):
 
     def writerow(self, row):
         try:
-            self.stdout.write("{0: <20}{1: <15}{2}".format(*row))
+            self.stdout.write(f"{row[0]:<20}{row[1]:<15}{row[2]}")
         except BrokenPipeError:
             devnull = os.open(os.devnull, os.O_WRONLY)
             os.dup2(devnull, sys.stdout.fileno())

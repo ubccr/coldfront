@@ -103,12 +103,13 @@ class SystemMonitor:
             utilized_percent = round(processors_utilized[0] / processors_utilized[1] * 1000) / 10
             free_percent = round(free / processors_utilized[1] * 1000) / 10
 
-            utilized_label = "Processors Utilized: %s (%s%%)" % (processors_utilized[0], utilized_percent)
-            free_label = "Processors Free: %s (%s%%)" % (free, free_percent)
+            utilized_label = f"Processors Utilized: {processors_utilized[0]} ({utilized_percent}%)"
+            free_label = f"Processors Free: {free} ({free_percent}%)"
+
             utilized_value = processors_utilized[0]
             free_value = free
-            running_label = "Running: %s" % (jobs[0])
-            queued_label = "Queued: %s" % (jobs[1])
+            running_label = f"Running: {jobs[0]}"
+            queued_label = f"Queued: {jobs[1]}"
             running_value = job_numbers[0]
             queued_value = job_numbers[1]
         except Exception:

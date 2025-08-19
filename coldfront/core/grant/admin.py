@@ -58,7 +58,7 @@ class GrantAdmin(SimpleHistoryAdmin):
     ]
 
     def Project_PI(self, obj):
-        return "{} {} ({})".format(obj.project.pi.first_name, obj.project.pi.last_name, obj.project.pi.username)
+        return f"{obj.project.pi.first_name} {obj.project.pi.last_name} ({obj.project.pi.username})"
 
     def Funding_Agency(self, obj):
         if obj.funding_agency.name == "Other":

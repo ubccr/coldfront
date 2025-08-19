@@ -37,7 +37,7 @@ class AllocationModelTests(TestCase):
 
     def test_allocation_str(self):
         """test that allocation str method returns correct string"""
-        allocation_str = "%s (%s)" % (self.allocation.get_parent_resource.name, self.allocation.project.pi)
+        allocation_str = f"{self.allocation.get_parent_resource.name} ({self.allocation.project.pi})"
         self.assertEqual(str(self.allocation), allocation_str)
 
 

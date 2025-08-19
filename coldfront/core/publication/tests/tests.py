@@ -52,7 +52,7 @@ class TestPublication(TestCase):
 
     def setUp(self):
         self.data = self.Data()
-        self.unique_id_generator = ("unique_id_{}".format(id) for id in itertools.count())
+        self.unique_id_generator = (f"unique_id_{id}" for id in itertools.count())
 
     def test_fields_generic(self):
         self.assertEqual(0, len(Publication.objects.all()))
@@ -168,7 +168,7 @@ class TestDataRetrieval(TestCase):
             bibtexparser_cls.return_value.parse.side_effect = mock_parse
 
             as_text = Mock(spec_set=bibtexparser.bibdatabase.as_text)
-            as_text.side_effect = lambda bib_entry: "as_text({})".format(bib_entry)
+            as_text.side_effect = lambda bib_entry: f"as_text({bib_entry})"
 
             self.crossref = crossref
             self.bibtexparser_cls = bibtexparser_cls
@@ -178,7 +178,7 @@ class TestDataRetrieval(TestCase):
         def patch(self):
             def dotpath(qualname):
                 module_under_test = coldfront.core.publication.views
-                return "{}.{}".format(module_under_test.__name__, qualname)
+                return f"{module_under_test.__name__}.{qualname}"
 
             with contextlib.ExitStack() as stack:
                 patches = [

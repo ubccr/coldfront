@@ -18,7 +18,7 @@ class Command(BaseCommand):
         self.stdout.write("Adding field of science ...")
         file_path = os.path.join(app_commands_dir, "data", "field_of_science_data.csv")
         FieldOfScience.objects.all().delete()
-        with open(file_path, "r") as fp:
+        with open(file_path) as fp:
             for line in fp:
                 pk, parent_id, is_selectable, description, fos_nsf_id, fos_nsf_abbrev, directorate_fos_id = (
                     line.strip().split("\t")

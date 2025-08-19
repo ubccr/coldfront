@@ -61,7 +61,7 @@ class ProjectDetailViewTest(ProjectViewTestBase):
     @classmethod
     def setUpTestData(cls):
         """Set up users and project for testing"""
-        super(ProjectDetailViewTest, cls).setUpTestData()
+        super().setUpTestData()
         cls.url = f"/project/{cls.project.pk}/"
 
     def test_projectdetail_access(self):
@@ -121,7 +121,7 @@ class ProjectCreateTest(ProjectViewTestBase):
     @classmethod
     def setUpTestData(cls):
         """Set up users and project for testing"""
-        super(ProjectCreateTest, cls).setUpTestData()
+        super().setUpTestData()
         cls.url = "/project/create/"
 
     def test_project_access(self):
@@ -140,7 +140,7 @@ class ProjectAttributeCreateTest(ProjectViewTestBase):
     @classmethod
     def setUpTestData(cls):
         """Set up users and project for testing"""
-        super(ProjectAttributeCreateTest, cls).setUpTestData()
+        super().setUpTestData()
         int_attributetype = PAttributeTypeFactory(name="Int")
         cls.int_projectattributetype = ProjectAttributeTypeFactory(attribute_type=int_attributetype)
         cls.url = f"/project/{cls.project.pk}/project-attribute-create/"
@@ -198,7 +198,7 @@ class ProjectAttributeUpdateTest(ProjectViewTestBase):
     @classmethod
     def setUpTestData(cls):
         """Set up users and project for testing"""
-        super(ProjectAttributeUpdateTest, cls).setUpTestData()
+        super().setUpTestData()
         cls.projectattribute = ProjectAttributeFactory(
             value=36238, proj_attr_type=cls.projectattributetype, project=cls.project
         )
@@ -219,7 +219,7 @@ class ProjectAttributeDeleteTest(ProjectViewTestBase):
     @classmethod
     def setUpTestData(cls):
         """set up users and project for testing"""
-        super(ProjectAttributeDeleteTest, cls).setUpTestData()
+        super().setUpTestData()
         cls.projectattribute = ProjectAttributeFactory(
             value=36238, proj_attr_type=cls.projectattributetype, project=cls.project
         )
@@ -242,7 +242,7 @@ class ProjectListViewTest(ProjectViewTestBase):
     @classmethod
     def setUpTestData(cls):
         """Set up users and project for testing"""
-        super(ProjectListViewTest, cls).setUpTestData()
+        super().setUpTestData()
         # add 100 projects to test pagination, permissions, search functionality
         additional_projects = [ProjectFactory() for i in list(range(100))]
         cls.additional_projects = [p for p in additional_projects if p.pi.last_name != cls.project.pi.last_name]

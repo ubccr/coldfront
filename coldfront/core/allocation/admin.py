@@ -246,11 +246,7 @@ class AllocationAttributeAdmin(SimpleHistoryAdmin):
         return obj.allocation.status
 
     def pi(self, obj):
-        return "{} {} ({})".format(
-            obj.allocation.project.pi.first_name,
-            obj.allocation.project.pi.last_name,
-            obj.allocation.project.pi.username,
-        )
+        return f"{obj.allocation.project.pi.first_name} {obj.allocation.project.pi.last_name} ({obj.allocation.project.pi.username})"
 
     def project(self, obj):
         return textwrap.shorten(obj.allocation.project.title, width=50)
@@ -330,7 +326,7 @@ class AllocationUserAdmin(SimpleHistoryAdmin):
         return obj.allocation.status
 
     def user_info(self, obj):
-        return "{} {} ({})".format(obj.user.first_name, obj.user.last_name, obj.user.username)
+        return f"{obj.user.first_name} {obj.user.last_name} ({obj.user.username})"
 
     def resource(self, obj):
         return obj.allocation.resources.first()

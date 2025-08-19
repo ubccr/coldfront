@@ -11,7 +11,7 @@ def _skipUnlessEnvDefined(varname, reason=None):
     skip = varname not in os.environ
 
     if skip and reason is None:
-        reason = "Automatically skipped. {} is not defined".format(varname)
+        reason = f"Automatically skipped. {varname} is not defined"
 
     return functools.partial(unittest.skipIf, skip, reason)
 

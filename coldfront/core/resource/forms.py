@@ -46,7 +46,7 @@ class ResourceAttributeCreateForm(forms.ModelForm):
         fields = "__all__"
 
     def __init__(self, *args, **kwargs):
-        super(ResourceAttributeCreateForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields["resource_attribute_type"].queryset = self.fields["resource_attribute_type"].queryset.order_by(
             Lower("name")
         )
