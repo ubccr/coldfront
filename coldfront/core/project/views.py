@@ -204,6 +204,9 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             if allocation.allocationuser_set.filter(user=self.request.user).exists():
                 user_status.append(allocation.allocationuser_set.get(user=self.request.user).status.name)
 
+        note_set = project_obj.projectusermessage_set
+        notes = note_set.all() if self.request.user.is_superuser else note_set.filter(is_private=False)
+        context["notes"] = notes
         context["publications"] = Publication.objects.filter(project=self.object, status="Active").order_by("-year")
         context["research_outputs"] = ResearchOutput.objects.filter(project=self.object).order_by("-created")
         context["grants"] = Grant.objects.filter(
