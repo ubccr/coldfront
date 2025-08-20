@@ -129,7 +129,6 @@ class Command(BaseCommand):
                 if "nsAccountLock" in result and str(result["nsAccountLock"][0]).lower() == "true":
                     # User is already disabled in FreeIPA so do nothing
                     logger.info("User already disabled in FreeIPA: %s", key)
-                    pass
                 else:
                     # User is active in FreeIPA but not on any active allocations
                     self.writerow(
