@@ -292,7 +292,7 @@ class Command(BaseCommand):
         entries = ldapsearch_get_project_memberuids(dn)
 
         if entries is None:
-            return
+            return None
 
         members = []
         for entry in entries:
@@ -506,8 +506,7 @@ class Command(BaseCommand):
             if not ldapsearch_project_result:
                 self.handle_missing_project_in_openldap_new_active(project, sync)
                 return
-            else:
-                self.stdout.write(f"Project {project.project_code} is a new or active project - found {project_dn}")
+            self.stdout.write(f"Project {project.project_code} is a new or active project - found {project_dn}")
         else:
             # project status choice wasnt matched
             self.stdout.write("ERROR: Unrecognized project status - HALTING")
@@ -596,7 +595,7 @@ class Command(BaseCommand):
 
         if len(projects) == 0:
             self.stdout.write("No projects found by loop_all_projects - EXITING")
-            return
+            return None
 
         for project in projects:
             if hasattr(project, "project_code") and project.project_code:

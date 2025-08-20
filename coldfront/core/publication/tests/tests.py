@@ -152,6 +152,7 @@ class TestDataRetrieval(TestCase):
                 # ensure specified unique_id is used here
                 if unique_id == self._unique_id:
                     return sentinel.status, sentinel.bib_str
+                return None
 
             crossref = Mock(spec_set=doi2bib.crossref)
             crossref.get_bib.side_effect = mock_get_bib
@@ -163,6 +164,7 @@ class TestDataRetrieval(TestCase):
                     db = bibdatabase_cls()
                     db.entries = [self._bibdatabase_first_entry.copy()]
                     return db
+                return None
 
             bibtexparser_cls = Mock(spec_set=bibtexparser.bparser.BibTexParser)
             bibtexparser_cls.return_value.parse.side_effect = mock_parse

@@ -26,16 +26,14 @@ def settings_value(name):
 def get_icon(expand_accordion):
     if expand_accordion == "show":
         return "fa-minus"
-    else:
-        return "fa-plus"
+    return "fa-plus"
 
 
 @register.filter
 def convert_boolean_to_icon(boolean):
     if boolean is False:
         return mark_safe('<span class="badge badge-success"><i class="fas fa-check"></i></span>')
-    else:
-        return mark_safe('<span class="badge badge-danger"><i class="fas fa-times"></i></span>')
+    return mark_safe('<span class="badge badge-danger"><i class="fas fa-times"></i></span>')
 
 
 @register.filter
@@ -44,12 +42,13 @@ def convert_status_to_icon(project):
         status = project.last_project_review.status.name
         if status == "Pending":
             return mark_safe('<h4><span class="badge badge-info"><i class="fas fa-exclamation-circle"></i></span></h4>')
-        elif status == "Completed":
+        if status == "Completed":
             return mark_safe('<h4><span class="badge badge-success"><i class="fas fa-check-circle"></i></span></h4>')
     elif project.needs_review and not project.last_project_review:
         return mark_safe('<h4><span class="badge badge-danger"><i class="fas fa-question-circle"></i></span></h4>')
     elif not project.needs_review:
         return mark_safe('<h4><span class="badge badge-success"><i class="fas fa-check-circle"></i></span></h4>')
+    return mark_safe("")
 
 
 @register.filter("get_value_from_dict")
@@ -57,8 +56,7 @@ def get_value_from_dict(dict_data, key):
     """
     usage example {{ your_dict|get_value_from_dict:your_key }}
     """
-    if key:
-        return dict_data.get(key)
+    return dict_data.get(key)
 
 
 @register.filter("get_value_by_index")

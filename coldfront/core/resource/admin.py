@@ -72,8 +72,7 @@ class ResourceAttributeInline(admin.TabularInline):
     def get_fields(self, request, obj):
         if obj is None:
             return super().get_fields(request)
-        else:
-            return self.fields_change
+        return self.fields_change
 
 
 @admin.register(Resource)
@@ -122,8 +121,7 @@ class ResourceAdmin(SimpleHistoryAdmin):
     def get_fields(self, request, obj):
         if obj is None:
             return super().get_fields(request)
-        else:
-            return self.fields_change
+        return self.fields_change
 
 
 @admin.register(ResourceAttribute)

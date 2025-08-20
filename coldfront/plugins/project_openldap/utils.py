@@ -69,7 +69,7 @@ def add_members_to_openldap_project_posixgroup(dn, list_memberuids, write=True):
         return
 
     if not write:
-        return None
+        return
 
     try:
         for user in member_uid:
@@ -90,7 +90,7 @@ def remove_members_from_openldap_project_posixgroup(dn, list_memberuids, write=T
         return
 
     if not write:
-        return None
+        return
 
     try:
         for user in member_uids_tuple:
@@ -110,7 +110,7 @@ def add_per_project_ou_to_openldap(project_obj, dn, openldap_ou_description, wri
         return
 
     if not write:
-        return None
+        return
 
     # project code is used for ou, other components were supplied from construction methods to this function
     try:
@@ -139,7 +139,7 @@ def add_project_posixgroup_to_openldap(dn, openldap_description, gid_int, write=
         return
 
     if not write:
-        return None
+        return
 
     try:
         conn.add(
@@ -166,7 +166,7 @@ def remove_dn_from_openldap(dn, write=True):
         return
 
     if not write:
-        return None
+        return
 
     try:
         conn.delete(dn)
@@ -187,7 +187,7 @@ def update_project_posixgroup_in_openldap(dn, openldap_description, write=True):
         return
 
     if not write:
-        return None
+        return
 
     try:
         conn.modify(dn, {"description": [(MODIFY_REPLACE, [openldap_description])]})
@@ -207,7 +207,7 @@ def archive_project_in_openldap(current_dn, relative_dn, archive_ou, write=True)
         return
 
     if not write:
-        return None
+        return
 
     try:
         conn.modify_dn(current_dn, relative_dn, new_superior=archive_ou)
@@ -223,7 +223,7 @@ def ldapsearch_check_project_dn(dn):
     conn = openldap_connection(server, PROJECT_OPENLDAP_BIND_USER, PROJECT_OPENLDAP_BIND_PASSWORD)
 
     if not conn:
-        return
+        return None
 
     try:
         ldapsearch_check_project_dn_result = conn.search(dn, "(objectclass=posixGroup)")
@@ -241,7 +241,7 @@ def ldapsearch_check_project_ou(OU):
     conn = openldap_connection(server, PROJECT_OPENLDAP_BIND_USER, PROJECT_OPENLDAP_BIND_PASSWORD)
 
     if not conn:
-        return
+        return None
 
     try:
         ldapsearch_check_project_ou_result = conn.search(OU, "(objectclass=organizationalUnit)")
@@ -258,7 +258,7 @@ def ldapsearch_get_project_memberuids(dn):
     conn = openldap_connection(server, PROJECT_OPENLDAP_BIND_USER, PROJECT_OPENLDAP_BIND_PASSWORD)
 
     if not conn:
-        return
+        return None
 
     try:
         conn.search(dn, "(objectclass=posixGroup)", attributes=["memberUid"])
@@ -276,7 +276,7 @@ def ldapsearch_get_project_description(dn):
     conn = openldap_connection(server, PROJECT_OPENLDAP_BIND_USER, PROJECT_OPENLDAP_BIND_PASSWORD)
 
     if not conn:
-        return
+        return None
 
     try:
         conn.search(dn, "(objectclass=posixGroup)", attributes=["description"])

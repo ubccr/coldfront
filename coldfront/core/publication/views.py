@@ -51,6 +51,8 @@ class PublicationSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
         ).exists():
             return True
 
+        return False
+
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get("project_pk"))
         if project_obj.status.name not in [
@@ -59,8 +61,7 @@ class PublicationSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
         ]:
             messages.error(request, "You cannot add publications to an archived project.")
             return HttpResponseRedirect(reverse("project-detail", kwargs={"pk": project_obj.pk}))
-        else:
-            return super().dispatch(request, *args, **kwargs)
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
@@ -87,6 +88,8 @@ class PublicationSearchResultView(LoginRequiredMixin, UserPassesTestMixin, Templ
         ).exists():
             return True
 
+        return False
+
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get("project_pk"))
         if project_obj.status.name not in [
@@ -95,8 +98,7 @@ class PublicationSearchResultView(LoginRequiredMixin, UserPassesTestMixin, Templ
         ]:
             messages.error(request, "You cannot add publications to an archived project.")
             return HttpResponseRedirect(reverse("project-detail", kwargs={"project_pk": project_obj.pk}))
-        else:
-            return super().dispatch(request, *args, **kwargs)
+        return super().dispatch(request, *args, **kwargs)
 
     def _search_id(self, unique_id):
         matching_source_obj = None
@@ -218,6 +220,8 @@ class PublicationAddView(LoginRequiredMixin, UserPassesTestMixin, View):
         ).exists():
             return True
 
+        return False
+
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get("project_pk"))
         if project_obj.status.name not in [
@@ -226,8 +230,7 @@ class PublicationAddView(LoginRequiredMixin, UserPassesTestMixin, View):
         ]:
             messages.error(request, "You cannot add publications to an archived project.")
             return HttpResponseRedirect(reverse("project-detail", kwargs={"pk": project_obj.pk}))
-        else:
-            return super().dispatch(request, *args, **kwargs)
+        return super().dispatch(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         pubs = ast.literal_eval(request.POST.get("pubs"))
@@ -302,6 +305,7 @@ class PublicationAddManuallyView(LoginRequiredMixin, UserPassesTestMixin, FormVi
             return True
 
         messages.error(self.request, "You do not have permission to add a new publication to this project.")
+        return False
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get("project_pk"))
@@ -311,8 +315,7 @@ class PublicationAddManuallyView(LoginRequiredMixin, UserPassesTestMixin, FormVi
         ]:
             messages.error(request, "You cannot add publications to an archived project.")
             return HttpResponseRedirect(reverse("project-detail", kwargs={"pk": project_obj.pk}))
-        else:
-            return super().dispatch(request, *args, **kwargs)
+        return super().dispatch(request, *args, **kwargs)
 
     def get_initial(self):
         initial = super().get_initial()
@@ -363,6 +366,7 @@ class PublicationDeletePublicationsView(LoginRequiredMixin, UserPassesTestMixin,
             return True
 
         messages.error(self.request, "You do not have permission to delete publications from this project.")
+        return False
 
     def get_publications_to_delete(self, project_obj):
         publications_do_delete = [
@@ -438,6 +442,7 @@ class PublicationExportPublicationsView(LoginRequiredMixin, UserPassesTestMixin,
             return True
 
         messages.error(self.request, "You do not have permission to delete publications from this project.")
+        return False
 
     def get_publications_to_export(self, project_obj):
         publications_do_delete = [
@@ -498,9 +503,8 @@ class PublicationExportPublicationsView(LoginRequiredMixin, UserPassesTestMixin,
             buffer.close()
             response.write(output)
             return response
-        else:
-            for error in formset.errors:
-                messages.error(request, error)
+        for error in formset.errors:
+            messages.error(request, error)
 
         return HttpResponseRedirect(reverse("project-detail", kwargs={"pk": project_obj.pk}))
 

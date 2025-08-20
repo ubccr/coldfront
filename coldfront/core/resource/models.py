@@ -190,11 +190,9 @@ class Resource(TimeStampedModel):
         if attr:
             if expand:
                 return attr.expanded_value(typed=typed, extra_allocations=extra_allocations)
-            else:
-                if typed:
-                    return attr.typed_value()
-                else:
-                    return attr.value
+            if typed:
+                return attr.typed_value()
+            return attr.value
         return None
 
     def get_attribute_list(self, name, expand=True, typed=True, extra_allocations=[]):
@@ -212,11 +210,9 @@ class Resource(TimeStampedModel):
         attr = self.resourceattribute_set.filter(resource_attribute_type__name=name).all()
         if expand:
             return [a.expanded_value(extra_allocations=extra_allocations, typed=typed) for a in attr]
-        else:
-            if typed:
-                return [a.typed_value() for a in attr]
-            else:
-                return [a.value for a in attr]
+        if typed:
+            return [a.typed_value() for a in attr]
+        return [a.value for a in attr]
 
     def get_ondemand_status(self):
         """
@@ -256,11 +252,11 @@ class ResourceAttribute(TimeStampedModel):
 
         if expected_value_type == "Int" and not self.value.isdigit():
             raise ValidationError('Invalid Value "%s". Value must be an integer.' % (self.value))
-        elif expected_value_type == "Active/Inactive" and self.value not in ["Active", "Inactive"]:
+        if expected_value_type == "Active/Inactive" and self.value not in ["Active", "Inactive"]:
             raise ValidationError('Invalid Value "%s". Allowed inputs are "Active" or "Inactive".' % (self.value))
-        elif expected_value_type == "Public/Private" and self.value not in ["Public", "Private"]:
+        if expected_value_type == "Public/Private" and self.value not in ["Public", "Private"]:
             raise ValidationError('Invalid Value "%s". Allowed inputs are "Public" or "Private".' % (self.value))
-        elif expected_value_type == "Date":
+        if expected_value_type == "Date":
             try:
                 datetime.strptime(self.value.strip(), "%m/%d/%Y")
             except ValueError:

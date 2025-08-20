@@ -112,14 +112,11 @@ def get_attribute_parameter_value(argument, attribute_parameter_dict, error_text
             # Good string literal
             tmpstr = tmpstr[:-1]
             return tmpstr
-        else:
-            # Bad string literal
-            logger.warning(
-                "Bad string literal '{}' found while processing {}; missing final single quote".format(
-                    argument, error_text
-                )
-            )
-            return None
+        # Bad string literal
+        logger.warning(
+            "Bad string literal '{}' found while processing {}; missing final single quote".format(argument, error_text)
+        )
+        return None
 
     # If argument if prefixed with any of the strings in attrib_sources,
     # strip the prefix and set attrib_source accordingly
@@ -230,23 +227,21 @@ def process_attribute_parameter_operation(opcode, oldvalue, argument, error_text
             # Defaulting operation
             if oldvalue is None:
                 return argument
-            else:
-                return oldvalue
+            return oldvalue
         if opcode == "+":
             # Addition/concatenation operation
             if isinstance(oldvalue, int) or isinstance(oldvalue, float):
                 newval = oldvalue + argument
                 return newval
-            elif isinstance(oldvalue, str):
+            if isinstance(oldvalue, str):
                 newval = oldvalue + argument
                 return newval
-            else:
-                logger.warning(
-                    "Operator {}= acting on parameter of type {} in {}, returning None".format(
-                        opcode, type(oldvalue), error_text
-                    )
+            logger.warning(
+                "Operator {}= acting on parameter of type {} in {}, returning None".format(
+                    opcode, type(oldvalue), error_text
                 )
-                return None
+            )
+            return None
         if opcode == "-":
             newval = oldvalue - argument
             return newval

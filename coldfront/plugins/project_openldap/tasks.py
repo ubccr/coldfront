@@ -49,14 +49,14 @@ def add_project(project_obj):
             "Additional message - this issue was encountered with project pk %s",
             {project_obj.pk},
         )
-        return None
+        return
     if project_obj.project_code in [None, ""]:
         logger.WARNING("None or empty project_code value encountered, please run the project code management command")
         logger.WARNING(
             "Additional message - this issue was encountered with project pk %s",
             {project_obj.pk},
         )
-        return None
+        return
 
     # 1) first make the OU for the project
     openldap_ou_description = construct_project_ou_description(project_obj)

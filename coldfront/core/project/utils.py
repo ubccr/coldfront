@@ -73,10 +73,9 @@ def determine_automated_institution_choice(project, institution_map: dict):
     if direct_institution_match:
         project.institution = direct_institution_match
         return direct_institution_match
-    else:
-        for institution_email_domain, indirect_institution_match in institution_map.items():
-            if institution_email_domain in pi_email_domain:
-                project.institution = indirect_institution_match
-                return indirect_institution_match
+    for institution_email_domain, indirect_institution_match in institution_map.items():
+        if institution_email_domain in pi_email_domain:
+            project.institution = indirect_institution_match
+            return indirect_institution_match
 
     return project.institution

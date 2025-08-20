@@ -153,7 +153,7 @@ class Command(BaseCommand):
             qos = qos.replace("QOS+=", "")
             qos = qos.replace("'", "")
             return qos.split(",")
-        elif qos.startswith("QOS="):
+        if qos.startswith("QOS="):
             qos = qos.replace("QOS=", "")
             qos = qos.replace("'", "")
             lst = []

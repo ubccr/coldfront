@@ -101,8 +101,8 @@ class ResourceAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Creat
 
         if self.request.user.is_superuser:
             return True
-        else:
-            messages.error(self.request, "You do not have permission to add resource attributes.")
+        messages.error(self.request, "You do not have permission to add resource attributes.")
+        return False
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -135,8 +135,8 @@ class ResourceAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Templ
         """UserPassesTestMixin Tests"""
         if self.request.user.is_superuser:
             return True
-        else:
-            messages.error(self.request, "You do not have permission to delete resource attributes.")
+        messages.error(self.request, "You do not have permission to delete resource attributes.")
+        return False
 
     def get_resource_attributes_to_delete(self, resource_obj):
         resource_attributes_to_delete = ResourceAttribute.objects.filter(resource=resource_obj)

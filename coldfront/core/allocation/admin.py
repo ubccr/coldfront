@@ -127,22 +127,19 @@ class AllocationAdmin(SimpleHistoryAdmin):
     def get_fields(self, request, obj):
         if obj is None:
             return super().get_fields(request)
-        else:
-            return self.fields_change
+        return self.fields_change
 
     def get_readonly_fields(self, request, obj):
         if obj is None:
             # We are adding an object
             return super().get_readonly_fields(request)
-        else:
-            return self.readonly_fields_change
+        return self.readonly_fields_change
 
     def get_inline_instances(self, request, obj=None):
         if obj is None:
             # We are adding an object
             return []
-        else:
-            return super().get_inline_instances(request)
+        return super().get_inline_instances(request)
 
     def save_formset(self, request, form, formset, change):
         if formset.model in [AllocationAdminNote, AllocationUserNote]:
@@ -196,6 +193,8 @@ class UsageValueFilter(admin.SimpleListFilter):
         if self.value() == ">1000":
             return queryset.filter(allocationattributeusage__value__gte=1000)
 
+        return queryset
+
 
 @admin.register(AllocationAttribute)
 class AllocationAttributeAdmin(SimpleHistoryAdmin):
@@ -236,8 +235,7 @@ class AllocationAttributeAdmin(SimpleHistoryAdmin):
     def usage(self, obj):
         if hasattr(obj, "allocationattributeusage"):
             return obj.allocationattributeusage.value
-        else:
-            return "N/A"
+        return "N/A"
 
     def resource(self, obj):
         return obj.allocation.get_parent_resource
@@ -261,22 +259,19 @@ class AllocationAttributeAdmin(SimpleHistoryAdmin):
     def get_fields(self, request, obj):
         if obj is None:
             return super().get_fields(request)
-        else:
-            return self.fields_change
+        return self.fields_change
 
     def get_readonly_fields(self, request, obj):
         if obj is None:
             # We are adding an object
             return super().get_readonly_fields(request)
-        else:
-            return self.readonly_fields_change
+        return self.readonly_fields_change
 
     def get_inline_instances(self, request, obj=None):
         if obj is None:
             # We are adding an object
             return []
-        else:
-            return super().get_inline_instances(request)
+        return super().get_inline_instances(request)
 
 
 @admin.register(AllocationUserStatusChoice)
@@ -344,22 +339,19 @@ class AllocationUserAdmin(SimpleHistoryAdmin):
     def get_fields(self, request, obj):
         if obj is None:
             return super().get_fields(request)
-        else:
-            return self.fields_change
+        return self.fields_change
 
     def get_readonly_fields(self, request, obj):
         if obj is None:
             # We are adding an object
             return super().get_readonly_fields(request)
-        else:
-            return self.readonly_fields_change
+        return self.readonly_fields_change
 
     def get_inline_instances(self, request, obj=None):
         if obj is None:
             # We are adding an object
             return []
-        else:
-            return super().get_inline_instances(request)
+        return super().get_inline_instances(request)
 
     def set_active(self, request, queryset):
         queryset.update(status=AllocationUserStatusChoice.objects.get(name="Active"))
@@ -408,6 +400,8 @@ class ValueFilter(admin.SimpleListFilter):
 
         if self.value() == ">1000":
             return queryset.filter(value__gt=1000)
+
+        return queryset
 
 
 @admin.register(AllocationAttributeUsage)
