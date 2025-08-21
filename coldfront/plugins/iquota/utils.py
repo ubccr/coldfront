@@ -7,6 +7,7 @@ import os
 import humanize
 import kerberos
 import requests
+from django.conf import settings
 
 from coldfront.core.utils.common import import_from_settings
 from coldfront.plugins.iquota.exceptions import KerberosError, MissingQuotaError
@@ -51,7 +52,7 @@ class Iquota:
         headers = {"Authorization": "Negotiate " + token}
         url = "https://{}:{}/quota?user={}".format(self.IQUOTA_API_HOST, self.IQUOTA_API_PORT, self.username)
 
-        r = requests.get(url, headers=headers, verify=self.IQUOTA_CA_CERT)
+        r = requests.get(url, headers=headers, verify=self.IQUOTA_CA_CERT, timeout=settings.REQUEST_TIMEOUT_SECONDS)
 
         try:
             usage = r.json()[0]
@@ -79,7 +80,7 @@ class Iquota:
 
         url = "https://{}:{}/quota?group={}".format(self.IQUOTA_API_HOST, self.IQUOTA_API_PORT, group)
 
-        r = requests.get(url, headers=headers, verify=self.IQUOTA_CA_CERT)
+        r = requests.get(url, headers=headers, verify=self.IQUOTA_CA_CERT, timeout=settings.REQUEST_TIMEOUT_SECONDS)
 
         try:
             usage = r.json()
