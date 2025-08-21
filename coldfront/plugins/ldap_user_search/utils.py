@@ -107,12 +107,12 @@ class LDAPUserSearch(UserSearch):
             "attributes": ldap_attrs,
             "size_limit": size_limit,
         }
-        logger.debug(f"search params: {searchParameters}")
+        logger.debug("search params: %s", searchParameters)
         self.conn.search(**searchParameters)
         users = []
         for idx, entry in enumerate(self.conn.entries, 1):
             entry_dict = json.loads(entry.entry_to_json()).get("attributes")
-            logger.debug(f"Entry dict: {entry_dict}")
+            logger.debug("Entry dict: %s", entry_dict)
             user_dict = self.MAPPING_CALLBACK(self.ATTRIBUTE_MAP, entry_dict)
             user_dict["source"] = self.search_source
             users.append(user_dict)
