@@ -7,6 +7,7 @@ import logging
 import xml.etree.ElementTree as ET
 
 import requests
+from django.conf import settings
 
 from coldfront.core.utils.common import import_from_settings
 
@@ -63,7 +64,7 @@ def xdmod_fetch_total_cpu_hours(start, end, account, resources=None, statistics=
     payload["realm"] = "Jobs"
     payload["operation"] = "get_data"
     payload["statistic"] = statistics
-    r = requests.get(url, params=payload)
+    r = requests.get(url, params=payload, timeout=settings.REQUEST_TIMEOUT_SECONDS)
 
     logger.info(r.url)
     logger.info(r.text)
@@ -113,7 +114,7 @@ def xdmod_fetch_total_storage(start, end, account, resources=None, statistics="p
     payload["realm"] = "Storage"
     payload["operation"] = "get_data"
     payload["statistic"] = statistics
-    r = requests.get(url, params=payload)
+    r = requests.get(url, params=payload, timeout=settings.REQUEST_TIMEOUT_SECONDS)
 
     logger.info(r.url)
     logger.info(r.text)
@@ -150,7 +151,7 @@ def xdmod_fetch_cloud_core_time(start, end, project, resources=None):
     payload["realm"] = "Cloud"
     payload["operation"] = "get_data"
     payload["statistic"] = "cloud_core_time"
-    r = requests.get(url, params=payload)
+    r = requests.get(url, params=payload, timeout=settings.REQUEST_TIMEOUT_SECONDS)
 
     logger.info(r.url)
     logger.info(r.text)
