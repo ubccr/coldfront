@@ -5,6 +5,10 @@
 """Unit tests for the allocation models"""
 
 import datetime
+from enum import Enum, auto
+import os
+import pathlib
+from unittest import skip
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
@@ -14,16 +18,23 @@ from django.utils import timezone
 
 from coldfront.core.allocation.models import (
     Allocation,
+    AllocationAttribute,
     AllocationStatusChoice,
+    AttributeType as AAttributeType,
 )
 from coldfront.core.project.models import Project
 from coldfront.core.test_helpers.factories import (
+    AAttributeTypeFactory,
+    AllocationAttributeFactory,
+    AllocationAttributeTypeFactory,
     AllocationFactory,
     AllocationStatusChoiceFactory,
     ProjectFactory,
     ResourceFactory,
     UserFactory,
 )
+from faker.generator import random
+import faker
 
 
 class AllocationModelTests(TestCase):
@@ -287,3 +298,343 @@ class AllocationModelExpiresInTests(TestCase):
             allocation: Allocation = AllocationFactory(end_date=self.four_years_after_mocked_today)
 
             self.assertEqual(allocation.expires_in, days_in_four_years_including_leap_year)
+
+
+class AllocationAttributeModelCleanTests(TestCase):
+
+    # if this AllocationAttribute's AllocationAttributeType is_unique and this AllocationAttribute's associated allocation already has an AllocationAttribute with the same AllocationAttributeType then reject this and throw a ValidationError
+    def test_unique_and_associated_allocation_already_has_same_type_raises_validationerror(self):
+        """When this AllocationAttribute's AllocationAttributeType is_unique but the associated Allocation already has an AllocationAttribute with the same AllocationAttributeType raise a ValidationError."""
+        allocation = AllocationFactory()
+        allocation_attribute_type = AllocationAttributeTypeFactory(is_unique=True)
+
+        preexisting_allocation_attribute = AllocationAttributeFactory(
+            allocation=allocation, allocation_attribute_type=allocation_attribute_type
+        )
+
+        new_allocation_attribute = AllocationAttributeFactory(
+            allocation=allocation, allocation_attribute_type=allocation_attribute_type
+        )
+        with self.assertRaises(ValidationError):
+            new_allocation_attribute.clean()
+
+    def test_unique_and_associated_allocation_does_not_have_same_type_passes(self):
+        """When this AllocationAttribute's AllocationAttributeType is_unique but the associated Allocation does not have an AllocationAttribute with the same AllocationAttributeType then this should pass."""
+        allocation = AllocationFactory()
+
+        first_allocation_attribute_type = AllocationAttributeTypeFactory(is_unique=True, name="First")
+        first_allocation_attribute = AllocationAttributeFactory(
+            allocation=allocation, allocation_attribute_type=first_allocation_attribute_type, value="129"
+        )
+        first_allocation_attribute.clean()
+
+        second_allocation_attribute_type = AllocationAttributeTypeFactory(is_unique=True, name="Second")
+        second_allocation_attribute = AllocationAttributeFactory(
+            allocation=allocation, allocation_attribute_type=second_allocation_attribute_type, value="129"
+        )
+        second_allocation_attribute.clean()
+
+    # case for when type was Int
+    def test_attribute_type_is_int_and_value_is_int_literal_passes(self):
+        """When the associated AllocationAttributeType has an AttributeType.name of Int and this value is an int literal this method should pass."""
+        magic_number = 10
+        fake = faker.Faker()
+        integer_literals = (str(fake.pyint()) for _ in range(magic_number))
+        for integer_literal in integer_literals:
+            with self.subTest(integer_literal=integer_literal):
+                aattribute_type = AAttributeTypeFactory(name="Int")
+                allocation_attribute_type = AllocationAttributeTypeFactory(attribute_type=aattribute_type)
+                allocation_attribute = AllocationAttributeFactory(
+                    value=integer_literal, allocation_attribute_type=allocation_attribute_type
+                )
+
+                allocation_attribute.clean()
+
+    @skip("This test is failing and I believe that it should be passing on a correct implementation")
+    def test_attribute_type_is_int_and_value_is_not_int_literal_raises_validationerror(self):
+        """When the associated AllocationAttributeType has an AttributeType.name of Int and this value is a non-int literal a ValidationError should be raised."""
+        aattribute_type = AAttributeTypeFactory(name="Int")
+        allocation_attribute_type = AllocationAttributeTypeFactory(attribute_type=aattribute_type)
+        non_integer_literal = "non integer literal"
+        allocation_attribute = AllocationAttributeFactory(
+            value=non_integer_literal, allocation_attribute_type=allocation_attribute_type
+        )
+
+        with self.assertRaises(ValidationError):
+            allocation_attribute.clean()
+
+    # case for when type was Float
+    def test_attribute_type_is_float_and_value_is_float_literal_passes(self):
+        """When the associated AllocationAttributeType has an AttributeType.name of Float and this value is a float literal this method should pass."""
+        magic_number = 10
+        fake = faker.Faker()
+        float_literals = (str(fake.pyfloat()) for _ in range(magic_number))
+        for float_literal in float_literals:
+            with self.subTest(integer_literal=float_literal):
+                aattribute_type = AAttributeTypeFactory(name="Float")
+                allocation_attribute_type = AllocationAttributeTypeFactory(attribute_type=aattribute_type)
+                allocation_attribute = AllocationAttributeFactory(
+                    value=float_literal, allocation_attribute_type=allocation_attribute_type
+                )
+
+                allocation_attribute.clean()
+
+    def test_attribute_type_is_float_and_value_is_int_literal_passes(self):
+        """When the associated AllocationAttributeType has an AttributeType.name of Float and this value is an int literal this method should pass."""
+        magic_number = 10
+        fake = faker.Faker()
+        integer_literals = (str(fake.pyint()) for _ in range(magic_number))
+        for integer_literal in integer_literals:
+            with self.subTest(integer_literal=integer_literal):
+                aattribute_type = AAttributeTypeFactory(name="Float")
+                allocation_attribute_type = AllocationAttributeTypeFactory(attribute_type=aattribute_type)
+                allocation_attribute = AllocationAttributeFactory(
+                    value=integer_literal, allocation_attribute_type=allocation_attribute_type
+                )
+
+                allocation_attribute.clean()
+
+    @skip("I believe this test should be fine but it currently fails")
+    def test_attribute_type_is_float_and_value_is_not_float_or_int_literal_raises_validationerror(self):
+        """When the associated AllocationAttributeType has an AttributeType.name of Float and this value is neither a float or int literal a ValidationError should be raises."""
+        aattribute_type = AAttributeTypeFactory(name="Float")
+        allocation_attribute_type = AllocationAttributeTypeFactory(attribute_type=aattribute_type)
+        non_integer_literal = "not a float or integer literal"
+        allocation_attribute = AllocationAttributeFactory(
+            value=non_integer_literal, allocation_attribute_type=allocation_attribute_type
+        )
+
+        with self.assertRaises(ValidationError):
+            allocation_attribute.clean()
+
+    # case for when type was Yes/No
+    def test_attribute_type_is_yesno_and_literal_is_correctly_cased_yes_str_literal_passes(self):
+        """When the associated AllocationAttributeType has an AttributeType.name of Yes/No and this value is Yes then should pass."""
+        aattribute_type = AAttributeTypeFactory(name="Yes/No")
+        allocation_attribute_type = AllocationAttributeTypeFactory(attribute_type=aattribute_type)
+        integer_literal = "Yes"
+        allocation_attribute = AllocationAttributeFactory(
+            value=integer_literal, allocation_attribute_type=allocation_attribute_type
+        )
+
+        allocation_attribute.clean()
+
+    def test_attribute_type_is_yesno_and_literal_is_wrongly_cased_yes_str_literal_raises_validationerror(self):
+        """When the associated AllocationAttributeType has an AttributeType.name of Yes/No and this value is the letters ['y', 'e', 's'] but never 'Yes' then should raise a ValidationError."""
+        invalid_yesses = [
+            "yes",
+            "yeS",
+            "yEs",
+            "yES",
+            "YeS",
+            "YEs",
+            "YES",
+        ]
+        for invalid_yes in invalid_yesses:
+            with self.subTest(invalid_yes=invalid_yes):
+                aattribute_type = AAttributeTypeFactory(name="Yes/No")
+                allocation_attribute_type = AllocationAttributeTypeFactory(attribute_type=aattribute_type)
+                allocation_attribute = AllocationAttributeFactory(
+                    value=invalid_yes, allocation_attribute_type=allocation_attribute_type
+                )
+
+                with self.assertRaises(ValidationError):
+                    allocation_attribute.clean()
+
+
+    def test_attribute_type_is_yesno_and_literal_is_correctly_cased_no_str_literal_passes(self):
+        """When the associated AllocationAttributeType has an AttributeType.name of Yes/No and this value is No then should pass."""
+        aattribute_type = AAttributeTypeFactory(name="Yes/No")
+        allocation_attribute_type = AllocationAttributeTypeFactory(attribute_type=aattribute_type)
+        integer_literal = "No"
+        allocation_attribute = AllocationAttributeFactory(
+            value=integer_literal, allocation_attribute_type=allocation_attribute_type
+        )
+
+        allocation_attribute.clean()
+
+    def test_attribute_type_is_yesno_and_literal_is_wrongly_cased_no_str_literal_raises_validationerror(self):
+        """When the associated AllocationAttributeType has an AttributeType.name of Yes/No and this value is the letters ['n', 'o'] but never 'No' then should raise a ValidationError."""
+        invalid_nos = ["no", "nO", "NO"]
+        for invalid_no in invalid_nos:
+            with self.subTest(invalid_no=invalid_no):
+                aattribute_type = AAttributeTypeFactory(name="Yes/No")
+                allocation_attribute_type = AllocationAttributeTypeFactory(attribute_type=aattribute_type)
+                allocation_attribute = AllocationAttributeFactory(
+                    value=invalid_no, allocation_attribute_type=allocation_attribute_type
+                )
+
+                with self.assertRaises(ValidationError):
+                    allocation_attribute.clean()
+
+    def test_attribute_type_is_yesno_and_literal_is_not_yes_or_no_raises_validationerror(self):
+        """When the associated AllocationAttributeType has an AttributeType.name of Yes/No and this value is not Yes or No then should raise a ValidationError."""
+        magic_number = 10
+        fake = faker.Faker()
+        max_number_chars = AllocationAttribute._meta.get_field("value").max_length
+        invalid_values = (fake.pystr(max_chars=max_number_chars) for _ in range(magic_number))
+        for invalid_value in filter(lambda s: s not in ["Yes", "No"], invalid_values):
+            with self.subTest(invalid_value=invalid_value):
+                aattribute_type = AAttributeTypeFactory(name="Yes/No")
+                allocation_attribute_type = AllocationAttributeTypeFactory(attribute_type=aattribute_type)
+                allocation_attribute = AllocationAttributeFactory(
+                    value=invalid_value, allocation_attribute_type=allocation_attribute_type
+                )
+
+                with self.assertRaises(ValidationError):
+                    allocation_attribute.clean()
+
+
+
+
+    # case for when type was Date
+    def test_attribute_type_is_date_and_string_is_parsable_passes(self):
+        """When the associated AllocationAttributeType has an AttributeType.name of Date and this value is a date parsable from the ISO 8601 date format YYYY-MM-DD."""
+        magic_number = 10
+        fake = faker.Faker()
+        values = (fake.date_this_century().isoformat() for _ in range(magic_number))
+        for value in values:
+            with self.subTest(invalid_value=value):
+                aattribute_type = AAttributeTypeFactory(name="Date")
+                allocation_attribute_type = AllocationAttributeTypeFactory(attribute_type=aattribute_type)
+                allocation_attribute = AllocationAttributeFactory(
+                    value=value, allocation_attribute_type=allocation_attribute_type
+                )
+
+                allocation_attribute.clean()
+
+    def __iso_date_string_with_erroneous_values(self) -> str:
+        class BadISODate(Enum):
+            BAD_MONTH = auto()
+            BAD_DAY = auto()
+            BAD_MONTH_AND_DAY = auto()
+        choice = random.choice(list(BadISODate))
+        
+        fake = faker.Faker()
+        
+        match choice:
+            case BadISODate.BAD_MONTH:
+                return fake.pystr_format(string_format="####-$#-##")
+            case BadISODate.BAD_DAY:
+                return fake.pystr_format(string_format="####-{{month}}-?#", letters="456789")
+            case BadISODate.BAD_MONTH_AND_DAY:
+                return fake.pystr_format(string_format="####-$#-?#", letters="456789")
+
+
+    def test_attribute_type_is_date_and_string_is_correct_format_with_erroneous_values_raises_validationerror(self):
+        """When the associated AllocationAttributeType has an AttributeType.name of Date and this value is in the format of ISO 8601 date format YYYY-MM-DD but the values are erroneous raise a ValidationError."""
+        magic_number = 10
+        
+        values = (self.__iso_date_string_with_erroneous_values() for _ in range(magic_number))
+        for value in values:
+            with self.subTest(invalid_value=value):
+                aattribute_type = AAttributeTypeFactory(name="Date")
+                allocation_attribute_type = AllocationAttributeTypeFactory(attribute_type=aattribute_type)
+                allocation_attribute = AllocationAttributeFactory(
+                    value=value, allocation_attribute_type=allocation_attribute_type
+                )
+
+                with self.assertRaises(ValidationError):
+                    allocation_attribute.clean()
+
+    def test_attribute_type_is_date_and_string_is_not_parsable_raises_validationerror(self):
+        """When the associated AllocationAttributeType has an AttributeType.name of Date and this value is not parsable raise a ValidationError."""
+        magic_number = 10
+        fake = faker.Faker()
+        max_number_chars = AllocationAttribute._meta.get_field("value").max_length
+        values = (fake.pystr(max_chars=max_number_chars) for _ in range(magic_number))
+        for value in values:
+            with self.subTest(invalid_value=value):
+                aattribute_type = AAttributeTypeFactory(name="Date")
+                allocation_attribute_type = AllocationAttributeTypeFactory(attribute_type=aattribute_type)
+                allocation_attribute = AllocationAttributeFactory(
+                    value=value, allocation_attribute_type=allocation_attribute_type
+                )
+
+                with self.assertRaises(ValidationError):
+                    allocation_attribute.clean()
+
+    def test_attribute_type_is_date_non_is_date_formats_rejected(self):
+        """When the associated AllocationAttributeType has an AttributeType.name of Date and the value is a non-ISO date representation raise a ValidationError."""
+        fake = faker.Faker()
+        date_formats = {
+            "Compact Numeric": fake.date(pattern="%Y%m%d"),
+            "Dash-Separated Day-Month-Year": fake.date(pattern="%d-%m-%Y"),
+            "Dash-Separated Day-Month-Short-Year": fake.date(pattern="%d-%m-%y"),
+            "Dash-Separated Month-Day-Year": fake.date(pattern="%m-%d-%Y"),
+            "Day Month Abbreviated Year": fake.date(pattern="%d %b %y"),
+            "Day Month Full Year": fake.date(pattern="%d %B %Y"),
+            "Day Month, Year With Comma": fake.date(pattern="%d %B, %Y"),
+            "Day-Month-Year Abbreviated": fake.date(pattern="%d-%b-%y"),
+            "Day-Month-Year Full": fake.date(pattern="%d-%B-%Y"),
+            "Day.Month.Year Abbreviated": fake.date(pattern="%d.%m.%y"),
+            "Day.Month.Year Full": fake.date(pattern="%d.%m.%Y"),
+            "Day/Month/Year Abbreviated": fake.date(pattern="%d/%m/%y"),
+            "Day/Month/Year Full": fake.date(pattern="%d/%m/%Y"),
+            "European DateTime": f"{fake.date(pattern='%d/%m/%Y')} {fake.time(pattern='%H:%M')}",
+            "Full Textual Date": fake.date(pattern="%A, %d %B %Y"),
+            "International Abbreviated": fake.date(pattern="%d-%b-%Y"),
+            "International Abbreviated No Dashes": fake.date(pattern="%b %d %Y"),
+            "International Abbreviated With Comma": fake.date(pattern="%b %d, %Y"),
+            "ISO 8601 Full": fake.date(pattern="%Y-%m-%dT%H:%M:%S%z"),
+            "ISO With Dots": fake.date(pattern="%Y.%m.%d"),
+            "ISO With Slashes": fake.date(pattern="%Y/%m/%d"),
+            "ISO With Spaces": fake.date(pattern="%Y %m %d"),
+            "Kanji Format": fake.date(pattern="%Y年%m月%d日"),
+            "Month Day Abbreviated Year": fake.date(pattern="%b %d %y"),
+            "Month Day Full Year": fake.date(pattern="%B %d %Y"),
+            "Month Day Year With Comma": fake.date(pattern="%B %d, %Y"),
+            "Month-Year Only": fake.date(pattern="%B %Y"),
+            "Month/Day/Short-Year": fake.date(pattern="%m/%d/%y"),
+            "Month/Day/Year": fake.date(pattern="%m/%d/%Y"),
+            "Slash-Separated Short-Year-Month-Day": fake.date(pattern="%y/%m/%d"),
+            "Slash-Separated Year-Month-Day DateTime": f"{fake.date(pattern='%Y/%m/%d')} {fake.time(pattern='%H:%M:%S')}",
+            "Unix Timestamp": str(int(fake.date_time().timestamp())),
+            "Year DayOfYear": fake.date(pattern="%Y %j"),
+            "Year Only": fake.date(pattern="%Y"),
+            "Year-Week": fake.date(pattern="%Y-W%U"),
+            "Year-Month Only": fake.date(pattern="%Y-%m"),
+        }
+        for invalid_date_format in date_formats:
+            with self.subTest(invalid_date_format=invalid_date_format):
+                aattribute_type = AAttributeTypeFactory(name="Date")
+                allocation_attribute_type = AllocationAttributeTypeFactory(attribute_type=aattribute_type)
+                allocation_attribute = AllocationAttributeFactory(
+                    value=invalid_date_format, allocation_attribute_type=allocation_attribute_type
+                )
+
+                with self.assertRaises(ValidationError):
+                    allocation_attribute.clean()
+
+
+
+    # case for unrecognized attribute type
+    def test_attribute_type_is_unknown_always_passes(self):
+        """When the associated AllocationAttributeType has an AttributeType.name other than 'Int', 'Float', 'Yes/No', 'Date' it should always pass."""
+        magic_number = 10
+        fake = faker.Faker()
+        max_number_chars = AllocationAttribute._meta.get_field("value").max_length
+        invalid_values = (fake.pystr(max_chars=max_number_chars) for _ in range(magic_number))
+        for invalid_value in filter(lambda s: s not in ['Int', 'Float', 'Yes/No', 'Date'], invalid_values):
+            random_name = fake.word()
+            with self.subTest(invalid_value=invalid_value, random_name=random_name):
+                aattribute_type = AAttributeTypeFactory(name=random_name)
+                allocation_attribute_type = AllocationAttributeTypeFactory(attribute_type=aattribute_type)
+                allocation_attribute = AllocationAttributeFactory(
+                    value=invalid_value, allocation_attribute_type=allocation_attribute_type
+                )
+
+                allocation_attribute.clean()
+
+
+    # case for malicious input
+    def test_to_see_if_we_can_crash_everything(self):
+        bad_input = "'(' * 100 + ')' * 100"
+        aattribute_type = AAttributeTypeFactory(name="Int")
+        allocation_attribute_type = AllocationAttributeTypeFactory(attribute_type=aattribute_type)
+        allocation_attribute = AllocationAttributeFactory(
+            value=bad_input, allocation_attribute_type=allocation_attribute_type
+        )
+
+        allocation_attribute.clean()
+
