@@ -3,23 +3,19 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 from io import StringIO
-import sys
 
 from django.core.management import call_command
 from django.test import TestCase
 
-from coldfront.core.allocation.models import AllocationAttributeType, Allocation
-from coldfront.core.resource.models import Resource, ResourceAttribute, ResourceAttributeType, ResourceType
+from coldfront.core.allocation.models import Allocation, AllocationAttributeType
+from coldfront.core.resource.models import ResourceAttribute, ResourceAttributeType, ResourceType
 from coldfront.core.test_helpers.factories import (
     AllocationAttributeFactory,
-    AllocationAttributeTypeFactory,
-    AllocationFactory,
     AllocationStatusChoiceFactory,
     AllocationUserFactory,
     ProjectFactory,
     ProjectUserFactory,
     ResourceFactory,
-    ResourceTypeFactory,
     UserFactory,
 )
 from coldfront.plugins.slurm.associations import SlurmCluster
@@ -109,7 +105,7 @@ class AssociationTest(TestCase):
         AllocationUserFactory(allocation=cls.a7, user=cls.u1)
         AllocationUserFactory(allocation=cls.a7, user=cls.u3)
 
-    def test_allocations_to_slurm(self):
+    def test_slurm_from_resource(self):
         """non-exhaustive, should make better"""
         cluster = SlurmCluster.new_from_resource(self.resource)
         self.assertEqual(cluster.name, "test_cluster")
@@ -119,7 +115,21 @@ class AssociationTest(TestCase):
         self.assertEqual(len(cluster.accounts["a7"].children), 2)
 
     def test_slurm_dump_roundtrip(self):
-        """todo"""
+        """create from resource, dump, and load dump"""
+        cluster = SlurmCluster.new_from_resource(self.resource)
+        out = StringIO("")
+        cluster.write(out)
+        out.seek(0)
+
+        cluster = SlurmCluster.new_from_stream(out)
+
+        self.assertEqual(cluster.name, "test_cluster")
+        self.assertEqual(len(cluster.accounts), 3)  # root account is added when dumped
+        self.assertIn("a1", cluster.accounts)
+        self.assertIn("a7", cluster.accounts)
+        self.assertEqual(len(cluster.accounts["a7"].children), 2)
+
+    def test_slurm_from_stream(self):
         dump = StringIO("""
 # To edit this file start with a cluster line for the new cluster
 # Cluster - 'cluster_name':MaxNodesPerJob=50
@@ -157,39 +167,7 @@ Parent - 'a7'
 User - 'u1'
 User - 'u3'
         """)
-
-        expected = """Cluster - 'test_cluster':
-Parent - 'root'
-User - 'root':DefaultAccount='root':AdminLevel='Administrator':Fairshare=1
-Account - 'a1':
-Account - 'a7':
-Parent - 'a1'
-Account - 'a3':
-Account - 'a2':
-Parent - 'a3'
-Account - 'a4':
-Account - 'a5':
-Parent - 'a4'
-User - 'u1':
-User - 'u2':
-Parent - 'a5'
-Account - 'a6':
-Parent - 'a6'
-User - 'u3':
-Parent - 'a2'
-User - 'u1':
-Parent - 'a7'
-User - 'u1':
-User - 'u3':""".strip()
-
-        cluster = SlurmCluster.new_from_resource(self.resource)
-        out = StringIO("")
-        cluster.write(out)
-        cluster.write(sys.stdout)
-        out.seek(0)
-
-        cluster = SlurmCluster.new_from_stream(out)
-
+        cluster = SlurmCluster.new_from_stream(dump)
         self.assertEqual(cluster.name, "test_cluster")
         self.assertEqual(len(cluster.accounts), 3)
         self.assertIn("a1", cluster.accounts)
