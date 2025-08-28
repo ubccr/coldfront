@@ -15,6 +15,7 @@ from coldfront.plugins.slurm.associations import SlurmCluster
 from coldfront.plugins.slurm.utils import (
     SLURM_CLUSTER_ATTRIBUTE_NAME,
     SlurmError,
+    parse_qos,
     slurm_dump_cluster,
     slurm_remove_account,
     slurm_remove_assoc,
@@ -144,22 +145,6 @@ class Command(BaseCommand):
 
         self.write("\t".join(row))
 
-    def _parse_qos(self, qos):
-        if qos.startswith("QOS+="):
-            qos = qos.replace("QOS+=", "")
-            qos = qos.replace("'", "")
-            return qos.split(",")
-        elif qos.startswith("QOS="):
-            qos = qos.replace("QOS=", "")
-            qos = qos.replace("'", "")
-            lst = []
-            for q in qos.split(","):
-                if q.startswith("+"):
-                    lst.append(q.replace("+", ""))
-            return lst
-
-        return []
-
     def _diff_qos(self, account_name, cluster_name, user_a, user_b):
         logger.debug(
             f"diff qos: cluster={cluster_name}"
@@ -172,12 +157,12 @@ class Command(BaseCommand):
         specs_a = []
         for s in user_a.spec_list():
             if s.startswith("QOS"):
-                specs_a += self._parse_qos(s)
+                specs_a += parse_qos(s)
 
         specs_b = []
         for s in user_b.spec_list():
             if s.startswith("QOS"):
-                specs_b += self._parse_qos(s)
+                specs_b += parse_qos(s)
 
         specs_set_a = set(specs_a)
         specs_set_b = set(specs_b)
@@ -195,33 +180,15 @@ class Command(BaseCommand):
         if len(diff) > 0:
             self.remove_qos(user_a.name, account_name, cluster_name, "QOS-=" + ",".join([x for x in list(diff)]))
 
-    def _diff(self, cluster_a, cluster_b):
-        for name, account in cluster_a.accounts.items():
-            if name == "root":
-                continue
-
-            if name in cluster_b.accounts:
-                total = 0
-                for uid, user in account.users.items():
-                    if uid == "root":
-                        continue
-                    if uid not in cluster_b.accounts[name].users:
-                        self.remove_user(uid, name, cluster_a.name)
-                        total += 1
-                    else:
-                        self._diff_qos(name, cluster_a.name, user, cluster_b.accounts[name].users[uid])
-
-                if total == len(account.users):
-                    self.remove_account(name, cluster_a.name)
-            else:
-                for uid, user in account.users.items():
-                    self.remove_user(uid, name, cluster_a.name)
-
-                self.remove_account(name, cluster_a.name)
-
-    def check_consistency(self, slurm_cluster, coldfront_cluster):
+    def check_consistency(self, slurm_cluster: SlurmCluster, coldfront_cluster: SlurmCluster):
         # Check for accounts in Slurm NOT in ColdFront
-        self._diff(slurm_cluster, coldfront_cluster)
+        objects_to_remove = slurm_cluster.get_objects_to_remove(coldfront_cluster)
+        for qos_kwargs in objects_to_remove["qoses"]:
+            self.remove_qos(cluster=slurm_cluster.name, **qos_kwargs)
+        for user_kwargs in objects_to_remove["users"]:
+            self.remove_user(cluster=slurm_cluster.name, **user_kwargs)
+        for account_kwargs in objects_to_remove["accounts"]:
+            self.remove_account(cluster=slurm_cluster.name, **account_kwargs)
 
     def _cluster_from_dump(self, cluster):
         slurm_cluster = None

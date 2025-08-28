@@ -152,3 +152,21 @@ def slurm_check_assoc(user, cluster, account):
 def slurm_dump_cluster(cluster, fname, noop=False):
     cmd = SLURM_CMD_DUMP_CLUSTER.format(shlex.quote(cluster), shlex.quote(fname))
     _run_slurm_cmd(cmd, noop=noop)
+
+
+def parse_qos(qos: str) -> list[str]:
+    """Parses QOS spec string into a list of QOSes"""
+    if qos.startswith("QOS+="):
+        qos = qos.replace("QOS+=", "")
+        qos = qos.replace("'", "")
+        return qos.split(",")
+    elif qos.startswith("QOS="):
+        qos = qos.replace("QOS=", "")
+        qos = qos.replace("'", "")
+        lst = []
+        for q in qos.split(","):
+            if q.startswith("+"):
+                lst.append(q.replace("+", ""))
+        return lst
+
+    return []

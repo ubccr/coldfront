@@ -7,6 +7,7 @@ import logging
 import os
 import re
 import sys
+from typing import Self
 
 from django.core.exceptions import ObjectDoesNotExist
 
@@ -19,6 +20,7 @@ from coldfront.plugins.slurm.utils import (
     SLURM_SPECS_ATTRIBUTE_NAME,
     SLURM_USER_SPECS_ATTRIBUTE_NAME,
     SlurmError,
+    parse_qos,
 )
 
 SLURM_ACCOUNT_ATTRIBUTE_TYPE = AllocationAttributeType.objects.get(name=SLURM_ACCOUNT_ATTRIBUTE_NAME)
@@ -68,7 +70,7 @@ class SlurmBase:
 class SlurmCluster(SlurmBase):
     def __init__(self, name, specs=None):
         super().__init__(name, specs=specs)
-        self.accounts = {}
+        self.accounts: dict[str, SlurmAccount] = {}
 
     @staticmethod
     def new_from_stream(stream):
@@ -200,12 +202,27 @@ class SlurmCluster(SlurmBase):
         for name, account in self.accounts.items():
             account.write_children(out)
 
+    def get_objects_to_remove(self, expected: Self) -> dict[str, list[dict]]:
+        """Get the objects to remove from this cluster based on the expected cluster"""
+        objects_to_remove = {
+            "users": [],
+            "accounts": [],
+            "qoses": [],
+        }
+        for account_name, account in self.accounts.items():
+            if account_name == "root":
+                continue
+            child_objects_to_remove = account.get_objects_to_remove(expected.accounts.get(account_name))
+            for key, value in child_objects_to_remove.items():
+                objects_to_remove[key].extend(value)
+        return objects_to_remove
+
 
 class SlurmAccount(SlurmBase):
     def __init__(self, name, specs=None):
         super().__init__(name, specs=specs)
         self.child_type = None
-        self.children = {}
+        self.children: dict[str, SlurmAccount | SlurmUser] = {}
 
     @staticmethod
     def new_from_sacctmgr(line):
@@ -309,6 +326,57 @@ class SlurmAccount(SlurmBase):
         for child in self.children.values():
             child.write_children(out)
 
+    def get_objects_to_remove(self, expected: Self | None = None) -> dict[str, list[dict]]:
+        """Get the objects to remove from this account based on the expected account.
+        If expected is None, remove the entire account.
+        """
+        objects_to_remove = {
+            "users": [],
+            "accounts": [],
+            "qoses": [],
+        }
+
+        if expected is None:
+            if self.child_type == SlurmAccount:
+                for account in self.children.values():
+                    child_objects_to_remove = account.get_objects_to_remove()
+                    for key, value in child_objects_to_remove.items():
+                        objects_to_remove[key].extend(value)
+            elif self.child_type == SlurmUser:
+                for uid in self.children.keys():
+                    objects_to_remove["users"].append({"user": uid, "account": self.name})
+            objects_to_remove["accounts"].append({"account": self.name})
+            return objects_to_remove
+
+        if self.child_type != expected.child_type:
+            # remove this entire account
+            child_objects_to_remove = self.get_objects_to_remove()
+            for key, value in child_objects_to_remove.items():
+                objects_to_remove[key].extend(value)
+        elif self.child_type == expected.child_type:
+            children_removed = 0
+            if self.child_type == SlurmAccount:
+                for account_name, account in self.children.items():
+                    child_objects_to_remove = self.get_objects_to_remove(expected.children.get(account_name))
+                    for key, value in child_objects_to_remove.items():
+                        objects_to_remove[key].extend(value)
+            elif self.child_type == SlurmUser:
+                for uid, user in self.children.items():
+                    if uid == "root":
+                        continue
+                    if uid not in expected.children:
+                        objects_to_remove["users"].append({"user": uid, "account": self.name})
+                        children_removed += 1
+                    else:
+                        qoses_to_remove = user.get_qoses_to_remove(self.name, self.name, expected.children[uid])
+                        if len(qoses_to_remove) > 0:
+                            objects_to_remove["qoses"].append(
+                                {"user": uid, "account": self.name, "qos": "QOS-=" + ",".join(list(qoses_to_remove))}
+                            )
+            if children_removed == len(self.children):
+                objects_to_remove["accounts"].append({"account": self.name})
+        return objects_to_remove
+
 
 class SlurmUser(SlurmBase):
     @staticmethod
@@ -327,3 +395,40 @@ class SlurmUser(SlurmBase):
 
     def write(self, out):
         self._write(out, f"User - '{self.name}':{self.format_specs()}\n")
+
+    def get_qoses_to_remove(self, account_name: str, cluster_name: str, expected: Self) -> set[str]:
+        """Get the set of QOSes to remove from this user based on the expected user
+        Returns: set of QOS names to remove
+        """
+        logger.debug(
+            f"diff qos: cluster={cluster_name}"
+            f" account={account_name}"
+            f" uid={self.name}"
+            f" self={self.spec_list()}"
+            f" expected={expected.spec_list()}"
+        )
+
+        specs_a = []
+        for s in self.spec_list():
+            if s.startswith("QOS"):
+                specs_a += parse_qos(s)
+
+        specs_b = []
+        for s in expected.spec_list():
+            if s.startswith("QOS"):
+                specs_b += parse_qos(s)
+
+        specs_set_a = set(specs_a)
+        specs_set_b = set(specs_b)
+
+        diff = specs_set_a.difference(specs_set_b)
+        logger.debug(
+            f"diff qos: cluster={cluster_name}"
+            f" account={account_name}"
+            f" uid={self.name}"
+            f" self={self.spec_list()}"
+            f" expected={expected.spec_list()}"
+            f" diff={diff}"
+        )
+
+        return diff
