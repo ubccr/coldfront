@@ -93,78 +93,74 @@ class AllocationBillingReportRunner(BaseReportRunner):
 
         sql = '''
             select
+                proj.title as 'Project Title',
                 r.name as 'Resource Name',
-                r.requires_payment as 'Resource Requires Payment',
-                rp.value as 'Allocation Requires Payment',
+                r.requires_payment as 'Current Resource Requires Payment Value',
+                rp.value as 'Current Allocation Requires Payment Value',
                 alloc.id as 'Allocation ID',
-                proj.title as 'Project Name',
+                p.product_name as 'Product Name',
+                asch.name as 'Current Allocation Status',
+                sq.value as 'Storage Quota',
                 o.name as 'Lab Billing Name',
                 CONCAT(pu.year, '-', LPAD(pu.month, 2, '0')) as 'Month',
-                p.product_name as 'Product',
-                sum(t.decimal_charge) as 'Charge'
+                sum(br.decimal_charge) as 'Charge'
             from
                 allocation_allocation alloc
                     inner join allocation_allocation_resources ar on alloc.id = ar.allocation_id
                     inner join resource_resource r on ar.resource_id = r.id
                     inner join project_project proj on alloc.project_id = proj.id
-                    inner join allocation_allocationattribute sq on sq.allocation_id = alloc.id
-                    inner join allocation_allocationattributetype sqt on sq.allocation_attribute_type_id = sqt.id
-                    left join allocation_allocationattribute rp on rp.allocation_id = alloc.id
-                    left join allocation_allocationattributetype rpt on rp.allocation_attribute_type_id = rpt.id
-                    left join ifx_projectorganization projo on proj.id = projo.project_id
-                    left join nanites_organization o on projo.organization_id = o.id
+                    inner join resource_resourcetype rt on r.resource_type_id = rt.id
+                    inner join allocation_allocationstatuschoice asch on alloc.status_id = asch.id
+                    left join (allocation_allocationattribute sq inner join allocation_allocationattributetype sqt on sq.allocation_attribute_type_id = sqt.id and (sqt.name = 'Storage Quota (TiB)' or sqt.name = 'Storage Quota (TB)')) on sq.allocation_id = alloc.id
+                    left join (allocation_allocationattribute rp inner join allocation_allocationattributetype rpt on rp.allocation_attribute_type_id = rpt.id and rpt.name = 'RequiresPayment') on rp.allocation_id = alloc.id
+                    left join (ifx_projectorganization projo inner join nanites_organization o on projo.organization_id = o.id) on proj.id = projo.project_id
                     left join allocation_historicalallocationuser au on alloc.id = au.allocation_id
-                    left join ifx_allocationuserproductusage aupu on au.id = aupu.allocation_user_id
-                    left join product_usage pu on aupu.product_usage_id = pu.id
-                    left join product p on p.id = pu.product_id
+                    left join ifx_allocationuserproductusage aupu on au.history_id = aupu.allocation_user_id
+                    left join (product_usage pu inner join product p on p.id = pu.product_id) on aupu.product_usage_id = pu.id
                     left join billing_record br on pu.id = br.product_usage_id
-                    left join transaction t on br.id = t.billing_record_id
             where
-                rpt.name = 'RequiresPayment' and
-                sqt.name = 'Storage Quota (TiB)' and
-                (alloc.end_date is null or alloc.end_date >= '2025-08-01') and alloc.start_date <= '2025-08-01'
+                rt.name = 'Storage' and
+                r.name not in ('holylabs', 'vast-holylabs')
             group by
+                proj.title,
                 r.name,
                 r.requires_payment,
                 rp.value,
                 alloc.id,
-                proj.title,
+                p.product_name,
+                asch.name,
+                sq.value,
                 o.name,
-                Month,
-                p.product_name
-            union
-            select
-                r.name as 'Resource Name',
-                r.requires_payment as 'Resource Requires Payment',
-                rp.value as 'Allocation Requires Payment',
-                a.name as 'Allocation Name',
-                proj.title as 'Project Name',
-                o.name as 'Lab Billing Name',
-                CONCAT(pu.year, '-', LPAD(pu.month, 2, '0')) as 'Billing Month',
-                pu.decimal_quantity as 'Allocation TB',
-                t.decimal_charge as 'Charge',
-                p.product_name as 'Product'
-            from
-                allocation_allocation alloc
-                    inner join allocation_allocation_resources ar on alloc.id = ar.allocation_id
-                    inner join resource_resource r on ar.resource_id = r.id
-                    inner join project_project proj on a.project_id = proj.id
-                    inner join product p on p.id = pu.product_id
-                    inner join allocation_allocation_attribute sq on sq.allocation_id = alloc.id
-                    inner join allocation_allocation_attribute_type sqt on sq.attribute_type_id = sqt.id
-                    left join allocation_allocation_attribute rp on rp.allocation_id = alloc.id
-                    left join allocation_allocation_attribute_type rpt on rp.attribute_type_id = rpt.id
-                    left join project_organization projo on proj.id = projo.project_id
-                    left join nanites_organization o on projo.organization_id = o.id
-                    left join billing_record br on pu.id = br.product_usage_id
-                    left join transaction t on br.id = t.billing_record_id
-            where
-                rpt.name = 'RequiresPayment' and
-                sqt.name = 'Storage Quota (TB)' and
-                pu.start_date >= %s and pu.start_date < %s
+                Month
+            order by
+                proj.title,
+                alloc.id,
+                pu.year,
+                pu.month
         '''
 
         return sql
+    def run_query(self, start_date=None, end_date=None):
+        '''
+        Not going to bother with the date range
+
+        :return: List of dictionaries keyed by the column names
+        :rtype: list
+        '''
+        sql = self.get_sql()
+        cursor = connection.cursor()
+
+        cursor.execute(sql)
+
+        results = []
+        desc = cursor.description
+        self.field_names = [col[0] for col in desc]
+
+        for row in cursor.fetchall():
+            row_dict = dict(zip(self.field_names, row))
+            results.append(row_dict)
+
+        return results
 
 class StandardReportRunner(BaseReportRunner):
     '''Run a standard report for MRI usage'''
