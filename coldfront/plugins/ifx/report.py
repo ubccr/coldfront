@@ -36,9 +36,8 @@ class HcsphSeasReportRunner(BaseReportRunner):
                     left join transaction t on br.id = t.billing_record_id
             where
                 pu.start_date >= %s and pu.start_date < %s
-                and a.code in ('325-28541-8250-000001-584571-0001-00000', '275-23355-8250-000001-559620-0000-00000')
+                and a.code in ('325-28541-8250-000001-584571-0001-00000', '275-23355-8250-000001-559620-0000-00000', '370-33150-8250-000001-634915-0000-00000)
         '''
-        print(f'Running HCSHPSEASReportRunner with SQL: {sql}')
 
         return sql
 
