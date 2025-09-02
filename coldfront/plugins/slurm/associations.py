@@ -1,15 +1,17 @@
 # SPDX-FileCopyrightText: (C) ColdFront Authors
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
+from __future__ import annotations
 
 import datetime
 import logging
 import os
 import re
 import sys
-from typing import Self
+from typing import Optional, Self
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models.query import QuerySet
 
 from coldfront.core.allocation.models import Allocation, AllocationAttribute, AllocationAttributeType
 from coldfront.core.resource.models import Resource
@@ -97,7 +99,7 @@ class SlurmCluster(SlurmBase):
                 if parent == "root":
                     cluster.accounts[account.name] = account
                 elif parent_account:
-                    parent_account.add_child(account)
+                    parent_account.add_account(account)
             elif re.match("^Parent - '[^']+'", line):
                 if not cluster or not cluster.name:
                     raise no_cluster_error
@@ -113,7 +115,7 @@ class SlurmCluster(SlurmBase):
                 user = SlurmUser.new_from_sacctmgr(line)
                 if not parent or not parent_account:
                     raise SlurmParserError(f"Found user record without Parent for line: {line}")
-                parent_account.add_child(user)
+                parent_account.add_user(user)
 
         if not cluster or not cluster.name:
             raise no_cluster_error
@@ -135,11 +137,10 @@ class SlurmCluster(SlurmBase):
         allocations = resource.allocation_set.filter(status__name__in=["Active", "Renewal Requested"])
         for allocation in allocations:
             cluster.add_allocation(allocation, allocations, user_specs=user_specs)
-        # remove child accounts cluster accounts
+        # remove child accounts from cluster accounts
         child_accounts = set()
         for account in cluster.accounts.values():
-            if account.child_type == SlurmAccount:
-                child_accounts.update(account.children.keys())
+            child_accounts.update(account.accounts.keys())
         for account_name in child_accounts:
             del cluster.accounts[account_name]
 
@@ -154,8 +155,7 @@ class SlurmCluster(SlurmBase):
             # remove child accounts cluster accounts
             child_accounts = set()
             for account in cluster.accounts.values():
-                if account.child_type == SlurmAccount:
-                    child_accounts.update(account.children.keys())
+                child_accounts.update(account.accounts.keys())
             for account_name in child_accounts:
                 del cluster.accounts[account_name]
 
@@ -221,8 +221,8 @@ class SlurmCluster(SlurmBase):
 class SlurmAccount(SlurmBase):
     def __init__(self, name, specs=None):
         super().__init__(name, specs=specs)
-        self.child_type = None
-        self.children: dict[str, SlurmAccount | SlurmUser] = {}
+        self.users: dict[str, SlurmUser] = {}
+        self.accounts: dict[str, SlurmAccount] = {}
 
     @staticmethod
     def new_from_sacctmgr(line):
@@ -238,7 +238,7 @@ class SlurmAccount(SlurmBase):
 
         return SlurmAccount(name, specs=parts[1:])
 
-    def add_allocation(self, allocation: Allocation, res_allocations, user_specs=None):
+    def add_allocation(self, allocation: Allocation, res_allocations: QuerySet[Allocation], user_specs=None):
         """Add users from a ColdFront Allocation model to SlurmAccount"""
         if user_specs is None:
             user_specs = []
@@ -253,61 +253,48 @@ class SlurmAccount(SlurmBase):
             )
 
         child_accounts = set(allocation.get_attribute_list(SLURM_CHILDREN_ATTRIBUTE_NAME))
-        if len(child_accounts) > 0 and allocation.allocationuser_set.count() > 0:
-            raise SlurmError(
-                f"Allocation {allocation} cannot be a parent and have users!"
-                f" Please remove users or all {SLURM_CHILDREN_ATTRIBUTE_NAME} attributes."
-            )
-
         self.specs += allocation.get_attribute_list(SLURM_SPECS_ATTRIBUTE_NAME)
 
-        if len(child_accounts) > 0:
-            self.child_type = SlurmAccount
-            for account_name in child_accounts:
-                account = self.children.get(account_name, SlurmAccount(account_name))
-                try:
-                    child_allocation = res_allocations.get(
-                        pk=AllocationAttribute.objects.get(
-                            allocation_attribute_type=SLURM_ACCOUNT_ATTRIBUTE_TYPE, value=account_name
-                        ).allocation.pk
-                    )
-                    account.add_allocation(child_allocation, res_allocations, user_specs=user_specs)
-                except ObjectDoesNotExist:
-                    raise SlurmError(
-                        f"No allocation with {SLURM_ACCOUNT_ATTRIBUTE_TYPE}={account_name} in correct resource"  # Don't have an easy way to get the resource here
-                    )
-
-                self.add_child(account)
-        else:
-            self.child_type = SlurmUser
-            allocation_user_specs = allocation.get_attribute_list(SLURM_USER_SPECS_ATTRIBUTE_NAME)
-            for u in allocation.allocationuser_set.filter(status__name="Active"):
-                user = SlurmUser(u.user.username)
-                user.specs += allocation_user_specs
-                user.specs += user_specs
-                self.add_child(user)
-
-    def add_child(self, child):
-        if not self.child_type:
-            self.child_type = type(child)
-        else:
-            if type(child) is not self.child_type:
-                raise SlurmError(
-                    f"Cannot assign child of type {type(child)} to parent with child_type {self.child_type}"
+        for account_name in child_accounts:
+            account = self.accounts.get(account_name, SlurmAccount(account_name))
+            try:
+                child_allocation = res_allocations.get(
+                    pk=AllocationAttribute.objects.get(
+                        allocation_attribute_type=SLURM_ACCOUNT_ATTRIBUTE_TYPE, value=account_name
+                    ).allocation.pk
                 )
-        if child.name not in self.children:
-            self.children[child.name] = child
+                account.add_allocation(child_allocation, res_allocations, user_specs=user_specs)
+            except ObjectDoesNotExist:
+                raise SlurmError(
+                    f"No allocation with {SLURM_ACCOUNT_ATTRIBUTE_TYPE}={account_name} in correct resource"  # Don't have an easy way to get the resource here
+                )
 
-        ch = self.children[child.name]
-        ch.specs += child.specs
-        self.children[child.name] = ch
+            self.add_account(account)
 
-    def get_account(self, account_name):
-        if self.child_type != SlurmAccount:
-            return None
-        if account_name in self.children.keys():
-            return self.children[account_name]
-        for account in self.children.values():
+        allocation_user_specs = allocation.get_attribute_list(SLURM_USER_SPECS_ATTRIBUTE_NAME)
+        for u in allocation.allocationuser_set.filter(status__name="Active"):
+            user = SlurmUser(u.user.username)
+            user.specs += allocation_user_specs
+            user.specs += user_specs
+            self.add_user(user)
+
+    def add_account(self, account: SlurmAccount) -> None:
+        if account.name not in self.accounts:
+            self.accounts[account.name] = account
+            return
+        self.accounts[account.name].specs += account.specs
+
+    def add_user(self, user: SlurmUser) -> None:
+        if user.name not in self.users:
+            self.users[user.name] = user
+            return
+        self.users[user.name].specs += user.specs
+
+    def get_account(self, account_name: str) -> Optional[SlurmAccount]:
+        """Gets an account, traversing through child accounts"""
+        if account_name in self.accounts.keys():
+            return self.accounts[account_name]
+        for account in self.accounts.values():
             result = account.get_account(account_name)
             if result:
                 return result
@@ -319,14 +306,14 @@ class SlurmAccount(SlurmBase):
 
     def write_children(self, out):
         self._write(out, f"Parent - '{self.name}'\n")
-        for child in self.children.values():
-            child.write(out)
-        if self.child_type == SlurmUser:
-            return
-        for child in self.children.values():
-            child.write_children(out)
+        for user in self.users.values():
+            user.write(out)
+        for account in self.accounts.values():
+            account.write(out)
+        for account in self.accounts.values():
+            account.write_children(out)
 
-    def get_objects_to_remove(self, expected: Self | None = None) -> dict[str, list[dict]]:
+    def get_objects_to_remove(self, expected: Optional[Self] = None) -> dict[str, list[dict]]:
         """Get the objects to remove from this account based on the expected account.
         If expected is None, remove the entire account.
         """
@@ -337,44 +324,39 @@ class SlurmAccount(SlurmBase):
         }
 
         if expected is None:
-            if self.child_type == SlurmAccount:
-                for account in self.children.values():
-                    child_objects_to_remove = account.get_objects_to_remove()
-                    for key, value in child_objects_to_remove.items():
-                        objects_to_remove[key].extend(value)
-            elif self.child_type == SlurmUser:
-                for uid in self.children.keys():
-                    objects_to_remove["users"].append({"user": uid, "account": self.name})
+            for account in self.accounts.values():
+                child_objects_to_remove = account.get_objects_to_remove()
+                for key, value in child_objects_to_remove.items():
+                    objects_to_remove[key].extend(value)
+            for uid in self.users.keys():
+                objects_to_remove["users"].append({"user": uid, "account": self.name})
             objects_to_remove["accounts"].append({"account": self.name})
             return objects_to_remove
 
-        if self.child_type != expected.child_type:
-            # remove this entire account
-            child_objects_to_remove = self.get_objects_to_remove()
+        accounts_removed = 0
+        for account_name, account in self.accounts.items():
+            if account_name not in expected.accounts:
+                accounts_removed += 1
+            child_objects_to_remove = self.get_objects_to_remove(expected.accounts.get(account_name))
             for key, value in child_objects_to_remove.items():
                 objects_to_remove[key].extend(value)
-        elif self.child_type == expected.child_type:
-            children_removed = 0
-            if self.child_type == SlurmAccount:
-                for account_name, account in self.children.items():
-                    child_objects_to_remove = self.get_objects_to_remove(expected.children.get(account_name))
-                    for key, value in child_objects_to_remove.items():
-                        objects_to_remove[key].extend(value)
-            elif self.child_type == SlurmUser:
-                for uid, user in self.children.items():
-                    if uid == "root":
-                        continue
-                    if uid not in expected.children:
-                        objects_to_remove["users"].append({"user": uid, "account": self.name})
-                        children_removed += 1
-                    else:
-                        qoses_to_remove = user.get_qoses_to_remove(self.name, self.name, expected.children[uid])
-                        if len(qoses_to_remove) > 0:
-                            objects_to_remove["qoses"].append(
-                                {"user": uid, "account": self.name, "qos": "QOS-=" + ",".join(list(qoses_to_remove))}
-                            )
-            if children_removed == len(self.children):
-                objects_to_remove["accounts"].append({"account": self.name})
+
+        users_removed = 0
+        for uid, user in self.users.items():
+            if uid == "root":
+                continue
+            if uid not in expected.users:
+                objects_to_remove["users"].append({"user": uid, "account": self.name})
+                users_removed += 1
+            else:
+                qoses_to_remove = user.get_qoses_to_remove(self.name, self.name, expected.users[uid])
+                if len(qoses_to_remove) > 0:
+                    objects_to_remove["qoses"].append(
+                        {"user": uid, "account": self.name, "qos": "QOS-=" + ",".join(list(qoses_to_remove))}
+                    )
+
+        if accounts_removed == len(self.accounts) and users_removed == len(self.users):
+            objects_to_remove["accounts"].append({"account": self.name})
         return objects_to_remove
 
 

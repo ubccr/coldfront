@@ -23,11 +23,11 @@ from coldfront.plugins.slurm.associations import SlurmCluster
 # Building this account structure in slurm/coldfront
 # 'a' represents an account and 'u' represents a user
 #
-#      a1            a7
-#     /  \          /  \
-#   a2    a3       u1  u3
-#   /    /  \
-# u1   a4    a5
+#      a1               a7
+#     /  \            /  | \
+#   a2    a3        a8   u3 a7 <-- a user, to test users and
+#   /    /  \      /  \            accounts having the same name
+# u1   a4    a5   u1  u2
 #     /  \   |
 #    u1  u2  a6
 #            |
@@ -58,11 +58,13 @@ class AssociationTest(TestCase):
         cls.u1 = UserFactory(username="u1")
         cls.u2 = UserFactory(username="u2")
         cls.u3 = UserFactory(username="u3")
+        cls.u4 = UserFactory(username="a7")
         # create project
         cls.project = ProjectFactory(title="test_proj")
         ProjectUserFactory(project=cls.project, user=cls.u1)
         ProjectUserFactory(project=cls.project, user=cls.u2)
         ProjectUserFactory(project=cls.project, user=cls.u3)
+        ProjectUserFactory(project=cls.project, user=cls.u4)
         # create allocations
         alloc_kwargs = {"project": cls.project, "status": AllocationStatusChoiceFactory(name="Active")}
         san_aat = AllocationAttributeType.objects.get(name="slurm_account_name")
@@ -74,6 +76,7 @@ class AssociationTest(TestCase):
         cls.a5 = Allocation.objects.create(**alloc_kwargs)
         cls.a6 = Allocation.objects.create(**alloc_kwargs)
         cls.a7 = Allocation.objects.create(**alloc_kwargs)
+        cls.a8 = Allocation.objects.create(**alloc_kwargs)
         cls.a1.resources.add(cls.resource)
         cls.a2.resources.add(cls.resource)
         cls.a3.resources.add(cls.resource)
@@ -81,6 +84,7 @@ class AssociationTest(TestCase):
         cls.a5.resources.add(cls.resource)
         cls.a6.resources.add(cls.resource)
         cls.a7.resources.add(cls.resource)
+        cls.a8.resources.add(cls.resource)
         # slurm account names
         aat_kwargs = {"allocation_attribute_type": san_aat}
         AllocationAttributeFactory(allocation=cls.a1, value="a1", **aat_kwargs)
@@ -90,6 +94,7 @@ class AssociationTest(TestCase):
         AllocationAttributeFactory(allocation=cls.a5, value="a5", **aat_kwargs)
         AllocationAttributeFactory(allocation=cls.a6, value="a6", **aat_kwargs)
         AllocationAttributeFactory(allocation=cls.a7, value="a7", **aat_kwargs)
+        AllocationAttributeFactory(allocation=cls.a8, value="a8", **aat_kwargs)
         # slurm children
         aat_kwargs = {"allocation_attribute_type": sc_aat}
         AllocationAttributeFactory(allocation=cls.a1, value="a2", **aat_kwargs)
@@ -97,13 +102,16 @@ class AssociationTest(TestCase):
         AllocationAttributeFactory(allocation=cls.a3, value="a4", **aat_kwargs)
         AllocationAttributeFactory(allocation=cls.a3, value="a5", **aat_kwargs)
         AllocationAttributeFactory(allocation=cls.a5, value="a6", **aat_kwargs)
+        AllocationAttributeFactory(allocation=cls.a7, value="a8", **aat_kwargs)
         # add users to allocations
         AllocationUserFactory(allocation=cls.a2, user=cls.u1)
         AllocationUserFactory(allocation=cls.a4, user=cls.u1)
         AllocationUserFactory(allocation=cls.a4, user=cls.u2)
         AllocationUserFactory(allocation=cls.a6, user=cls.u3)
-        AllocationUserFactory(allocation=cls.a7, user=cls.u1)
         AllocationUserFactory(allocation=cls.a7, user=cls.u3)
+        AllocationUserFactory(allocation=cls.a7, user=cls.u4)
+        AllocationUserFactory(allocation=cls.a8, user=cls.u1)
+        AllocationUserFactory(allocation=cls.a8, user=cls.u2)
 
     def test_slurm_from_resource(self):
         """non-exhaustive, should make better"""
@@ -112,7 +120,13 @@ class AssociationTest(TestCase):
         self.assertEqual(len(cluster.accounts), 2)
         self.assertIn("a1", cluster.accounts)
         self.assertIn("a7", cluster.accounts)
-        self.assertEqual(len(cluster.accounts["a7"].children), 2)
+        a7_accounts = cluster.accounts["a7"].accounts
+        a7_users = cluster.accounts["a7"].users
+        self.assertEqual(len(a7_accounts), 1)
+        self.assertEqual(len(a7_users), 2)
+        self.assertIn("a8", a7_accounts)
+        self.assertIn("u3", a7_users)
+        self.assertIn("a7", a7_users)
 
     def test_slurm_dump_roundtrip(self):
         """create from resource, dump, and load dump"""
@@ -127,7 +141,13 @@ class AssociationTest(TestCase):
         self.assertEqual(len(cluster.accounts), 3)  # root account is added when dumped
         self.assertIn("a1", cluster.accounts)
         self.assertIn("a7", cluster.accounts)
-        self.assertEqual(len(cluster.accounts["a7"].children), 2)
+        a7_accounts = cluster.accounts["a7"].accounts
+        a7_users = cluster.accounts["a7"].users
+        self.assertEqual(len(a7_accounts), 1)
+        self.assertEqual(len(a7_users), 2)
+        self.assertIn("a8", a7_accounts)
+        self.assertIn("u3", a7_users)
+        self.assertIn("a7", a7_users)
 
     def test_slurm_from_stream(self):
         dump = StringIO("""
@@ -164,12 +184,22 @@ Account - 'a6':Description='a6':Organization='a6'
 Parent - 'a6'
 User - 'u3'
 Parent - 'a7'
-User - 'u1'
+Account - 'a8':Description='a8':Organization='a8'
 User - 'u3'
+User - 'a7'
+Parent - 'a8'
+User - 'u1'
+User - 'u2'
         """)
         cluster = SlurmCluster.new_from_stream(dump)
         self.assertEqual(cluster.name, "test_cluster")
         self.assertEqual(len(cluster.accounts), 3)
         self.assertIn("a1", cluster.accounts)
         self.assertIn("a7", cluster.accounts)
-        self.assertEqual(len(cluster.accounts["a7"].children), 2)
+        a7_accounts = cluster.accounts["a7"].accounts
+        a7_users = cluster.accounts["a7"].users
+        self.assertEqual(len(a7_accounts), 1)
+        self.assertEqual(len(a7_users), 2)
+        self.assertIn("a8", a7_accounts)
+        self.assertIn("u3", a7_users)
+        self.assertIn("a7", a7_users)
