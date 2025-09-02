@@ -7,10 +7,11 @@ from io import StringIO
 from django.core.management import call_command
 from django.test import TestCase
 
-from coldfront.core.allocation.models import Allocation, AllocationAttributeType
+from coldfront.core.allocation.models import Allocation
 from coldfront.core.resource.models import ResourceAttribute, ResourceAttributeType, ResourceType
 from coldfront.core.test_helpers.factories import (
     AllocationAttributeFactory,
+    AllocationAttributeTypeFactory,
     AllocationStatusChoiceFactory,
     AllocationUserFactory,
     ProjectFactory,
@@ -22,6 +23,7 @@ from coldfront.plugins.slurm.associations import SlurmCluster
 
 # Building this account structure in slurm/coldfront
 # 'a' represents an account and 'u' represents a user
+# unless otherwise stated
 #
 #      a1               a7
 #     /  \            /  | \
@@ -37,8 +39,6 @@ from coldfront.plugins.slurm.associations import SlurmCluster
 class AssociationTest(TestCase):
     @classmethod
     def setUpClass(cls):
-        # call_command("import_field_of_science_data")
-        # call_command("add_default_grant_options")
         call_command("add_default_project_choices")
         call_command("add_allocation_defaults")
         call_command("add_resource_defaults")
@@ -67,8 +67,8 @@ class AssociationTest(TestCase):
         ProjectUserFactory(project=cls.project, user=cls.u4)
         # create allocations
         alloc_kwargs = {"project": cls.project, "status": AllocationStatusChoiceFactory(name="Active")}
-        san_aat = AllocationAttributeType.objects.get(name="slurm_account_name")
-        sc_aat = AllocationAttributeType.objects.get(name="slurm_children")
+        san_aat = AllocationAttributeTypeFactory(name="slurm_account_name")
+        sc_aat = AllocationAttributeTypeFactory(name="slurm_children")
         cls.a1 = Allocation.objects.create(**alloc_kwargs)
         cls.a2 = Allocation.objects.create(**alloc_kwargs)
         cls.a3 = Allocation.objects.create(**alloc_kwargs)

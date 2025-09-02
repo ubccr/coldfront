@@ -25,8 +25,6 @@ from coldfront.plugins.slurm.utils import (
     parse_qos,
 )
 
-SLURM_ACCOUNT_ATTRIBUTE_TYPE = AllocationAttributeType.objects.get(name=SLURM_ACCOUNT_ATTRIBUTE_NAME)
-
 logger = logging.getLogger(__name__)
 
 
@@ -260,13 +258,16 @@ class SlurmAccount(SlurmBase):
             try:
                 child_allocation = res_allocations.get(
                     pk=AllocationAttribute.objects.get(
-                        allocation_attribute_type=SLURM_ACCOUNT_ATTRIBUTE_TYPE, value=account_name
+                        allocation_attribute_type=AllocationAttributeType.objects.get(
+                            name=SLURM_ACCOUNT_ATTRIBUTE_NAME
+                        ),
+                        value=account_name,
                     ).allocation.pk
                 )
                 account.add_allocation(child_allocation, res_allocations, user_specs=user_specs)
             except ObjectDoesNotExist:
                 raise SlurmError(
-                    f"No allocation with {SLURM_ACCOUNT_ATTRIBUTE_TYPE}={account_name} in correct resource"  # Don't have an easy way to get the resource here
+                    f"No allocation with {SLURM_ACCOUNT_ATTRIBUTE_NAME}={account_name} in correct resource"  # Don't have an easy way to get the resource here
                 )
 
             self.add_account(account)
