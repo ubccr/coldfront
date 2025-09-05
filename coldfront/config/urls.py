@@ -6,6 +6,7 @@
 ColdFront URL Configuration
 """
 
+import split_settings
 from django.conf import settings
 from django.contrib import admin
 from django.core import serializers
@@ -13,6 +14,7 @@ from django.http import HttpResponse
 from django.urls import include, path
 from django.views.generic import TemplateView
 
+from coldfront.config.env import ENV, PROJECT_ROOT
 import coldfront.core.portal.views as portal_views
 
 admin.site.site_header = "ColdFront Administration"
@@ -60,3 +62,20 @@ def export_as_json(modeladmin, request, queryset):
 
 
 admin.site.add_action(export_as_json, "export_as_json")
+
+# Local urls overrides
+local_urls = [
+    # Local urls relative to coldfront.config package
+    "local_urls.py",
+    # System wide urls for production deployments
+    "/etc/coldfront/local_urls.py",
+    # Local urls relative to coldfront project root
+    PROJECT_ROOT("local_urls.py"),
+]
+
+if ENV.str("COLDFRONT_URLS", default="") != "":
+    # Local urls from path specified via environment variable
+    local_urls.append(environ.Path(ENV.str("COLDFRONT_URLS"))())
+
+for lu in local_urls:
+    split_settings.tools.include(split_settings.tools.optional(lu))
