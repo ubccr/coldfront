@@ -34,6 +34,19 @@ You can also specify the path to `local_settings.py` using the
 COLDFRONT_CONFIG=/opt/coldfront/mysettings.py
 ```
 
+For [URL configurations](https://docs.djangoproject.com/en/dev/topics/http/urls/), you can create a python file to override ColdFront URLs:
+
+- `local_urls.py` relative to coldfront.config package
+- `/etc/coldfront/local_urls.py`
+- `local_urls.py` in the ColdFront project root
+
+You can also specify the path to `local_urls.py` using the
+`COLDFRONT_URLS` environment variable. For example:
+
+```
+COLDFRONT_URLS=/opt/coldfront/myurls.py
+```
+
 ## Simple Example
 
 Here's a very simple example demonstrating how to configure ColdFront using
