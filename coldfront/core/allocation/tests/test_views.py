@@ -4,9 +4,10 @@
 
 import logging
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
+from coldfront.core.utils.common import import_from_settings
 from coldfront.core.allocation.models import (
     AllocationChangeRequest,
     AllocationChangeStatusChoice,
@@ -324,3 +325,35 @@ class AllocationNoteCreateViewTest(AllocationViewBaseTest):
 
     def test_allocationnotecreateview_access(self):
         self.allocation_access_tstbase(self.url)
+
+@override_settings(ALLOCATION_ACCOUNT_ENABLED=True)
+class AllocationAccountCreateViewTest(AllocationViewBaseTest):
+    """Tests for the AllocationAccountCreateView"""
+
+    def setUp(self):
+        self.url = "/allocation/add-allocation-account/"
+
+    def test_allocationaccountcreateview_access(self):
+        self.assertTrue(import_from_settings("ALLOCATION_ACCOUNT_ENABLED", False))
+        self.allocation_access_tstbase(self.url)
+        utils.test_user_can_access(self, self.pi_user, self.url)
+    
+    def test_allocationaccountcreateview_get_form(self):
+        self.client.force_login(self.pi_user, backend=BACKEND)
+        response = self.client.get(self.url)
+        self.assertContains(response, "Add account names that can be associated with allocations")
+
+    def test_allocationaccountcreateview_post_form(self):
+        self.client.force_login(self.pi_user, backend=BACKEND)
+        valid_data = {'name': 'deptCE1234'}
+        response = self.client.post(self.url, data=valid_data, follow=True)
+        self.assertContains(response, 'deptCE1234')
+
+    def test_allocationaccountcreateview_post_invalid_form(self):
+        self.client.force_login(self.pi_user, backend=BACKEND)
+        invalid_data = {'name': ''}
+        response = self.client.post(self.url, data=invalid_data, follow=True)
+        self.assertContains(response, 'This field is required.')
+
+
+
