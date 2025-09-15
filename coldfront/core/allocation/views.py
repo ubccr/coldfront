@@ -1642,7 +1642,7 @@ class AllocationAccountCreateView(LoginRequiredMixin, UserPassesTestMixin, Creat
             return False
         if self.request.user.is_superuser:
             return True
-        if Project.objects.filter(pi=self.request.user).exists():
+        if self.request.user.userprofile.is_pi:
             return True
 
         messages.error(self.request, "You do not have permission to add allocation attributes.")
@@ -1680,7 +1680,7 @@ class AllocationAccountListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
             return False
         if self.request.user.is_superuser:
             return True
-        if Project.objects.filter(pi=self.request.user).exists():
+        if self.request.user.userprofile.is_pi:
             return True
 
         messages.error(self.request, "You do not have permission to manage invoices.")
