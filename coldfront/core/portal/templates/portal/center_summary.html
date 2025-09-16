@@ -94,17 +94,19 @@ Center Summary
   $("#navbar-center-summary").addClass("active")
 
   $(document).ready(function () {
-    $('#fos-table').DataTable({
-      "iDisplayLength": 10,
-      "bSortClasses": false,
-      "order": [
-        [1, "desc"]
-      ]
-    });
-
     drawPublications();
     drawGrantsByAgency();
-    get_allocation_by_fos()
+    if ($("#allocation-by-fos").length > 0) {
+      /* This element should not exist if Field of Science is disabled */
+      $('#fos-table').DataTable({
+        "iDisplayLength": 10,
+        "bSortClasses": false,
+        "order": [
+          [1, "desc"]
+        ]
+      });
+      get_allocation_by_fos();
+    } 
     get_allocation_summary();
   });
 
