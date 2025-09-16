@@ -1638,7 +1638,7 @@ class AllocationAccountCreateView(LoginRequiredMixin, UserPassesTestMixin, Creat
     def test_func(self):
         """UserPassesTestMixin Tests"""
 
-        if not ALLOCATION_ACCOUNT_ENABLED:
+        if not import_from_settings("ALLOCATION_ACCOUNT_ENABLED", False):
             return False
         if self.request.user.is_superuser:
             return True
@@ -1650,14 +1650,14 @@ class AllocationAccountCreateView(LoginRequiredMixin, UserPassesTestMixin, Creat
 
     def form_invalid(self, form):
         response = super().form_invalid(form)
-        if self.request.is_ajax():
+        if self.request.headers.get("x-requested-with") == "XMLHttpRequest":
             return JsonResponse(form.errors, status=400)
         return response
 
     def form_valid(self, form):
         form.instance.user = self.request.user
         response = super().form_valid(form)
-        if self.request.is_ajax():
+        if self.request.headers.get("x-requested-with") == "XMLHttpRequest":
             data = {
                 "pk": self.object.pk,
             }
@@ -1676,7 +1676,7 @@ class AllocationAccountListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
     def test_func(self):
         """UserPassesTestMixin Tests"""
 
-        if not ALLOCATION_ACCOUNT_ENABLED:
+        if not import_from_settings("ALLOCATION_ACCOUNT_ENABLED", False):
             return False
         if self.request.user.is_superuser:
             return True
