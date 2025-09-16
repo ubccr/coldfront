@@ -59,6 +59,7 @@ Center Summary
 <!-- End Grants -->
 {% endif %}
 
+{% if not settings.FIELD_OF_SCIENCE_HIDE %}
 <!-- Start Allocation by Field of Science -->
 <div class="card mb-3 border-primary">
   <div class="card-header bg-primary text-white">
@@ -72,6 +73,7 @@ Center Summary
   </div>
 </div>
 <!-- End Allocation by Field of Science -->
+{% endif %}
 
 <!-- Start Allocation Charts -->
 <div class="card mb-3 border-primary">

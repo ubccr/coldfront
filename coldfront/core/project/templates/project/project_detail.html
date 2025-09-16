@@ -75,7 +75,9 @@ Project Detail
     {% else %}
         <p class="card-text text-justify"><strong>ID: </strong>{{ project.id }}</p>
     {% endif %}
-    <p class="card-text text-justify"><strong>Field of Science: </strong>{{ project.field_of_science }}</p>
+    {% if not settings.FIELD_OF_SCIENCE_HIDE %}
+        <p class="card-text text-justify"><strong>Field of Science: </strong>{{ project.field_of_science }}</p>
+    {% endif %}
     <p class="card-text text-justify"><strong>Project Status: </strong>{{ project.status }}
         {% if project.last_project_review and  project.last_project_review.status.name == 'Pending'%}
           <span class="badge badge-pill badge-info">project review pending</span>

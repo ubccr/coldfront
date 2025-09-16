@@ -33,7 +33,7 @@ Project List
       <div id="collapseOne" class="collapse {{expand_accordion}}" data-parent="#accordion">
         <div class="card-body">
           <form id="filter_form" method="GET" action="{% url 'project-archived-list' %}">
-            {{ project_search_form|crispy }}
+            {% crispy project_search_form project_search_form.helper %}
             <input type="submit" class="btn btn-primary" value="Search">
             <button id="form_reset_button" type="button" class="btn btn-secondary">Reset</button>
           </form>
@@ -61,11 +61,13 @@ Project List
             <a href="?order_by=pi__username&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort PI desc</span></a>
           </th>
           <th scope="col">Title and Description</th>
-          <th scope="col" class="text-nowrap">
-            Field of Science
-            <a href="?order_by=field_of_science&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Field of Science asc</span></a>
-            <a href="?order_by=field_of_science&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Field of Science desc</span></a>
-          </th>
+          {% if not settings.FIELD_OF_SCIENCE_HIDE %}
+            <th scope="col" class="text-nowrap">
+              Field of Science
+              <a href="?order_by=field_of_science&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Field of Science asc</span></a>
+              <a href="?order_by=field_of_science&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Field of Science desc</span></a>
+            </th>
+          {% endif %}
           <th scope="col" class="text-nowrap">
             Status
             <a href="?order_by=status&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Status asc</span></a>
@@ -84,7 +86,9 @@ Project List
             <td>{{ project.pi.username }}</td>
             <td style="text-align: justify; text-justify: inter-word;"><strong>Title: </strong> {{ project.title }}
               <br> <strong>Description: </strong>{{ project.description }}</td>
-            <td>{{ project.field_of_science.description }}</td>
+            {% if not settings.FIELD_OF_SCIENCE_HIDE %}
+                <td>{{ project.field_of_science.description }}</td>
+            {% endif %}
             <td>{{ project.status.name }}</td>
             {% if PROJECT_INSTITUTION_EMAIL_MAP %}
                 <p class="card-text text-justify"><strong>Institution: </strong>{{ project.institution }}</p>
