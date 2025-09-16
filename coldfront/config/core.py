@@ -25,6 +25,11 @@ GRANT_ENABLE = ENV.bool("GRANT_ENABLE", default=True)
 PUBLICATION_ENABLE = ENV.bool("PUBLICATION_ENABLE", default=True)
 
 # ------------------------------------------------------------------------------
+# Hide Field of Science. Hide Field of Science related functionality if True
+# ------------------------------------------------------------------------------
+FIELD_OF_SCIENCE_HIDE = ENV.bool("FIELD_OF_SCIENCE_HIDE", default=False)
+
+# ------------------------------------------------------------------------------
 # Enable Project Review
 # ------------------------------------------------------------------------------
 PROJECT_ENABLE_PROJECT_REVIEW = ENV.bool("PROJECT_ENABLE_PROJECT_REVIEW", default=True)
@@ -62,6 +67,7 @@ SETTINGS_EXPORT += [
     "RESEARCH_OUTPUT_ENABLE",
     "GRANT_ENABLE",
     "PUBLICATION_ENABLE",
+    "FIELD_OF_SCIENCE_HIDE",
 ]
 
 ADMIN_COMMENTS_SHOW_EMPTY = ENV.bool("ADMIN_COMMENTS_SHOW_EMPTY", default=True)
