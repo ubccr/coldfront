@@ -288,7 +288,7 @@ class Command(BaseCommand):
         AllocationAttribute.objects.get_or_create(
             allocation_attribute_type=allocation_attribute_type_obj,
             allocation=allocation_obj,
-            value=f"pr_{allocation_obj.project.pk}_Tandon",
+            value=f"torch_pr_{allocation_obj.project.pk}_Tandon",
         )
 
         allocation_attribute_type_obj = AllocationAttributeType.objects.get(
@@ -342,7 +342,7 @@ class Command(BaseCommand):
         AllocationAttribute.objects.get_or_create(
             allocation_attribute_type=allocation_attribute_type_obj,
             allocation=allocation_obj,
-            value=f"pr_{allocation_obj.project.pk}_general",
+            value=f"torch_pr_{allocation_obj.project.pk}_general",
         )
 
         allocation_attribute_type_obj = AllocationAttributeType.objects.get(
@@ -388,7 +388,7 @@ class Command(BaseCommand):
         AllocationAttribute.objects.get_or_create(
             allocation_attribute_type=allocation_attribute_type_obj,
             allocation=allocation_obj,
-            value=f"pr_{allocation_obj.project.pk}_Tandon",
+            value=f"torch_pr_{allocation_obj.project.pk}_Tandon",
         )
 
         allocation_user_obj = AllocationUser.objects.create(
@@ -414,7 +414,7 @@ class Command(BaseCommand):
         AllocationAttribute.objects.get_or_create(
             allocation_attribute_type=allocation_attribute_type_obj,
             allocation=allocation_obj,
-            value=f"pr_{allocation_obj.project.pk}_Tandon",
+            value=f"torch_pr_{allocation_obj.project.pk}_Tandon",
         )
         allocation_attribute_type_obj = AllocationAttributeType.objects.get(
             name="Core Usage (Hours)"
@@ -531,7 +531,7 @@ class Command(BaseCommand):
         AllocationAttribute.objects.get_or_create(
             allocation_attribute_type=allocation_attribute_type_obj,
             allocation=allocation_obj,
-            value=f"pr_{allocation_obj.project.pk}_general",
+            value=f"torch_pr_{allocation_obj.project.pk}_general",
         )
 
         allocation_attribute_type_obj = AllocationAttributeType.objects.get(
