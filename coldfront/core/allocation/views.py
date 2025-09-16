@@ -67,6 +67,8 @@ from coldfront.core.allocation.signals import (
 from coldfront.core.allocation.utils import generate_guauge_data_from_usage, get_user_resources
 from coldfront.core.project.models import Project, ProjectPermission, ProjectUser, ProjectUserStatusChoice
 from coldfront.core.resource.models import Resource
+from coldfront.core.tag.models import Tag
+from coldfront.core.tag.views import TagsEditView
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import (
     build_link,
@@ -183,6 +185,11 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         context["notes"] = notes
         context["ALLOCATION_ENABLE_ALLOCATION_RENEWAL"] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
+
+        tags = allocation_obj.tags
+
+        context["tags"] = Tag.get_tags_visible_to_user(tags, self.request.user)
+        context["may_edit_tags"] = allocation_obj.has_perm(self.request.user, AllocationPermission.MANAGER)
         return context
 
     def get(self, request, *args, **kwargs):
@@ -327,6 +334,19 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             return HttpResponseRedirect(reverse("allocation-request-list"))
 
         return HttpResponseRedirect(reverse("allocation-detail", kwargs={"pk": pk}))
+
+
+class AllocationTagEditView(TagsEditView):
+    model = Allocation
+
+    def test_func(self):
+        """UserPassesTestMixin Tests"""
+        allocation_obj = get_object_or_404(self.model, pk=self.kwargs.get("pk"))
+        if allocation_obj.has_perm(self.request.user, AllocationPermission.MANAGER):
+            return True
+
+        messages.error(self.request, "You do not have permission to edit tags.")
+        return False
 
 
 class AllocationEULAView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):

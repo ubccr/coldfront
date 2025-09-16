@@ -13,6 +13,7 @@ from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
 from coldfront.core.field_of_science.models import FieldOfScience
+from coldfront.core.tag.models import Tag
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.validate import AttributeValidator
 
@@ -58,6 +59,7 @@ class Project(TimeStampedModel):
     Attributes:
         title (str): name of the project
         pi (User): represents the User object of the project's PI
+        tags (Tag): links tags that apply to this allocation
         description (str): description of the project
         field_of_science (FieldOfScience): represents the field of science for this project
         status (ProjectStatusChoice): represents the ProjectStatusChoice of this project
@@ -107,6 +109,7 @@ We do not have information about your research. Please provide a detailed descri
     objects = ProjectManager()
     project_code = models.CharField(max_length=10, blank=True)
     institution = models.CharField(max_length=80, blank=True, default="None")
+    tags = models.ManyToManyField(Tag, blank=True)
 
     def clean(self):
         """Validates the project and raises errors if the project is invalid."""

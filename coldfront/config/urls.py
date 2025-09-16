@@ -29,6 +29,7 @@ urlpatterns = [
     path("project/", include("coldfront.core.project.urls")),
     path("allocation/", include("coldfront.core.allocation.urls")),
     path("resource/", include("coldfront.core.resource.urls")),
+    path("tag/", include("coldfront.core.tag.urls")),
 ]
 
 if settings.GRANT_ENABLE:

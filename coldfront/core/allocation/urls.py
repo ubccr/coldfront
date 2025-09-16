@@ -65,6 +65,7 @@ urlpatterns = [
     path(
         "allocation-account-list/", allocation_views.AllocationAccountListView.as_view(), name="allocation-account-list"
     ),
+    path("<int:pk>/allocationtag/edit", allocation_views.AllocationTagEditView.as_view(), name="allocation-tag-edit"),
 ]
 
 if ALLOCATION_EULA_ENABLE:
