@@ -6,4 +6,3 @@ client = VASTClient(
     user=VASTUSER,
     password=VASTPASS,
 )
-

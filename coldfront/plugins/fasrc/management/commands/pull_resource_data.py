@@ -70,7 +70,6 @@ class Command(BaseCommand):
         # collect user and lab counts, allocation sizes for each volume
         resources = Resource.objects.filter(resource_type__name='Storage')
         # update all tier 0 resources
-        update_lfs_usages()
         for resource in resources:
             resource_name = resource.name.split('/')[0]
             if 'isilon' in resource.name:
@@ -86,8 +85,8 @@ class Command(BaseCommand):
                     'used_tb': isilon_used_tb,
                 }
                 update_resource_attr_types_from_dict(resource, attr_pairs)
-            elif resource.parent_resource and 'Tier 0' in resource.parent_resource.name:
-                pass
+            elif resource.parent_resource and 'Tier 0' in resource.parent_resource.name and 'vast' not in resource.name:
+                continue
             else:
                 try:
                     volume = [v for v in volumes if v['name'] == resource_name][0]
@@ -95,3 +94,4 @@ class Command(BaseCommand):
                     logger.debug('resource not found in starfish: %s', resource)
                     continue
                 update_resource_attr_types_from_dict(resource, volume['attrs'])
+        update_lfs_usages()
