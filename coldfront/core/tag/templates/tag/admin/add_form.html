@@ -1,0 +1,22 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls %}
+{% block after_field_sets %}
+<script>
+    const DEFAULT_CLASSES = "bg-info text-light"
+    const html_classes = document.getElementById("id_html_classes");
+ html_classes.value = DEFAULT_CLASSES;
+    const parent_tag = document.getElementById("id_parent_tag");
+ parent_tag.addEventListener("input", () => {
+   if (parent_tag.value === "") {
+     if (html_classes.value === "") {
+       html_classes.value = DEFAULT_CLASSES;
+     }
+   } else {
+     if (html_classes.value === DEFAULT_CLASSES) {
+       html_classes.value = "";
+     }
+   }
+ })
+        
+</script>
+{% endblock %}

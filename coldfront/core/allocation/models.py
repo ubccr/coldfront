@@ -19,6 +19,7 @@ from simple_history.models import HistoricalRecords
 import coldfront.core.attribute_expansion as attribute_expansion
 from coldfront.core.project.models import Project, ProjectPermission
 from coldfront.core.resource.models import Resource
+from coldfront.core.tag.models import Tag
 from coldfront.core.utils.common import import_from_settings
 
 logger = logging.getLogger(__name__)
@@ -67,6 +68,7 @@ class Allocation(TimeStampedModel):
     Attributes:
         project (Project): links the project the allocation falls under
         resources (Resource): links resources that this allocation allocates
+        tags (Tag): links tags that apply to this allocation
         status (AllocationStatusChoice): represents the status of the allocation
         quantity (int): indicates the quantity of the resource for the allocation, if applicable
         start_date (Date): indicates the start date of the allocation
@@ -93,6 +95,7 @@ class Allocation(TimeStampedModel):
         on_delete=models.CASCADE,
     )
     resources = models.ManyToManyField(Resource)
+    tags = models.ManyToManyField(Tag, blank=True)
     status = models.ForeignKey(AllocationStatusChoice, on_delete=models.CASCADE, verbose_name="Status")
     quantity = models.IntegerField(default=1)
     start_date = models.DateField(blank=True, null=True)

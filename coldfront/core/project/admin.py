@@ -142,6 +142,12 @@ class ProjectAttributeInLine(admin.TabularInline):
     )
 
 
+class ProjectTagInline(admin.TabularInline):
+    model = Project.tags.through
+    extra = 0
+    model._meta.verbose_name_plural = "Tags"
+
+
 @admin.register(AttributeType)
 class AttributeTypeAdmin(admin.ModelAdmin):
     list_display = ("name",)
@@ -334,8 +340,14 @@ class ProjectAdmin(SimpleHistoryAdmin):
         "projectuser__user__last_name",
         "title",
     ]
-    list_filter = ("status", "force_review")
-    inlines = [ProjectUserInline, ProjectAdminCommentInline, ProjectUserMessageInline, ProjectAttributeInLine]
+    list_filter = ("status", "force_review", "tags")
+    inlines = [
+        ProjectUserInline,
+        ProjectAdminCommentInline,
+        ProjectUserMessageInline,
+        ProjectAttributeInLine,
+        ProjectTagInline,
+    ]
     raw_id_fields = [
         "pi",
     ]
