@@ -15,8 +15,8 @@ from django.http import HttpResponse
 from django.urls import include, path
 from django.views.generic import TemplateView
 
-from coldfront.config.env import ENV, PROJECT_ROOT
 import coldfront.core.portal.views as portal_views
+from coldfront.config.env import ENV, PROJECT_ROOT
 
 admin.site.site_header = "ColdFront Administration"
 admin.site.site_title = "ColdFront Administration"
