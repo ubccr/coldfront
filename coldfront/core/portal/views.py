@@ -7,7 +7,8 @@ from collections import Counter
 
 from django.conf import settings
 from django.contrib.humanize.templatetags.humanize import intcomma
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, FloatField, Q, Sum
+from django.db.models.functions import Cast
 from django.shortcuts import render
 from django.views.decorators.cache import cache_page
 
@@ -137,7 +138,9 @@ def center_summary(request):
 
     # Grants Card
     total_grants_by_agency_sum = list(
-        Grant.objects.values("funding_agency__name").annotate(total_amount=Sum("total_amount_awarded"))
+        Grant.objects.values("funding_agency__name").annotate(
+            total_amount=Sum(Cast("total_amount_awarded", FloatField()))
+        )
     )
 
     total_grants_by_agency_count = list(
