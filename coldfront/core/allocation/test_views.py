@@ -536,7 +536,7 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
 
         # Verify AllocationAttribute for slurm_account_name
         allocation = self.project.allocation_set.latest("id")
-        expected_slurm_name = f"pr_{self.project.pk}_{self.resource_tandon.name}"
+        expected_slurm_name = f"torch_pr_{self.project.pk}_{self.resource_tandon.name}"
 
         slurm_attr = AllocationAttribute.objects.get(
             allocation_attribute_type=self.slurm_account_attr_type,
@@ -557,7 +557,7 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
 
         # Verify AllocationAttribute for slurm_account_name
         allocation = self.project.allocation_set.latest("id")
-        expected_slurm_name = f"pr_{self.project.pk}_general"
+        expected_slurm_name = f"torch_pr_{self.project.pk}_general"
 
         slurm_attr = AllocationAttribute.objects.get(
             allocation_attribute_type=self.slurm_account_attr_type,

@@ -712,9 +712,11 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             name="slurm_account_name"
         )
         if resource_obj.name == GENERAL_RESOURCE_NAME:  # "University HPC"
-            slurm_account_name = f"pr_{allocation_obj.project.pk}_general"
+            slurm_account_name = f"torch_pr_{allocation_obj.project.pk}_general"
         else:
-            slurm_account_name = f"pr_{allocation_obj.project.pk}_{resource_obj.name}"
+            slurm_account_name = (
+                f"torch_pr_{allocation_obj.project.pk}_{resource_obj.name}"
+            )
 
         AllocationAttribute.objects.get_or_create(
             allocation_attribute_type=allocation_attribute_type_obj,
