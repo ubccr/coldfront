@@ -13,6 +13,11 @@ for the following files:
 - `.env` in the ColdFront project root
 - `/etc/coldfront/coldfront.env`
 
+Note: You can check your project root with the following command:
+```shell
+coldfront diffsettings | grep PROJECT_ROOT
+```
+
 You can also specify the path to an environment file using the `COLDFRONT_ENV`
 environment variable. For example
 
