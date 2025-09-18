@@ -17,6 +17,7 @@ from coldfront.core.allocation.models import (
 )
 from coldfront.core.resource.models import Resource, ResourceType
 from coldfront.core.utils.common import import_from_settings
+from coldfront.plugins.auto_compute_allocation.fairshare_institution_name import generate_fairshare_institution_name
 
 # Environment variables for auto_compute_allocation in utils.py
 AUTO_COMPUTE_ALLOCATION_END_DELTA = import_from_settings("AUTO_COMPUTE_ALLOCATION_END_DELTA")
@@ -94,7 +95,7 @@ def allocation_auto_compute_attribute_create(allocation_attribute_type_obj, allo
     return allocation_attribute_obj
 
 
-def allocation_auto_compute_fairshare_institute(project_obj, allocation_obj):
+def allocation_auto_compute_fairshare_institution(project_obj, allocation_obj):
     """method to add an institutional fair share value for slurm association - slurm specs"""
     if not hasattr(project_obj, "institution"):
         logger.info("Enable institution feature to set per institution fairshare in the auto_compute_allocation plugin")
@@ -114,7 +115,8 @@ def allocation_auto_compute_fairshare_institute(project_obj, allocation_obj):
         )
         return None
 
-    fairshare_institution = project_obj.institution
+    # get the format for the fairshare institution
+    fairshare_institution = generate_fairshare_institution_name(project_obj)
 
     allocation_attribute_type_obj = AllocationAttributeType.objects.get(name="slurm_specs")
     fairshare_value = f"Fairshare={fairshare_institution}"
