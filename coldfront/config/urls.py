@@ -6,6 +6,7 @@
 ColdFront URL Configuration
 """
 
+import environ
 import split_settings
 from django.conf import settings
 from django.contrib import admin
