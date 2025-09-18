@@ -27,6 +27,10 @@
 </div>
 <!-- End Allocation Charts -->
 
+{{ allocations_chart_data|json_script:"allocations-chart-data" }}
+{{ resources_chart_data|json_script:"resources-chart-data" }}
+
+
 <script>
   $(document).ready(function () {
     drawAllocations();
@@ -70,6 +74,6 @@
     });
   }
 
-  var allocations_chart_data = {{ allocations_chart_data | safe }}
-  var resources_chart_data = {{ resources_chart_data | safe }}
+  var allocations_chart_data = JSON.parse(document.getElementById('allocations-chart-data').textContent);
+  var resources_chart_data = JSON.parse(document.getElementById('resources-chart-data').textContent);
 </script>

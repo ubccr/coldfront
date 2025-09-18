@@ -518,6 +518,7 @@ Project Detail
   </div>
 </div>
 <!-- End Admin Messages -->
+{{ guage_data|json_script:"guage-data" }}
 
 <script>
   function getCookie(name) {
@@ -539,7 +540,7 @@ Project Detail
   $(document).ready(function(){
     $('[data-toggle="popover"]').popover();
 
-    var guage_data = {{ guage_data | safe }};
+    var guage_data = JSON.parse(document.getElementById('guage-data').textContent);
     drawGauges(guage_data);
 
     $('#publication-table').DataTable({

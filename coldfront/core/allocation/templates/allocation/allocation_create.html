@@ -60,11 +60,16 @@ Request New Allocation
   </div>
 </div>
 
+{{ resources_form_default_quantities|json_script:"resources-form-default-quantities" }}
+{{ resources_form_label_texts|json_script:"resources-form-label-texts" }}
+{{ resources_with_accounts|json_script:"resources-with-accounts" }}
+{{ resources_with_eula|json_script:"resources-with-eula" }}
+
 <script>
-  var resources_form_default_quantities = {{ resources_form_default_quantities | safe }};
-  var resources_form_label_texts = {{ resources_form_label_texts | safe }};
-  var resources_with_accounts = {{ resources_with_accounts | safe }};
-  var resources_with_eula = {{ resources_with_eula | safe }};
+  var resources_form_default_quantities = JSON.parse(document.getElementById('resources-form-default-quantities').textContent);
+  var resources_form_label_texts = JSON.parse(document.getElementById('resources-form-label-texts').textContent);
+  var resources_with_accounts = JSON.parse(document.getElementById('resources-with-accounts').textContent);
+  var resources_with_eula = JSON.parse(document.getElementById('resources-with-eula').textContent);
 
   $(document).ready(function () {
     $('<br><input id="selectAll" class="check" type="checkbox"> <strong>Select All Users</strong>').insertAfter($("#div_id_users > label"))
