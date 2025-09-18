@@ -15,6 +15,7 @@ from coldfront.plugins.slurm.associations import SlurmCluster
 from coldfront.plugins.slurm.utils import (
     SLURM_CLUSTER_ATTRIBUTE_NAME,
     SlurmError,
+    parse_qos,
     slurm_dump_cluster,
     slurm_remove_account,
     slurm_remove_assoc,
@@ -53,11 +54,11 @@ class Command(BaseCommand):
 
     def _skip_user(self, user, account):
         if user in SLURM_IGNORE_USERS:
-            logger.debug("Ignoring user %s", user)
+            logger.debug(f"Ignoring user {user}")
             return True
 
         if account in SLURM_IGNORE_ACCOUNTS:
-            logger.debug("Ignoring account %s", account)
+            logger.debug(f"Ignoring account {account}")
             return True
 
         if self.filter_account and account != self.filter_account:
@@ -70,7 +71,7 @@ class Command(BaseCommand):
 
     def _skip_account(self, account):
         if account in SLURM_IGNORE_ACCOUNTS:
-            logger.debug("Ignoring account %s", account)
+            logger.debug(f"Ignoring account {account}")
             return True
 
         if self.filter_user:
@@ -89,13 +90,9 @@ class Command(BaseCommand):
             try:
                 slurm_remove_assoc(user, cluster, account, noop=self.noop)
             except SlurmError as e:
-                logger.error(
-                    "Failed removing Slurm association user %s account %s cluster %s: %s", user, account, cluster, e
-                )
+                logger.error(f"Failed removing Slurm association user {user} account {account} cluster {cluster}: {e}")
             else:
-                logger.error(
-                    "Removed Slurm association user %s account %s cluster %s successfully", user, account, cluster
-                )
+                logger.error(f"Removed Slurm association user {user} account {account} cluster {cluster} successfully")
 
         row = [
             user,
@@ -114,9 +111,9 @@ class Command(BaseCommand):
             try:
                 slurm_remove_account(cluster, account, noop=self.noop)
             except SlurmError as e:
-                logger.error("Failed removing Slurm account %s cluster %s: %s", account, cluster, e)
+                logger.error(f"Failed removing Slurm account {account} cluster {cluster}: {e}")
             else:
-                logger.error("Removed Slurm account %s cluster %s successfully", account, cluster)
+                logger.error(f"Removed Slurm account {account} cluster {cluster} successfully")
 
         row = [
             "",
@@ -137,97 +134,61 @@ class Command(BaseCommand):
                 pass
             except SlurmError as e:
                 logger.error(
-                    "Failed removing Slurm qos %s for user %s account %s cluster %s: %s", qos, user, account, cluster, e
+                    f"Failed removing Slurm qos {qos} for user {user} account {account} cluster {cluster}: {e}"
                 )
             else:
                 logger.error(
-                    "Removed Slurm qos %s for user %s account %s cluster %s successfully", qos, user, account, cluster
+                    f"Removed Slurm qos {qos} for user {user} account {account} cluster {cluster} successfully"
                 )
 
         row = [user, account, cluster, "Remove", qos]
 
         self.write("\t".join(row))
 
-    def _parse_qos(self, qos):
-        if qos.startswith("QOS+="):
-            qos = qos.replace("QOS+=", "")
-            qos = qos.replace("'", "")
-            return qos.split(",")
-        elif qos.startswith("QOS="):
-            qos = qos.replace("QOS=", "")
-            qos = qos.replace("'", "")
-            lst = []
-            for q in qos.split(","):
-                if q.startswith("+"):
-                    lst.append(q.replace("+", ""))
-            return lst
-
-        return []
-
     def _diff_qos(self, account_name, cluster_name, user_a, user_b):
         logger.debug(
-            "diff qos: cluster=%s account=%s uid=%s a=%s b=%s",
-            cluster_name,
-            account_name,
-            user_a.name,
-            user_a.spec_list(),
-            user_b.spec_list(),
+            f"diff qos: cluster={cluster_name}"
+            f" account={account_name}"
+            f" uid={user_a.name}"
+            f" a={user_a.spec_list()}"
+            f" b={user_b.spec_list()}"
         )
 
         specs_a = []
         for s in user_a.spec_list():
             if s.startswith("QOS"):
-                specs_a += self._parse_qos(s)
+                specs_a += parse_qos(s)
 
         specs_b = []
         for s in user_b.spec_list():
             if s.startswith("QOS"):
-                specs_b += self._parse_qos(s)
+                specs_b += parse_qos(s)
 
         specs_set_a = set(specs_a)
         specs_set_b = set(specs_b)
 
         diff = specs_set_a.difference(specs_set_b)
         logger.debug(
-            "diff qos: cluster=%s account=%s uid=%s a=%s b=%s diff=%s",
-            cluster_name,
-            account_name,
-            user_a.name,
-            specs_set_a,
-            specs_set_b,
-            diff,
+            f"diff qos: cluster={cluster_name}"
+            f" account={account_name}"
+            f" uid={user_a.name}"
+            f" a={user_a.spec_list()}"
+            f" b={user_b.spec_list()}"
+            f" diff={diff}"
         )
 
         if len(diff) > 0:
             self.remove_qos(user_a.name, account_name, cluster_name, "QOS-=" + ",".join([x for x in list(diff)]))
 
-    def _diff(self, cluster_a, cluster_b):
-        for name, account in cluster_a.accounts.items():
-            if name == "root":
-                continue
-
-            if name in cluster_b.accounts:
-                total = 0
-                for uid, user in account.users.items():
-                    if uid == "root":
-                        continue
-                    if uid not in cluster_b.accounts[name].users:
-                        self.remove_user(uid, name, cluster_a.name)
-                        total += 1
-                    else:
-                        self._diff_qos(name, cluster_a.name, user, cluster_b.accounts[name].users[uid])
-
-                if total == len(account.users):
-                    self.remove_account(name, cluster_a.name)
-            else:
-                for uid, user in account.users.items():
-                    self.remove_user(uid, name, cluster_a.name)
-
-                self.remove_account(name, cluster_a.name)
-
-    def check_consistency(self, slurm_cluster, coldfront_cluster):
+    def check_consistency(self, slurm_cluster: SlurmCluster, coldfront_cluster: SlurmCluster):
         # Check for accounts in Slurm NOT in ColdFront
-        self._diff(slurm_cluster, coldfront_cluster)
+        objects_to_remove = slurm_cluster.get_objects_to_remove(coldfront_cluster)
+        for qos_kwargs in objects_to_remove["qoses"]:
+            self.remove_qos(cluster=slurm_cluster.name, **qos_kwargs)
+        for user_kwargs in objects_to_remove["users"]:
+            self.remove_user(cluster=slurm_cluster.name, **user_kwargs)
+        for account_kwargs in objects_to_remove["accounts"]:
+            self.remove_account(cluster=slurm_cluster.name, **account_kwargs)
 
     def _cluster_from_dump(self, cluster):
         slurm_cluster = None
@@ -238,7 +199,7 @@ class Command(BaseCommand):
                 with open(fname) as fh:
                     slurm_cluster = SlurmCluster.new_from_stream(fh)
             except SlurmError as e:
-                logger.error("Failed to dump Slurm cluster %s: %s", cluster, e)
+                logger.error(f"Failed to dump Slurm cluster {cluster}: {e}")
 
         return slurm_cluster
 
@@ -277,7 +238,7 @@ class Command(BaseCommand):
             sys.exit(1)
 
         if slurm_cluster.name in SLURM_IGNORE_CLUSTERS:
-            logger.warning("Ignoring cluster %s. Nothing to do.", slurm_cluster.name)
+            logger.warning(f"Ignoring cluster {slurm_cluster.name}. Nothing to do.")
             sys.exit(0)
 
         try:
@@ -286,9 +247,7 @@ class Command(BaseCommand):
             ).resource
         except ResourceAttribute.DoesNotExist:
             logger.error(
-                "No Slurm '%s' cluster resource found in ColdFront using '%s' attribute",
-                slurm_cluster.name,
-                SLURM_CLUSTER_ATTRIBUTE_NAME,
+                f"No Slurm '{slurm_cluster.name}' cluster resource found in ColdFront using '{SLURM_CLUSTER_ATTRIBUTE_NAME}' attribute"
             )
             sys.exit(1)
 
