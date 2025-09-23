@@ -67,7 +67,7 @@ class ProjectAddUsersToAllocationForm(forms.Form):
         ]
         allocation_choices_sorted = []
         allocation_choices_sorted = sorted(allocation_choices, key=lambda x: x[1][0].lower())
-        allocation_choices.insert(0, ("__select_all__", "Select All"))
+        allocation_choices_sorted.insert(0, ("__select_all__", "Select All"))
         if allocation_query_set:
             self.fields["allocation"].choices = allocation_choices_sorted
             self.fields["allocation"].help_text = "<br/>Select allocations to add selected users to."
