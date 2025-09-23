@@ -279,6 +279,13 @@ Allocation Detail
 <div class="card mb-3">
   <div class="card-header">
     <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Allocation Change Requests</h3> <span class="badge badge-secondary">{{allocation_changes.count}}</span>
+    <div class="float-right">
+      {% if request.user.is_superuser and allocation.is_changeable and not allocation.is_locked and is_allowed_to_update_project and allocation.status.name in 'Active, Renewal Requested, Payment Pending, Payment Requested, Paid' %}
+        <a class="btn btn-primary float-right" href="{% url 'allocation-change' allocation.pk %}" role="button">
+          Request Change
+        </a>
+      {% endif %}
+    </div>
   </div>
   
   <div class="card-body">
@@ -309,7 +316,9 @@ Allocation Detail
                   {% else %}
                     <td></td>
                   {% endif %}
-                  <td><a href="{% url 'allocation-change-detail' change_request.pk %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
+                  {% if can_edit_allocation_changes %}
+                    <td><a href="{% url 'allocation-change-detail' change_request.pk %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
+                  {% endif %}
                 </tr>
             {% endfor %}
           </tbody>
