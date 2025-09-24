@@ -15,8 +15,10 @@ WORKDIR /app
 RUN chown -R 1001:0 /app && \
     chmod -R g=u /app
 
+RUN mkdir -p /tmp/uv
+
 # Need this to prevent os13 errors on shipwright.
-ENV UV_CACHE_DIR=/tmp
+ENV UV_CACHE_DIR=/tmp/uv
 
 # From uv template: Install the project's dependencies using the lockfile and settings
 # Need to relabel due to SELinux restrictions, ref: https://github.com/containers/podman/issues/26020
@@ -37,3 +39,6 @@ EXPOSE 8000
 ENV DEBUG=True
 ENV PYTHONUNBUFFERED=1
 EXPOSE 5678
+
+RUN chown -R 1001:0 /tmp/uv && \
+    chmod -R g=u /tmp/uv
