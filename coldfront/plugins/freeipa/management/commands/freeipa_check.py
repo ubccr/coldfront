@@ -186,7 +186,7 @@ class Command(BaseCommand):
                 logger.info("User %s should be removed from freeipa group: %s", user.username, g)
                 self.remove_group(user, g, freeipa_status)
 
-    def process_user(self, user):
+    def process_user(self, user):  # noqa: C901 # FIXME: method is too complex
         if self.filter_user and self.filter_user != user.username:
             return
 
@@ -241,7 +241,7 @@ class Command(BaseCommand):
 
         self.check_user_freeipa(user, active_groups, removed_groups)
 
-    def handle(self, *args, **options):
+    def handle(self, *args, **options):  # noqa: C901 # FIXME: method is too complex
         os.environ["KRB5_CLIENT_KTNAME"] = CLIENT_KTNAME
 
         verbosity = int(options["verbosity"])

@@ -51,7 +51,7 @@ class Command(BaseCommand):
             os.dup2(devnull, sys.stdout.fileno())
             sys.exit(1)
 
-    def process_total_storage(self):
+    def process_total_storage(self):  # noqa: C901 # FIXME: method is too complex
         header = [
             "allocation_id",
             "pi",
@@ -156,7 +156,7 @@ class Command(BaseCommand):
                 )
             )
 
-    def process_total_gpu_hours(self):
+    def process_total_gpu_hours(self):  # noqa: C901 # FIXME: method is too complex
         header = [
             "allocation_id",
             "pi",
@@ -261,7 +261,7 @@ class Command(BaseCommand):
                 )
             )
 
-    def process_total_cpu_hours(self):
+    def process_total_cpu_hours(self):  # noqa: C901 # FIXME: method is too complex
         header = [
             "allocation_id",
             "pi",
@@ -359,7 +359,7 @@ class Command(BaseCommand):
                 )
             )
 
-    def process_cloud_core_time(self):
+    def process_cloud_core_time(self):  # noqa: C901 # FIXME: method is too complex
         header = [
             "allocation_id",
             "pi",
@@ -457,7 +457,7 @@ class Command(BaseCommand):
                 )
             )
 
-    def handle(self, *args, **options):
+    def handle(self, *args, **options):  # noqa: C901 # FIXME: method is too complex
         verbosity = int(options["verbosity"])
         root_logger = logging.getLogger("")
         if verbosity == 0:
