@@ -3,8 +3,6 @@ FROM registry.cloud.rt.nyu.edu/nyu-rts/ubi/ubi9
 # Build Python as superuser!
 RUN dnf install -y python3.12 && dnf update -y
 
-USER 1001
-
 LABEL name="coldfront" \
       vendor="NYU RTS" \
       description="For production use to deploy Coldfront in RTC" 
@@ -12,8 +10,6 @@ LABEL name="coldfront" \
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /app
-RUN chown -R 1001:0 /app && \
-    chmod -R g=u /app
 
 # Need this to prevent os13 errors on shipwright.
 ENV UV_CACHE_DIR=/tmp
