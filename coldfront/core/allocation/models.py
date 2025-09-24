@@ -20,12 +20,11 @@ import coldfront.core.attribute_expansion as attribute_expansion
 from coldfront.core.project.models import Project, ProjectPermission
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import import_from_settings
-
+from django.conf import settings
 logger = logging.getLogger(__name__)
 
 ALLOCATION_ATTRIBUTE_VIEW_LIST = import_from_settings("ALLOCATION_ATTRIBUTE_VIEW_LIST", [])
 ALLOCATION_FUNCS_ON_EXPIRE = import_from_settings("ALLOCATION_FUNCS_ON_EXPIRE", [])
-ALLOCATION_RESOURCE_ORDERING = import_from_settings("ALLOCATION_RESOURCE_ORDERING", ["-is_allocatable", "name"])
 
 
 class AllocationPermission(Enum):
@@ -195,7 +194,7 @@ class Allocation(TimeStampedModel):
             str: the resources for the allocation
         """
 
-        return ", ".join([ele.name for ele in self.resources.all().order_by(*ALLOCATION_RESOURCE_ORDERING)])
+        return ", ".join([ele.name for ele in self.resources.all().order_by(*settings.ALLOCATION_RESOURCE_ORDERING)])
 
     @property
     def get_resources_as_list(self):
@@ -216,7 +215,7 @@ class Allocation(TimeStampedModel):
         if self.resources.count() == 1:
             return self.resources.first()
         else:
-            parent = self.resources.order_by(*ALLOCATION_RESOURCE_ORDERING).first()
+            parent = self.resources.order_by(*settings.ALLOCATION_RESOURCE_ORDERING).first()
             if parent:
                 return parent
             # Fallback
