@@ -295,10 +295,7 @@ class ProjectListViewTest(ProjectViewTestBase):
     def test_project_list_search(self):
         """Test that project list search works."""
         url_base = self.url + "?show_all_projects=on"
-        url = (
-            f"{url_base}&last_name={self.project.pi.last_name}"
-            + f"&field_of_science={self.project.field_of_science.description}"
-        )
+        url = f"{url_base}&last_name={self.project.pi.last_name}&field_of_science={self.project.field_of_science.description}"
         # search by project project_title
         response = utils.login_and_get_page(self.client, self.admin_user, url)
         self.assertEqual(len(response.context["object_list"]), 1)
