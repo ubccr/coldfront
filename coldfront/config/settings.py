@@ -8,14 +8,7 @@ from split_settings.tools import include, optional
 from coldfront.config.env import ENV, PROJECT_ROOT
 
 # ColdFront split settings
-coldfront_configs = [
-    "base.py",
-    "database.py",
-    "auth.py",
-    "logging.py",
-    "core.py",
-    "email.py",
-]
+coldfront_configs = ["base.py", "database.py", "auth.py", "logging.py", "core.py", "email.py", "testing.py"]
 
 # ColdFront plugin settings
 plugin_configs = {
