@@ -127,3 +127,9 @@ PROJECT_CODE_PADDING = ENV.int("PROJECT_CODE_PADDING", default=None)
 # ------------------------------------------------------------------------------
 
 PROJECT_INSTITUTION_EMAIL_MAP = ENV.dict("PROJECT_INSTITUTION_EMAIL_MAP", default={})
+
+# ------------------------------------------------------------------------------
+# Web request settings.
+# ------------------------------------------------------------------------------
+
+REQUEST_TIMEOUT_SECONDS = ENV.int("REQUEST_TIMEOUT_SECONDS", default=10)
