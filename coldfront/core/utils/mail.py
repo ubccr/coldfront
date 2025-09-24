@@ -60,7 +60,7 @@ def send_email(subject, body, sender, receiver_list, cc=[]):
 def send_email_template(subject, template_name, template_context, sender, receiver_list, cc=[]):
     """Helper function for sending emails from a template"""
     if not EMAIL_ENABLED:
-        return
+        return None
 
     body = render_to_string(template_name, template_context)
 

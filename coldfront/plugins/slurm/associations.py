@@ -73,7 +73,7 @@ class SlurmCluster(SlurmBase):
             line = line.strip()
             if re.match("^#", line):
                 continue
-            elif re.match("^Cluster - '[^']+'", line):
+            if re.match("^Cluster - '[^']+'", line):
                 parts = line.split(":")
                 name = re.sub(r"^Cluster - ", "", parts[0]).strip("\n'")
                 if len(name) == 0:

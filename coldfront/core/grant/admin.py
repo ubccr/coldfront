@@ -63,5 +63,4 @@ class GrantAdmin(SimpleHistoryAdmin):
     def Funding_Agency(self, obj):
         if obj.funding_agency.name == "Other":
             return obj.other_funding_agency
-        else:
-            return obj.funding_agency.name
+        return obj.funding_agency.name

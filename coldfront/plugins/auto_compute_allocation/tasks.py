@@ -35,14 +35,14 @@ def add_auto_compute_allocation(project_obj):
             "Additional message - this issue was encountered with project pk %s",
             {project_obj.pk},
         )
-        return None
+        return
     if project_obj.project_code in [None, ""]:
         logger.info("None or empty project_code value encountered, please run the project code management command")
         logger.info(
             "Additional message - this issue was encountered with project pk %s",
             {project_obj.pk},
         )
-        return None
+        return
 
     project_code = project_obj.project_code
     auto_allocation_clusters = get_cluster_resources_tuple()

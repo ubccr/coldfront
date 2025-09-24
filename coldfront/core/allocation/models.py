@@ -215,12 +215,11 @@ class Allocation(TimeStampedModel):
 
         if self.resources.count() == 1:
             return self.resources.first()
-        else:
-            parent = self.resources.order_by(*ALLOCATION_RESOURCE_ORDERING).first()
-            if parent:
-                return parent
-            # Fallback
-            return self.resources.first()
+        parent = self.resources.order_by(*ALLOCATION_RESOURCE_ORDERING).first()
+        if parent:
+            return parent
+        # Fallback
+        return self.resources.first()
 
     def get_attribute(self, name, expand=True, typed=True, extra_allocations=[]):
         """
@@ -238,11 +237,9 @@ class Allocation(TimeStampedModel):
         if attr:
             if expand:
                 return attr.expanded_value(extra_allocations=extra_allocations, typed=typed)
-            else:
-                if typed:
-                    return attr.typed_value()
-                else:
-                    return attr.value
+            if typed:
+                return attr.typed_value()
+            return attr.value
         return None
 
     def set_usage(self, name, value):
@@ -282,11 +279,9 @@ class Allocation(TimeStampedModel):
         attr = self.allocationattribute_set.filter(allocation_attribute_type__name=name).all()
         if expand:
             return [a.expanded_value(typed=typed, extra_allocations=extra_allocations) for a in attr]
-        else:
-            if typed:
-                return [a.typed_value() for a in attr]
-            else:
-                return [a.value for a in attr]
+        if typed:
+            return [a.typed_value() for a in attr]
+        return [a.value for a in attr]
 
     def get_attribute_set(self, user):
         """
@@ -350,8 +345,7 @@ class Allocation(TimeStampedModel):
             for res in self.get_resources_as_list:
                 if res.get_attribute(name="eula"):
                     return res.get_attribute(name="eula")
-        else:
-            return None
+        return None
 
 
 class AllocationAdminNote(TimeStampedModel):
@@ -483,19 +477,19 @@ class AllocationAttribute(TimeStampedModel):
                 'Invalid Value "%s" for "%s". Value must be an integer.'
                 % (self.value, self.allocation_attribute_type.name)
             )
-        elif expected_value_type == "Float" and not (
+        if expected_value_type == "Float" and not (
             isinstance(literal_eval(self.value), float) or isinstance(literal_eval(self.value), int)
         ):
             raise ValidationError(
                 'Invalid Value "%s" for "%s". Value must be a float.'
                 % (self.value, self.allocation_attribute_type.name)
             )
-        elif expected_value_type == "Yes/No" and self.value not in ["Yes", "No"]:
+        if expected_value_type == "Yes/No" and self.value not in ["Yes", "No"]:
             raise ValidationError(
                 'Invalid Value "%s" for "%s". Allowed inputs are "Yes" or "No".'
                 % (self.value, self.allocation_attribute_type.name)
             )
-        elif expected_value_type == "Date":
+        if expected_value_type == "Date":
             try:
                 datetime.datetime.strptime(self.value.strip(), "%Y-%m-%d")
             except ValueError:
@@ -710,8 +704,7 @@ class AllocationChangeRequest(TimeStampedModel):
 
         if self.allocation.resources.count() == 1:
             return self.allocation.resources.first()
-        else:
-            return self.allocation.resources.filter(is_allocatable=True).first()
+        return self.allocation.resources.filter(is_allocatable=True).first()
 
     def __str__(self):
         return "%s (%s)" % (self.get_parent_resource.name, self.allocation.project.pi)

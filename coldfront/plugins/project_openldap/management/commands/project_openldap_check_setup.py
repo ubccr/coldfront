@@ -61,18 +61,18 @@ class Command(BaseCommand):
 
             if not env_var and not required:
                 self.stdout.write(self.style.NOTICE(f"[OPTIONAL] {name} is not set (using default)"))
-                return None
+                return
             if not env_var and required:
                 self.stdout.write(
                     self.style.WARNING(f"[REQUIRED] WARNING - {name} is not set or 0 length in settings!")
                 )
-                return None
+                return
 
             if name == "PROJECT_CODE_PADDING" and int(env_var) == LOCAL_PROJECT_CODE_PADDING_LOWER_LIMIT:
                 self.stdout.write(
                     self.style.WARNING("[OPTIONAL] WARNING PROJECT_CODE_PADDING is NOT VALID - example value: 4!")
                 )
-                return None
+                return
             if name == "PROJECT_OPENLDAP_GID_START" and int(env_var) <= LOCAL_GID_ADVISED_LOWER_LIMIT:
                 self.stdout.write(
                     self.style.WARNING(
@@ -80,7 +80,7 @@ class Command(BaseCommand):
                     )
                 )
                 self.stdout.write(self.style.WARNING("IMPORTANT - FIX THIS ERROR FIRST"))
-                return None
+                return
 
             if name == "PROJECT_OPENLDAP_DESCRIPTION_TITLE_LENGTH" and (
                 int(env_var) <= LOCAL_DESCRIPTION_TITLE_LENGTH_LOWER_LIMIT
@@ -91,7 +91,7 @@ class Command(BaseCommand):
                         f"[REQUIRED] WARNING PROJECT_OPENLDAP_DESCRIPTION_TITLE_LENGTH should be less then {LOCAL_DESCRIPTION_TITLE_LENGTH_UPPER_LIMIT} but more than {LOCAL_DESCRIPTION_TITLE_LENGTH_LOWER_LIMIT}"
                     )
                 )
-                return None
+                return
 
             status = "[REQUIRED]" if required else "[OPTIONAL]"
             self.stdout.write(
