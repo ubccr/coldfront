@@ -18,7 +18,7 @@ RUN chown -R 1001:0 /app && \
 
 # From uv template: Install the project's dependencies using the lockfile and settings
 # Need to relabel due to SELinux restrictions, ref: https://github.com/containers/podman/issues/26020
-RUN --mount=type=cache,target=/root/.cache/uv \
+RUN --mount=type=cache,target=/root/.cache/uv,relabel=shared \
     --mount=type=bind,source=uv.lock,target=uv.lock,relabel=shared \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml,relabel=shared \
     uv sync --locked --no-install-project --no-dev
