@@ -13,7 +13,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /app
 RUN chown -R 1001:0 /app && \
-    chmod -R g=u /app
+    chmod -R g+rwx /app
 
 RUN mkdir -p /tmp/uv
 
@@ -41,4 +41,6 @@ ENV PYTHONUNBUFFERED=1
 EXPOSE 5678
 
 RUN chown -R 1001:0 /tmp/uv && \
-    chmod -R g=u /tmp/uv
+    chmod -R g=u /tmp/uv && \
+    chown -R 1001:0 /app && \
+    chmod -R g+rwx /app 
