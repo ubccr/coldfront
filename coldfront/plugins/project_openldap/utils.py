@@ -123,9 +123,9 @@ def add_per_project_ou_to_openldap(project_obj, dn, openldap_ou_description, wri
         )
     except Exception as exc_log:
         logger.error("Project OU: DN to write...")
-        logger.error(f"dn - {dn}")
+        logger.error("dn - %s", dn)
         logger.error("Attributes to write...")
-        logger.error(f"OU description - {openldap_ou_description}")
+        logger.error("OU description - %s", openldap_ou_description)
         logger.error(exc_log)
     finally:
         conn.unbind()
@@ -149,9 +149,9 @@ def add_project_posixgroup_to_openldap(dn, openldap_description, gid_int, write=
         )
     except Exception as exc_log:
         logger.error("Project posixgroup: DN to write...")
-        logger.error(f"dn - {dn}")
+        logger.error("dn - %s", dn)
         logger.error("Attributes to write...")
-        logger.error(f"posixGroup description - {openldap_description} gidNumber - {gid_int}")
+        logger.error("posixGroup description - %s gidNumber - %s", openldap_description, gid_int)
         logger.error(exc_log)
     finally:
         conn.unbind()
