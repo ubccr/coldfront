@@ -30,9 +30,6 @@ COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --extra prod --no-dev
 
-# Run initial setup process
-RUN echo "yes" | uv run manage.py initial_setup
-
 # Default port for gunicorn
 EXPOSE 8000
 
