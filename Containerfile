@@ -1,4 +1,8 @@
-FROM registry.access.redhat.com/ubi10/python-312-minimal
+FROM registry.cloud.rt.nyu.edu/nyu-rts/ubi/ubi9
+
+# Build Python as superuser!
+RUN dnf install -y python3.12 && dnf update -y
+
 USER 1001
 
 LABEL name="coldfront" \
@@ -10,6 +14,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 WORKDIR /app
 RUN chown -R 1001:0 /app && \
     chmod -R g=u /app
+
 
 # From uv template: Install the project's dependencies using the lockfile and settings
 # Need to relabel due to SELinux restrictions, ref: https://github.com/containers/podman/issues/26020
