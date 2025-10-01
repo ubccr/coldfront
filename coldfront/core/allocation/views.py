@@ -18,7 +18,7 @@ from django.forms import formset_factory
 from django.http import HttpResponseBadRequest, HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse, reverse_lazy
-from django.utils.html import format_html, mark_safe
+from django.utils.html import format_html
 from django.views import View
 from django.views.generic import ListView, TemplateView
 from django.views.generic.edit import CreateView, FormView, UpdateView
@@ -642,7 +642,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     if attr_name == "quantity_default_value":
                         resources_form_default_quantities[resource.id] = int(value)
                     if attr_name == "quantity_label":
-                        resources_form_label_texts[resource.id] = mark_safe(f"<strong>{value}*</strong>")
+                        resources_form_label_texts[resource.id] = value
                     if attr_name == "eula":
                         resources_with_eula[resource.id] = value
 

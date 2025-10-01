@@ -89,8 +89,11 @@ Renew Allocation
   </div>
 </div>
 
+{{ resource_eula|json_script:"resource-eula" }}
+
+
 <script>
-  var resource_eula = {{ resource_eula | safe }};
+  var resource_eula = JSON.parse(document.getElementById('resource-eula').textContent);
 
   $(document).ready(function () {
     if (resource_eula['eula']) {

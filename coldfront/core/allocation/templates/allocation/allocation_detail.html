@@ -424,9 +424,12 @@ Allocation Detail
 </div>
 {% endif %}
 
+{{ guage_data|json_script:"guage-data" }}
+
+
 <script>
   $(document).ready(function () {
-    var guage_data = {{ guage_data | safe }};
+    var guage_data = JSON.parse(document.getElementById('guage-data').textContent);
     drawGauges(guage_data);
 
     $('#allocation_change_table').DataTable({
