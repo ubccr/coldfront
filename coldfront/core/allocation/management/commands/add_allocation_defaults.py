@@ -61,6 +61,7 @@ class Command(BaseCommand):
             ("Purchase Order Number", "Int", False, True),
             ("send_expiry_email_on_date", "Date", False, True),
             ("slurm_account_name", "Text", False, False),
+            ("slurm_children", "Text", False, False),
             ("slurm_specs", "Attribute Expanded Text", False, True),
             ("slurm_specs_attriblist", "Text", False, True),
             ("slurm_user_specs", "Attribute Expanded Text", False, True),

@@ -53,5 +53,5 @@ class Command(BaseCommand):
                 cluster.write(self.stdout)
                 continue
 
-            with open(os.path.join(out_dir, "{}.cfg".format(cluster.name)), "w") as fh:
+            with open(os.path.join(out_dir, f"{cluster.name}.cfg"), "w") as fh:
                 cluster.write(fh)
