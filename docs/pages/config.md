@@ -284,6 +284,30 @@ exist in your backend LDAP to show up in the ColdFront user search.
 | LDAP_USER_SEARCH_CACERT_FILE  | Path to the CA cert file.             |
 | LDAP_USER_SEARCH_CERT_VALIDATE_MODE | Whether to require/validate certs.  If 'required', certs are required and validated.  If 'optional', certs are optional but validated if provided.  If 'none' (the default) certs are ignored. |
 
+#### Project OpenLDAP
+
+This plugin allows for projects and project membership to be synced to an OpenLDAP server.
+See `coldfront/coldfront/plugins/project_openldap/README.md` in the source code for more detailed information.
+
+| Option                                      | Description                                                                          |
+|---------------------------------------------|--------------------------------------------------------------------------------------|
+| `PLUGIN_PROJECT_OPENLDAP`                   | Enable the plugin, required to be set as True (bool).                                |
+| `PROJECT_OPENLDAP_GID_START`                | Starting value for project gidNumbers, requires an integer.                          |
+| `PROJECT_OPENLDAP_SERVER_URI`               | The URI of the OpenLDAP instance, requires a string URI.                             |
+| `PROJECT_OPENLDAP_OU`                       | The OU where projects will be written, requires a string DN of OU.                   |
+| `PROJECT_OPENLDAP_BIND_USER`                | DN of bind user.                                                                     |
+| `PROJECT_OPENLDAP_BIND_PASSWORD`            | The password for the bind user, requires a string.                                   |
+| `PROJECT_OPENLDAP_REMOVE_PROJECT`           | Required to take action upon archive (action) of a project. Default True (bool).     |
+| `PROJECT_OPENLDAP_CONNECT_TIMEOUT`          | Connection timeout.                                                                  |
+| `PROJECT_OPENLDAP_USE_SSL`                  | Use SSL.                                                                             |
+| `PROJECT_OPENLDAP_USE_TLS`                  | Enable Tls.                                                                          |
+| `PROJECT_OPENLDAP_PRIV_KEY_FILE`            | Tls Private key.                                                                     |
+| `PROJECT_OPENLDAP_CERT_FILE`                | Tls Certificate file.                                                                |
+| `PROJECT_OPENLDAP_CACERT_FILE`              | Tls CA certificate file.                                                             |
+| `PROJECT_OPENLDAP_ARCHIVE_OU`               | Destination OU for archived projects.                                                |
+| `PROJECT_OPENLDAP_DESCRIPTION_TITLE_LENGTH` | Truncates the project title before inserting it into the description LDAP attribute. |
+| `PROJECT_OPENLDAP_EXCLUDE_USERS`            | Exclude users from sync command.                                                     |
+
 ## Advanced Configuration
 
 ColdFront uses the [Django
