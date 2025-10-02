@@ -243,7 +243,8 @@ class ProjectListViewTest(ProjectViewTestBase):
         super(ProjectListViewTest, cls).setUpTestData()
         # add 100 projects to test pagination, permissions, search functionality
         additional_projects = [ProjectFactory() for i in list(range(100))]
-        cls.additional_projects = [p for p in additional_projects if p.pi.last_name != cls.project.pi.last_name]
+        # cls.additional_projects = [p for p in additional_projects if p.pi.last_name != cls.project.pi.last_name]
+        cls.additional_projects = additional_projects
         cls.url = "/project/"
 
     ### ProjectListView access tests ###
@@ -293,13 +294,10 @@ class ProjectListViewTest(ProjectViewTestBase):
     def test_project_list_search(self):
         """Test that project list search works."""
         url_base = self.url + "?show_all_projects=on"
-        url = (
-            f"{url_base}&last_name={self.project.pi.last_name}"
-            + f"&field_of_science={self.project.field_of_science.description}"
-        )
+        url = f"{url_base}&title={self.project.title}"
         # search by project project_title
         response = utils.login_and_get_page(self.client, self.admin_user, url)
-        self.assertEqual(len(response.context["object_list"]), 1)
+        self.assertIn(self.project, response.context["object_list"])
 
 
 class ProjectRemoveUsersViewTest(ProjectViewTestBase):

@@ -249,44 +249,24 @@ class ProjectListView(LoginRequiredMixin, ListView):
 
         project_search_form = ProjectSearchForm(self.request.GET)
 
+        projects = Project.objects.prefetch_related("pi", "field_of_science", "status")
+
         if project_search_form.is_valid():
             data = project_search_form.cleaned_data
             if data.get("show_all_projects") and (
                 self.request.user.is_superuser or self.request.user.has_perm("project.can_view_all_projects")
             ):
-                projects = (
-                    Project.objects.prefetch_related(
-                        "pi",
-                        "field_of_science",
-                        "status",
-                    )
-                    .filter(
-                        status__name__in=[
-                            "New",
-                            "Active",
-                        ]
-                    )
-                    .order_by(order_by)
-                )
+                projects = projects.filter(status__name__in=["New", "Active"])
             else:
-                projects = (
-                    Project.objects.prefetch_related(
-                        "pi",
-                        "field_of_science",
-                        "status",
-                    )
-                    .filter(
-                        Q(
-                            status__name__in=[
-                                "New",
-                                "Active",
-                            ]
-                        )
-                        & Q(projectuser__user=self.request.user)
-                        & Q(projectuser__status__name="Active")
-                    )
-                    .order_by(order_by)
+                projects = projects.filter(
+                    Q(status__name__in=["New", "Active"])
+                    & Q(projectuser__user=self.request.user)
+                    & Q(projectuser__status__name="Active")
                 )
+
+            # Last Name
+            if data.get("title"):
+                projects = projects.filter(title__icontains=data.get("title"))
 
             # Last Name
             if data.get("last_name"):
@@ -305,26 +285,13 @@ class ProjectListView(LoginRequiredMixin, ListView):
                 projects = projects.filter(field_of_science__description__icontains=data.get("field_of_science"))
 
         else:
-            projects = (
-                Project.objects.prefetch_related(
-                    "pi",
-                    "field_of_science",
-                    "status",
-                )
-                .filter(
-                    Q(
-                        status__name__in=[
-                            "New",
-                            "Active",
-                        ]
-                    )
-                    & Q(projectuser__user=self.request.user)
-                    & Q(projectuser__status__name="Active")
-                )
-                .order_by(order_by)
+            projects = projects.filter(
+                Q(status__name__in=["New", "Active"])
+                & Q(projectuser__user=self.request.user)
+                & Q(projectuser__status__name="Active")
             )
 
-        return projects.distinct()
+        return projects.order_by(order_by).distinct()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
