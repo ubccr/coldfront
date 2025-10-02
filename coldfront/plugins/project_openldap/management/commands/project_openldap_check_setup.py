@@ -11,7 +11,7 @@ from ldap3.core.exceptions import LDAPException
 from coldfront.core.utils.common import import_from_settings
 from coldfront.plugins.project_openldap.utils import (
     PROJECT_OPENLDAP_BIND_USER,
-    ldapsearch_check_project_ou,
+    ldapsearch_check_ou,
 )
 
 """ Coldfront project_openldap plugin - django management command -  project_openldap_check_setup.py """
@@ -160,7 +160,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(f" {PROJECT_OPENLDAP_OU} is set to {PROJECT_OPENLDAP_OU}"))
             self.stdout.write(self.style.SUCCESS(" ldapsearch..."))
             try:
-                ldapsearch_check_project_ou_result = ldapsearch_check_project_ou(PROJECT_OPENLDAP_OU)
+                ldapsearch_check_project_ou_result = ldapsearch_check_ou(PROJECT_OPENLDAP_OU)
                 if ldapsearch_check_project_ou_result and not isinstance(ldapsearch_check_project_ou_result, Exception):
                     self.stdout.write(
                         self.style.SUCCESS(
@@ -186,7 +186,7 @@ class Command(BaseCommand):
             )
             self.stdout.write(self.style.SUCCESS(" ldapsearch..."))
             try:
-                ldapsearch_check_project_ou_result = ldapsearch_check_project_ou(PROJECT_OPENLDAP_ARCHIVE_OU)
+                ldapsearch_check_project_ou_result = ldapsearch_check_ou(PROJECT_OPENLDAP_ARCHIVE_OU)
                 if ldapsearch_check_project_ou_result and not isinstance(ldapsearch_check_project_ou_result, Exception):
                     self.stdout.write(
                         self.style.SUCCESS(
