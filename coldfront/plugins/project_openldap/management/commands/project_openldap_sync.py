@@ -24,11 +24,10 @@ from coldfront.plugins.project_openldap.tasks import add_project, remove_project
 
 # this script relies HEAVILY on utils.py
 from coldfront.plugins.project_openldap.utils import (
-    add_members_to_openldap_project_posixgroup,
+    add_members_to_openldap_posixgroup,
     add_per_project_ou_to_openldap,
-    add_project_posixgroup_to_openldap,
+    add_posixgroup_to_openldap,
     allocate_project_openldap_gid,
-    archive_project_in_openldap,
     construct_dn_archived_str,
     construct_dn_str,
     construct_ou_archived_dn_str,
@@ -37,10 +36,11 @@ from coldfront.plugins.project_openldap.utils import (
     construct_project_ou_description,
     construct_project_posixgroup_description,
     ldapsearch_check_project_dn,
-    ldapsearch_get_project_description,
-    ldapsearch_get_project_memberuids,
-    remove_members_from_openldap_project_posixgroup,
-    update_project_posixgroup_in_openldap,
+    ldapsearch_get_description,
+    ldapsearch_get_posixgroup_memberuids,
+    move_dn_in_openldap,
+    remove_members_from_openldap_posixgroup,
+    update_posixgroup_description_in_openldap,
 )
 
 # NOTE: functions starting with 'local_' or 'handle_' are local to this script
@@ -170,7 +170,7 @@ class Command(BaseCommand):
 
                 # create posixgroup
                 self.stdout.write(f"Adding OpenLDAP project archive posixgroup entry - DN: {archive_posixgroup_dn}")
-                add_project_posixgroup_to_openldap(
+                add_posixgroup_to_openldap(
                     archive_posixgroup_dn,
                     archive_openldap_posixgroup_description,
                     archive_gid,
@@ -200,7 +200,7 @@ class Command(BaseCommand):
             # current_dn (ou_dn), relative_dn, ARCHIVE_OU need supplied - where relative_dn is the project's own ou
             try:
                 relative_dn = construct_per_project_ou_relative_dn_str(project)
-                archive_project_in_openldap(project_ou_dn, relative_dn, PROJECT_OPENLDAP_ARCHIVE_OU, write=True)
+                move_dn_in_openldap(project_ou_dn, relative_dn, PROJECT_OPENLDAP_ARCHIVE_OU, write=True)
                 self.stdout.write(
                     f"Moving project to archive OU, DN: {archive_dn} in OpenLDAP - SYNC is {sync} - WRITING TO Openldap"
                 )
@@ -247,12 +247,12 @@ class Command(BaseCommand):
             PROJECT_STATUS_CHOICE_ACTIVE,
         ]:
             # fetch current description from project_dn
-            fetched_description = ldapsearch_get_project_description(project_dn)
+            fetched_description = ldapsearch_get_description(project_dn)
             if new_description == fetched_description:
                 self.stdout.write("Description is up-to-date.")
             if new_description != fetched_description:
                 if sync:
-                    update_project_posixgroup_in_openldap(project_dn, new_description, write=True)
+                    update_posixgroup_description_in_openldap(project_dn, new_description, write=True)
                     self.stdout.write(f"{new_description}")
                 else:
                     # line up description output
@@ -262,7 +262,7 @@ class Command(BaseCommand):
 
         if project.status_id in [PROJECT_STATUS_CHOICE_ARCHIVED]:
             # fetch current description from archive DN
-            fetched_description = ldapsearch_get_project_description(archive_dn)
+            fetched_description = ldapsearch_get_description(archive_dn)
             if new_description == fetched_description:
                 self.stdout.write("Description is up-to-date.")
             if new_description != fetched_description:
@@ -277,7 +277,7 @@ class Command(BaseCommand):
                         "WRITE_TO_ARCHIVE is required to make changes, please supply: -z or --writearchive"
                     )
                 if sync and write_to_archive:
-                    update_project_posixgroup_in_openldap(archive_dn, new_description, write=True)
+                    update_posixgroup_description_in_openldap(archive_dn, new_description, write=True)
                     self.stdout.write(f"{new_description}")
 
     # get active users from the coldfront django project
@@ -289,7 +289,7 @@ class Command(BaseCommand):
         return tuple(usernames)
 
     def local_get_openldap_members(self, dn):
-        entries = ldapsearch_get_project_memberuids(dn)
+        entries = ldapsearch_get_posixgroup_memberuids(dn)
 
         if entries is None:
             return
@@ -348,7 +348,7 @@ class Command(BaseCommand):
             if sync:
                 if ldapsearch_project_result:
                     try:
-                        remove_members_from_openldap_project_posixgroup(member_change_dn, missing_in_cf, write=True)
+                        remove_members_from_openldap_posixgroup(member_change_dn, missing_in_cf, write=True)
                         self.stdout.write(f"SYNC {sync} - Removed members {missing_in_cf}")
                     except Exception as e:
                         self.stdout.write(
@@ -361,7 +361,7 @@ class Command(BaseCommand):
                         )
                     elif write_to_archive:
                         try:
-                            remove_members_from_openldap_project_posixgroup(member_change_dn, missing_in_cf, write=True)
+                            remove_members_from_openldap_posixgroup(member_change_dn, missing_in_cf, write=True)
                             self.stdout.write(f"SYNC {sync} - Removed members {missing_in_cf}")
                         except Exception as e:
                             self.stdout.write(
@@ -377,7 +377,7 @@ class Command(BaseCommand):
             if sync:
                 if ldapsearch_project_result:
                     try:
-                        add_members_to_openldap_project_posixgroup(member_change_dn, missing_in_openldap, write=True)
+                        add_members_to_openldap_posixgroup(member_change_dn, missing_in_openldap, write=True)
                         self.stdout.write(f"SYNC {sync} - Added members {missing_in_openldap}")
                     except Exception as e:
                         self.stdout.write(
@@ -390,9 +390,7 @@ class Command(BaseCommand):
                         )
                     elif write_to_archive:
                         try:
-                            add_members_to_openldap_project_posixgroup(
-                                member_change_dn, missing_in_openldap, write=True
-                            )
+                            add_members_to_openldap_posixgroup(member_change_dn, missing_in_openldap, write=True)
                             self.stdout.write(f"SYNC {sync} - Added members {missing_in_openldap}")
                         except Exception as e:
                             self.stdout.write(
