@@ -34,17 +34,14 @@ EMAIL_ADMIN_LIST = import_from_settings("EMAIL_ADMIN_LIST")
 
 EMAIL_ALLOCATION_EULA_IGNORE_OPT_OUT = import_from_settings("EMAIL_ALLOCATION_EULA_IGNORE_OPT_OUT")
 
+ALLOCATION_STATUSES_CAN_EXPIRE = import_from_settings("ALLOCATION_STATUSES_CAN_EXPIRE")
+ALLOCATION_STATUSES_SHORT_RENEW_URL = import_from_settings("ALLOCATION_STATUSES_SHORT_RENEW_URL")
+
 
 def update_statuses():
     expired_status_choice = AllocationStatusChoice.objects.get(name="Expired")
     allocations_to_expire = Allocation.objects.filter(
-        status__name__in=[
-            "Active",
-            "Payment Pending",
-            "Payment Requested",
-            "Unpaid",
-        ],
-        end_date__lt=datetime.datetime.now().date(),
+        status__name__in=ALLOCATION_STATUSES_CAN_EXPIRE, end_date__lt=datetime.datetime.now().date()
     )
     for sub_obj in allocations_to_expire:
         sub_obj.status = expired_status_choice
@@ -97,12 +94,12 @@ def send_expiry_emails():
             for allocationuser in user.allocationuser_set.all():
                 allocation = allocationuser.allocation
 
-                if (allocation.status.name in ["Active", "Payment Pending", "Payment Requested", "Unpaid"]) and (
+                if (allocation.status.name in ALLOCATION_STATUSES_CAN_EXPIRE) and (
                     allocation.end_date == expring_in_days
                 ):
                     project_url = f"{CENTER_BASE_URL.strip('/')}/{'project'}/{allocation.project.pk}/"
 
-                    if allocation.status.name in ["Payment Pending", "Payment Requested", "Unpaid"]:
+                    if allocation.status.name in ALLOCATION_STATUSES_SHORT_RENEW_URL:
                         allocation_renew_url = f"{CENTER_BASE_URL.strip('/')}/{'allocation'}/{allocation.pk}/"
                     else:
                         allocation_renew_url = f"{CENTER_BASE_URL.strip('/')}/{'allocation'}/{allocation.pk}/{'renew'}/"

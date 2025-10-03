@@ -28,7 +28,7 @@ Allocation Detail
 
 <div class="card mb-3">
   <div class="card-header">
-    {% if allocation.is_changeable and not allocation.is_locked and is_allowed_to_update_project and allocation.status.name in 'Active, Renewal Requested, Payment Pending, Payment Requested, Paid' %}
+    {% if allocation.is_changeable and not allocation.is_locked and is_allowed_to_update_project and allocation.status.name in settings.ALLOCATION_STATUSES_ALLOW_CHANGE %}
     <div class="row">
       <div class="col">
         <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>
@@ -330,7 +330,7 @@ Allocation Detail
     <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Users in Allocation</h3>
     <span class="badge badge-secondary">{{allocation_users.count}}</span>
     <div class="float-right">
-      {% if allocation.project.status.name != 'Archived' and is_allowed_to_update_project and allocation.status.name in 'Active,New,Renewal Requested' %}
+      {% if allocation.project.status.name != 'Archived' and is_allowed_to_update_project and allocation.status.name in settings.ALLOCATION_STATUSES_SHOW_ADD_REMOVE_USER %}
         <a class="btn btn-success" href="{% url 'allocation-add-users' allocation.pk %}" role="button">
           <i class="fas fa-user-plus" aria-hidden="true"></i> Add Users
         </a>

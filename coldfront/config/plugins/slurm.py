@@ -13,3 +13,4 @@ SLURM_SACCTMGR_PATH = ENV.str("SLURM_SACCTMGR_PATH", default="/usr/bin/sacctmgr"
 SLURM_NOOP = ENV.bool("SLURM_NOOP", False)
 SLURM_IGNORE_USERS = ENV.list("SLURM_IGNORE_USERS", default=["root"])
 SLURM_IGNORE_ACCOUNTS = ENV.list("SLURM_IGNORE_ACCOUNTS", default=[])
+SLURM_ALLOCATION_STATUSES = ENV.list("SLURM_ALLOCATION_STATUSES", default=["Active", "Renewal Requested"])
