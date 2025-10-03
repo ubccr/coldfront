@@ -83,6 +83,7 @@ INSTALLED_APPS += [
     "coldfront.core.resource",
     "coldfront.core.allocation",
     "coldfront.core.grant",
+    "coldfront.core.tag",
     "coldfront.core.publication",
     "coldfront.core.research_output",
 ]

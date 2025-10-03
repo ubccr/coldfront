@@ -1,0 +1,107 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}
+Add/Remove Tags
+{% endblock %}
+
+{% block content %}
+<h2>Editing Tags for {{ other_obj_name }} {{ other_obj }} ({{ other_obj.pk }})</h2>
+<hr>
+
+<!-- todo: form things, add post -->
+<form method="post">
+    <div class="card mb-3">
+        <div class="card-header">
+            <h3 class="d-inline"><i class="fas fa-tags" aria-hidden="true"></i> Tags</h3>
+        </div>
+
+        <div class="card-body">
+            <h4>Add Tags</h4>
+            {% if add_formset %}
+            {{ add_formset.management_form }}
+            {% csrf_token %}
+            <div class="table-responsive">
+                <table id="add_table" class="table table-bordered table-sm">
+                    <thead>
+                        <tr>
+                            <th class="col-6 search" scope="col">Tag</th>
+                            <th class="col-6 nosort" scope="col">Add?</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for form in add_formset %}
+                        <tr>
+                            <td class="col-6">
+                                <span style="font-size: 100%;" class="badge badge-pill {{ form.html_classes.value }}">{{ form.name.value }}</span>
+                            </td>
+                            <td class="col-6">
+                                {{ form.selected }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info" role="alert">
+                There are no available tags to add.
+            </div>
+            {% endif %}
+
+            <hr/>
+            <h4>Remove Tags</h4>
+            {% if remove_formset %}
+            {{ remove_formset.management_form }}
+            {% csrf_token %}
+            <div class="table-responsive">
+                <table id="remove_table" class="table table-bordered table-sm">
+                    <thead>
+                        <tr>
+                            <th class="col-6" scope="col">Tag</th>
+                            <th class="col-6" scope="col">Remove?</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for form in remove_formset %}
+                        <tr>
+                            <td class="col-6">
+                                <span style="font-size: 100%;" class="badge badge-pill {{form.html_classes.value}}">{{form.name.value}}</span>
+                            </td>
+                            <td class="col-6">
+                                {{ form.selected }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info" role="alert">
+                There are no tags to remove.
+            </div>
+            {% endif %}
+            <input class="btn btn-success" type="submit" value="Save" />
+
+            <a class="btn btn-secondary" href="{{ back_redirect }}" role="button">Back</a>
+        </div>
+    </div>
+</form>
+
+<script>
+ $(document).ready(function () {
+     const datatable_options = {
+         dom: 'l<"float-left"f>rtp',
+         paging: false,
+         columnDefs: [{
+             targets: 1,
+             orderable: false,
+             searchable: false,
+         }]
+     }
+     $("#add_table").DataTable(datatable_options);
+     $("#remove_table").DataTable(datatable_options);
+ });
+</script>
+{% endblock %}
