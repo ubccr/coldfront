@@ -122,6 +122,36 @@ The following settings are ColdFront specific settings related to the core appli
 | PROJECT_CODE                                 | Specifies a custom internal project identifier. Default False, provide string value to enable. Must be no longer than 10 - PROJECT_CODE_PADDING characters in length.|  
 | PROJECT_CODE_PADDING                         | Defines a optional padding value to be added before the Primary Key section of PROJECT_CODE. Default False, provide integer value to enable.|
 | PROJECT_INSTITUTION_EMAIL_MAP                | Defines a dictionary where PI domain email addresses are keys and their corresponding institutions are values. Default is False, provide key-value pairs to enable this feature.|  
+
+### Allocation Selection Settings
+
+| Name                                               | Description                                                                                         | Has Setting | Has Environment Variable |
+|:---------------------------------------------------|:----------------------------------------------------------------------------------------------------|-------------|--------------------------|
+| `ALLOCATION_STATUSES_ALL`                          | Internal use only                                                                                   | yes         | yes                      |
+| `ALLOCATION_STATUSES_ALLOW_ADD_USER`               | PIs are allowed to add users from allocations with these statuses                                   | yes         | yes                      |
+| `ALLOCATION_STATUSES_ALLOW_CHANGE`                 | PIs are allowed to make changes to allocations with these statuses                                  | yes         | yes                      |
+| `ALLOCATION_STATUSES_ALLOW_REMOVE_USER`            | PIs are allowed to remove users from allocations with these statuses                                | yes         | yes                      |
+| `ALLOCATION_STATUSES_ALLOW_RENEW`                  | PIs are allowed to renew allocations with these statuses                                            | yes         | yes                      |
+| `ALLOCATION_STATUSES_AWAITING_ADMIN_ACTION`        | Allocations with these statuses are displayed to admins in the "allocation requests" page           | yes         | yes                      |
+| `ALLOCATION_STATUSES_CAN_EXPIRE`                   | Allocations with these statuses are automatically expired                                           | yes         | yes                      |
+| `ALLOCATION_STATUSES_COUNT_TOWARDS_LIMIT`          | Allocations with these statuses count towards the allocation limit                                  | yes         | yes                      |
+| `ALLOCATION_STATUSES_DO_ACTIVATE` | When an allocation changes from a status not in this list to a status in this list, it triggers the `allocation_activate`, `allocation_add_user` signals for plugin automation | yes | yes |
+| `ALLOCATION_STATUSES_DO_DISABLE` | When an allocation changes from a status not in this list to a status in this list, it triggers the `allocation_disable`, `allocation_remove_user` signals for plugin automation. Must be a subset of `ALLOCATION_STATUSES_DO_UNSET_START_DATE_END_DATE` | yes | yes |
+| `ALLOCATION_STATUSES_DO_REMOVE_USER`               | When removing a user from a project, that user is also removed from allocations with these statuses | yes         | yes                      |
+| `ALLOCATION_STATUSES_DO_REMOVE_USER_RENEW`         | Same as `ALLOCATION_STATUSES_DO_REMOVE_USER` but only applies while renewing an allocation. FIXME   | yes         | yes                      |
+| `ALLOCATION_STATUSES_DO_UNSET_START_DATE_END_DATE` | Allocations have their start and end dates unset when they reach with these statuses                | yes         | yes                      |
+| `ALLOCATION_STATUSES_HOMEPAGE`.                    | Allocations with these statuses are displayed on the home page                                      | yes         | yes                      |
+| `ALLOCATION_STATUSES_PAYMENT_RELATED`              | Allocations with these statuses are displayed to admins in the "allocations invoice list" page      | yes         | yes                      |
+| `ALLOCATION_STATUSES_PAUSRV`                       | Internal use only. See `ProjectAddUsersSearchResultsView`                                           |             |                          |
+| `ALLOCATION_STATUSES_REQUIRE_END_DATE`             | Allocations with these statuses must have an end date                                               | yes         | yes                      |
+| `ALLOCATION_STATUSES_REQUIRE_EULA`                 | Allocations with these statuses display a EULA warning if `ALLOCATION_EULA_ENABLE` is true          | yes         | yes                      |
+| `ALLOCATION_STATUSES_REQUIRE_START_DATE`           | Allocations with these statuses must have a start date                                              | yes         | yes                      |
+| `ALLOCATION_STATUSES_SHOW_ADD_REMOVE_USER`         | Add/Remove user buttons are displayed for allocations with these statuses.                          | yes         | yes                      |
+| `ALLOCATION_STATUSES_SHORT_RENEW_URL`              | Internal use only. See `coldfront.core.allocation.tasks.send_expiry_emails`                         | yes         | yes                      |
+| `ALLOCATION_STATUSES_SUIPBNIA`                     | Internal use only. See `show_users_in_project_but_not_in_allocation`                                | yes         | yes                      |
+| `ALLOCATION_STATUSES_USER_CHOICES`                 | Choices displayed when an unprivileged user attempts to change an allocation's status               | yes         | yes                      |
+| `ALLOCATION_STATUSES_USER_IS_ACTIVE`               | Internal use only. See `AllocationUser.is_active`                                                   | yes         | yes                      |
+
 ### Database settings
 
 The following settings configure the database server to use, if not set will default to using SQLite:
@@ -242,6 +272,7 @@ For more info on [ColdFront plugins](plugin/existing_plugins.md) (Django apps)
 | SLURM_NOOP            | Enable/disable noop. Default False   |
 | SLURM_IGNORE_USERS    | List of user accounts to ignore when generating Slurm associations |
 | SLURM_IGNORE_ACCOUNTS | List of Slurm accounts to ignore when generating Slurm associations |
+| SLURM_ALLOCATION_STATUSES | List of Allocation statuses to generate Slurm associations for |
 
 #### XDMoD
 
@@ -259,6 +290,7 @@ For more info on [ColdFront plugins](plugin/existing_plugins.md) (Django apps)
 | FREEIPA_SERVER           | Hostname of FreeIPA server                |
 | FREEIPA_USER_SEARCH_BASE | User search base dn                       |
 | FREEIPA_ENABLE_SIGNALS   | Enable/Disable signals. Default False     |
+| FREEIPA_ALLOCATION_STATUSES_ALLOW_REMOVE_GROUP | The freeipa plugin is allowed to remove a user group for an allocation with one of these statuses | yes | yes |
 
 #### iquota
 

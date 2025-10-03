@@ -75,6 +75,9 @@ from coldfront.core.utils.mail import send_email, send_email_template
 EMAIL_ENABLED = import_from_settings("EMAIL_ENABLED", False)
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings("ALLOCATION_ENABLE_ALLOCATION_RENEWAL", True)
 ALLOCATION_DEFAULT_ALLOCATION_LENGTH = import_from_settings("ALLOCATION_DEFAULT_ALLOCATION_LENGTH", 365)
+ALLOCATION_STATUSES_DO_REMOVE_USER = import_from_settings("ALLOCATION_STATUSES_DO_REMOVE_USER")
+ALLOCATION_STATUSES_PAUSRV = import_from_settings("ALLOCATION_STATUSES_PAUSRV")
+ALLOCATION_STATUSES_ALLOW_ADD_USER = import_from_settings("ALLOCATION_STATUSES_ALLOW_ADD_USER")
 
 if EMAIL_ENABLED:
     EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings("EMAIL_DIRECTOR_EMAIL_ADDRESS")
@@ -732,7 +735,7 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         allocation_objs = project_obj.allocation_set.filter(
             resources__is_allocatable=True,
             is_locked=False,
-            status__name__in=["Active", "New", "Renewal Requested", "Payment Pending", "Payment Requested", "Paid"],
+            status__name__in=ALLOCATION_STATUSES_ALLOW_ADD_USER,
         )
         return [
             {
@@ -777,7 +780,7 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
             context["users_already_in_project"] = users_already_in_project
 
         # The following block of code is used to hide/show the allocation div in the form.
-        if project_obj.allocation_set.filter(status__name__in=["Active", "New", "Renewal Requested"]).exists():
+        if project_obj.allocation_set.filter(status__name__in=ALLOCATION_STATUSES_PAUSRV).exists():
             div_allocation_class = "placeholder_div_class"
         else:
             div_allocation_class = "d-none"
@@ -1041,7 +1044,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
                     # get allocation to remove users from
                     allocations_to_remove_user_from = project_obj.allocation_set.filter(
-                        status__name__in=["Active", "New", "Renewal Requested"]
+                        status__name__in=ALLOCATION_STATUSES_DO_REMOVE_USER
                     )
                     for allocation in allocations_to_remove_user_from:
                         for allocation_user_obj in allocation.allocationuser_set.filter(

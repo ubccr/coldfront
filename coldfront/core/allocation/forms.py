@@ -19,6 +19,7 @@ from coldfront.core.utils.common import import_from_settings
 
 ALLOCATION_ACCOUNT_ENABLED = import_from_settings("ALLOCATION_ACCOUNT_ENABLED", False)
 ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS = import_from_settings("ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS", [])
+ALLOCATION_STATUSES_PAYMENT_RELATED = import_from_settings("ALLOCATION_STATUSES_PAYMENT_RELATED")
 
 
 class AllocationForm(forms.Form):
@@ -91,9 +92,9 @@ class AllocationUpdateForm(forms.Form):
 
 class AllocationInvoiceUpdateForm(forms.Form):
     status = forms.ModelChoiceField(
-        queryset=AllocationStatusChoice.objects.filter(
-            name__in=["Payment Pending", "Payment Requested", "Payment Declined", "Paid"]
-        ).order_by(Lower("name")),
+        queryset=AllocationStatusChoice.objects.filter(name__in=ALLOCATION_STATUSES_PAYMENT_RELATED).order_by(
+            Lower("name")
+        ),
         empty_label=None,
     )
 

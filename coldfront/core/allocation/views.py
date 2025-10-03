@@ -83,6 +83,21 @@ ALLOCATION_DEFAULT_ALLOCATION_LENGTH = import_from_settings("ALLOCATION_DEFAULT_
 ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT = import_from_settings(
     "ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT", True
 )
+ALLOCATION_STATUSES_ALLOW_ADD_USER = import_from_settings("ALLOCATION_STATUSES_ALLOW_ADD_USER")
+ALLOCATION_STATUSES_ALLOW_CHANGE = import_from_settings("ALLOCATION_STATUSES_ALLOW_CHANGE")
+ALLOCATION_STATUSES_ALLOW_REMOVE_USER = import_from_settings("ALLOCATION_STATUSES_ALLOW_REMOVE_USER")
+ALLOCATION_STATUSES_ALLOW_RENEW = import_from_settings("ALLOCATION_STATUSES_ALLOW_RENEW")
+ALLOCATION_STATUSES_AWAITING_ADMIN_ACTION = import_from_settings("ALLOCATION_STATUSES_AWAITING_ADMIN_ACTION")
+ALLOCATION_STATUSES_COUNT_TOWARDS_LIMIT = import_from_settings("ALLOCATION_STATUSES_COUNT_TOWARDS_LIMIT")
+ALLOCATION_STATUSES_DO_ACTIVATE = import_from_settings("ALLOCATION_STATUSES_DO_ACTIVATE")
+ALLOCATION_STATUSES_DO_DISABLE = import_from_settings("ALLOCATION_STATUSES_DO_DISABLE")
+ALLOCATION_STATUSES_DO_REMOVE_USER_RENEW = import_from_settings("ALLOCATION_STATUSES_DO_REMOVE_USER_RENEW")
+ALLOCATION_STATUSES_DO_UNSET_START_DATE_END_DATE = import_from_settings(
+    "ALLOCATION_STATUSES_DO_UNSET_START_DATE_END_DATE"
+)
+ALLOCATION_STATUSES_PAYMENT_RELATED = import_from_settings("ALLOCATION_STATUSES_PAYMENT_RELATED")
+ALLOCATION_STATUSES_REQUIRE_EULA = import_from_settings("ALLOCATION_STATUSES_REQUIRE_EULA")
+ALLOCATION_STATUSES_SHOW_ADD_REMOVE_USER = import_from_settings("ALLOCATION_STATUSES_SHOW_ADD_REMOVE_USER")
 
 PROJECT_ENABLE_PROJECT_REVIEW = import_from_settings("PROJECT_ENABLE_PROJECT_REVIEW", False)
 INVOICE_ENABLED = import_from_settings("INVOICE_ENABLED", False)
@@ -135,7 +150,10 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                 allocation_user_status = get_object_or_404(
                     AllocationUser, allocation=allocation_obj, user=self.request.user
                 ).status
-                if allocation_obj.status.name == "Active" and allocation_user_status.name == "PendingEula":
+                if (
+                    allocation_obj.status.name in ALLOCATION_STATUSES_REQUIRE_EULA
+                    and allocation_user_status.name == "PendingEula"
+                ):
                     messages.info(self.request, "This allocation is active, but you must agree to the EULA to use it!")
 
             context["eulas"] = allocation_obj.get_eula()
@@ -258,7 +276,10 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         elif action == "deny":
             allocation_obj.status = AllocationStatusChoice.objects.get(name="Denied")
 
-        if old_status != "Active" == allocation_obj.status.name:
+        if (
+            old_status not in ALLOCATION_STATUSES_DO_ACTIVATE
+            and allocation_obj.status.name in ALLOCATION_STATUSES_DO_ACTIVATE
+        ):
             if not allocation_obj.start_date:
                 allocation_obj.start_date = datetime.datetime.now()
             if "approve" in action or not allocation_obj.end_date:
@@ -284,12 +305,15 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             if action != "auto-approve":
                 messages.success(request, "Allocation Activated!")
 
-        elif old_status != allocation_obj.status.name in ["Denied", "New", "Revoked"]:
+        elif (
+            old_status != allocation_obj.status.name
+            and allocation_obj.status.name in ALLOCATION_STATUSES_DO_UNSET_START_DATE_END_DATE
+        ):
             allocation_obj.start_date = None
             allocation_obj.end_date = None
             allocation_obj.save()
 
-            if allocation_obj.status.name in ["Denied", "Revoked"]:
+            if allocation_obj.status.name in ALLOCATION_STATUSES_DO_DISABLE:
                 allocation_disable.send(sender=self.__class__, allocation_pk=allocation_obj.pk)
                 allocation_users = allocation_obj.allocationuser_set.exclude(status__name__in=["Removed", "Error"])
                 for allocation_user in allocation_users:
@@ -690,7 +714,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             allocation_limit = int(allocation_limit_objs.value)
             allocation_count = project_obj.allocation_set.filter(
                 resources=resource_obj,
-                status__name__in=["Active", "New", "Renewal Requested", "Paid", "Payment Pending", "Payment Requested"],
+                status__name__in=ALLOCATION_STATUSES_COUNT_TOWARDS_LIMIT,
             ).count()
             if allocation_count >= allocation_limit:
                 form.add_error(None, format_html("Your project is at the allocation limit allowed for this resource."))
@@ -780,14 +804,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         message = None
         if allocation_obj.is_locked and not self.request.user.is_superuser:
             message = "You cannot modify this allocation because it is locked! Contact support for details."
-        elif allocation_obj.status.name not in [
-            "Active",
-            "New",
-            "Renewal Requested",
-            "Payment Pending",
-            "Payment Requested",
-            "Paid",
-        ]:
+        elif allocation_obj.status.name not in ALLOCATION_STATUSES_ALLOW_ADD_USER:
             message = f"You cannot add users to an allocation with status {allocation_obj.status.name}."
         if message:
             messages.error(request, message)
@@ -948,11 +965,7 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
         message = None
         if allocation_obj.is_locked and not self.request.user.is_superuser:
             message = "You cannot modify this allocation because it is locked! Contact support for details."
-        elif allocation_obj.status.name not in [
-            "Active",
-            "New",
-            "Renewal Requested",
-        ]:
+        elif allocation_obj.status.name not in ALLOCATION_STATUSES_ALLOW_REMOVE_USER:
             message = f"You cannot remove users from a allocation with status {allocation_obj.status.name}."
         if message:
             messages.error(request, message)
@@ -1198,14 +1211,7 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        allocation_list = Allocation.objects.filter(
-            status__name__in=[
-                "New",
-                "Renewal Requested",
-                "Paid",
-                "Approved",
-            ]
-        )
+        allocation_list = Allocation.objects.filter(status__name__in=ALLOCATION_STATUSES_AWAITING_ADMIN_ACTION)
 
         allocation_renewal_dates = {}
         for allocation in allocation_list.filter(status__name="Renewal Requested"):
@@ -1245,9 +1251,7 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
             )
             return HttpResponseRedirect(reverse("allocation-detail", kwargs={"pk": allocation_obj.pk}))
 
-        if allocation_obj.status.name not in [
-            "Active",
-        ]:
+        if allocation_obj.status.name not in ALLOCATION_STATUSES_ALLOW_RENEW:
             messages.error(request, f"You cannot renew a allocation with status {allocation_obj.status.name}.")
             return HttpResponseRedirect(reverse("allocation-detail", kwargs={"pk": allocation_obj.pk}))
 
@@ -1336,17 +1340,7 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
 
                     elif user_status == "remove_from_project":
                         for active_allocation in allocation_obj.project.allocation_set.filter(
-                            status__name__in=(
-                                "Active",
-                                "Denied",
-                                "New",
-                                "Paid",
-                                "Payment Pending",
-                                "Payment Requested",
-                                "Payment Declined",
-                                "Renewal Requested",
-                                "Unpaid",
-                            )
+                            status__name__in=ALLOCATION_STATUSES_DO_REMOVE_USER_RENEW
                         ):
                             allocation_user_obj = active_allocation.allocationuser_set.get(user=user_obj)
                             allocation_user_obj.status = allocation_user_removed_status_choice
@@ -1390,14 +1384,7 @@ class AllocationInvoiceListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
         return False
 
     def get_queryset(self):
-        allocations = Allocation.objects.filter(
-            status__name__in=[
-                "Paid",
-                "Payment Pending",
-                "Payment Requested",
-                "Payment Declined",
-            ]
-        )
+        allocations = Allocation.objects.filter(status__name__in=ALLOCATION_STATUSES_PAYMENT_RELATED)
         return allocations
 
 
@@ -1987,13 +1974,7 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             messages.error(request, "You cannot request a change to a locked allocation.")
             return HttpResponseRedirect(reverse("allocation-detail", kwargs={"pk": allocation_obj.pk}))
 
-        if allocation_obj.status.name not in [
-            "Active",
-            "Renewal Requested",
-            "Payment Pending",
-            "Payment Requested",
-            "Paid",
-        ]:
+        if allocation_obj.status.name not in ALLOCATION_STATUSES_ALLOW_CHANGE:
             messages.error(
                 request, f'You cannot request a change to an allocation with status "{allocation_obj.status.name}".'
             )

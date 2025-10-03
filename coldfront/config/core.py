@@ -55,8 +55,121 @@ ALLOCATION_DEFAULT_ALLOCATION_LENGTH = ENV.int("ALLOCATION_DEFAULT_ALLOCATION_LE
 ALLOCATION_ACCOUNT_ENABLED = ENV.bool("ALLOCATION_ACCOUNT_ENABLED", default=False)
 ALLOCATION_ACCOUNT_MAPPING = ENV.dict("ALLOCATION_ACCOUNT_MAPPING", default={})
 
+# ------------------------------------------------------------------------------
+# Lists of statuses by which to select allocations for various situations
+# see docs/pages/config.md for more information
+# ------------------------------------------------------------------------------
+ALLOCATION_STATUSES_ALLOW_RENEW = ENV.list("ALLOCATION_STATUSES_ALLOW_RENEW", default=["Active"])
+ALLOCATION_STATUSES_DO_ACTIVATE = ENV.list("ALLOCATION_STATUSES_DO_ACTIVATE", default=["Active"])
+ALLOCATION_STATUSES_REQUIRE_EULA = ENV.list("ALLOCATION_STATUSES_REQUIRE_EULA", default=["Active"])
+ALLOCATION_STATUSES_REQUIRE_START_DATE = ENV.list("ALLOCATION_STATUSES_REQUIRE_START_DATE", default=["Active"])
+ALLOCATION_STATUSES_REQUIRE_END_DATE = ENV.list("ALLOCATION_STATUSES_REQUIRE_END_DATE", default=["Expired"])
+ALLOCATION_STATUSES_DO_DISABLE = ENV.list(
+    "ALLOCATION_STATUSES_DO_DISABLE",
+    default=["Denied", "Revoked"],
+)
+ALLOCATION_STATUSES_DO_UNSET_START_DATE_END_DATE = ENV.list(
+    "ALLOCATION_STATUSES_DO_UNSET_START_DATE_END_DATE",
+    default=["Denied", "New", "Revoked"],
+)
+ALLOCATION_STATUSES_USER_IS_ACTIVE = ENV.list(
+    "ALLOCATION_STATUSES_DO_DISABLE",
+    default=["Active", "Renewal Requested"],
+)
+ALLOCATION_STATUSES_USER_CHOICES = ENV.list(
+    "ALLOCATION_STATUSES_USER_CHOICES",
+    default=["Approved", "Denied", "Pending"],
+)
+ALLOCATION_STATUSES_DO_REMOVE_USER = ENV.list(
+    "ALLOCATION_STATUSES_DO_REMOVE_USER",
+    default=["Active", "New", "Renewal Requested"],
+)
+ALLOCATION_STATUSES_PAUSRV = ENV.list(
+    "ALLOCATION_STATUSES_PAUSRV",
+    default=["Active", "New", "Renewal Requested"],
+)
+ALLOCATION_STATUSES_ALLOW_REMOVE_USER = ENV.list(
+    "ALLOCATION_STATUSES_ALLOW_REMOVE_USER",
+    default=["Active", "New", "Renewal Requested"],
+)
+ALLOCATION_STATUSES_SHOW_ADD_REMOVE_USER = ENV.list(
+    "ALLOCATION_STATUSES_SHOW_ADD_REMOVE_USER",
+    default=["Active", "New", "Renewal Requested"],
+)
+ALLOCATION_STATUSES_HOMEPAGE = ENV.list(
+    "ALLOCATION_STATUSES_HOMEPAGE",
+    default=["Active", "New", "Renewal Requested"],
+)
+ALLOCATION_STATUSES_AWAITING_ADMIN_ACTION = ENV.list(
+    "ALLOCATION_STATUSES_AWAITING_ADMIN_ACTION",
+    default=["Approved", "New", "Paid", "Renewal Requested"],
+)
+ALLOCATION_STATUSES_SHORT_RENEW_URL = ENV.list(
+    "ALLOCATION_STATUSES_SHORT_RENEW_URL",
+    default=["Payment Pending", "Payment Requested", "Unpaid"],
+)
+ALLOCATION_STATUSES_CAN_EXPIRE = ENV.list(
+    "ALLOCATION_STATUSES_CAN_EXPIRE",
+    default=["Active", "Payment Pending", "Payment Requested", "Unpaid"],
+)
+ALLOCATION_STATUSES_PAYMENT_RELATED = ENV.list(
+    "ALLOCATION_STATUSES_PAYMENT_RELATED",
+    default=["Paid", "Payment Declined", "Payment Pending", "Payment Requested"],
+)
+ALLOCATION_STATUSES_ALLOW_CHANGE = ENV.list(
+    "ALLOCATION_STATUSES_ALLOW_CHANGE",
+    default=["Active", "Paid", "Payment Pending", "Payment Requested", "Renewal Requested"],
+)
+ALLOCATION_STATUSES_COUNT_TOWARDS_LIMIT = ENV.list(
+    "ALLOCATION_STATUSES_COUNT_TOWARDS_LIMIT",
+    default=["Active", "New", "Paid", "Payment Pending", "Payment Requested", "Renewal Requested"],
+)
+ALLOCATION_STATUSES_SUIPBNIA = ENV.list(
+    "ALLOCATION_STATUSES_SUIPBNIA",
+    default=["Active", "New", "Paid", "Payment Pending", "Payment Requested", "Renewal Requested"],
+)
+ALLOCATION_STATUSES_ALLOW_ADD_USER = ENV.list(
+    "ALLOCATION_STATUSES_ALLOW_ADD_USER",
+    default=["Active", "New", "Paid", "Payment Pending", "Payment Requested", "Renewal Requested"],
+)
+ALLOCATION_STATUSES_DO_REMOVE_USER_RENEW = ENV.list(
+    "ALLOCATION_STATUSES_DO_REMOVE_USER_RENEW",
+    default=[
+        "Active",
+        "Denied",
+        "New",
+        "Paid",
+        "Payment Declined",
+        "Payment Pending",
+        "Payment Requested",
+        "Renewal Requested",
+        "Unpaid",
+    ],
+)
+ALLOCATION_STATUSES_ALL = ENV.list(
+    "ALLOCATION_STATUSES_ALL",
+    # FIXME add "Approved", "Pending"
+    default=[
+        "Active",
+        "Denied",
+        "Expired",
+        "New",
+        "Paid",
+        "Payment Declined",
+        "Payment Pending",
+        "Payment Requested",
+        "Renewal Requested",
+        "Revoked",
+        "Unpaid",
+    ],
+)
+
+# ------------------------------------------------------------------------------
+
 SETTINGS_EXPORT += [
     "ALLOCATION_ACCOUNT_ENABLED",
+    "ALLOCATION_STATUSES_ALLOW_CHANGE",
+    "ALLOCATION_STATUSES_SHOW_ADD_REMOVE_USER",
     "CENTER_HELP_URL",
     "ALLOCATION_EULA_ENABLE",
     "RESEARCH_OUTPUT_ENABLE",
