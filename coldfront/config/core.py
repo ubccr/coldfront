@@ -55,6 +55,46 @@ ALLOCATION_DEFAULT_ALLOCATION_LENGTH = ENV.int("ALLOCATION_DEFAULT_ALLOCATION_LE
 ALLOCATION_ACCOUNT_ENABLED = ENV.bool("ALLOCATION_ACCOUNT_ENABLED", default=False)
 ALLOCATION_ACCOUNT_MAPPING = ENV.dict("ALLOCATION_ACCOUNT_MAPPING", default={})
 
+# ------------------------------------------------------------------------------
+# Lists of statuses by which to select allocations for various situations
+# ------------------------------------------------------------------------------
+__allocation_statuses = {
+    # when an allocation changes from a status not in this list to a status in this list,
+    # it triggers the allocation_activate, allocation_add_user signals for plugin automation
+    "do_activate": ["Active"],
+    # when an allocation changes from a status not in this list to a status in this list,
+    # it triggers the allocation_disable, allocation_remove_user signals for plugin automation
+    "do_disable": ["Expired"],
+    # when removing a user from a project, that user is also removed from allocations with these statuses
+    "do_remove_user": [
+        "Active",
+        "Denied",
+        "New",
+        "Paid",
+        "Payment Pending",
+        "Payment Requested",
+        "Payment Declined",
+        "Renewal Requested",
+        "Unpaid",
+    ],
+    # this is used for AllocationUser.is_active
+    "user_is_active": ["Active", "Renewal Requested"],
+    # allocations with these statuses are displayed to admins in the "allocation requests" page
+    "awaiting_admin_action": ["New", "Renewal Requested", "Paid", "Approved"],
+    "allow_change": ["Active", "Renewal Requested", "Payment Pending", "Payment Requested", "Paid"],
+    "allow_remove_user": ["Active", "New", "Renewal Requested"],
+    "allow_renew": ["Active"],
+    "count_towards_limit": ["Active", "New", "Renewal Requested", "Paid", "Payment Pending", "Payment Requested"],
+    "do_unset_start_date_end_date": ["Denied", "New", "Revoked"],
+    "payment_related": ["Paid", "Payment Pending", "Payment Requested", "Payment Declined"],
+    "require_end_date": ["Expired"],
+    "require_eula": ["Active"],
+    "require_start_date": ["Active"],
+}
+ALLOCATION_STATUSES = {
+    k: ENV.list(f"ALLOCATION_STATUSES_{k.upper()}", default=v) for k, v in __allocation_statuses.items()
+}
+
 SETTINGS_EXPORT += [
     "ALLOCATION_ACCOUNT_ENABLED",
     "CENTER_HELP_URL",
