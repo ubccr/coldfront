@@ -258,7 +258,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         elif action == "deny":
             allocation_obj.status = AllocationStatusChoice.objects.get(name="Denied")
 
-        if old_status != "Active" == allocation_obj.status.name:
+        if old_status != "Active" and allocation_obj.status.name == "Active":
             if not allocation_obj.start_date:
                 allocation_obj.start_date = datetime.datetime.now()
             if "approve" in action or not allocation_obj.end_date:
@@ -284,7 +284,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             if action != "auto-approve":
                 messages.success(request, "Allocation Activated!")
 
-        elif old_status != allocation_obj.status.name in ["Denied", "New", "Revoked"]:
+        elif old_status != allocation_obj.status.name and allocation_obj.status.name in ["Denied", "New", "Revoked"]:
             allocation_obj.start_date = None
             allocation_obj.end_date = None
             allocation_obj.save()
