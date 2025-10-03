@@ -170,8 +170,6 @@ def remove_dn_from_openldap(dn, write=True):
 
     try:
         conn.delete(dn)
-        conn.unbind()
-        conn = openldap_connection(server, PROJECT_OPENLDAP_BIND_USER, PROJECT_OPENLDAP_BIND_PASSWORD)
     except Exception as exc_log:
         logger.info(exc_log)
     finally:
