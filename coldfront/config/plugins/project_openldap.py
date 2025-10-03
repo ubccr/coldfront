@@ -26,7 +26,7 @@ PROJECT_OPENLDAP_GID_START = ENV.int(
     "PROJECT_OPENLDAP_GID_START"
 )  # where project gid numbering will start, no default value provided here on purpose, site should define sensible value
 PROJECT_OPENLDAP_REMOVE_PROJECT = ENV.bool(
-    "PROJECT_OPENLDAP_REMOVE_PROJECT", default=True
+    "PROJECT_OPENLDAP_REMOVE_PROJECT", default=False
 )  # remove projects on archive
 PROJECT_OPENLDAP_ARCHIVE_OU = ENV.str(
     "PROJECT_OPENLDAP_ARCHIVE_OU", default=""
