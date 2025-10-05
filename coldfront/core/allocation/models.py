@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 ALLOCATION_ATTRIBUTE_VIEW_LIST = import_from_settings("ALLOCATION_ATTRIBUTE_VIEW_LIST", [])
 ALLOCATION_FUNCS_ON_EXPIRE = import_from_settings("ALLOCATION_FUNCS_ON_EXPIRE", [])
-ALLOCATION_RESOURCE_ORDERING = import_from_settings("ALLOCATION_RESOURCE_ORDERING", ["-is_allocatable", "name"])
+ALLOCATION_RESOURCE_ORDERING = import_from_settings("ALLOCATION_RESOURCE_ORDERING")
 
 
 class AllocationPermission(Enum):
