@@ -65,3 +65,10 @@ If your code is failing linting checks but you you have a valid reason to leave 
 You can also use Ruff to check formatting using `uv run ruff format --check` and automatically fix formatting errors with `uv run ruff format`.
 
 If your code is failing formatting checks but you have a valid reason to leave it unchanged, you can suppress warnings for a specific block of code by enclosing it with the comments `# fmt: off` and `# fmt: on`. These comments work at the statement level so placing them inside of expressions will not have any effect. 
+
+#### Documentation
+
+All settings and environment variables used should be present in [docs/pages/config.md](docs/pages/config.md).
+A "setting used" is the 1st argument to any `import_from_settings()` function call, `{{ setting_value }}` jinja2 function usage, or `{{ settings.XYZ }}` jinja2 variable usage.
+An "environment variable used" is the 1st argument to any `ENV` function call (ex: `ENV.bool()`).
+Setting names and environment variable names should contain capital letters and underscores only.

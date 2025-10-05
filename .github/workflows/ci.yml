@@ -31,3 +31,56 @@ jobs:
 
       - name: Run tests
         run: uv run coldfront test
+
+  check_docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: apt install -y ripgrep
+        run: |
+          echo "set man-db/auto-update false" | sudo debconf-communicate
+          sudo dpkg-reconfigure man-db
+          sudo apt install -y ripgrep
+      # a setting "foo" exists if there is any use of `import_from_settings("foo")` or {% settings_value "foo" %}
+      # note about quotations: '\bsettings_value[ ]+["'"'"']([A-Z_]+)' -> \bsettings_value[ ]+["']([A-Z_]+)
+      # import_from_settings('foo') is not considered because ruff format ensures double quotes are used
+      # `grep .` filters out empty lines
+      - name: gather list of settings used
+        run: |
+          (
+            rg -t py -INU '\bimport_from_settings\([\s\n]*"([A-Z_]+)' -or '$1' .
+            rg -t html -IN '\bsettings_value[ ]+["'"'"']([A-Z_]+)' -or '$1' .
+            rg -t html -IN '\bsettings\.([A-Z_]+)' -or '$1' .
+          ) | grep . | sort -u | tee -a /tmp/settings.txt
+      # an env var "foo" exists if there is any use of `ENV.bool("foo")` or `ENV.int("foo")` or `ENV.list("foo")` or ...
+      # and one special case for `plugin_configs`
+      # awk filters for just lines between 'plugin_configs = {' and '}', sed filters for just the environment variable names
+      # `grep .` filters out empty lines
+      - name: gather list of environment variables used
+        run: |
+          (
+            rg -t py -INU '\bENV\.[a-z]+\([\s\n]*"([A-Z_]+)' -or '$1' .
+            awk '/plugin_configs = {/ {flag=1; next} /^\}$/ {flag=0; exit} flag' coldfront/config/settings.py | sed -E 's/^[ ]+"([^"]+)".*/\1/'
+          ) | grep . | sort -u | tee /tmp/envvars.txt
+      # a setting or environment variable is documented if it is found in the leftmost column of a table in docs/pages/config.md
+      - name: gather list of settings and environment variables documented
+        run: rg '^\|[ ]*`?([A-Z_]{2,})' -or '$1' docs/pages/config.md | sort -u | tee /tmp/documented.txt
+      - name: check that all settings used are documented
+        run: |
+          if grep -vFx --file=/tmp/documented.txt /tmp/settings.txt; then
+            echo "the settings above must be added to the documentation!"
+            exit 1
+          fi
+      - name: check that all environment variables used are documented
+        run: |
+          if grep -vFx --file=/tmp/documented.txt /tmp/envvars.txt; then
+            echo "the environment variables above must be added to the documentation!"
+            exit 1
+          fi
+      - name: check that all settings and environment variables documented are used
+        run: |
+          if grep -vFx --file=/tmp/settings.txt --file=/tmp/envvars.txt --file=.github/allow-documented-unused.txt /tmp/documented.txt; then
+            echo "the environment variables above are documented but never used!"
+            echo "to silence this error for a specific variable, add it to the file '.github/allow-documented-unused.txt'."
+            exit 1
+          fi
