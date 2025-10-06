@@ -5,8 +5,8 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from coldfront.core.allocation.models import Allocation, AllocationChangeRequest
-from coldfront.core.project.models import Project, ProjectUser
+from coldfront.core.allocation.models import Allocation, AllocationAttribute, AllocationChangeRequest, AllocationUser
+from coldfront.core.project.models import Project, ProjectAttribute, ProjectUser
 from coldfront.core.resource.models import Resource
 
 
@@ -37,6 +37,8 @@ class AllocationSerializer(serializers.ModelSerializer):
     resource = serializers.ReadOnlyField(source="get_resources_as_string")
     project = serializers.SlugRelatedField(slug_field="title", read_only=True)
     status = serializers.SlugRelatedField(slug_field="name", read_only=True)
+    allocation_users = serializers.SerializerMethodField()
+    allocation_attributes = serializers.SerializerMethodField()
 
     class Meta:
         model = Allocation
@@ -45,7 +47,38 @@ class AllocationSerializer(serializers.ModelSerializer):
             "project",
             "resource",
             "status",
+            "allocation_users",
+            "allocation_attributes",
         )
+
+    def get_allocation_users(self, obj):
+        request = self.context.get("request", None)
+        if request and request.query_params.get("allocation_users") in ["true", "True"]:
+            return AllocationUserSerializer(obj.allocationuser_set, many=True, read_only=True).data
+        return None
+
+    def get_allocation_attributes(self, obj):
+        request = self.context.get("request", None)
+        if request and request.query_params.get("allocation_attributes") in ["true", "True"]:
+            return AllocationAttributeSerializer(obj.allocationattribute_set, many=True, read_only=True).data
+        return None
+
+
+class AllocationUserSerializer(serializers.ModelSerializer):
+    user = serializers.SlugRelatedField(slug_field="username", read_only=True)
+    status = serializers.SlugRelatedField(slug_field="name", read_only=True)
+
+    class Meta:
+        model = AllocationUser
+        fields = ("user", "status")
+
+
+class AllocationAttributeSerializer(serializers.ModelSerializer):
+    allocation_attribute_type = serializers.SlugRelatedField(slug_field="name", read_only=True)
+
+    class Meta:
+        model = AllocationAttribute
+        fields = ("allocation_attribute_type", "value")
 
 
 class AllocationRequestSerializer(serializers.ModelSerializer):
@@ -145,15 +178,25 @@ class ProjectUserSerializer(serializers.ModelSerializer):
         fields = ("user", "role", "status")
 
 
+class ProjectAttributeSerializer(serializers.ModelSerializer):
+    proj_attr_type = serializers.SlugRelatedField(slug_field="name", read_only=True)
+    value = serializers.SlugRelatedField(slug_field="name", read_only=True)
+
+    class Meta:
+        model = ProjectAttribute
+        fields = ("proj_attr_type", "value")
+
+
 class ProjectSerializer(serializers.ModelSerializer):
     pi = serializers.SlugRelatedField(slug_field="username", read_only=True)
     status = serializers.SlugRelatedField(slug_field="name", read_only=True)
     project_users = serializers.SerializerMethodField()
     allocations = serializers.SerializerMethodField()
+    project_attributes = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
-        fields = ("id", "title", "pi", "status", "project_users", "allocations")
+        fields = ("id", "title", "pi", "status", "project_users", "allocations", "project_attributes")
 
     def get_project_users(self, obj):
         request = self.context.get("request", None)
@@ -165,4 +208,10 @@ class ProjectSerializer(serializers.ModelSerializer):
         request = self.context.get("request", None)
         if request and request.query_params.get("allocations") in ["true", "True"]:
             return ProjAllocationSerializer(obj.allocation_set, many=True, read_only=True).data
+        return None
+
+    def get_project_attributes(self, obj):
+        request = self.context.get("request", None)
+        if request and request.query_params.get("project_attributes") in ["true", "True"]:
+            return ProjectAttributeSerializer(obj.projectattribute_set, many=True, read_only=True).data
         return None
