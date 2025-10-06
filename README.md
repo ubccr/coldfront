@@ -48,3 +48,4 @@ subscribe ccr-open-coldfront-list@listserv.buffalo.edu first_name last_name
 ## License
 
 ColdFront is released under the AGPLv3 license. See REUSE.toml.
+
