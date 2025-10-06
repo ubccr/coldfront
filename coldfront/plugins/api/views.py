@@ -51,6 +51,14 @@ class ResourceViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class AllocationViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Query parameters:
+    - allocation_users (default false)
+        Show related user data.
+    - allocation_attributes (default false)
+        Show related attribute data.
+    """
+
     serializer_class = serializers.AllocationSerializer
     # permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
@@ -70,6 +78,12 @@ class AllocationViewSet(viewsets.ReadOnlyModelViewSet):
             ).distinct()
 
         allocations = allocations.order_by("project")
+
+        if self.request.query_params.get("allocation_users") in ["True", "true"]:
+            allocations = allocations.prefetch_related("allocationuser_set")
+
+        if self.request.query_params.get("allocation_attributes") in ["True", "true"]:
+            allocations = allocations.prefetch_related("allocationattribute_set")
 
         return allocations
 
@@ -271,6 +285,8 @@ class ProjectViewSet(viewsets.ReadOnlyModelViewSet):
         Show related allocation data.
     - project_users (default false)
         Show related user data.
+    - project_attributes (default false)
+        Show related attribute data.
     """
 
     serializer_class = serializers.ProjectSerializer
@@ -300,6 +316,9 @@ class ProjectViewSet(viewsets.ReadOnlyModelViewSet):
 
         if self.request.query_params.get("allocations") in ["True", "true"]:
             projects = projects.prefetch_related("allocation_set")
+
+        if self.request.query_params.get("project_attributes") in ["True", "true"]:
+            projects = projects.prefetch_related("projectattribute_set")
 
         return projects.order_by("pi")
 
