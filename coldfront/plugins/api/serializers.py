@@ -180,7 +180,6 @@ class ProjectUserSerializer(serializers.ModelSerializer):
 
 class ProjectAttributeSerializer(serializers.ModelSerializer):
     proj_attr_type = serializers.SlugRelatedField(slug_field="name", read_only=True)
-    value = serializers.SlugRelatedField(slug_field="name", read_only=True)
 
     class Meta:
         model = ProjectAttribute
