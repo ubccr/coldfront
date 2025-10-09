@@ -728,6 +728,23 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         else:
             return super().dispatch(request, *args, **kwargs)
 
+    def get_initial_data(self, project_obj):
+        allocation_objs = project_obj.allocation_set.filter(
+            resources__is_allocatable=True,
+            is_locked=False,
+            status__name__in=["Active", "New", "Renewal Requested", "Payment Pending", "Payment Requested", "Paid"],
+        )
+        return [
+            {
+                "pk": allocation_obj.pk,
+                "resource": allocation_obj.get_parent_resource.name,
+                "details": allocation_obj.get_information,
+                "resource_type": allocation_obj.get_parent_resource.resource_type.name,
+                "status": allocation_obj.status.name,
+            }
+            for allocation_obj in allocation_objs
+        ]
+
     def post(self, request, *args, **kwargs):
         user_search_string = request.POST.get("q")
         search_by = request.POST.get("search_by")
@@ -767,9 +784,12 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         context["div_allocation_class"] = div_allocation_class
         ###
 
-        allocation_form = ProjectAddUsersToAllocationForm(request.user, project_obj.pk, prefix="allocationform")
+        initial_data = self.get_initial_data(project_obj)
+        allocation_formset = formset_factory(ProjectAddUsersToAllocationForm, max_num=len(initial_data))
+        allocation_formset = allocation_formset(initial=initial_data, prefix="allocationform")
+
         context["pk"] = pk
-        context["allocation_form"] = allocation_form
+        context["allocation_formset"] = allocation_formset
         return render(request, self.template_name, context)
 
 
@@ -800,6 +820,23 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         else:
             return super().dispatch(request, *args, **kwargs)
 
+    def get_initial_data(self, project_obj):
+        allocation_objs = project_obj.allocation_set.filter(
+            resources__is_allocatable=True,
+            is_locked=False,
+            status__name__in=["Active", "New", "Renewal Requested", "Payment Pending", "Payment Requested", "Paid"],
+        )
+        return [
+            {
+                "pk": allocation_obj.pk,
+                "resource": allocation_obj.get_parent_resource.name,
+                "details": allocation_obj.get_information,
+                "resource_type": allocation_obj.get_parent_resource.resource_type.name,
+                "status": allocation_obj.status.name,
+            }
+            for allocation_obj in allocation_objs
+        ]
+
     def post(self, request, *args, **kwargs):
         user_search_string = request.POST.get("q")
         search_by = request.POST.get("search_by")
@@ -820,20 +857,31 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         formset = formset_factory(ProjectAddUserForm, max_num=len(matches))
         formset = formset(request.POST, initial=matches, prefix="userform")
 
-        allocation_form = ProjectAddUsersToAllocationForm(
-            request.user, project_obj.pk, request.POST, prefix="allocationform"
+        initial_data = self.get_initial_data(project_obj)
+        allocation_formset = formset_factory(
+            ProjectAddUsersToAllocationForm,
+            max_num=len(initial_data),
+        )
+        allocation_formset = allocation_formset(
+            request.POST,
+            initial=initial_data,
+            prefix="allocationform",
         )
 
         added_users_count = 0
-        if formset.is_valid() and allocation_form.is_valid():
+        if formset.is_valid() and allocation_formset.is_valid():
             project_user_active_status_choice = ProjectUserStatusChoice.objects.get(name="Active")
             allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(name="Active")
             if ALLOCATION_EULA_ENABLE:
                 allocation_user_pending_status_choice = AllocationUserStatusChoice.objects.get(name="PendingEULA")
 
-            allocation_form_data = allocation_form.cleaned_data["allocation"]
-            if "__select_all__" in allocation_form_data:
-                allocation_form_data.remove("__select_all__")
+            allocations_selected_objs = Allocation.objects.filter(
+                pk__in=[
+                    allocation_form.cleaned_data.get("pk")
+                    for allocation_form in allocation_formset
+                    if allocation_form.cleaned_data.get("selected")
+                ]
+            )
             for form in formset:
                 user_form_data = form.cleaned_data
                 if user_form_data["selected"]:
@@ -864,7 +912,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                     # project signals
                     project_activate_user.send(sender=self.__class__, project_user_pk=project_user_obj.pk)
 
-                    for allocation in Allocation.objects.filter(pk__in=allocation_form_data):
+                    for allocation in allocations_selected_objs:
                         has_eula = allocation.get_eula()
                         user_status_choice = allocation_user_active_status_choice
                         if allocation.allocationuser_set.filter(user=user_obj).exists():
@@ -894,8 +942,8 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                 for error in formset.errors:
                     messages.error(request, error)
 
-            if not allocation_form.is_valid():
-                for error in allocation_form.errors:
+            if not allocation_formset.is_valid():
+                for error in allocation_formset.errors:
                     messages.error(request, error)
 
         return HttpResponseRedirect(reverse("project-detail", kwargs={"pk": pk}))
