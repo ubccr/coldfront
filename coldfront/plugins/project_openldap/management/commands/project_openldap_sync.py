@@ -144,6 +144,7 @@ class Command(BaseCommand):
             self.stdout.write(
                 f"Exception creating vars for OpenLDAP archive action for Project {project.project_code}: {e}"
             )
+            return
 
         # if sync not permitted, notify, DN is passed to function here
         if not sync:
