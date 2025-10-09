@@ -61,7 +61,7 @@ class AllocationModelCleanMethodTests(TestCase):
 
     def test_status_is_expired_and_end_date_not_past_has_validation_error(self):
         """Test that an allocation with status 'expired' and end date in the future raises a validation error."""
-        end_date_in_the_future: datetime.date = (timezone.now() + datetime.timedelta(days=1)).date()
+        end_date_in_the_future: datetime.date = datetime.date.today() + datetime.timedelta(days=1)
         actual_allocation: Allocation = AllocationFactory.build(
             status=self.expired_status, end_date=end_date_in_the_future, project=self.project
         )
@@ -70,7 +70,7 @@ class AllocationModelCleanMethodTests(TestCase):
 
     def test_status_is_expired_and_start_date_after_end_date_has_validation_error(self):
         """Test that an allocation with status 'expired' and start date after end date raises a validation error."""
-        end_date: datetime.date = (timezone.now() + datetime.timedelta(days=1)).date()
+        end_date: datetime.date = datetime.date.today() + datetime.timedelta(days=1)
         start_date_after_end_date: datetime.date = end_date + datetime.timedelta(days=1)
 
         actual_allocation: Allocation = AllocationFactory.build(
@@ -116,7 +116,7 @@ class AllocationModelCleanMethodTests(TestCase):
 
     def test_status_is_active_and_start_date_after_end_date_has_validation_error(self):
         """Test that an allocation with status 'active' and start date after end date raises a validation error."""
-        end_date: datetime.date = (timezone.now() + datetime.timedelta(days=1)).date()
+        end_date: datetime.date = datetime.date.today() + datetime.timedelta(days=1)
         start_date_after_end_date: datetime.date = end_date + datetime.timedelta(days=1)
 
         actual_allocation: Allocation = AllocationFactory.build(
@@ -237,32 +237,32 @@ class AllocationModelExpiresInTests(TestCase):
 
     def test_end_date_is_today_returns_zero(self):
         """Test that the expires_in method returns 0 when the end date is today."""
-        allocation: Allocation = AllocationFactory(end_date=timezone.now().date())
+        allocation: Allocation = AllocationFactory(end_date=datetime.date.today())
         self.assertEqual(allocation.expires_in, 0)
 
     def test_end_date_tomorrow_returns_one(self):
         """Test that the expires_in method returns 1 when the end date is tomorrow."""
-        tomorrow: datetime.date = (timezone.now() + datetime.timedelta(days=1)).date()
+        tomorrow: datetime.date = datetime.date.today() + datetime.timedelta(days=1)
         allocation: Allocation = AllocationFactory(end_date=tomorrow)
         self.assertEqual(allocation.expires_in, 1)
 
     def test_end_date_yesterday_returns_negative_one(self):
         """Test that the expires_in method returns -1 when the end date is yesterday."""
-        yesterday: datetime.date = (timezone.now() - datetime.timedelta(days=1)).date()
+        yesterday: datetime.date = datetime.date.today() - datetime.timedelta(days=1)
         allocation: Allocation = AllocationFactory(end_date=yesterday)
         self.assertEqual(allocation.expires_in, -1)
 
     def test_end_date_one_week_ago_returns_negative_seven(self):
         """Test that the expires_in method returns -7 when the end date is one week ago."""
         days_in_a_week: int = 7
-        one_week_ago: datetime.date = (timezone.now() - datetime.timedelta(days=days_in_a_week)).date()
+        one_week_ago: datetime.date = datetime.date.today() - datetime.timedelta(days=days_in_a_week)
         allocation: Allocation = AllocationFactory(end_date=one_week_ago)
         self.assertEqual(allocation.expires_in, -days_in_a_week)
 
     def test_end_date_in_one_week_returns_seven(self):
         """Test that the expires_in method returns 7 when the end date is in one week."""
         days_in_a_week: int = 7
-        one_week_from_now: datetime.date = (timezone.now() + datetime.timedelta(days=days_in_a_week)).date()
+        one_week_from_now: datetime.date = datetime.date.today() + datetime.timedelta(days=days_in_a_week)
         allocation: Allocation = AllocationFactory(end_date=one_week_from_now)
         self.assertEqual(allocation.expires_in, days_in_a_week)
 
