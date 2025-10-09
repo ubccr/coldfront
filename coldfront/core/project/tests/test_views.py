@@ -4,7 +4,7 @@
 
 import logging
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.test_helpers import utils
@@ -114,6 +114,18 @@ class ProjectDetailViewTest(ProjectViewTestBase):
         # non-manager user cannot see add notification button
         utils.page_does_not_contain_for_user(self, self.project_user, self.url, "Add Notification")
 
+    @override_settings(FIELD_OF_SCIENCE_HIDE=True)
+    def test_project_detail_field_of_science_hidden(self):
+        """Test that the setting FIELD_OF_SCIENCE_HIDE=True hides the field of science field on the project detail form."""
+        response = utils.login_and_get_page(self.client, self.admin_user, self.url)
+        self.assertNotContains(response, "Field of Science:")
+
+    @override_settings(FIELD_OF_SCIENCE_HIDE=False)
+    def test_project_detail_field_of_science_visible(self):
+        """Test that the setting FIELD_OF_SCIENCE_HIDE=False shows the field of science field on the project detail form."""
+        response = utils.login_and_get_page(self.client, self.admin_user, self.url)
+        self.assertContains(response, "Field of Science:")
+
 
 class ProjectCreateTest(ProjectViewTestBase):
     """Tests for project create view"""
@@ -132,6 +144,18 @@ class ProjectCreateTest(ProjectViewTestBase):
         utils.test_user_cannot_access(self, self.pi_user, self.url)
         utils.test_user_cannot_access(self, self.project_user, self.url)
         utils.test_user_cannot_access(self, self.nonproject_user, self.url)
+
+    @override_settings(FIELD_OF_SCIENCE_HIDE=True)
+    def test_project_create_field_of_science_hidden(self):
+        """Test that the setting FIELD_OF_SCIENCE_HIDE=True hides the field of science field on the project create form."""
+        response = utils.login_and_get_page(self.client, self.admin_user, self.url)
+        self.assertNotContains(response, "Field of science")
+
+    @override_settings(FIELD_OF_SCIENCE_HIDE=False)
+    def test_project_create_field_of_science_visible(self):
+        """Test that the setting FIELD_OF_SCIENCE_HIDE=False shows the field of science field on the project create form."""
+        response = utils.login_and_get_page(self.client, self.admin_user, self.url)
+        self.assertContains(response, "Field of science")
 
 
 class ProjectAttributeCreateTest(ProjectViewTestBase):
@@ -303,6 +327,29 @@ class ProjectListViewTest(ProjectViewTestBase):
         response = utils.login_and_get_page(self.client, self.admin_user, url)
         self.assertEqual(len(response.context["object_list"]), 1)
 
+    @override_settings(FIELD_OF_SCIENCE_HIDE=True)
+    def test_project_list_search_field_of_science_hidden(self):
+        """Test that project list search works when field_of_science is hidden."""
+        url_base = self.url + "?show_all_projects=on"
+        url = f"{url_base}&last_name={self.project.pi.last_name}"
+        # search by project project_title
+        response = utils.login_and_get_page(self.client, self.admin_user, url)
+        self.assertEqual(len(response.context["object_list"]), 1)
+
+    @override_settings(FIELD_OF_SCIENCE_HIDE=True)
+    def test_project_list_field_of_science_hidden(self):
+        """Test that the setting FIELD_OF_SCIENCE_HIDE=True hides the field of science field on the search form."""
+        url = self.url
+        response = utils.login_and_get_page(self.client, self.admin_user, url)
+        self.assertNotContains(response, "Field of Science")
+
+    @override_settings(FIELD_OF_SCIENCE_HIDE=False)
+    def test_project_list_field_of_science_visible(self):
+        """Test that the setting FIELD_OF_SCIENCE_HIDE=False shows the field of science field on the search form."""
+        url = self.url
+        response = utils.login_and_get_page(self.client, self.admin_user, url)
+        self.assertContains(response, "Field of Science")
+
 
 class ProjectRemoveUsersViewTest(ProjectViewTestBase):
     """Tests for ProjectRemoveUsersView"""
@@ -327,6 +374,18 @@ class ProjectUpdateViewTest(ProjectViewTestBase):
         """test access to project update page"""
         self.project_access_tstbase(self.url)
 
+    @override_settings(FIELD_OF_SCIENCE_HIDE=True)
+    def test_project_update_field_of_science_hidden(self):
+        """Test that the setting FIELD_OF_SCIENCE_HIDE=True hides the field of science field on the project update form."""
+        response = utils.login_and_get_page(self.client, self.admin_user, self.url)
+        self.assertNotContains(response, "Field of science")
+
+    @override_settings(FIELD_OF_SCIENCE_HIDE=False)
+    def test_project_update_field_of_science_visible(self):
+        """Test that the setting FIELD_OF_SCIENCE_HIDE=False shows the field of science field on the project update form."""
+        response = utils.login_and_get_page(self.client, self.admin_user, self.url)
+        self.assertContains(response, "Field of science")
+
 
 class ProjectReviewListViewTest(ProjectViewTestBase):
     """Tests for ProjectReviewListView"""
@@ -350,6 +409,18 @@ class ProjectArchivedListViewTest(ProjectViewTestBase):
     def test_projectarchivedlistview_access(self):
         """test access to project archived list page"""
         self.project_access_tstbase(self.url)
+
+    @override_settings(FIELD_OF_SCIENCE_HIDE=True)
+    def test_projectarchivedlistview_field_of_science_hidden(self):
+        """Test that the setting FIELD_OF_SCIENCE_HIDE=True hides the field of science field on the project archived list search form."""
+        response = utils.login_and_get_page(self.client, self.admin_user, self.url)
+        self.assertNotContains(response, "Field of Science")
+
+    @override_settings(FIELD_OF_SCIENCE_HIDE=False)
+    def test_projectarchivedlistview_field_of_science_visible(self):
+        """Test that the setting FIELD_OF_SCIENCE_HIDE=False shows the field of science field on the project archived list search form."""
+        response = utils.login_and_get_page(self.client, self.admin_user, self.url)
+        self.assertContains(response, "Field of Science")
 
 
 class ProjectNoteCreateViewTest(ProjectViewTestBase):
