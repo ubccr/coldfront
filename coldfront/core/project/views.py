@@ -39,11 +39,11 @@ from coldfront.core.project.forms import (
     ProjectAttributeAddForm,
     ProjectAttributeDeleteForm,
     ProjectAttributeUpdateForm,
-    ProjectCreationForm,
     ProjectRemoveUserForm,
     ProjectReviewEmailForm,
     ProjectReviewForm,
     ProjectSearchForm,
+    ProjectUpdateForm,
     ProjectUserUpdateForm,
 )
 from coldfront.core.project.models import (
@@ -301,7 +301,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
                 )
 
             # Field of Science
-            if data.get("field_of_science"):
+            if data.get("field_of_science", ""):
                 projects = projects.filter(field_of_science__description__icontains=data.get("field_of_science"))
 
         else:
@@ -568,7 +568,7 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
 class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Project
     template_name_suffix = "_create_form"
-    form_class = ProjectCreationForm
+    form_class = ProjectUpdateForm
 
     def test_func(self):
         """UserPassesTestMixin Tests"""
@@ -615,11 +615,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Project
     template_name_suffix = "_update_form"
-    fields = [
-        "title",
-        "description",
-        "field_of_science",
-    ]
+    form_class = ProjectUpdateForm
     success_message = "Project updated."
 
     def test_func(self):

@@ -11,14 +11,18 @@ Update Project
 {% block content %}
 <form method="post">
   {% csrf_token %}
-  {{ form|crispy }}
+  {% crispy form form.helper %}
   <input class="btn btn-primary" type="submit" value="Save" />
   <a class="btn btn-secondary" href="{% url 'project-detail' object.pk %}" role="button">Cancel</a>
 </form>
 
+{% if not settings.FIELD_OF_SCIENCE_HIDE %}
 <script>
   $(document).ready(function() {
     $('#id_field_of_science').select2();
   });
 </script>
+{% endif %}
+
 {% endblock %}
+
