@@ -28,13 +28,6 @@ When an allocation is in 'expired' status:
 - It's important to point out that unless these plugins are run to properly remove access, or the center is using some other mechanism for granting access to a resource, the allocation users' access will still be active on the systems, despite this allocation status being 'expired'  
 - Emails are sent to all allocation users letting them know the allocation has expired   
 
-
-#### Inactive (Renewed)  
-- When an allocation is renewed, a new allocation is created and the original allocation is set to this status  
-- Changes can not be made to this allocation  
-- It remains for historical purposes  
-
-
 #### New  
 - This is the status an allocation is placed in when first created   
 - An email gets sent to 'EMAIL_TICKET_SYSTEM_ADDRESS' configured in coldfront.env  

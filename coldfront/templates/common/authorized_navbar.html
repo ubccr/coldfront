@@ -38,8 +38,10 @@
         {% elif perms.project.can_review_pending_project_reviews or perms.grant.can_view_all_grants %}
           {% include 'common/navbar_director.html' %}
         {% endif %}
-        {% if request.user.is_superuser or perms.allocation.can_manage_invoice %}
-          {% include 'common/navbar_invoice.html' %}
+        {% if settings.INVOICE_ENABLED %}
+          {% if request.user.is_superuser or perms.allocation.can_manage_invoice %}
+            {% include 'common/navbar_invoice.html' %}
+          {% endif %}
         {% endif %}
         {% if settings.CENTER_HELP_URL %}
           {% include 'common/navbar_help.html' %}

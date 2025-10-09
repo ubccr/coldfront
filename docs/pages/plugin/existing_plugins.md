@@ -7,7 +7,8 @@ For details, see the documentation for each plugin below:
 
 - [Slurm](https://github.com/ubccr/coldfront/tree/master/coldfront/plugins/slurm)
 - [FreeIPA](https://github.com/ubccr/coldfront/tree/master/coldfront/plugins/freeipa)
-- [LDAP](https://github.com/ubccr/coldfront/tree/master/coldfront/plugins/ldap_user_search)
+- [LDAP protocol User Search](https://github.com/ubccr/coldfront/tree/master/coldfront/plugins/ldap_user_search)
+- [Project OpenLDAP](https://github.com/ubccr/coldfront/tree/master/coldfront/plugins/project_openldap)
 - [Mokey/Hydra OpenID Connect](https://github.com/ubccr/coldfront/tree/master/coldfront/plugins/mokey_oidc)
 - [iQuota](https://github.com/ubccr/coldfront/tree/master/coldfront/plugins/iquota)
 - [Open OnDemand](https://github.com/ubccr/coldfront/tree/master/coldfront/plugins/ondemand)

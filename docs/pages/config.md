@@ -13,6 +13,11 @@ for the following files:
 - `.env` in the ColdFront project root
 - `/etc/coldfront/coldfront.env`
 
+Note: You can check your project root with the following command:
+```shell
+coldfront diffsettings | grep PROJECT_ROOT
+```
+
 You can also specify the path to an environment file using the `COLDFRONT_ENV`
 environment variable. For example
 
@@ -101,7 +106,7 @@ The following settings are ColdFront specific settings related to the core appli
 | RESEARCH_OUTPUT_ENABLE                 | Enable or disable research outputs. Default True |
 | GRANT_ENABLE                           | Enable or disable grants. Default True           |
 | PUBLICATION_ENABLE                     | Enable or disable publications. Default True     |
-| PROJECT_CODE                                 | Specifies a custom internal project identifier. Default False, provide string value to enable.|  
+| PROJECT_CODE                                 | Specifies a custom internal project identifier. Default False, provide string value to enable. Must be no longer than 10 - PROJECT_CODE_PADDING characters in length.|  
 | PROJECT_CODE_PADDING                         | Defines a optional padding value to be added before the Primary Key section of PROJECT_CODE. Default False, provide integer value to enable.|
 | PROJECT_INSTITUTION_EMAIL_MAP                | Defines a dictionary where PI domain email addresses are keys and their corresponding institutions are values. Default is False, provide key-value pairs to enable this feature.|  
 ### Database settings

@@ -64,7 +64,6 @@ def remove_user_group(allocation_user_pk):
     if allocation_user.allocation.status.name not in [
         "Active",
         "Pending",
-        "Inactive (Renewed)",
     ]:
         logger.warning("Allocation is not active or pending. Will not remove groups.")
         return
