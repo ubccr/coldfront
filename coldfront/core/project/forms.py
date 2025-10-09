@@ -19,10 +19,12 @@ EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings("EMAIL_DIRECTOR_EMAIL_ADDRES
 class ProjectSearchForm(forms.Form):
     """Search form for the Project list page."""
 
+    TITLE = "Title"
     LAST_NAME = "Last Name"
     USERNAME = "Username"
     FIELD_OF_SCIENCE = "Field of Science"
 
+    title = forms.CharField(label=TITLE, max_length=255, required=False)
     last_name = forms.CharField(label=LAST_NAME, max_length=100, required=False)
     username = forms.CharField(label=USERNAME, max_length=100, required=False)
     field_of_science = forms.CharField(label=FIELD_OF_SCIENCE, max_length=100, required=False)
