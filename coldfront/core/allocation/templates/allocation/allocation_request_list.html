@@ -19,7 +19,7 @@ Allocation Review New and Pending Requests
 </p>
 
 <p class="text-justify"> 
-  By default, activating an allocation will make it active for {{ ALLOCATION_DEFAULT_ALLOCATION_LENGTH }} days.
+  By default, activating an allocation will make it active for {{ settings.ALLOCATION_DEFAULT_ALLOCATION_LENGTH }} days.
 </p>
 
 {% if allocation_list %}
@@ -32,7 +32,7 @@ Allocation Review New and Pending Requests
           <th scope="col">Project Title</th>
           <th scope="col">PI</th>
           <th scope="col">Resource</th>
-          {% if PROJECT_ENABLE_PROJECT_REVIEW %}
+          {% if settings.PROJECT_ENABLE_PROJECT_REVIEW %}
             <th scope="col" class="text-nowrap">Project Review Status</th>
           {% endif %}
           <th scope="col">Status</th>
@@ -48,7 +48,7 @@ Allocation Review New and Pending Requests
             <td>{{allocation.project.pi.first_name}} {{allocation.project.pi.last_name}}
               ({{allocation.project.pi.username}})</td>
             <td>{{allocation.get_parent_resource}}</td>
-            {% if PROJECT_ENABLE_PROJECT_REVIEW %}
+            {% if settings.PROJECT_ENABLE_PROJECT_REVIEW %}
               <td class="text-center">{{allocation.project|convert_status_to_icon}}</td>
             {% endif %}
             <td>{{allocation.status}}</td>

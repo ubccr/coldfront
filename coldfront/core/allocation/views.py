@@ -184,7 +184,6 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         notes = noteset.all() if self.request.user.is_superuser else noteset.filter(is_private=False)
 
         context["notes"] = notes
-        context["ALLOCATION_ENABLE_ALLOCATION_RENEWAL"] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
         return context
 
     def get(self, request, *args, **kwargs):
@@ -1218,8 +1217,6 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
         context["allocation_renewal_dates"] = allocation_renewal_dates
         context["allocation_status_active"] = AllocationStatusChoice.objects.get(name="Active")
         context["allocation_list"] = allocation_list
-        context["PROJECT_ENABLE_PROJECT_REVIEW"] = PROJECT_ENABLE_PROJECT_REVIEW
-        context["ALLOCATION_DEFAULT_ALLOCATION_LENGTH"] = ALLOCATION_DEFAULT_ALLOCATION_LENGTH
         return context
 
 
@@ -1469,7 +1466,6 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
             notes = allocation_obj.allocationusernote_set.filter(is_private=False)
 
         context["notes"] = notes
-        context["ALLOCATION_ENABLE_ALLOCATION_RENEWAL"] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
         return context
 
     def get(self, request, *args, **kwargs):
@@ -1949,7 +1945,6 @@ class AllocationChangeListView(LoginRequiredMixin, UserPassesTestMixin, Template
             ]
         )
         context["allocation_change_list"] = allocation_change_list
-        context["PROJECT_ENABLE_PROJECT_REVIEW"] = PROJECT_ENABLE_PROJECT_REVIEW
         return context
 
 
