@@ -11,6 +11,10 @@ from coldfront.core.allocation.models import (
     AllocationUserStatusChoice,
     AttributeType,
 )
+from coldfront.core.utils.common import import_from_settings
+
+ALLOCATION_STATUSES_ALL = import_from_settings("ALLOCATION_STATUSES_ALL")
+ALLOCATION_STATUSES_USER_CHOICES = import_from_settings("ALLOCATION_STATUSES_USER_CHOICES")
 
 
 class Command(BaseCommand):
@@ -20,26 +24,10 @@ class Command(BaseCommand):
         for attribute_type in ("Date", "Float", "Int", "Text", "Yes/No", "No", "Attribute Expanded Text"):
             AttributeType.objects.get_or_create(name=attribute_type)
 
-        for choice in (
-            "Active",
-            "Denied",
-            "Expired",
-            "New",
-            "Paid",
-            "Payment Pending",
-            "Payment Requested",
-            "Payment Declined",
-            "Renewal Requested",
-            "Revoked",
-            "Unpaid",
-        ):
+        for choice in ALLOCATION_STATUSES_ALL:
             AllocationStatusChoice.objects.get_or_create(name=choice)
 
-        for choice in (
-            "Pending",
-            "Approved",
-            "Denied",
-        ):
+        for choice in ALLOCATION_STATUSES_USER_CHOICES:
             AllocationChangeStatusChoice.objects.get_or_create(name=choice)
 
         for choice in ("Active", "Error", "Removed", "PendingEULA", "DeclinedEULA"):

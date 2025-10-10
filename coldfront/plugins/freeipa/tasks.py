@@ -9,6 +9,7 @@ from ipalib import api
 
 from coldfront.core.allocation.models import Allocation, AllocationUser
 from coldfront.core.allocation.utils import set_allocation_user_status_to_error
+from coldfront.core.utils.common import import_from_settings
 from coldfront.plugins.freeipa.utils import (
     CLIENT_KTNAME,
     FREEIPA_NOOP,
@@ -19,6 +20,8 @@ from coldfront.plugins.freeipa.utils import (
 )
 
 logger = logging.getLogger(__name__)
+
+ALLOCATION_STATUSES_ALLOW_REMOVE_GROUP = import_from_settings("FREEIPA_ALLOCATION_STATUSES_ALLOW_REMOVE_GROUP")
 
 
 def add_user_group(allocation_user_pk):
@@ -61,11 +64,10 @@ def add_user_group(allocation_user_pk):
 
 def remove_user_group(allocation_user_pk):
     allocation_user = AllocationUser.objects.get(pk=allocation_user_pk)
-    if allocation_user.allocation.status.name not in [
-        "Active",
-        "Pending",
-    ]:
-        logger.warning("Allocation is not active or pending. Will not remove groups.")
+    if allocation_user.allocation.status.name not in ALLOCATION_STATUSES_ALLOW_REMOVE_GROUP:
+        logger.warning(
+            f"Allocation status is not one of {ALLOCATION_STATUSES_ALLOW_REMOVE_GROUP}. Will not remove groups."
+        )
         return
 
     if allocation_user.status.name != "Removed":

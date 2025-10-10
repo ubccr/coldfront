@@ -26,6 +26,7 @@ from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.utils.common import import_from_settings
 
 ALLOCATION_EULA_ENABLE = import_from_settings("ALLOCATION_EULA_ENABLE", False)
+ALLOCATION_STATUSES_HOMEPAGE = import_from_settings("ALLOCATION_STATUSES_HOMEPAGE")
 
 
 def home(request):
@@ -64,13 +65,7 @@ def home(request):
 
         allocation_list = (
             Allocation.objects.filter(
-                Q(
-                    status__name__in=[
-                        "Active",
-                        "New",
-                        "Renewal Requested",
-                    ]
-                )
+                Q(status__name__in=ALLOCATION_STATUSES_HOMEPAGE)
                 & Q(project__status__name__in=["Active", "New"])
                 & Q(project__projectuser__user=request.user)
                 & Q(
