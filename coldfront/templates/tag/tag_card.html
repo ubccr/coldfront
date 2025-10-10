@@ -1,0 +1,60 @@
+{% if tags or request.user.is_superuser %}
+<div class="card mb-3">
+    <div class="card-header">
+        <h3 class="d-inline"><i class="fas fa-tags" aria-hidden="true"></i> Tags</h3>
+        <div class="float-right">
+            {% if request.user.is_superuser %}
+            {% if tags %}
+            <button id="tag_card_toggle_permission_icon" class="btn btn-info">
+                <i class="fas fa-eye" aria-hidden="true"></i> Toggle Permission Icon
+            </button>
+            {% endif %}
+            <a class="btn btn-primary" href="{% url 'tags-edit' app_label model_name pk %}?redirect_path={{ request.get_full_path|urlencode }}" role="button">
+                <i class="fas fa-pen" aria-hidden="true"></i> Edit Tags
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="m-n1">
+            {% spaceless %}
+            {% for tag in tags %}
+            <span class="d-inline-block rounded-pill font-weight-bold m-1 px-2 {{tag.get_html_classes}}">
+                {% if request.user.is_superuser %}
+                {% if tag.user_permissions == "none" %}
+                <i class="fas fa-lock permission_icon" aria-hidden="true"></i>
+                {% elif tag.user_permissions == "view" %}
+                <i class="fas fa-eye permission_icon" aria-hidden="true"></i>
+                {% elif tag.user_permissions == "edit" %}
+                <i class="fas fa-pen permission_icon" aria-hidden="true"></i>
+                {% endif %}
+                {% endif %}
+                {{tag}}</span>
+            {% empty %}
+            <div class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> There are no tags to display.</div>
+            {% endfor %}
+            {% endspaceless %}
+        </div>
+    </div>
+</div>
+{% if request.user.is_superuser %}
+<script>
+ const eye_class = "fa-eye";
+ const eye_slash_class = "fa-eye-slash";
+ $(document).ready(function() {
+     const toggle_button = $("#tag_card_toggle_permission_icon")
+     toggle_button.on("click", () => {
+         if (toggle_button.children("i").hasClass(eye_class)) {
+             toggle_button.children("i").removeClass(eye_class);
+             toggle_button.children("i").addClass(eye_slash_class);
+             $(".permission_icon").addClass("d-none");
+         } else {
+             toggle_button.children("i").removeClass(eye_slash_class);
+             toggle_button.children("i").addClass(eye_class);
+             $(".permission_icon").removeClass("d-none");
+         }
+     })
+ })
+</script>
+{% endif %}
+{% endif %}

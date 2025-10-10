@@ -50,6 +50,12 @@ class AllocationAttributeInline(admin.TabularInline):
     )
 
 
+class AllocationTagInline(admin.TabularInline):
+    model = Allocation.tags.through
+    extra = 0
+    model._meta.verbose_name_plural = "Tags"
+
+
 class AllocationAdminNoteInline(admin.TabularInline):
     model = AllocationAdminNote
     extra = 0
@@ -99,8 +105,14 @@ class AllocationAdmin(SimpleHistoryAdmin):
         "created",
         "modified",
     )
-    inlines = [AllocationUserInline, AllocationAttributeInline, AllocationAdminNoteInline, AllocationUserNoteInline]
-    list_filter = ("resources__resource_type__name", "status", "resources__name", "is_locked")
+    inlines = [
+        AllocationUserInline,
+        AllocationAttributeInline,
+        AllocationTagInline,
+        AllocationAdminNoteInline,
+        AllocationUserNoteInline,
+    ]
+    list_filter = ("resources__resource_type__name", "status", "resources__name", "is_locked", "tags")
     search_fields = [
         "project__pi__username",
         "project__pi__first_name",

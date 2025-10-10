@@ -67,6 +67,8 @@ from coldfront.core.project.signals import (
 from coldfront.core.project.utils import determine_automated_institution_choice, generate_project_code
 from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
+from coldfront.core.tag.models import Tag
+from coldfront.core.tag.views import TagsEditView
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.common import get_domain_url, import_from_settings
@@ -204,6 +206,9 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             if allocation.allocationuser_set.filter(user=self.request.user).exists():
                 user_status.append(allocation.allocationuser_set.get(user=self.request.user).status.name)
 
+        tags = self.object.tags
+        context["tags"] = Tag.get_tags_visible_to_user(tags, self.request.user)
+
         context["publications"] = Publication.objects.filter(project=self.object, status="Active").order_by("-year")
         context["research_outputs"] = ResearchOutput.objects.filter(project=self.object).order_by("-created")
         context["grants"] = Grant.objects.filter(
@@ -217,6 +222,12 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context["project_users"] = project_users
         context["ALLOCATION_ENABLE_ALLOCATION_RENEWAL"] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
         context["PROJECT_INSTITUTION_EMAIL_MAP"] = PROJECT_INSTITUTION_EMAIL_MAP
+        context["may_edit_tags"] = (
+            self.request.user.is_superuser
+            or project_obj.projectuser_set.filter(
+                user=self.request.user, role__name="Manager", status__name="Active"
+            ).exists()
+        )
 
         try:
             context["ondemand_url"] = settings.ONDEMAND_URL
@@ -224,6 +235,24 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             pass
 
         return context
+
+
+class ProjectTagEditView(TagsEditView):
+    model = Project
+
+    def test_func(self):
+        """UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+        project_obj = get_object_or_404(self.model, pk=self.kwargs.get("pk"))
+        # if project_obj.pi == self.request.user:
+        #     return True
+        if project_obj.projectuser_set.filter(
+            user=self.request.user, role__name="Manager", status__name="Active"
+        ).exists():
+            return True
+        messages.error(self.request, "You do not have permission to edit tags.")
+        return False
 
 
 class ProjectListView(LoginRequiredMixin, ListView):

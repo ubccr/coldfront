@@ -11,6 +11,7 @@ from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
 import coldfront.core.attribute_expansion as attribute_expansion
+from coldfront.core.tag.models import Tag
 
 
 class AttributeType(TimeStampedModel):
@@ -114,6 +115,7 @@ class Resource(TimeStampedModel):
         resource_type (ResourceType): the type of resource (Cluster, Storage, etc.)
         name (str): name of resource
         description (str): description of what the resource does and is used for
+        tags (Tag): links tags that apply to this allocation
         is_available (bool): indicates whether or not the resource is available for users to request an allocation for
         is_public (bool):  indicates whether or not users can see the resource
         requires_payment (bool): indicates whether or not users have to pay to use this resource
@@ -141,6 +143,7 @@ class Resource(TimeStampedModel):
     allowed_groups = models.ManyToManyField(Group, blank=True)
     allowed_users = models.ManyToManyField(User, blank=True)
     linked_resources = models.ManyToManyField("self", blank=True)
+    tags = models.ManyToManyField(Tag, blank=True)
     history = HistoricalRecords()
     objects = ResourceManager()
 

@@ -61,6 +61,12 @@ class ResourceAttributeTypeAdmin(SimpleHistoryAdmin):
         return obj.attribute_type.name
 
 
+class ResourceTagInline(admin.TabularInline):
+    model = Resource.tags.through
+    extra = 0
+    model._meta.verbose_name_plural = "Tags"
+
+
 class ResourceAttributeInline(admin.TabularInline):
     model = ResourceAttribute
     fields_change = (
@@ -105,9 +111,10 @@ class ResourceAdmin(SimpleHistoryAdmin):
         "modified",
     )
     search_fields = ("name", "description", "resource_type__name")
-    list_filter = ("resource_type__name", "is_allocatable", "is_available", "is_public", "requires_payment")
+    list_filter = ("resource_type__name", "is_allocatable", "is_available", "is_public", "requires_payment", "tags")
     inlines = [
         ResourceAttributeInline,
+        ResourceTagInline,
     ]
     filter_horizontal = [
         "allowed_groups",

@@ -57,4 +57,5 @@ urlpatterns = [
         project_views.ProjectAttributeUpdateView.as_view(),
         name="project-attribute-update",
     ),
+    path("<int:pk>/projecttag/edit", project_views.ProjectTagEditView.as_view(), name="project-tag-edit"),
 ]
