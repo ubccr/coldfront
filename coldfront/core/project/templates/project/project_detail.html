@@ -81,7 +81,7 @@ Project Detail
           <span class="badge badge-pill badge-info">project review pending</span>
         {% endif %}
     </p>
-    {% if PROJECT_INSTITUTION_EMAIL_MAP %}
+    {% if settings.PROJECT_INSTITUTION_EMAIL_MAP %}
         <p class="card-text text-justify"><strong>Institution: </strong>{{ project.institution }}</p>
     {% endif %}
     <p class="card-text text-justify"><strong>Created: </strong>{{ project.created|date:"M. d, Y" }}</p>
@@ -225,7 +225,7 @@ Project Detail
                 <span class="badge badge-warning"><i class="far fa-clock" aria-hidden="true"></i>
                   Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} <br> Not renewable
                 </span>
-                {% elif is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
+                {% elif is_allowed_to_update_project and settings.ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
                   <a href="{% url 'allocation-renew' allocation.pk %}">
                   <span class="badge badge-warning"><i class="fas fa-redo-alt" aria-hidden="true"></i>
                   Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} <br> Click to renew

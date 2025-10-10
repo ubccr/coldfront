@@ -6,8 +6,8 @@
   <h3 class="text-center">{{system_monitor_panel_title}}</h3>
   <hr> {% if last_updated %}
   <div class="row">
-    {% if SYSTEM_MONITOR_DISPLAY_XDMOD_LINK %}
-    <a target="_blank" href="{{SYSTEM_MONITOR_DISPLAY_XDMOD_LINK}}"><img style="max-width: 100px" src="{% static 'coldfront/plugins/system_monitor/images/xdmod.png' %}" alt=""> <i class="fa fa-external-link" aria-hidden="true"></i></a> {% endif %}
+    {% if settings.SYSTEM_MONITOR_DISPLAY_XDMOD_LINK %}
+    <a target="_blank" href="{{settings.SYSTEM_MONITOR_DISPLAY_XDMOD_LINK}}"><img style="max-width: 100px" src="{% static 'coldfront/plugins/system_monitor/images/xdmod.png' %}" alt=""> <i class="fa fa-external-link" aria-hidden="true"></i></a> {% endif %}
   </div>
   <div class="row">
     <div class="col-lg-6">
@@ -18,10 +18,10 @@
     </div>
   </div>
   <div class="row">
-    {% if SYSTEM_MONITOR_DISPLAY_MORE_STATUS_INFO_LINK %}
+    {% if settings.SYSTEM_MONITOR_DISPLAY_MORE_STATUS_INFO_LINK %}
     <div class="col">
-      {% if SYSTEM_MONITOR_DISPLAY_MORE_STATUS_INFO_LINK %}
-      <a target="_blank" href="{{SYSTEM_MONITOR_DISPLAY_MORE_STATUS_INFO_LINK}}">More status info <i class="fa fa-external-link" aria-hidden="true"></i></a>
+      {% if settings.SYSTEM_MONITOR_DISPLAY_MORE_STATUS_INFO_LINK %}
+      <a target="_blank" href="{{settings.SYSTEM_MONITOR_DISPLAY_MORE_STATUS_INFO_LINK}}">More status info <i class="fa fa-external-link" aria-hidden="true"></i></a>
       <br> {% endif %}
     </div>
     {% endif %}

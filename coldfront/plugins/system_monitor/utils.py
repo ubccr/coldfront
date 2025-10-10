@@ -20,10 +20,6 @@ def get_system_monitor_context():
     context["utilization_data"] = system_monitor_data.get("utilization_data")
     context["jobs_data"] = system_monitor_data.get("jobs_data")
     context["system_monitor_panel_title"] = system_monitor_panel_title
-    context["SYSTEM_MONITOR_DISPLAY_XDMOD_LINK"] = import_from_settings("SYSTEM_MONITOR_DISPLAY_XDMOD_LINK", None)
-    context["SYSTEM_MONITOR_DISPLAY_MORE_STATUS_INFO_LINK"] = import_from_settings(
-        "SYSTEM_MONITOR_DISPLAY_MORE_STATUS_INFO_LINK", None
-    )
 
     return context
 
