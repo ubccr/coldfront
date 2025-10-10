@@ -3,7 +3,7 @@
 ColdFront django plugin providing Slurm integration for ColdFront.
 Allocations in ColdFront are marshalled out to Slurm associations in the
 Slurm flat file format and can be loaded with sacctmgr. For more information on
-the Slurm flat file format see [here](https://slurm.schedmd.com/sacctmgr.html).
+the Slurm flat file format, see [here](https://slurm.schedmd.com/sacctmgr.html).
 
 A command line tool is also provided with this app that allows an administrator
 to check the consistency between ColdFront and Slurm and optionally remove any
@@ -13,23 +13,31 @@ associations that should not be in Slurm according to ColdFront.
 
 Resources in ColdFront map to Clusters (or partitions within a cluster) in
 Slurm. The name of the Slurm cluster is taken from a resource attribute in
-ColdFront named "slurm\_cluster".  You can optionally provide Slurm
-specifications for a cluster using a resource attribute named "slurm\_specs".
+ColdFront named `slurm_cluster`.  You can optionally provide Slurm
+specifications for a cluster using a resource attribute named `slurm_specs`.
 The value of this attribute must conform to the Slurm specification format and
 are colon separated.
 
 Allocations in ColdFront map to Accounts in Slurm. The name of the Slurm
 account is taken from a allocation attribute in ColdFront named
-"slurm\_account\_name" . You can optionally provide Slurm specifications for
-the account using a allocation attribute named "slurm\_specs". The value of
-this attribute must conform to the Slurm specification format and are colon
-separated.
+`slurm_account_name`. You can optionally provide Slurm specifications for
+the account using a allocation attribute named `slurm_specs`. The value of
+this attribute must conform to the Slurm specification format. This attribute
+can either be colon-separated or multiple instances of this attribute can be
+specified. For example, specifying both
+`slurm_specs`: `QOS='+qos_interactive,-free'`
+and `slurm_specs`: `DefaultAccount='my-account'` is equivalent to specifying
+only `slurm_specs`: `QOS='+qos_interactive,-free':DefaultAccount='my-account'`.
+You can also optionally provide child accounts with the `slurm_children`
+allocation attribute - specify the account name.
 
 Allocation users in ColdFront map to Users in Slurm. You can optionally
 provide Slurm specifications for each user in a allocation using a
-allocation attribute named "slurm\_user\_specs". The value of this attribute
-must conform to the Slurm specification format and are colon separated. Setting
-specifications on an individual user basis is not currently supported.
+allocation attribute named `slurm_user_specs`. The value of this attribute
+must conform to the Slurm specification format This attribute can either be
+colon-separated or multiple instances of this attribute can be specified.
+Setting specifications on an individual user basis is not currently supported.
+
 
 ## Usage
 
