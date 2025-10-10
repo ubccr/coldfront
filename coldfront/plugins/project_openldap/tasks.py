@@ -79,6 +79,9 @@ def add_project(project_obj):
 
     add_posixgroup_to_openldap(posixgroup_dn, openldap_posixgroup_description, gid_int)
 
+    # 3) add the PI to the posixgroup
+    add_members_to_openldap_posixgroup(posixgroup_dn, [project_obj.pi.username])
+
 
 # Coldfront archive project action
 def remove_project(project_obj):
