@@ -60,7 +60,7 @@ def openldap_connection(server_opt, bind_user, bind_password):
         return None
 
 
-def add_members_to_openldap_project_posixgroup(dn, list_memberuids, write=True):
+def add_members_to_openldap_posixgroup(dn, list_memberuids, write=True):
     """Add members to a posixgroup in OpenLDAP"""
     member_uid = tuple(list_memberuids)
     conn = openldap_connection(server, PROJECT_OPENLDAP_BIND_USER, PROJECT_OPENLDAP_BIND_PASSWORD)
@@ -81,7 +81,7 @@ def add_members_to_openldap_project_posixgroup(dn, list_memberuids, write=True):
         conn.unbind()
 
 
-def remove_members_from_openldap_project_posixgroup(dn, list_memberuids, write=True):
+def remove_members_from_openldap_posixgroup(dn, list_memberuids, write=True):
     """Remove members from a posixgroup in OpenLDAP"""
     member_uids_tuple = tuple(list_memberuids)
     conn = openldap_connection(server, PROJECT_OPENLDAP_BIND_USER, PROJECT_OPENLDAP_BIND_PASSWORD)
@@ -131,8 +131,8 @@ def add_per_project_ou_to_openldap(project_obj, dn, openldap_ou_description, wri
         conn.unbind()
 
 
-def add_project_posixgroup_to_openldap(dn, openldap_description, gid_int, write=True):
-    """Add a project to OpenLDAP - write a posixGroup"""
+def add_posixgroup_to_openldap(dn, openldap_description, gid_int, write=True):
+    """Add a posixGroup to OpenLDAP"""
     conn = openldap_connection(server, PROJECT_OPENLDAP_BIND_USER, PROJECT_OPENLDAP_BIND_PASSWORD)
 
     if not conn:
@@ -159,7 +159,7 @@ def add_project_posixgroup_to_openldap(dn, openldap_description, gid_int, write=
 
 # Remove a DN - e.g. DELETE a project OU or posixgroup in OpenLDAP
 def remove_dn_from_openldap(dn, write=True):
-    """Remove a project from OpenLDAP - delete a posixGroup"""
+    """Remove a DN from OpenLDAP"""
     conn = openldap_connection(server, PROJECT_OPENLDAP_BIND_USER, PROJECT_OPENLDAP_BIND_PASSWORD)
 
     if not conn:
@@ -179,7 +179,7 @@ def remove_dn_from_openldap(dn, write=True):
 
 
 # Update the project title in OpenLDAP
-def update_project_posixgroup_in_openldap(dn, openldap_description, write=True):
+def update_posixgroup_description_in_openldap(dn, openldap_description, write=True):
     """Update the description of a posixGroup in OpenLDAP"""
     conn = openldap_connection(server, PROJECT_OPENLDAP_BIND_USER, PROJECT_OPENLDAP_BIND_PASSWORD)
 
@@ -199,8 +199,8 @@ def update_project_posixgroup_in_openldap(dn, openldap_description, write=True):
 
 
 # MOVE the project to an archive OU - defined as env var
-def archive_project_in_openldap(current_dn, relative_dn, archive_ou, write=True):
-    """Move a project to the archive OU in OpenLDAP"""
+def move_dn_in_openldap(current_dn, relative_dn, destination_ou, write=True):
+    """Move a DN to another OU in OpenLDAP"""
     conn = openldap_connection(server, PROJECT_OPENLDAP_BIND_USER, PROJECT_OPENLDAP_BIND_PASSWORD)
 
     if not conn:
@@ -210,7 +210,7 @@ def archive_project_in_openldap(current_dn, relative_dn, archive_ou, write=True)
         return None
 
     try:
-        conn.modify_dn(current_dn, relative_dn, new_superior=archive_ou)
+        conn.modify_dn(current_dn, relative_dn, new_superior=destination_ou)
         conn.unbind()
     except Exception as exc_log:
         logger.info(exc_log)
@@ -236,7 +236,7 @@ def ldapsearch_check_project_dn(dn):
 
 
 # check bind user can see the Project OU or Archive OU - is also used in system setup check script
-def ldapsearch_check_project_ou(OU):
+def ldapsearch_check_ou(OU):
     """Test that ldapsearch can see an OU"""
     conn = openldap_connection(server, PROJECT_OPENLDAP_BIND_USER, PROJECT_OPENLDAP_BIND_PASSWORD)
 
@@ -253,8 +253,8 @@ def ldapsearch_check_project_ou(OU):
         conn.unbind()
 
 
-def ldapsearch_get_project_memberuids(dn):
-    """Get memberUids from a project's posixGroup"""
+def ldapsearch_get_posixgroup_memberuids(dn):
+    """Get memberUids from a posixGroup"""
     conn = openldap_connection(server, PROJECT_OPENLDAP_BIND_USER, PROJECT_OPENLDAP_BIND_PASSWORD)
 
     if not conn:
@@ -271,8 +271,8 @@ def ldapsearch_get_project_memberuids(dn):
         conn.unbind()
 
 
-def ldapsearch_get_project_description(dn):
-    """Get description from a project's posixGroup"""
+def ldapsearch_get_description(dn):
+    """Get description from an openldap entry"""
     conn = openldap_connection(server, PROJECT_OPENLDAP_BIND_USER, PROJECT_OPENLDAP_BIND_PASSWORD)
 
     if not conn:
