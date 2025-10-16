@@ -631,9 +631,10 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         user_resources = get_user_resources(self.request.user)
         resources_form_default_quantities = {}
+        resources_form_descriptions = {}
         resources_form_label_texts = {}
         resources_with_eula = {}
-        attr_names = ("quantity_default_value", "quantity_label", "eula")
+        attr_names = ("quantity_default_value", "form_description", "quantity_label", "eula")
         for resource in user_resources:
             for attr_name in attr_names:
                 query = Q(resource_attribute_type__name=attr_name)
@@ -641,12 +642,15 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     value = resource.resourceattribute_set.get(query).value
                     if attr_name == "quantity_default_value":
                         resources_form_default_quantities[resource.id] = int(value)
+                    if attr_name == "form_description":
+                        resources_form_descriptions[resource.id] = value
                     if attr_name == "quantity_label":
                         resources_form_label_texts[resource.id] = value
                     if attr_name == "eula":
                         resources_with_eula[resource.id] = value
 
         context["resources_form_default_quantities"] = resources_form_default_quantities
+        context["resources_form_descriptions"] = resources_form_descriptions
         context["resources_form_label_texts"] = resources_form_label_texts
         context["resources_with_eula"] = resources_with_eula
         context["resources_with_accounts"] = list(
