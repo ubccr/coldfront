@@ -37,9 +37,9 @@ class TestGrant(TestCase):
                 "funding_agency": grantFundingAgency,
                 "grant_start": start_date,
                 "grant_end": end_date,
-                "percent_credit": 20.0,
-                "direct_funding": 200000.0,
-                "total_amount_awarded": 1000000.0,
+                "percent_credit": "20.0",
+                "direct_funding": "200000.0",
+                "total_amount_awarded": "1000000.0",
                 "status": grantStatusChoice,
             }
 
@@ -221,20 +221,21 @@ class TestGrant(TestCase):
         self.assertEqual("", retrieved_obj.other_award_number)
 
     def test_percent_credit_maxvalue(self):
-        expected_maximum_value = 100
+        exceeds_maximum_value = "101"
+        normal_value = "100"
 
         grant_obj = self.data.unsaved_object
 
-        grant_obj.percent_credit = expected_maximum_value + 1
+        grant_obj.percent_credit = exceeds_maximum_value
         with self.assertRaises(ValidationError):
             grant_obj.clean_fields()
 
-        grant_obj.percent_credit = expected_maximum_value
+        grant_obj.percent_credit = normal_value
         grant_obj.clean_fields()
         grant_obj.save()
 
         retrieved_obj = Grant.objects.get(pk=grant_obj.pk)
-        self.assertEqual(expected_maximum_value, retrieved_obj.percent_credit)
+        self.assertEqual(normal_value, retrieved_obj.percent_credit)
 
     def test_project_foreignkey_on_delete(self):
         grant_obj = self.data.unsaved_object
