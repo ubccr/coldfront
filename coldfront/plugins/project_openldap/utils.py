@@ -62,7 +62,7 @@ def add_members_to_openldap_posixgroup(dn, list_memberuids, write=True):
     Should not raise any exceptions
     returns True if not skipped and successful, False otherwise
     """
-    return _ldap_write_wrapper("modify", dn, {"memberUid": [(MODIFY_ADD, [list_memberuids])]}, write=write)
+    return _ldap_write_wrapper("modify", dn, {"memberUid": [(MODIFY_ADD, list_memberuids)]}, write=write)
 
 
 def remove_members_from_openldap_posixgroup(dn, list_memberuids, write=True):
@@ -71,7 +71,7 @@ def remove_members_from_openldap_posixgroup(dn, list_memberuids, write=True):
     Should not raise any exceptions
     returns True if not skipped and successful, False otherwise
     """
-    return _ldap_write_wrapper("modify", dn, {"memberUid": [(MODIFY_DELETE, [list_memberuids])]}, write=write)
+    return _ldap_write_wrapper("modify", dn, {"memberUid": [(MODIFY_DELETE, list_memberuids)]}, write=write)
 
 
 def add_per_project_ou_to_openldap(project_obj, dn, openldap_ou_description, write=True):
