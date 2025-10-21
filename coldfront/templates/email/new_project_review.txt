@@ -1,2 +1,11 @@
-A new project review has been submitted.  Please review at your earliest convenience:
-{{url}}
+A new project review has been submitted for {{project.title}}.
+
+Project information:
+Title: {{project.title}} ({{project_url}})
+PI: {{project.pi.username}} ({{project.pi.email}})
+Latest grant: {{project.latest_grant}}
+Latest publication: {{project.latest_publication}}
+{% if project_review.reason_for_not_updating_project %}Reason for not updating project: {{project_review.reason_for_not_updating_project}}{% endif %}
+
+Please review at your earliest convenience:
+{{project_review_list_url}}#:~:text={{project.title}}
