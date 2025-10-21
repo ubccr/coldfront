@@ -919,7 +919,8 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                                 allocation=allocation_obj, user=user_obj, status=allocation_user_active_status_choice
                             )
 
-                    allocation_activate_user.send(sender=self.__class__, allocation_user_pk=allocation_user_obj.pk)
+                    if allocation_user_obj.status == allocation_user_active_status_choice:
+                        allocation_activate_user.send(sender=self.__class__, allocation_user_pk=allocation_user_obj.pk)
 
             user_plural = "user" if users_added_count == 1 else "users"
             messages.success(request, f"Added {users_added_count} {user_plural} to allocation.")
