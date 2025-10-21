@@ -73,7 +73,7 @@ def add_project(project_obj):
     logger.info("Adding OpenLDAP project posixgroup entry - DN: %s", posixgroup_dn)
     logger.info("Adding OpenLDAP project posixgroup entry - GID: %s", gid_int)
     logger.info(
-        "Adding OpenLDAP project posixgroup entry - GID: %s",
+        "Adding OpenLDAP project posixgroup entry - description: %s",
         openldap_posixgroup_description,
     )
 
