@@ -2,13 +2,14 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from django.conf import settings
+import logging
+
+from django.http import Http404
 from django.shortcuts import redirect
 from django.urls import reverse
-from django.http import Http404
-from coldfront.plugins.maintenance_mode.utils import get_maintenance_state
+
 from coldfront.core.utils.common import import_from_settings
-import logging
+from coldfront.plugins.maintenance_mode.utils import get_maintenance_state
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)

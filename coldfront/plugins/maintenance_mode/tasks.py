@@ -2,15 +2,15 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from datetime import datetime
 import logging
+from datetime import datetime
 
 from coldfront.plugins.maintenance_mode.models import MaintenanceEvent
 from coldfront.plugins.maintenance_mode.utils import (
+    extend_allocations,
     get_maintenance_state,
     pause_tasks,
     resume_tasks,
-    extend_allocations,
 )
 
 # Get an instance of a logger

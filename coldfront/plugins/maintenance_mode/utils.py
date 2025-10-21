@@ -2,16 +2,18 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from datetime import datetime
-from dateutil.relativedelta import relativedelta
-import logging
 import json
+import logging
+from datetime import datetime
 from pathlib import Path
+
+from dateutil.relativedelta import relativedelta
 from django.core.cache import cache
 from django_q.models import Schedule
-from coldfront.plugins.maintenance_mode.models import MaintenanceEvent
-from coldfront.core.utils.common import import_from_settings
+
 from coldfront.core.allocation.models import Allocation
+from coldfront.core.utils.common import import_from_settings
+from coldfront.plugins.maintenance_mode.models import MaintenanceEvent
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -88,7 +90,7 @@ def pause_tasks(maintenance_obj):
             try:
                 with open(output_file, "w", encoding="utf-8") as json_file:
                     json.dump(task_dict, json_file, ensure_ascii=False, indent=2)
-            except Exception as e:
+            except Exception:
                 logger.error("Error writing task log to file: {e}")
 
 

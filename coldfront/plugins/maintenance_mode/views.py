@@ -2,8 +2,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from django.views.generic import TemplateView
 import logging
+
+from django.views.generic import TemplateView
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)

@@ -2,11 +2,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import F, Q
-from django.db.models.functions import Now
-from django.core.validators import MaxValueValidator, MinValueValidator
-
 from simple_history.models import HistoricalRecords
 
 
