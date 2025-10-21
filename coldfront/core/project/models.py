@@ -468,7 +468,9 @@ class ProjectAttribute(TimeStampedModel):
         """Validates the project and raises errors if the project is invalid."""
         if (
             self.proj_attr_type.is_unique
-            and self.project.projectattribute_set.filter(proj_attr_type=self.proj_attr_type).exists()
+            and self.project.projectattribute_set.filter(proj_attr_type=self.proj_attr_type)
+            .exclude(pk=self.pk)
+            .exists()
         ):
             raise ValidationError("'{}' attribute already exists for this project.".format(self.proj_attr_type))
 
