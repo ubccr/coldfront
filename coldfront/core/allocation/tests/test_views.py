@@ -165,7 +165,7 @@ class AllocationChangeViewTest(AllocationViewBaseTest):
             "attributeform-TOTAL_FORMS": "1",
             "end_date_extension": 0,
         }
-        self.url = "/allocation/1/change-request"
+        self.url = f"/allocation/{self.allocation.pk}/change-request"
 
     def test_allocationchangeview_access(self):
         """Test get request"""
@@ -178,7 +178,7 @@ class AllocationChangeViewTest(AllocationViewBaseTest):
 
         self.post_data["end_date_extension"] = 90
         self.assertEqual(len(AllocationChangeRequest.objects.all()), 0)
-        response = self.client.post("/allocation/1/change-request", data=self.post_data, follow=True)
+        response = self.client.post(self.url, data=self.post_data, follow=True)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Allocation change request successfully submitted.")
         self.assertEqual(len(AllocationChangeRequest.objects.all()), 1)
@@ -188,7 +188,7 @@ class AllocationChangeViewTest(AllocationViewBaseTest):
 
         self.assertEqual(len(AllocationChangeRequest.objects.all()), 0)
 
-        response = self.client.post("/allocation/1/change-request", data=self.post_data, follow=True)
+        response = self.client.post(self.url, data=self.post_data, follow=True)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "You must request a change")
         self.assertEqual(len(AllocationChangeRequest.objects.all()), 0)
