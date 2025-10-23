@@ -478,18 +478,24 @@ class AllocationAttribute(TimeStampedModel):
 
         expected_value_type = self.allocation_attribute_type.attribute_type.name.strip()
 
-        if expected_value_type == "Int" and not isinstance(literal_eval(self.value), int):
-            raise ValidationError(
-                'Invalid Value "%s" for "%s". Value must be an integer.'
-                % (self.value, self.allocation_attribute_type.name)
-            )
-        elif expected_value_type == "Float" and not (
-            isinstance(literal_eval(self.value), float) or isinstance(literal_eval(self.value), int)
-        ):
-            raise ValidationError(
-                'Invalid Value "%s" for "%s". Value must be a float.'
-                % (self.value, self.allocation_attribute_type.name)
-            )
+        if expected_value_type == "Int":
+            try:
+                if not isinstance(literal_eval(self.value), int):
+                    raise TypeError
+            except (ValueError, TypeError, SyntaxError, MemoryError, RecursionError) as e:
+                raise ValidationError(
+                    'Invalid Value "%s" for "%s". Value must be an integer.'
+                    % (self.value, self.allocation_attribute_type.name)
+                ) from e
+        elif expected_value_type == "Float":
+            try:
+                if not (isinstance(literal_eval(self.value), int) or isinstance(literal_eval(self.value), float)):
+                    raise TypeError
+            except (ValueError, TypeError, SyntaxError, MemoryError, RecursionError) as e:
+                raise ValidationError(
+                    'Invalid Value "%s" for "%s". Value must be a float.'
+                    % (self.value, self.allocation_attribute_type.name)
+                ) from e
         elif expected_value_type == "Yes/No" and self.value not in ["Yes", "No"]:
             raise ValidationError(
                 'Invalid Value "%s" for "%s". Allowed inputs are "Yes" or "No".'
