@@ -1898,7 +1898,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                     allocation_attribute_changed.send(
                         sender=self.__class__,
                         attribute_pk=attribute_change.allocation_attribute.pk,
-                        allocation_pk=attribute_change.allocation.pk,
+                        allocation_pk=allocation_change_obj.allocation.pk,
                     )
 
             messages.success(
