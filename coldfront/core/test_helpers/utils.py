@@ -100,6 +100,6 @@ def assert_response_success(test_case: TestCase, response: Response):
     test_case.assertEqual(response.status_code, 200)
     errors = []
     for message in response.context["messages"]:
-        if message.level == messages.ERROR:
+        if message.level >= messages.ERROR:
             errors.append(message.message)
     test_case.assertEqual([], errors)
