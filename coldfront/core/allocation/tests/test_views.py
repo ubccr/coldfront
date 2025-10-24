@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import logging
+from datetime import date
 from http import HTTPStatus
 
 from django.conf import settings
@@ -11,7 +12,6 @@ from django.urls import reverse
 
 from coldfront.core.allocation.models import (
     AllocationChangeRequest,
-    AllocationChangeStatusChoice,
 )
 from coldfront.core.test_helpers import utils
 from coldfront.core.test_helpers.factories import (
@@ -28,10 +28,12 @@ from coldfront.core.test_helpers.factories import (
     ResourceFactory,
     UserFactory,
 )
+from coldfront.core.utils.common import import_from_settings
 
 logging.disable(logging.CRITICAL)
 
 BACKEND = "django.contrib.auth.backends.ModelBackend"
+ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS = import_from_settings("ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS")
 
 
 class AllocationViewBaseTest(TestCase):
@@ -44,7 +46,7 @@ class AllocationViewBaseTest(TestCase):
         pi_user.userprofile.is_pi = True
         AllocationStatusChoiceFactory(name="New")
         cls.project = ProjectFactory(pi=pi_user, status=ProjectStatusChoiceFactory(name="Active"))
-        cls.allocation = AllocationFactory(project=cls.project)
+        cls.allocation = AllocationFactory(project=cls.project, end_date=date.today())
         cls.allocation.resources.add(ResourceFactory(name="holylfs07/tier1"))
         # create allocation user that belongs to project
         allocation_user = AllocationUserFactory(allocation=cls.allocation)
@@ -137,21 +139,30 @@ class AllocationChangeDetailViewTest(AllocationViewBaseTest):
     def setUp(self):
         """create an AllocationChangeRequest to test"""
         self.client.force_login(self.admin_user, backend=BACKEND)
-        AllocationChangeRequestFactory(id=2, allocation=self.allocation)
+        AllocationChangeRequestFactory(id=2, allocation=self.allocation)  # view, deny
+        AllocationChangeRequestFactory(id=3, allocation=self.allocation)  # approve, update
 
     def test_allocationchangedetailview_access(self):
         response = self.client.get(reverse("allocation-change-detail", kwargs={"pk": 2}))
-        self.assertEqual(response.status_code, 200)
+        utils.assert_response_success(self, response)
 
     def test_allocationchangedetailview_post_deny(self):
         """Test that posting to AllocationChangeDetailView with action=deny
-        changes the status of the AllocationChangeRequest to denied."""
+        changes the status of AllocationChangeRequest(pk=2) to Denied."""
         param = {"action": "deny"}
         response = self.client.post(reverse("allocation-change-detail", kwargs={"pk": 2}), param, follow=True)
-        self.assertEqual(response.status_code, 200)
+        utils.assert_response_success(self, response)
         alloc_change_req = AllocationChangeRequest.objects.get(pk=2)
-        denied_status_id = AllocationChangeStatusChoice.objects.get(name="Denied").pk
-        self.assertEqual(alloc_change_req.status_id, denied_status_id)
+        self.assertEqual(alloc_change_req.status.name, "Denied")
+
+    def test_allocationchangedetailview_post_approve(self):
+        """Test that posting to AllocationChangeDetailView with action=approve
+        changes the status of AllocationChangeRequest(pk=3) to Approved."""
+        param = {"action": "approve", "end_date_extension": ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS[0]}
+        response = self.client.post(reverse("allocation-change-detail", kwargs={"pk": 3}), param, follow=True)
+        utils.assert_response_success(self, response)
+        alloc_change_req = AllocationChangeRequest.objects.get(pk=3)
+        self.assertEqual(alloc_change_req.status.name, "Approved")
 
 
 class AllocationChangeViewTest(AllocationViewBaseTest):
@@ -182,7 +193,7 @@ class AllocationChangeViewTest(AllocationViewBaseTest):
         self.post_data["end_date_extension"] = 90
         self.assertEqual(len(AllocationChangeRequest.objects.all()), 0)
         response = self.client.post(self.url, data=self.post_data, follow=True)
-        self.assertEqual(response.status_code, 200)
+        utils.assert_response_success(self, response)
         self.assertContains(response, "Allocation change request successfully submitted.")
         self.assertEqual(len(AllocationChangeRequest.objects.all()), 1)
 
@@ -192,7 +203,6 @@ class AllocationChangeViewTest(AllocationViewBaseTest):
         self.assertEqual(len(AllocationChangeRequest.objects.all()), 0)
 
         response = self.client.post(self.url, data=self.post_data, follow=True)
-        self.assertEqual(response.status_code, 200)
         self.assertContains(response, "You must request a change")
         self.assertEqual(len(AllocationChangeRequest.objects.all()), 0)
 
@@ -310,7 +320,7 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
         """Test POST to the AllocationCreateView"""
         self.assertEqual(len(self.project.allocation_set.all()), 1)
         response = self.client.post(self.url, data=self.post_data, follow=True)
-        self.assertEqual(response.status_code, 200)
+        utils.assert_response_success(self, response)
         self.assertContains(response, "Allocation requested.")
         self.assertEqual(len(self.project.allocation_set.all()), 2)
 
@@ -319,7 +329,7 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
         self.post_data["quantity"] = "0"
         self.assertEqual(len(self.project.allocation_set.all()), 1)
         response = self.client.post(self.url, data=self.post_data, follow=True)
-        self.assertEqual(response.status_code, 200)
+        utils.assert_response_success(self, response)
         self.assertContains(response, "Allocation requested.")
         self.assertEqual(len(self.project.allocation_set.all()), 2)
 
