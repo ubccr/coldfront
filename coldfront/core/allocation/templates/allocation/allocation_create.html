@@ -61,17 +61,20 @@ Request New Allocation
 </div>
 
 {{ resources_form_default_quantities|json_script:"resources-form-default-quantities" }}
+{{ resources_form_descriptions|json_script:"resources-form-description" }}
 {{ resources_form_label_texts|json_script:"resources-form-label-texts" }}
 {{ resources_with_accounts|json_script:"resources-with-accounts" }}
 {{ resources_with_eula|json_script:"resources-with-eula" }}
 
 <script>
   var resources_form_default_quantities = JSON.parse(document.getElementById('resources-form-default-quantities').textContent);
+  var resources_form_description = JSON.parse(document.getElementById('resources-form-description').textContent);
   var resources_form_label_texts = JSON.parse(document.getElementById('resources-form-label-texts').textContent);
   var resources_with_accounts = JSON.parse(document.getElementById('resources-with-accounts').textContent);
   var resources_with_eula = JSON.parse(document.getElementById('resources-with-eula').textContent);
 
   $(document).ready(function () {
+    $('<p id="resource_description"></p>').insertAfter($("#div_id_resource"))
     $('<br><input id="selectAll" class="check" type="checkbox"> <strong>Select All Users</strong>').insertAfter($("#div_id_users > label"))
     $("#id_resource").trigger('change');
 
@@ -139,6 +142,14 @@ Request New Allocation
 
   $("#id_resource").change(function () {
     var resource_id = $("#id_resource option:selected").val();
+    if (resources_form_description[resource_id]) {
+      $('#resource_description').html(resources_form_description[resource_id])
+      $('#resource_description').show()
+    } else {
+      $('#resource_description').html("")
+      $('#resource_description').hide()
+    }
+
     if (resources_form_default_quantities[resource_id]) {
       var label = $('label[for="id_quantity"]');
       if (resources_form_label_texts[resource_id]) {
