@@ -10,9 +10,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from coldfront.core.project.models import (
     Project,
-    ProjectStatusChoice,
     ProjectUser,
-    ProjectUserStatusChoice,
 )
 
 # OpenLDAP (ldap3) connections formed in utils.py
@@ -55,13 +53,6 @@ PROJECT_OPENLDAP_ARCHIVE_OU = import_from_settings("PROJECT_OPENLDAP_ARCHIVE_OU"
 PROJECT_OPENLDAP_EXCLUDE_USERS = import_from_settings("PROJECT_OPENLDAP_EXCLUDE_USERS")
 
 logger = logging.getLogger(__name__)
-
-# affirm project status choices
-PROJECT_STATUS_CHOICE_NEW = ProjectStatusChoice.objects.get(name="New").pk
-PROJECT_STATUS_CHOICE_ACTIVE = ProjectStatusChoice.objects.get(name="Active").pk
-PROJECT_STATUS_CHOICE_ARCHIVED = ProjectStatusChoice.objects.get(name="Archived").pk
-# affirm project user status choices
-PROJECTUSER_STATUS_CHOICE_ACTIVE = ProjectUserStatusChoice.objects.get(name="Active").pk
 
 # where project_dn var is used -> posixgroup DN
 # where archive_dn var is used -> posixgroup DN in archive
@@ -211,10 +202,7 @@ class Command(BaseCommand):
                 )
 
     def handle_project_removal_if_needed(self, project, project_ou_dn, sync=False):
-        if project.status_id not in [
-            PROJECT_STATUS_CHOICE_NEW,
-            PROJECT_STATUS_CHOICE_ACTIVE,
-        ]:
+        if project.status.name not in ["New", "Active"]:
             # archive OU not defined, so remove this project
             if PROJECT_OPENLDAP_REMOVE_PROJECT and not PROJECT_OPENLDAP_ARCHIVE_OU:
                 if not sync:
@@ -243,10 +231,7 @@ class Command(BaseCommand):
     ):
         new_description = construct_project_posixgroup_description(project)  # supply project_obj
 
-        if project.status_id in [
-            PROJECT_STATUS_CHOICE_NEW,
-            PROJECT_STATUS_CHOICE_ACTIVE,
-        ]:
+        if project.status.name in ["New", "Active"]:
             # fetch current description from project_dn
             fetched_description = ldapsearch_get_description(project_dn)
             if new_description == fetched_description:
@@ -261,7 +246,7 @@ class Command(BaseCommand):
                     self.stdout.write(f"NEW openldap_description will be {new_description}")
                     self.stdout.write("SYNC required to update OpenLDAP description")
 
-        if project.status_id in [PROJECT_STATUS_CHOICE_ARCHIVED]:
+        if project.status.name in ["Archived"]:
             # fetch current description from archive DN
             fetched_description = ldapsearch_get_description(archive_dn)
             if new_description == fetched_description:
@@ -283,7 +268,7 @@ class Command(BaseCommand):
 
     # get active users from the coldfront django project
     def local_get_cf_django_members(self, project_pk):
-        queryset = ProjectUser.objects.filter(project_id=project_pk, status_id=PROJECTUSER_STATUS_CHOICE_ACTIVE)
+        queryset = ProjectUser.objects.filter(project_id=project_pk, status__name="Active")
         usernames = [
             user.user.username for user in queryset if user.user.username not in PROJECT_OPENLDAP_EXCLUDE_USERS
         ]
@@ -414,7 +399,7 @@ class Command(BaseCommand):
             return
 
         # skip archived projects if option supplied
-        if skip_archived and project.status_id in [PROJECT_STATUS_CHOICE_ARCHIVED]:
+        if skip_archived and project.status.name in ["Archived"]:
             self.stdout.write("--------------------")
             self.stdout.write(
                 f"Requested skip_archived, not processing archived project status for Project {project.project_code}"
@@ -423,10 +408,7 @@ class Command(BaseCommand):
             return
 
         # skip archived projects if option supplied
-        if skip_newactive and project.status_id in [
-            PROJECT_STATUS_CHOICE_NEW,
-            PROJECT_STATUS_CHOICE_ACTIVE,
-        ]:
+        if skip_newactive and project.status.name in ["New", "Active"]:
             self.stdout.write("--------------------")
             self.stdout.write(
                 f"Requested skip_newactive, not processing new or active project status for Project {project.project_code}"
@@ -457,14 +439,14 @@ class Command(BaseCommand):
             self.stdout.write(f"search project archive OU result: {ldapsearch_project_result_archive}")
         else:
             self.stdout.write("search project archive OU result: N/A - PROJECT_OPENLDAP_ARCHIVE_OU is not set")
-            if project.status_id in [PROJECT_STATUS_CHOICE_ARCHIVED]:
-                self.stdout.write("NOTE: This project has Coldfront status_id of Archived")
+            if project.status.name in ["Archived"]:
+                self.stdout.write("NOTE: This project has Coldfront status.name of Archived")
         # 1) --- END ---
 
         # 2) determine if the project needs added, moved or removed - ARCHIVAL
         # Use coldfront project object status id to determine what to do next... ARCHIVAL case
         # Project archived in Coldfront django
-        if project.status_id in [PROJECT_STATUS_CHOICE_ARCHIVED]:
+        if project.status.name in ["Archived"]:
             # archive OU is setup to archive projects
             if PROJECT_OPENLDAP_ARCHIVE_OU and PROJECT_OPENLDAP_REMOVE_PROJECT:
                 # project is in project OU not archive OU - DNs supplied - apart from relative, generated in function
@@ -498,10 +480,7 @@ class Command(BaseCommand):
         # 2 continued...) determine if the project needs added - NEW or ACTIVE
         # Use coldfront project object status id to determine what to do next... NEW or ACTIVE case
         # Project is new or active status in Coldfront django
-        elif project.status_id in [
-            PROJECT_STATUS_CHOICE_NEW,
-            PROJECT_STATUS_CHOICE_ACTIVE,
-        ]:
+        elif project.status.name in ["New", "Active"]:
             if not ldapsearch_project_result:
                 self.handle_missing_project_in_openldap_new_active(project, sync)
                 return
@@ -585,13 +564,7 @@ class Command(BaseCommand):
         skip_archived=False,
         skip_newactive=False,
     ):
-        projects = Project.objects.filter(
-            status_id__in=[
-                PROJECT_STATUS_CHOICE_NEW,
-                PROJECT_STATUS_CHOICE_ACTIVE,
-                PROJECT_STATUS_CHOICE_ARCHIVED,
-            ]
-        ).order_by("id")
+        projects = Project.objects.filter(status__name__in=["New", "Active", "Archived"]).order_by("id")
 
         if len(projects) == 0:
             self.stdout.write("No projects found by loop_all_projects - EXITING")
