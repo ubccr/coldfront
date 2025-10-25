@@ -1780,7 +1780,6 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
 
     def post(self, request, *args, **kwargs):
         pk = self.kwargs.get("pk")
-
         if not self.request.user.is_superuser:
             messages.error(request, "You do not have permission to update an allocation change request")
             return HttpResponseRedirect(reverse("allocation-change-detail", kwargs={"pk": pk}))
@@ -1850,6 +1849,8 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
 
         if not allocation_change_form.is_valid() or (allocation_attributes_to_change and not formset.is_valid()):
             for error in allocation_change_form.errors:
+                messages.error(request, error)
+            for error in allocation_change_form.non_form_errors():
                 messages.error(request, error)
             for error in formset.non_form_errors():
                 messages.error(request, error)
