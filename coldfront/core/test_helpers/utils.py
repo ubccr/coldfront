@@ -2,6 +2,10 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+from django.contrib import messages
+from django.test import TestCase
+from requests import Response
+
 """utility functions for unit and integration testing"""
 
 
@@ -89,3 +93,13 @@ def test_user_can_access(test_case, user, page):
     """
     response = login_and_get_page(test_case.client, user, page)
     test_case.assertEqual(response.status_code, 200)
+
+
+def assert_response_success(test_case: TestCase, response: Response):
+    """Confirm that response status is 200 and response contains no error messages"""
+    test_case.assertEqual(response.status_code, 200)
+    errors = []
+    for message in response.context["messages"]:
+        if message.level >= messages.ERROR:
+            errors.append(message.message)
+    test_case.assertEqual([], errors)

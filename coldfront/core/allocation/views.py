@@ -931,6 +931,8 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         else:
             for error in formset.errors:
                 messages.error(request, error)
+            for error in formset.non_form_errors():
+                messages.error(request, error)
 
         return HttpResponseRedirect(reverse("allocation-detail", kwargs={"pk": pk}))
 
@@ -1038,6 +1040,8 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
         else:
             for error in formset.errors:
                 messages.error(request, error)
+            for error in formset.non_form_errors():
+                messages.error(request, error)
 
         return HttpResponseRedirect(reverse("allocation-detail", kwargs={"pk": pk}))
 
@@ -1139,6 +1143,8 @@ class AllocationAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Tem
             messages.success(request, f"Deleted {attributes_deleted_count} attributes from allocation.")
         else:
             for error in formset.errors:
+                messages.error(request, error)
+            for error in formset.non_form_errors():
                 messages.error(request, error)
 
         return HttpResponseRedirect(reverse("allocation-detail", kwargs={"pk": pk}))
@@ -1372,6 +1378,8 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
         else:
             if not formset.is_valid():
                 for error in formset.errors:
+                    messages.error(request, error)
+                for error in formset.non_form_errors():
                     messages.error(request, error)
         return HttpResponseRedirect(reverse("project-detail", kwargs={"pk": allocation_obj.project.pk}))
 
@@ -1630,6 +1638,8 @@ class AllocationDeleteInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, T
         else:
             for error in formset.errors:
                 messages.error(request, error)
+            for error in formset.non_form_errors():
+                messages.error(request, error)
 
         return HttpResponseRedirect(reverse_lazy("allocation-invoice-detail", kwargs={"pk": allocation_obj.pk}))
 
@@ -1695,6 +1705,12 @@ class AllocationAccountListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
 
 
 class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
+    """
+    Allows a superuser to approve or deny an AllocationChangeRequest
+    Allows a superuser to update the end_date_extension or notes of an AllocationChangeRequest
+    See AllocationAttributeEditView for updating an AllocationChangeRequest's AllocationAttributeChangeRequest
+    """
+
     formset_class = AllocationAttributeUpdateForm
     template_name = "allocation/allocation_change_detail.html"
 
@@ -1838,6 +1854,10 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
         if not allocation_change_form.is_valid() or (allocation_attributes_to_change and not formset.is_valid()):
             for error in allocation_change_form.errors:
                 messages.error(request, error)
+            for error in allocation_change_form.non_form_errors():
+                messages.error(request, error)
+            for error in formset.non_form_errors():
+                messages.error(request, error)
             if allocation_attributes_to_change:
                 attribute_errors = ""
                 for error in formset.errors:
@@ -1898,7 +1918,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                     allocation_attribute_changed.send(
                         sender=self.__class__,
                         attribute_pk=attribute_change.allocation_attribute.pk,
-                        allocation_pk=attribute_change.allocation.pk,
+                        allocation_pk=allocation_change_obj.allocation.pk,
                     )
 
             messages.success(
@@ -1955,6 +1975,8 @@ class AllocationChangeListView(LoginRequiredMixin, UserPassesTestMixin, Template
 
 
 class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
+    """Allows a user with manager permissions to create an allocation change request"""
+
     formset_class = AllocationAttributeChangeForm
     template_name = "allocation/allocation_change.html"
 
@@ -2054,6 +2076,8 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             if not form.is_valid() or not formset.is_valid():
                 attribute_errors = ""
                 for error in form.errors:
+                    messages.error(request, error)
+                for error in formset.non_form_errors():
                     messages.error(request, error)
                 for error in formset.errors:
                     if error:
@@ -2202,6 +2226,8 @@ class AllocationAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, FormV
                 if error:
                     attribute_errors += error.get("__all__")
             messages.error(request, attribute_errors)
+            for error in formset.non_form_errors():
+                messages.error(request, error)
             error_redirect = HttpResponseRedirect(reverse("allocation-attribute-edit", kwargs={"pk": pk}))
             return error_redirect
 
