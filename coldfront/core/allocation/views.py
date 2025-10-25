@@ -931,6 +931,8 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         else:
             for error in formset.errors:
                 messages.error(request, error)
+            for error in formset.non_form_errors():
+                messages.error(request, error)
 
         return HttpResponseRedirect(reverse("allocation-detail", kwargs={"pk": pk}))
 
@@ -1038,6 +1040,8 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
         else:
             for error in formset.errors:
                 messages.error(request, error)
+            for error in formset.non_form_errors():
+                messages.error(request, error)
 
         return HttpResponseRedirect(reverse("allocation-detail", kwargs={"pk": pk}))
 
@@ -1139,6 +1143,8 @@ class AllocationAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Tem
             messages.success(request, f"Deleted {attributes_deleted_count} attributes from allocation.")
         else:
             for error in formset.errors:
+                messages.error(request, error)
+            for error in formset.non_form_errors():
                 messages.error(request, error)
 
         return HttpResponseRedirect(reverse("allocation-detail", kwargs={"pk": pk}))
@@ -1372,6 +1378,8 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
         else:
             if not formset.is_valid():
                 for error in formset.errors:
+                    messages.error(request, error)
+                for error in formset.non_form_errors():
                     messages.error(request, error)
         return HttpResponseRedirect(reverse("project-detail", kwargs={"pk": allocation_obj.project.pk}))
 
@@ -1630,6 +1638,8 @@ class AllocationDeleteInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, T
         else:
             for error in formset.errors:
                 messages.error(request, error)
+            for error in formset.non_form_errors():
+                messages.error(request, error)
 
         return HttpResponseRedirect(reverse_lazy("allocation-invoice-detail", kwargs={"pk": allocation_obj.pk}))
 
@@ -1770,6 +1780,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
 
     def post(self, request, *args, **kwargs):
         pk = self.kwargs.get("pk")
+
         if not self.request.user.is_superuser:
             messages.error(request, "You do not have permission to update an allocation change request")
             return HttpResponseRedirect(reverse("allocation-change-detail", kwargs={"pk": pk}))
@@ -1837,8 +1848,12 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
 
             return HttpResponseRedirect(reverse("allocation-change-detail", kwargs={"pk": pk}))
 
+        if pk == 4:
+            breakpoint()
         if not allocation_change_form.is_valid() or (allocation_attributes_to_change and not formset.is_valid()):
             for error in allocation_change_form.errors:
+                messages.error(request, error)
+            for error in formset.non_form_errors():
                 messages.error(request, error)
             if allocation_attributes_to_change:
                 attribute_errors = ""
@@ -2059,6 +2074,8 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 attribute_errors = ""
                 for error in form.errors:
                     messages.error(request, error)
+                for error in formset.non_form_errors():
+                    messages.error(request, error)
                 for error in formset.errors:
                     if error:
                         attribute_errors += error.get("__all__")
@@ -2206,6 +2223,8 @@ class AllocationAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, FormV
                 if error:
                     attribute_errors += error.get("__all__")
             messages.error(request, attribute_errors)
+            for error in formset.non_form_errors():
+                messages.error(request, error)
             error_redirect = HttpResponseRedirect(reverse("allocation-attribute-edit", kwargs={"pk": pk}))
             return error_redirect
 
