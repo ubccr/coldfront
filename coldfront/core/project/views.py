@@ -1219,7 +1219,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         if project_review_form.is_valid():
             form_data = project_review_form.cleaned_data
-            ProjectReview.objects.create(
+            project_review_obj = ProjectReview.objects.create(
                 project=project_obj,
                 reason_for_not_updating_project=form_data.get("reason"),
                 status=project_review_status_choice,
@@ -1229,13 +1229,21 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             project_obj.save()
 
             domain_url = get_domain_url(self.request)
-            url = "{}{}".format(domain_url, reverse("project-review-list"))
+            project_review_list_url = "{}{}".format(domain_url, reverse("project-review-list"))
+            project_url = "{}{}".format(domain_url, reverse("project-detail", kwargs={"pk": project_obj.pk}))
+
+            email_context = {
+                "project": project_obj,
+                "project_url": project_url,
+                "project_review": project_review_obj,
+                "project_review_list_url": project_review_list_url,
+            }
 
             if EMAIL_ENABLED:
                 send_email_template(
                     "New project review has been submitted",
                     "email/new_project_review.txt",
-                    {"url": url},
+                    email_context,
                     EMAIL_SENDER,
                     [
                         EMAIL_DIRECTOR_EMAIL_ADDRESS,
