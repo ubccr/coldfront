@@ -1705,7 +1705,11 @@ class AllocationAccountListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
 
 
 class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
-    """allows a superuser to approve, update, and deny an allocation change request"""
+    """
+    Allows a superuser to approve or deny an AllocationChangeRequest
+    Allows a superuser to update the end_date_extension or notes of an AllocationChangeRequest
+    See AllocationAttributeEditView for updating an AllocationChangeRequest's AllocationAttributeChangeRequest
+    """
 
     formset_class = AllocationAttributeUpdateForm
     template_name = "allocation/allocation_change_detail.html"
@@ -1971,7 +1975,7 @@ class AllocationChangeListView(LoginRequiredMixin, UserPassesTestMixin, Template
 
 
 class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
-    """allows a user with manager permissions to create an allocation change request"""
+    """Allows a user with manager permissions to create an allocation change request"""
 
     formset_class = AllocationAttributeChangeForm
     template_name = "allocation/allocation_change.html"

@@ -138,6 +138,9 @@ class AllocationListViewTest(AllocationViewBaseTest):
 class AllocationChangeDetailViewTest(AllocationViewBaseTest):
     """Tests for AllocationChangeDetailView"""
 
+    # TODO this view can also be used to modify alloc_change_req.notes
+    # TODO this view does different things for action=update depending if status is Pending or not
+
     def setUp(self):
         """create an AllocationChangeRequest to test"""
         self.client.force_login(self.admin_user, backend=BACKEND)
@@ -226,12 +229,6 @@ class AllocationChangeDetailViewTest(AllocationViewBaseTest):
         alloc_change_req.refresh_from_db()
         self.assertEqual(alloc_change_req.status.name, "Pending")
         self.assertEqual(alloc_change_req.end_date_extension, ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS[1])
-
-    # AllocationChangeDetailView is not used to modify attributes, see AllocationAttributeEditView instead
-    # def test_allocationchangedetailview_post_update_attribute_change(self):
-    #     """Test that posting to AllocationChangeDetailView with action=approve does not change the status of
-    #     AllocationChangeRequest(pk=7) and changes the requested new storage quota value from 200 to 300."""
-    #     pass
 
 
 class AllocationChangeViewTest(AllocationViewBaseTest):
