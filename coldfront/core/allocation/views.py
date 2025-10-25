@@ -1848,8 +1848,6 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
 
             return HttpResponseRedirect(reverse("allocation-change-detail", kwargs={"pk": pk}))
 
-        if pk == 4:
-            breakpoint()
         if not allocation_change_form.is_valid() or (allocation_attributes_to_change and not formset.is_valid()):
             for error in allocation_change_form.errors:
                 messages.error(request, error)
