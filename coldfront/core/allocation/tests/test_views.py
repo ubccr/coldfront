@@ -141,11 +141,11 @@ class AllocationChangeDetailViewTest(AllocationViewBaseTest):
     def setUp(self):
         """create an AllocationChangeRequest to test"""
         self.client.force_login(self.admin_user, backend=BACKEND)
-        req2 = AllocationChangeRequestFactory(id=2, allocation=self.allocation)  # view, deny
-        req3 = AllocationChangeRequestFactory(id=3, allocation=self.allocation)  # approve end date extension
+        AllocationChangeRequestFactory(id=2, allocation=self.allocation)  # view, deny
+        AllocationChangeRequestFactory(id=3, allocation=self.allocation)  # approve end date extension
         req4 = AllocationChangeRequestFactory(id=4, allocation=self.allocation)  # approve attribute change
-        req5 = AllocationChangeRequestFactory(id=5, allocation=self.allocation)  # update notes pending
-        req6 = AllocationChangeRequestFactory(id=6, allocation=self.allocation)  # update notes non pending
+        AllocationChangeRequestFactory(id=5, allocation=self.allocation)  # update notes pending
+        AllocationChangeRequestFactory(id=6, allocation=self.allocation)  # update notes non pending
         AllocationAttributeChangeRequest.objects.create(
             allocation_change_request=req4, allocation_attribute=self.quota_attribute, new_value=200
         )
