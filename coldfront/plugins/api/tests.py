@@ -11,9 +11,15 @@ from coldfront.config.env import ENV
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.project.models import Project
 from coldfront.core.test_helpers.factories import (
+    AllocationAttributeFactory,
     AllocationFactory,
+    AllocationUserFactory,
+    PAttributeTypeFactory,
+    ProjectAttributeFactory,
+    ProjectAttributeTypeFactory,
     ProjectFactory,
     ProjectStatusChoiceFactory,
+    ProjectUserFactory,
     ResourceFactory,
     UserFactory,
 )
@@ -27,16 +33,18 @@ class ColdfrontAPI(APITestCase):
     def setUpTestData(self):
         """Test Data setup for ColdFront REST API tests."""
         self.admin_user = UserFactory(is_staff=True, is_superuser=True)
+        pat = ProjectAttributeTypeFactory(attribute_type=PAttributeTypeFactory(name="Text"))
 
-        project = ProjectFactory(status=ProjectStatusChoiceFactory(name="Active"))
-        allocation = AllocationFactory(project=project)
-        allocation.resources.add(ResourceFactory(name="test"))
-        self.pi_user = project.pi
-
-        for i in range(0, 10):
+        for i in range(10):
             project = ProjectFactory(status=ProjectStatusChoiceFactory(name="Active"))
+            ProjectUserFactory(project=project, user=self.admin_user)
+            ProjectAttributeFactory(project=project, proj_attr_type=pat)
+
             allocation = AllocationFactory(project=project)
             allocation.resources.add(ResourceFactory(name="test"))
+            AllocationUserFactory(allocation=allocation, user=self.admin_user)
+            AllocationAttributeFactory(allocation=allocation)
+            self.pi_user = project.pi
 
     def test_requires_login(self):
         """Test that the API requires authentication"""
@@ -70,6 +78,26 @@ class ColdfrontAPI(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
 
+    def test_allocation_query_params(self):
+        """Test that specifying the query parameters returns the related
+        information"""
+        # login as admin
+        self.client.force_login(self.admin_user)
+        response = self.client.get("/api/allocations/?allocation_users=true", format="json")
+        for alloc in response.json():
+            self.assertEqual(len(alloc["allocation_users"]), 1)
+            self.assertIsNone(alloc["allocation_attributes"])
+
+        response = self.client.get("/api/allocations/?allocation_attributes=true", format="json")
+        for alloc in response.json():
+            self.assertIsNone(alloc["allocation_users"])
+            self.assertEqual(len(alloc["allocation_attributes"]), 1)
+
+        response = self.client.get("/api/allocations/?allocation_users=true&allocation_attributes=true", format="json")
+        for alloc in response.json():
+            self.assertEqual(len(alloc["allocation_users"]), 1)
+            self.assertEqual(len(alloc["allocation_attributes"]), 1)
+
     def test_project_api_permissions(self):
         """Confirm permissions for project API:
         admin user should be able to access everything
@@ -85,6 +113,23 @@ class ColdfrontAPI(APITestCase):
         response = self.client.get("/api/projects/", format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
+
+    def test_project_query_params(self):
+        """Test that specifying the query parameters returns the related
+        information"""
+        # login as admin
+        self.client.force_login(self.admin_user)
+        response = self.client.get("/api/projects/?project_users=true", format="json")
+        for proj in response.json():
+            self.assertEqual(len(proj["project_users"]), 1)
+
+        response = self.client.get("/api/projects/?project_attributes=true", format="json")
+        for proj in response.json():
+            self.assertEqual(len(proj["project_attributes"]), 1)
+
+        response = self.client.get("/api/projects/?allocations=true", format="json")
+        for proj in response.json():
+            self.assertEqual(len(proj["allocations"]), 1)
 
     def test_user_api_permissions(self):
         """Test that accessing the user API view as an admin returns all
