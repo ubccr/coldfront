@@ -125,3 +125,66 @@ PLUGIN_SLURM=True
 SLURM_IGNORE_USERS=root,admin,testuser
 SLURM_SACCTMGR_PATH=/usr/bin/sacctmgr
 ```
+
+## Upgrading with Git
+
+This is one way to use Git to upgrade your codebase with the latest upstream changes in ColdFront. 
+
+Git Remote setup:
+
+- `origin` -> Your organization's Git repo for ColdFront
+- `upstream` -> https://github.com/ubccr/coldfront.git 
+
+Git Branch setup:
+
+- `custom` -> This is your default branch, containing your organization's ColdFront codebase
+- `main` -> This branch tracks the `main` branch of the ColdFront project
+- `staged_upgrade` -> This is based on your `custom` branch, used for resolving merge conflicts
+
+Commands:
+
+```sh
+# let's assume you only have a `main` branch and a `custom` branch
+git checkout main
+# pull in the latest changes
+git pull upstream main
+
+# return to your custom branch
+git checkout custom
+# make a new branch off of your `custom` branch
+git checkout -b staged_upgrade
+git merge main
+
+# alternative: checkout a tagged release instead of using `main`
+# git fetch --all --tags
+# git tag -l
+# git merge v1.x.x
+
+# resolve any conflicts in your text editor
+git commit -m "merge bring in latest changes"
+```
+
+Migrate your database to accomodate changes to models:
+
+```sh
+coldfront makemigrations --merge
+coldfront migrate
+```
+
+Restart your server in your testing environment to confirm everything is working as expected. If everything looks good, merge your `staged_upgrade` branch into your default branch:
+
+```sh
+git checkout custom
+git merge staged_upgrade
+# update your remote
+git push origin custom
+git branch -d staged_upgrade
+```
+
+Your organization's ColdFront codebase should now have the latest updates from the upstream ColdFront project.
+
+If you want to enable some of the newest ColdFront features, you may need to install newer packages:
+
+```sh
+pip install -r requirements.txt
+```
