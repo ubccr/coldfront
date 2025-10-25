@@ -215,8 +215,6 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context["guage_data"] = guage_data
         context["attributes_with_usage"] = attributes_with_usage
         context["project_users"] = project_users
-        context["ALLOCATION_ENABLE_ALLOCATION_RENEWAL"] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
-        context["PROJECT_INSTITUTION_EMAIL_MAP"] = PROJECT_INSTITUTION_EMAIL_MAP
 
         try:
             context["ondemand_url"] = settings.ONDEMAND_URL
@@ -327,7 +325,6 @@ class ProjectListView(LoginRequiredMixin, ListView):
 
         context["filter_parameters"] = filter_parameters
         context["filter_parameters_with_order_by"] = filter_parameters_with_order_by
-        context["PROJECT_INSTITUTION_EMAIL_MAP"] = PROJECT_INSTITUTION_EMAIL_MAP
 
         project_list = context.get("project_list")
         paginator = Paginator(project_list, self.paginate_by)
