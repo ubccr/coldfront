@@ -214,7 +214,6 @@ class AllocationChangeDetailViewTest(AllocationViewBaseTest):
         """Test that posting to AllocationChangeDetailView with action=update
         does not change the status of AllocationChangeRequest(pk=6) and changes the end date extension."""
         alloc_change_req = AllocationChangeRequest.objects.get(pk=6)
-        self.allocation.refresh_from_db()
         alloc_change_req.refresh_from_db()
         self.assertEqual(alloc_change_req.status.name, "Pending")
         self.assertEqual(alloc_change_req.end_date_extension, ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS[0])
@@ -224,49 +223,15 @@ class AllocationChangeDetailViewTest(AllocationViewBaseTest):
             follow=True,
         )
         utils.assert_response_success(self, response)
-        self.allocation.refresh_from_db()
         alloc_change_req.refresh_from_db()
         self.assertEqual(alloc_change_req.status.name, "Pending")
         self.assertEqual(alloc_change_req.end_date_extension, ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS[1])
 
+    # AllocationChangeDetailView is not used to modify attributes, see AllocationAttributeEditView instead
     # def test_allocationchangedetailview_post_update_attribute_change(self):
-    #     """Test that posting to AllocationChangeDetailView with action=approve
-    #     changes the status of AllocationChangeRequest(pk=4) to Approved and updates the storage quota to 200."""
-    #     alloc_change_req = AllocationChangeRequest.objects.get(pk=4)
-    #     self.allocation.refresh_from_db()
-    #     alloc_change_req.refresh_from_db()
-    #     self.assertEqual(alloc_change_req.status.name, "Pending")
-    #     response = self.client.post(
-    #         reverse("allocation-change-detail", kwargs={"pk": 4}),
-    #         {
-    #             "action": "update",
-    #             "end_date_extension": 0,
-    #             "attributeform-INITIAL_FORMS": "1",
-    #             "attributeform-TOTAL_FORMS": "1",
-    #             "attributeform-0-new_value": "200",
-    #         },
-    #         follow=True,
-    #     )
-    #     utils.assert_response_success(self, response)
-    #     self.allocation.refresh_from_db()
-    #     alloc_change_req.refresh_from_db()
-    #     self.assertEqual(alloc_change_req.status.name, "Pending")
-    #     self.assertEqual(200, self.allocation.get_attribute("Storage Quota (TB)"))
-
-    # def test_allocationchangedetailview_post_update_notes(self):
-    #     """Test that posting to AllocationChangeDetailView with action=update
-    #     changes the notes of AllocationChangeRequest(pk=5)"""
-    #     alloc_change_req = AllocationChangeRequest.objects.get(pk=3)
-    #     alloc_change_req.refresh_from_db()
-    #     self.assertNotEqual("foobar", alloc_change_req.notes)
-    #     response = self.client.post(
-    #         reverse("allocation-change-detail", kwargs={"pk": 3}),
-    #         {"action": "update", "notes": "foobar"},
-    #         follow=True,
-    #     )
-    #     utils.assert_response_success(self, response)
-    #     alloc_change_req.refresh_from_db()
-    #     self.assertEqual("foobar", alloc_change_req.notes)
+    #     """Test that posting to AllocationChangeDetailView with action=approve does not change the status of
+    #     AllocationChangeRequest(pk=7) and changes the requested new storage quota value from 200 to 300."""
+    #     pass
 
 
 class AllocationChangeViewTest(AllocationViewBaseTest):
