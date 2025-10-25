@@ -6,11 +6,13 @@ import logging
 from datetime import date
 from http import HTTPStatus
 
+from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from coldfront.core.allocation.models import (
+    AllocationAttributeChangeRequest,
     AllocationChangeRequest,
 )
 from coldfront.core.test_helpers import utils
@@ -60,10 +62,10 @@ class AllocationViewBaseTest(TestCase):
         ProjectUserFactory(user=pi_user, project=cls.project, role=manager_role)
         cls.pi_user = pi_user
         # make a quota TB allocation attribute
-        AllocationAttributeFactory(
+        cls.quota_attribute = AllocationAttributeFactory(
             allocation=cls.allocation,
             value=100,
-            allocation_attribute_type=AllocationAttributeTypeFactory(name="Storage Quota (TB)"),
+            allocation_attribute_type=AllocationAttributeTypeFactory(name="Storage Quota (TB)", is_changeable=True),
         )
 
     def allocation_access_tstbase(self, url):
@@ -139,8 +141,14 @@ class AllocationChangeDetailViewTest(AllocationViewBaseTest):
     def setUp(self):
         """create an AllocationChangeRequest to test"""
         self.client.force_login(self.admin_user, backend=BACKEND)
-        AllocationChangeRequestFactory(id=2, allocation=self.allocation)  # view, deny
-        AllocationChangeRequestFactory(id=3, allocation=self.allocation)  # approve, update
+        req2 = AllocationChangeRequestFactory(id=2, allocation=self.allocation)  # view, deny
+        req3 = AllocationChangeRequestFactory(id=3, allocation=self.allocation)  # approve end date extension
+        req4 = AllocationChangeRequestFactory(id=4, allocation=self.allocation)  # approve attribute change
+        req5 = AllocationChangeRequestFactory(id=5, allocation=self.allocation)  # update notes pending
+        req6 = AllocationChangeRequestFactory(id=6, allocation=self.allocation)  # update notes non pending
+        AllocationAttributeChangeRequest.objects.create(
+            allocation_change_request=req4, allocation_attribute=self.quota_attribute, new_value=200
+        )
 
     def test_allocationchangedetailview_access(self):
         response = self.client.get(reverse("allocation-change-detail", kwargs={"pk": 2}))
@@ -155,14 +163,56 @@ class AllocationChangeDetailViewTest(AllocationViewBaseTest):
         alloc_change_req = AllocationChangeRequest.objects.get(pk=2)
         self.assertEqual(alloc_change_req.status.name, "Denied")
 
-    def test_allocationchangedetailview_post_approve(self):
+    def test_allocationchangedetailview_post_approve_end_date_extension(self):
         """Test that posting to AllocationChangeDetailView with action=approve
-        changes the status of AllocationChangeRequest(pk=3) to Approved."""
-        param = {"action": "approve", "end_date_extension": ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS[0]}
-        response = self.client.post(reverse("allocation-change-detail", kwargs={"pk": 3}), param, follow=True)
-        utils.assert_response_success(self, response)
+        changes the status of AllocationChangeRequest(pk=3) to Approved and applies the end date extension."""
         alloc_change_req = AllocationChangeRequest.objects.get(pk=3)
+        self.allocation.refresh_from_db()
+        alloc_change_req.refresh_from_db()
+        self.assertEqual(alloc_change_req.status.name, "Pending")
+        expected_new_end_date = self.allocation.end_date + relativedelta(
+            days=ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS[0]
+        )
+        response = self.client.post(
+            reverse("allocation-change-detail", kwargs={"pk": 3}),
+            {"action": "approve", "end_date_extension": ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS[0]},
+            follow=True,
+        )
+        utils.assert_response_success(self, response)
+        self.allocation.refresh_from_db()
+        alloc_change_req.refresh_from_db()
         self.assertEqual(alloc_change_req.status.name, "Approved")
+        self.assertEqual(expected_new_end_date, self.allocation.end_date)
+
+    def test_allocationchangedetailview_post_approve_attribute_change(self):
+        """Test that posting to AllocationChangeDetailView with action=approve
+        changes the status of AllocationChangeRequest(pk=4) to Approved and updates the storage quota to 200."""
+        alloc_change_req = AllocationChangeRequest.objects.get(pk=4)
+        self.allocation.refresh_from_db()
+        alloc_change_req.refresh_from_db()
+        self.assertEqual(alloc_change_req.status.name, "Pending")
+        response = self.client.post(
+            reverse("allocation-change-detail", kwargs={"pk": 4}), {"action": "approve"}, follow=True
+        )
+        utils.assert_response_success(self, response)
+        self.allocation.refresh_from_db()
+        alloc_change_req.refresh_from_db()
+        self.assertEqual(alloc_change_req.status.name, "Approved")
+        self.assertEqual([], alloc_change_req.allocationattributechangerequest_set.all())
+        self.assertEqual(200, self.allocation.get_attribute("Storage Quota (TB)"))
+
+    # def _test_allocationchangedetailview_post_update_notes_non_pending(self):
+    #     """Test that posting to AllocationChangeDetailView with action=update
+    #     changes the Storage Quota attribute of AllocationChangeRequest(pk=3) from 100 to 200."""
+
+    # def test_allocationchangedetailview_post_approve_and_update(self):
+    #     self._test_allocationchangedetailview_post_approve()
+    #     self._test_allocationchangedetailview_post_update_non_pending()
+
+    # def test_allocationchangedetailview_post_update_notes_pending(self):
+    #     """Test that posting to AllocationChangeDetailView with action=update
+    #     changes the Storage Quota attribute of AllocationChangeRequest(pk=3) from 100 to 200."""
+    #     pass
 
 
 class AllocationChangeViewTest(AllocationViewBaseTest):
@@ -186,6 +236,10 @@ class AllocationChangeViewTest(AllocationViewBaseTest):
         self.allocation_access_tstbase(self.url)
         utils.test_user_can_access(self, self.pi_user, self.url)  # Manager can access
         utils.test_user_cannot_access(self, self.allocation_user, self.url)  # user can't access
+
+    def test_allocationchangeview_post_attribute_change(self):
+        """Test post request to change an attribute"""
+        pass
 
     def test_allocationchangeview_post_extension(self):
         """Test post request to extend end date"""
@@ -237,7 +291,28 @@ class AllocationAttributeEditViewTest(AllocationViewBaseTest):
         self.post_data["attributeform-0-value"] = quota_new
         response = self.client.post(self.url, data=self.post_data, follow=True)
         self.assertEqual(response.status_code, HTTPStatus.OK)
-
+        """
+        TODO initial value "Storage Quota (TB)" is being overwritten to None
+        https://github.com/django/django/blob/cd3b21bcaccf03a1dc49512bdb8efd796fba8100/django/forms/forms.py#L440
+        ...
+        /srv/simon/src/coldfront/coldfront/core/allocation/tests/test_views.py(248)test_allocationattributeeditview_post_change_attr()
+        -> response = self.client.post(self.url, data=self.post_data, follow=True)
+        ...
+        /srv/simon/src/coldfront/coldfront/core/allocation/views.py(2199)post()
+        -> if not formset.is_valid():
+        /srv/simon/src/coldfront/.venv/lib/python3.12/site-packages/django/forms/formsets.py(384)is_valid()
+        -> self.errors
+        /srv/simon/src/coldfront/.venv/lib/python3.12/site-packages/django/forms/formsets.py(366)errors()
+        -> self.full_clean()
+        /srv/simon/src/coldfront/.venv/lib/python3.12/site-packages/django/forms/formsets.py(429)full_clean()
+        -> form_errors = form.errors
+        /srv/simon/src/coldfront/.venv/lib/python3.12/site-packages/django/forms/forms.py(196)errors()
+        -> self.full_clean()
+        /srv/simon/src/coldfront/.venv/lib/python3.12/site-packages/django/forms/forms.py(433)full_clean()
+        -> self._clean_fields()
+        > /srv/simon/src/coldfront/.venv/lib/python3.12/site-packages/django/forms/forms.py(443)_clean_fields()
+        -> value = bf.initial if field.disabled else bf.data
+        """
         self.assertEqual(self.allocation.get_attribute("Storage Quota (TB)"), quota_new)
 
     def test_allocationattributeeditview_post_no_change(self):
