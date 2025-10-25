@@ -5,7 +5,8 @@
 import logging
 from http import HTTPStatus
 
-from django.test import TestCase
+from django.conf import settings
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from coldfront.core.allocation.models import (
@@ -39,8 +40,10 @@ class AllocationViewBaseTest(TestCase):
     @classmethod
     def setUpTestData(cls):
         """Test Data setup for all allocation view tests."""
+        pi_user = UserFactory()
+        pi_user.userprofile.is_pi = True
         AllocationStatusChoiceFactory(name="New")
-        cls.project = ProjectFactory(status=ProjectStatusChoiceFactory(name="Active"))
+        cls.project = ProjectFactory(pi=pi_user, status=ProjectStatusChoiceFactory(name="Active"))
         cls.allocation = AllocationFactory(project=cls.project)
         cls.allocation.resources.add(ResourceFactory(name="holylfs07/tier1"))
         # create allocation user that belongs to project
@@ -52,8 +55,8 @@ class AllocationViewBaseTest(TestCase):
         cls.proj_nonallocation_user = proj_nonallocation_user.user
         cls.admin_user = UserFactory(is_staff=True, is_superuser=True)
         manager_role = ProjectUserRoleChoiceFactory(name="Manager")
-        pi_user = ProjectUserFactory(user=cls.project.pi, project=cls.project, role=manager_role)
-        cls.pi_user = pi_user.user
+        ProjectUserFactory(user=pi_user, project=cls.project, role=manager_role)
+        cls.pi_user = pi_user
         # make a quota TB allocation attribute
         AllocationAttributeFactory(
             allocation=cls.allocation,
@@ -373,3 +376,33 @@ class AllocationNoteCreateViewTest(AllocationViewBaseTest):
 
     def test_allocationnotecreateview_access(self):
         self.allocation_access_tstbase(self.url)
+
+
+@override_settings(ALLOCATION_ACCOUNT_ENABLED=True)
+class AllocationAccountCreateViewTest(AllocationViewBaseTest):
+    """Tests for the AllocationAccountCreateView"""
+
+    def setUp(self):
+        self.url = "/allocation/add-allocation-account/"
+
+    def test_allocationaccountcreateview_access(self):
+        self.assertTrue(settings.ALLOCATION_ACCOUNT_ENABLED)
+        self.allocation_access_tstbase(self.url)
+        utils.test_user_can_access(self, self.pi_user, self.url)
+
+    def test_allocationaccountcreateview_get_form(self):
+        self.client.force_login(self.pi_user, backend=BACKEND)
+        response = self.client.get(self.url)
+        self.assertContains(response, "Add account names that can be associated with allocations")
+
+    def test_allocationaccountcreateview_post_form(self):
+        self.client.force_login(self.pi_user, backend=BACKEND)
+        valid_data = {"name": "deptCE1234"}
+        response = self.client.post(self.url, data=valid_data, follow=True)
+        self.assertContains(response, "deptCE1234")
+
+    def test_allocationaccountcreateview_post_invalid_form(self):
+        self.client.force_login(self.pi_user, backend=BACKEND)
+        invalid_data = {"name": ""}
+        response = self.client.post(self.url, data=invalid_data, follow=True)
+        self.assertContains(response, "This field is required.")
