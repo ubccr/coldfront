@@ -6,6 +6,9 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from coldfront.core.project.models import Project
+from coldfront.core.utils.common import import_from_settings
+
+ALLOCATION_STATUSES_SUIPBNIA = import_from_settings("ALLOCATION_STATUSES_SUIPBNIA")
 
 base_dir = settings.BASE_DIR
 
@@ -17,9 +20,7 @@ class Command(BaseCommand):
                 project.projectuser_set.filter(status__name="Active").values_list("user__username", flat=True)
             )
             users_in_allocation = []
-            for allocation in project.allocation_set.filter(
-                status__name__in=("Active", "New", "Paid", "Payment Pending", "Payment Requested", "Renewal Requested")
-            ):
+            for allocation in project.allocation_set.filter(status__name__in=ALLOCATION_STATUSES_SUIPBNIA):
                 users_in_allocation.extend(
                     allocation.allocationuser_set.filter(status__name="Active").values_list("user__username", flat=True)
                 )

@@ -26,6 +26,9 @@ logger = logging.getLogger(__name__)
 ALLOCATION_ATTRIBUTE_VIEW_LIST = import_from_settings("ALLOCATION_ATTRIBUTE_VIEW_LIST", [])
 ALLOCATION_FUNCS_ON_EXPIRE = import_from_settings("ALLOCATION_FUNCS_ON_EXPIRE", [])
 ALLOCATION_RESOURCE_ORDERING = import_from_settings("ALLOCATION_RESOURCE_ORDERING", ["-is_allocatable", "name"])
+ALLOCATION_STATUSES_REQUIRE_END_DATE = import_from_settings("ALLOCATION_STATUSES_REQUIRE_END_DATE")
+ALLOCATION_STATUSES_REQUIRE_START_DATE = import_from_settings("ALLOCATION_STATUSES_REQUIRE_START_DATE")
+ALLOCATION_STATUSES_USER_IS_ACTIVE = import_from_settings("ALLOCATION_STATUSES_USER_IS_ACTIVE")
 
 
 class AllocationPermission(Enum):
@@ -106,7 +109,7 @@ class Allocation(TimeStampedModel):
     def clean(self):
         """Validates the allocation and raises errors if the allocation is invalid."""
 
-        if self.status.name == "Expired":
+        if self.status.name in ALLOCATION_STATUSES_REQUIRE_END_DATE:
             if not self.end_date:
                 raise ValidationError("You have to set the end date.")
 
@@ -116,7 +119,7 @@ class Allocation(TimeStampedModel):
             if self.start_date > self.end_date:
                 raise ValidationError("End date cannot be greater than start date.")
 
-        elif self.status.name == "Active":
+        elif self.status.name in ALLOCATION_STATUSES_REQUIRE_START_DATE:
             if not self.start_date:
                 raise ValidationError("You have to set the start date.")
 
@@ -632,12 +635,7 @@ class AllocationUser(TimeStampedModel):
         should be considered active and have actions taken on them (i.e.
         groups added, accounts created in other systems, etc.)"""
 
-        active_allocation_statuses = [
-            "Active",
-            "Renewal Requested",
-        ]
-
-        return self.status.name == "Active" and self.allocation.status.name in active_allocation_statuses
+        return self.status.name == "Active" and self.allocation.status.name in ALLOCATION_STATUSES_USER_IS_ACTIVE
 
     def __str__(self):
         return "%s" % (self.user)

@@ -16,3 +16,7 @@ FREEIPA_ENABLE_SIGNALS = False
 ADDITIONAL_USER_SEARCH_CLASSES = [
     "coldfront.plugins.freeipa.search.LDAPUserSearch",
 ]
+FREEIPA_ALLOCATION_STATUSES_ALLOW_REMOVE_GROUP = ENV.list(
+    "FREEIPA_ALLOCATION_STATUSES_ALLOW_REMOVE_GROUP",
+    default=["Active", "Pending"],
+)
