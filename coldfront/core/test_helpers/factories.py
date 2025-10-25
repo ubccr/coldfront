@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import factory
+import factory.utils
 from django.contrib.auth.models import User
 from factory import SubFactory
 from factory.django import DjangoModelFactory
@@ -41,7 +42,8 @@ from coldfront.core.project.models import (
     ProjectUserStatusChoice,
 )
 from coldfront.core.publication.models import PublicationSource
-from coldfront.core.resource.models import Resource, ResourceType
+from coldfront.core.resource.models import AttributeType as RAttributeType
+from coldfront.core.resource.models import Resource, ResourceAttribute, ResourceAttributeType, ResourceType
 from coldfront.core.user.models import UserProfile
 
 ### Default values and Faker provider setup ###
@@ -72,6 +74,24 @@ attr_type_provider = DynamicProvider(provider_name="attr_types", elements=attr_t
 
 for provider in [ColdfrontProvider, field_of_science_provider, attr_type_provider]:
     factory.Faker.add_provider(provider)
+
+### Helper functions ###
+
+
+def _random_attr_value_for_attr_type(attr_type: str):
+    match attr_type:
+        case "Date":
+            return str(fake.date_this_century())
+        case "Int":
+            return str(fake.pyint())
+        case "Float":
+            return str(fake.pyfloat())
+        case "Boolean":
+            return str(fake.pybool())
+        case "Yes/No":
+            return str(fake.random_choices(elements=["Yes", "No"], length=1)[0])
+        case _:
+            return fake.text()
 
 
 ### User factories ###
@@ -238,6 +258,35 @@ class ResourceFactory(DjangoModelFactory):
 
     description = factory.Faker("sentence")
     resource_type = SubFactory(ResourceTypeFactory)
+
+
+### Resource Attribute factories ###
+
+
+class RAttributeTypeFactory(DjangoModelFactory):
+    class Meta:
+        model = RAttributeType
+        django_get_or_create = ("name",)
+
+    name = factory.Faker("attr_types")
+
+
+class ResourceAttributeTypeFactory(DjangoModelFactory):
+    class Meta:
+        model = ResourceAttributeType
+        django_get_or_create = ("name",)
+
+    name = factory.Faker("name")
+    attribute_type = SubFactory(RAttributeTypeFactory)
+
+
+class ResourceAttributeFactory(DjangoModelFactory):
+    class Meta:
+        model = ResourceAttribute
+
+    resource_attribute_type = SubFactory(ResourceAttributeTypeFactory)
+    resource = SubFactory(ResourceFactory)
+    value = factory.LazyAttribute(lambda o: _random_attr_value_for_attr_type(o.resource_attribute_type.attribute_type))
 
 
 ### Allocation factories ###
