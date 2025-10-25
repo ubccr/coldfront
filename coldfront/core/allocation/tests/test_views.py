@@ -198,6 +198,7 @@ class AllocationChangeDetailViewTest(AllocationViewBaseTest):
                 "end_date_extension": 0,
                 "attributeform-INITIAL_FORMS": "1",
                 "attributeform-TOTAL_FORMS": "1",
+                "attributeform-0-new_value": "200",
             },
             follow=True,
         )
@@ -205,7 +206,6 @@ class AllocationChangeDetailViewTest(AllocationViewBaseTest):
         self.allocation.refresh_from_db()
         alloc_change_req.refresh_from_db()
         self.assertEqual(alloc_change_req.status.name, "Approved")
-        self.assertEqual([], alloc_change_req.allocationattributechangerequest_set.all())
         self.assertEqual(200, self.allocation.get_attribute("Storage Quota (TB)"))
 
     # def _test_allocationchangedetailview_post_update_notes_non_pending(self):
