@@ -5,6 +5,7 @@
 """Unit tests for the allocation models"""
 
 import datetime
+import sys
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
@@ -18,6 +19,9 @@ from coldfront.core.allocation.models import (
 )
 from coldfront.core.project.models import Project
 from coldfront.core.test_helpers.factories import (
+    AAttributeTypeFactory,
+    AllocationAttributeFactory,
+    AllocationAttributeTypeFactory,
     AllocationFactory,
     AllocationStatusChoiceFactory,
     ProjectFactory,
@@ -143,6 +147,55 @@ class AllocationModelCleanMethodTests(TestCase):
             status=self.active_status, start_date=start_and_end_date, end_date=start_and_end_date, project=self.project
         )
         actual_allocation.full_clean()
+
+
+class AllocationAttributeModelCleanMethodTests(TestCase):
+    def _test_clean(
+        self, allocation_attribute_type_name: str, allocation_attribute_values: list, expect_validation_error: bool
+    ):
+        attribute_type = AAttributeTypeFactory(name=allocation_attribute_type_name)
+        allocation_attribute_type = AllocationAttributeTypeFactory(attribute_type=attribute_type)
+        allocation_attribute = AllocationAttributeFactory(allocation_attribute_type=allocation_attribute_type)
+        for value in allocation_attribute_values:
+            with self.subTest(value=value):
+                if not isinstance(value, str):
+                    raise TypeError("allocation attribute value must be a string")
+                allocation_attribute.value = value
+                if expect_validation_error:
+                    with self.assertRaises(ValidationError):
+                        allocation_attribute.clean()
+                else:
+                    allocation_attribute.clean()
+
+    def test_expect_int_given_int(self):
+        self._test_clean("Int", ["-1", "0", "1", str(sys.maxsize)], False)
+
+    def test_expect_int_given_float(self):
+        self._test_clean("Int", ["-1.0", "0.0", "1.0", "2e30"], True)
+
+    def test_expect_int_given_garbage(self):
+        self._test_clean("Int", ["foobar", "", " ", "\0", "1j"], True)
+
+    def test_expect_float_given_int(self):
+        self._test_clean("Float", ["-1", "0", "1", str(sys.maxsize)], False)
+
+    def test_expect_float_given_float(self):
+        self._test_clean("Float", ["-1.0", "0.0", "1.0", "2e30"], False)
+
+    def test_expect_float_given_garbage(self):
+        self._test_clean("Float", ["foobar", "", " ", "\0", "1j"], True)
+
+    def test_expect_yes_no_given_yes_no(self):
+        self._test_clean("Yes/No", ["Yes", "No"], False)
+
+    def test_expect_yes_no_given_garbage(self):
+        self._test_clean("Yes/No", ["foobar", "", " ", "\0", "1", "1.0", "2e30", "1j", "yes", "no", "YES", "NO"], True)
+
+    def test_expect_date_given_date(self):
+        self._test_clean("Date", ["1970-01-01"], False)
+
+    def test_expect_date_given_garbage(self):
+        self._test_clean("Date", ["foobar", "", " ", "\0", "1", "1.0", "2e30", "1j"], True)
 
 
 class AllocationModelStrTests(TestCase):
