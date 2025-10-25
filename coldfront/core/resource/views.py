@@ -188,6 +188,8 @@ class ResourceAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Templ
         else:
             for error in formset.errors:
                 messages.error(request, error)
+            for error in formset.non_form_errors():
+                messages.error(request, error)
 
         return HttpResponseRedirect(reverse("resource-detail", kwargs={"pk": pk}))
 

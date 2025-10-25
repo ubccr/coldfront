@@ -278,6 +278,8 @@ class PublicationAddView(LoginRequiredMixin, UserPassesTestMixin, View):
         else:
             for error in formset.errors:
                 messages.error(request, error)
+            for error in formset.non_form_errors():
+                messages.error(request, error)
 
         return HttpResponseRedirect(reverse("project-detail", kwargs={"pk": project_pk}))
 
@@ -412,6 +414,8 @@ class PublicationDeletePublicationsView(LoginRequiredMixin, UserPassesTestMixin,
         else:
             for error in formset.errors:
                 messages.error(request, error)
+            for error in formset.non_form_errors():
+                messages.error(request, error)
 
         return HttpResponseRedirect(reverse("project-detail", kwargs={"pk": project_obj.pk}))
 
@@ -500,6 +504,8 @@ class PublicationExportPublicationsView(LoginRequiredMixin, UserPassesTestMixin,
             return response
         else:
             for error in formset.errors:
+                messages.error(request, error)
+            for error in formset.non_form_errors():
                 messages.error(request, error)
 
         return HttpResponseRedirect(reverse("project-detail", kwargs={"pk": project_obj.pk}))

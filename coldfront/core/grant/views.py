@@ -192,6 +192,8 @@ class GrantDeleteGrantsView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
         else:
             for error in formset.errors:
                 messages.error(request, error)
+            for error in formset.non_form_errors():
+                messages.error(request, error)
 
         return HttpResponseRedirect(reverse("project-detail", kwargs={"pk": project_obj.pk}))
 
@@ -319,6 +321,8 @@ class GrantReportView(LoginRequiredMixin, UserPassesTestMixin, ListView):
             return response
         else:
             for error in formset.errors:
+                messages.error(request, error)
+            for error in formset.non_form_errors():
                 messages.error(request, error)
             return HttpResponseRedirect(reverse("grant-report"))
 

@@ -195,6 +195,7 @@ class AllocationChangeDetailViewTest(AllocationViewBaseTest):
             reverse("allocation-change-detail", kwargs={"pk": 4}),
             {
                 "action": "approve",
+                "end_date_extension": 0,
                 "attributeform-INITIAL_FORMS": "1",
                 "attributeform-TOTAL_FORMS": "1",
             },
