@@ -8,7 +8,6 @@ from unittest.mock import Mock, patch, sentinel
 
 import bibtexparser.bibdatabase
 import bibtexparser.bparser
-import doi2bib
 from django.test import TestCase
 
 import coldfront.core.publication
@@ -153,8 +152,7 @@ class TestDataRetrieval(TestCase):
                 if unique_id == self._unique_id:
                     return sentinel.status, sentinel.bib_str
 
-            crossref = Mock(spec_set=doi2bib.crossref)
-            crossref.get_bib.side_effect = mock_get_bib
+            mocked_get_bib = Mock(side_effect=mock_get_bib)
 
             def mock_parse(thing_to_parse):
                 # ensure bib_str from get_bib() is used
@@ -170,7 +168,7 @@ class TestDataRetrieval(TestCase):
             as_text = Mock(spec_set=bibtexparser.bibdatabase.as_text)
             as_text.side_effect = lambda bib_entry: "as_text({})".format(bib_entry)
 
-            self.crossref = crossref
+            self.mocked_get_bib = mocked_get_bib
             self.bibtexparser_cls = bibtexparser_cls
             self.as_text = as_text
 
@@ -183,7 +181,7 @@ class TestDataRetrieval(TestCase):
             with contextlib.ExitStack() as stack:
                 patches = [
                     patch(dotpath("BibTexParser"), new=self.bibtexparser_cls),
-                    patch(dotpath("crossref"), new=self.crossref),
+                    patch(dotpath("get_bib"), new=self.mocked_get_bib),
                     patch(dotpath("as_text"), new=self.as_text),
                 ]
                 for p in patches:

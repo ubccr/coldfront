@@ -30,6 +30,7 @@ plugin_configs = {
     "PLUGIN_API": "plugins/api.py",
     "PLUGIN_AUTO_COMPUTE_ALLOCATION": "plugins/auto_compute_allocation.py",
     "PLUGIN_PROJECT_OPENLDAP": "plugins/project_openldap.py",
+    "PLUGIN_MAINTENANCE_MODE": "plugins/maintenance_mode.py",
 }
 
 # This allows plugins to be enabled via environment variables. Can alternatively

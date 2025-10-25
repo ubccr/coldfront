@@ -18,7 +18,6 @@ from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.views.generic import TemplateView, View
 from django.views.generic.edit import FormView
-from doi2bib import crossref
 
 from coldfront.core.project.models import Project
 from coldfront.core.publication.forms import (
@@ -29,6 +28,7 @@ from coldfront.core.publication.forms import (
     PublicationSearchForm,
 )
 from coldfront.core.publication.models import Publication, PublicationSource
+from coldfront.core.publication.utils import get_bib
 
 MANUAL_SOURCE = "manual"
 
@@ -103,7 +103,7 @@ class PublicationSearchResultView(LoginRequiredMixin, UserPassesTestMixin, Templ
         for source in PublicationSource.objects.all():
             if source.name == "doi":
                 try:
-                    status, bib_str = crossref.get_bib(unique_id)
+                    status, bib_str = get_bib(unique_id)
                     bp = BibTexParser(interpolate_strings=False)
                     bib_database = bp.parse(bib_str)
                     bib_json = bib_database.entries[0]
@@ -486,7 +486,7 @@ class PublicationExportPublicationsView(LoginRequiredMixin, UserPassesTestMixin,
                     )
                     print("id is" + publication_obj.display_uid())
                     publication_obj.display_uid()
-                    status, bib_str = crossref.get_bib(publication_obj.display_uid())
+                    status, bib_str = get_bib(publication_obj.display_uid())
                     bp = BibTexParser(interpolate_strings=False)
                     bp.parse(bib_str)
                     bib_text += bib_str
