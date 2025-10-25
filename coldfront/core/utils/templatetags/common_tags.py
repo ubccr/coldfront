@@ -3,24 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 from django import template
-from django.conf import settings
 from django.utils.safestring import mark_safe
 
 register = template.Library()
-
-
-# settings value
-@register.simple_tag
-def settings_value(name):
-    allowed_names = [
-        "LOGIN_FAIL_MESSAGE",
-        "ACCOUNT_CREATION_TEXT",
-        "CENTER_NAME",
-        "CENTER_HELP_URL",
-        "EMAIL_PROJECT_REVIEW_CONTACT",
-    ]
-    # FIXME: This is using mark_safe for now but settings should not contain HTML in the future
-    return mark_safe(getattr(settings, name, "") if name in allowed_names else "")  # noqa: S308
 
 
 @register.filter
