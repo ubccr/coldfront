@@ -192,7 +192,13 @@ class AllocationChangeDetailViewTest(AllocationViewBaseTest):
         alloc_change_req.refresh_from_db()
         self.assertEqual(alloc_change_req.status.name, "Pending")
         response = self.client.post(
-            reverse("allocation-change-detail", kwargs={"pk": 4}), {"action": "approve"}, follow=True
+            reverse("allocation-change-detail", kwargs={"pk": 4}),
+            {
+                "action": "approve",
+                "attributeform-INITIAL_FORMS": "1",
+                "attributeform-TOTAL_FORMS": "1",
+            },
+            follow=True,
         )
         utils.assert_response_success(self, response)
         self.allocation.refresh_from_db()
