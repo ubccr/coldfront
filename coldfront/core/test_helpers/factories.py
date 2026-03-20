@@ -4,9 +4,10 @@
 
 import factory
 from django.contrib.auth.models import User
-from factory import SubFactory
+from factory.declarations import SubFactory
 from factory.django import DjangoModelFactory
 from factory.fuzzy import FuzzyChoice
+from factory.helpers import post_generation
 from faker import Faker
 from faker.providers import BaseProvider, DynamicProvider
 
@@ -40,6 +41,7 @@ from coldfront.core.project.models import (
     ProjectUserRoleChoice,
     ProjectUserStatusChoice,
 )
+from coldfront.core.project.utils import generate_project_code
 from coldfront.core.publication.models import PublicationSource
 from coldfront.core.resource.models import (
     AttributeType as RAttributeType,
@@ -151,6 +153,13 @@ class ProjectFactory(DjangoModelFactory):
     status = SubFactory(ProjectStatusChoiceFactory)
     force_review = False
     requires_review = False
+
+    @post_generation
+    def set_project_code(obj, create, extracted, **kwargs):
+        if not create:
+            return
+        obj.project_code = generate_project_code("proj", obj.pk)
+        obj.save()
 
 
 class ProjectUserRoleChoiceFactory(DjangoModelFactory):

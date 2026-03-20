@@ -274,6 +274,12 @@ def construct_project_posixgroup_description(project_obj):
     return description
 
 
+def _connection(read_only=False):
+    return Connection(
+        server, PROJECT_OPENLDAP_BIND_USER, PROJECT_OPENLDAP_BIND_PASSWORD, auto_bind=True, read_only=read_only
+    )
+
+
 def _ldap_write_wrapper(func, *args, write=True, **kwargs) -> bool:
     """
     * if not `write`, adds log message and does nothing
@@ -287,7 +293,7 @@ def _ldap_write_wrapper(func, *args, write=True, **kwargs) -> bool:
         logger.info(f"dry run, skipping... - {logger_extra_data}")
         return True
     try:
-        conn = Connection(server, PROJECT_OPENLDAP_BIND_USER, PROJECT_OPENLDAP_BIND_PASSWORD, auto_bind=True)
+        conn = _connection()
     except LDAPException:
         logger.exception(f"Failed to open LDAP connection - {logger_extra_data}", exc_info=True)
         return False
@@ -311,13 +317,7 @@ def _ldap_read_wrapper(func, *args, **kwargs) -> Tuple[list, Any]:
     * raises `LDAPException` if the ldap3.Connection cannot be established or if the ldap3.Result code is unexpected
     * returns (ldap3.Connection.entries, whatever `func` returns)
     """
-    conn = Connection(
-        server,
-        PROJECT_OPENLDAP_BIND_USER,
-        PROJECT_OPENLDAP_BIND_PASSWORD,
-        auto_bind=True,
-        read_only=True,
-    )
+    conn = _connection(read_only=True)
     try:
         output = func(conn, *args, **kwargs)
         entries = conn.entries.copy()
