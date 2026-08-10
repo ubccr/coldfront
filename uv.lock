@@ -309,7 +309,7 @@ requires-dist = [
     { name = "crispy-bootstrap5", specifier = ">=2025.6" },
     { name = "cryptography", marker = "extra == 'freeipa'", specifier = "==43.0.3" },
     { name = "dbus-python", marker = "extra == 'freeipa'", specifier = ">=1.4.0" },
-    { name = "django", specifier = ">6" },
+    { name = "django", specifier = ">6,<6.1" },
     { name = "django-auth-ldap", marker = "extra == 'ldap'", specifier = ">=5.1.0" },
     { name = "django-cotton", specifier = ">=2.6.1" },
     { name = "django-crispy-forms", specifier = ">=2.3" },
@@ -380,8 +380,8 @@ docs = [
 
 [[package]]
 name = "coldfront-initializer"
-version = "0.0.6"
-source = { git = "https://github.com/coldfront/coldfront-initializer?branch=main#1829db7f41ec6c1a08da3aad50d6aa23827554fc" }
+version = "0.0.7"
+source = { git = "https://github.com/coldfront/coldfront-initializer?branch=main#2748b0bccfabbad23175cc546afdc9751999b2e4" }
 dependencies = [
     { name = "jinja2" },
     { name = "ruamel-yaml" },

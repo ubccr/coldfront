@@ -14,7 +14,7 @@ classifiers = [
 ]
 dependencies = [
     "crispy-bootstrap5>=2025.6",
-    "django>6",
+    "django>6,<6.1",
     "django-cotton>=2.6.1",
     "django-crispy-forms>=2.3",
     "django-environ>=0.12.0",
