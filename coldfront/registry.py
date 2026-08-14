@@ -42,6 +42,7 @@ registry = Registry(
         "tables": collections.defaultdict(dict),
         "views": collections.defaultdict(dict),
         "allocation_extensions": collections.defaultdict(list),
+        "third_party_accounts": dict(),
     }
 )
 
@@ -88,6 +89,63 @@ def get_allocation_extensions(model_or_path):
     else:
         path = str(model_or_path)
     return list(registry["allocation_extensions"].get(path, []))
+
+
+def register_thirdparty_account(key, *, display_name, link_url, callback_url, unlink_url):
+    """
+    Register a third-party account provider (e.g. ORCID) for the "link a
+    3rd-party account to your user account" flow.
+
+    The account app renders a "Third-Party Accounts" page from these
+    registrations; each entry supplies the link-start, OAuth callback, and
+    unlink URL names.
+
+    Args:
+        key: The provider key. Stored as the ``provider`` value on
+            ``account.ThirdPartyAccount`` records.
+        display_name: Human-readable label for the tab/button.
+        link_url: Fully-qualified URL name for the provider's link-start view.
+        callback_url: Fully-qualified URL name for the provider's OAuth callback.
+        unlink_url: Fully-qualified URL name for the provider's unlink view.
+
+    Raises:
+        ValueError: If ``key`` is invalid, already registered, or a required
+            field is missing.
+    """
+    if not key or not isinstance(key, str):
+        raise ValueError(_("Third-party account key must be a non-empty string."))
+    if key in registry["third_party_accounts"]:
+        raise ValueError(_("Third-party account '{key}' is already registered.").format(key=key))
+    if not display_name:
+        raise ValueError(_("Third-party account '{key}' must specify a display name.").format(key=key))
+    link_urls = [link_url, callback_url, unlink_url]
+    if any(link_urls) and not all(link_urls):
+        raise ValueError(
+            _("Third-party account '{key}' must specify link_url, callback_url and unlink_url.").format(key=key)
+        )
+
+    registry["third_party_accounts"][key] = {
+        "key": key,
+        "display_name": display_name,
+        "link_url": link_url,
+        "callback_url": callback_url,
+        "unlink_url": unlink_url,
+    }
+
+
+def get_thirdparty_accounts():
+    """
+    Return a list of dicts describing each registered third-party account
+    provider. Used by the account app's "Third-Party Accounts" page and nav tab.
+    """
+    return list(registry["third_party_accounts"].values())
+
+
+def get_thirdparty_account(key):
+    """
+    Return the registration metadata for ``key``, or None if unregistered.
+    """
+    return registry["third_party_accounts"].get(key)
 
 
 def register_model_feature(name, func=None):

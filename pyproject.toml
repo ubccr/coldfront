@@ -50,6 +50,8 @@ dependencies = [
     "social-auth-app-django>=5.9.0",
     "social-auth-core[saml]>=4.8.7",
     "tablib>=3.9.0",
+    "habanero>=2.9.2",
+    "django-money>=3.6.1",
 ]
 
 [project.urls]

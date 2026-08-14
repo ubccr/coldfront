@@ -38,6 +38,7 @@ class APIRootView(APIView):
                 "tenancy": reverse("tenancy-api:api-root", request=request, format=format),
                 "core": reverse("core-api:api-root", request=request, format=format),
                 "ras": reverse("ras-api:api-root", request=request, format=format),
+                "ris": reverse("ris-api:api-root", request=request, format=format),
                 "slurm": reverse("slurm-api:api-root", request=request, format=format),
                 "storage": reverse("storage-api:api-root", request=request, format=format),
                 "plugins": reverse("plugins-api:api-root", request=request, format=format),

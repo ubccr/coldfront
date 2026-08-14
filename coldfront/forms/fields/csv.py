@@ -3,14 +3,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from decimal import Decimal
+
 from django import forms
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import FieldError, MultipleObjectsReturned, ObjectDoesNotExist
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
+from djmoney.money import Money
 
 from coldfront.choices import unpack_grouped_choices
 from coldfront.core.models import ObjectType
+from coldfront.models.utils import get_default_currency
 
 
 class CSVSelectWidget(forms.Select):
@@ -213,3 +217,38 @@ class CSVContentTypeObjectField(forms.Field):
             raise forms.ValidationError(_('"{value}" matched multiple objects').format(value=value))
 
         return obj
+
+
+class CSVMoneyField(forms.Field):
+    """
+    A CSV field which parses a single money value into a ``Money`` instance.
+
+    Accepts a bare amount ("10000.00", using ``default_currency``) or an amount
+    plus currency ("10000.00 USD"). Blank values are treated as omitted (None)
+    so model defaults apply. Unknown currency codes are rejected.
+    """
+
+    def __init__(self, *, max_digits=14, decimal_places=2, **kwargs):
+        self.default_currency = get_default_currency()
+        self.max_digits = max_digits
+        self.decimal_places = decimal_places
+        super().__init__(**kwargs)
+
+    def to_python(self, value):
+        if value in (None, ""):
+            return None
+        if not isinstance(value, str):
+            raise forms.ValidationError(_("Invalid money value: {value}").format(value=value))
+        value = value.strip()
+        if " " in value:
+            amount, currency = value.rsplit(" ", 1)
+        else:
+            amount, currency = value, self.default_currency
+        try:
+            amount = Decimal(amount)
+        except Exception:
+            raise forms.ValidationError(_("Invalid money amount: {value}").format(value=value))
+        try:
+            return Money(amount, currency)
+        except Exception:
+            raise forms.ValidationError(_("Unsupported currency code: {currency}").format(currency=currency))

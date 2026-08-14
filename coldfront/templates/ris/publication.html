@@ -1,0 +1,57 @@
+{% extends 'generic/object.html' %}
+{% load i18n %}
+
+{% block breadcrumbs %}
+    <li class="breadcrumb-item">
+        <a href="{% url 'ris:publication_list' %}">{{ object|meta:'verbose_name_plural'|title }}</a>
+    </li>
+{% endblock breadcrumbs %}
+
+{% block content %}
+    <c-layout.panels>
+        <c-slot name="left">
+            <c-card.fields only>
+                <c-slot name="header">
+                    Publication
+                </c-slot>
+
+                <c-card.fields.item label="{% trans 'DOI' %}">
+                    <a href="https://doi.org/{{ object.doi }}" target="_blank" rel="noopener">{{ object.doi }}</a>
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Title' %}">
+                    {{ object.title }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Year' %}">
+                    {{ object.year|default:'—' }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Journal' %}">
+                    {{ object.journal|default:'—' }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Authors' %}">
+                    {% if object.authors %}
+                        {% for author in object.authors %}{{ author.name }}{% if not forloop.last %},
+                            {% endif %}{% endfor %}
+                    {% else %}
+                        —
+                    {% endif %}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Source' %}">
+                    {{ object.source }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Projects' %}">
+                    {% for project in object.projects.all %}
+                        <div>{{ project|linkify }}</div>
+                    {% empty %}
+                        —
+                    {% endfor %}
+                </c-card.fields.item>
+            </c-card.fields>
+        </c-slot>
+    </c-layout.panels>
+{% endblock content %}

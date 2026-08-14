@@ -38,6 +38,8 @@ ALLOCATIONS_MENU = Menu(
             items=(
                 get_model_item("ras", "project", _("Projects")),
                 get_model_item("ras", "projectuser", _("Project Users")),
+                get_model_item("ris", "publication", _("Publications")),
+                get_model_item("ris", "funding", _("Funding")),
             ),
         ),
         MenuGroup(

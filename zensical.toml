@@ -58,6 +58,7 @@ nav = [
      "features/storage.md",
      "features/tenancy.md",
      "features/user-preferences.md",
+     "features/research-works.md",
   ]},
   {"Install &amp; Upgrade" = [
      "installation/index.md",

@@ -12,6 +12,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.relations import PrimaryKeyRelatedField, RelatedField
 
+from coldfront.models.utils import get_default_currency
 from coldfront.views import get_viewname
 
 
@@ -207,3 +208,59 @@ class AttributesField(serializers.JSONField):
             return {**initial_data, **data}
 
         return data
+
+
+class MoneyField(serializers.Field):
+    """
+    Serializes a django-money ``Money`` value as a numeric amount.
+
+    On read, a ``Money`` instance is rendered as its Decimal amount. On write,
+    accepts either a bare amount (``10000.00`` / ``"10000.00"``, using
+    ``default_currency``) or an amount plus currency (a two-item list/tuple or
+    a ``{"amount": ..., "currency": ...}`` dict). Returns a ``Money`` instance
+    so the model's MoneyField persists both the amount and its currency.
+    Unsupported currency codes are rejected.
+    """
+
+    default_error_messages = {
+        "invalid": _("Enter a valid number or a money value."),
+        "unsupported_currency": _("Unsupported currency code: {currency}"),
+    }
+
+    def __init__(self, *args, **kwargs):
+        self.default_currency = get_default_currency()
+        super().__init__(*args, **kwargs)
+
+    def to_representation(self, value):
+        if value is None:
+            return None
+        # value may be a Money instance or a bare Decimal/str from a model read.
+        amount = getattr(value, "amount", value)
+        return amount
+
+    def to_internal_value(self, data):
+        if data is None:
+            return None
+        currency = self.default_currency
+        amount = data
+        if isinstance(data, (list, tuple)):
+            if len(data) != 2:
+                self.fail("invalid")
+            amount, currency = data
+        elif isinstance(data, dict):
+            amount = data.get("amount")
+            currency = data.get("currency", self.default_currency)
+
+        try:
+            from decimal import Decimal
+
+            amount = Decimal(str(amount))
+        except Exception:
+            self.fail("invalid")
+
+        try:
+            from djmoney.money import Money
+
+            return Money(amount, currency)
+        except Exception:
+            self.fail("unsupported_currency", currency=currency)

@@ -89,6 +89,7 @@ INSTALLED_APPS += [
     "social_django",
     "generic_notifications",
     "django_rq",
+    "djmoney",
 ]
 
 if DEBUG and importlib.util.find_spec("sslserver") is not None:
@@ -99,12 +100,13 @@ if DEBUG and importlib.util.find_spec("sslserver") is not None:
 # ColdFront Apps
 INSTALLED_APPS += [
     "coldfront.users",
-    "coldfront.account",
     "coldfront.core",
+    "coldfront.account",
     "coldfront.tenancy",
     "coldfront.ras",
     "coldfront.slurm",
     "coldfront.storage",
+    "coldfront.ris",
 ]
 
 # ------------------------------------------------------------------------------

@@ -13,6 +13,7 @@ This section describes each feature and how to use it.
 |---|---|
 | [Allocation Workflow](allocations.md) | Manage allocation requests from start to finish |
 | [Projects](projects.md) | Organize research groups and their users |
+| [Research Works](research-works.md) | Link publications and funding to projects |
 | [Generic Resources](resources.md) | Define and manage allocatable resources |
 | [Slurm Integration](slurm.md) | Integrate with Slurm accounting |
 | [Storage](storage.md) | Manage storage quotas and paths |

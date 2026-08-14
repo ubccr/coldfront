@@ -14,5 +14,7 @@
         <c-table.paginator :paginator="table.paginator" :page="table.page" only />
     {% endif %}
 {% else %}
-    <div class="card-body text-muted">{% trans "None" %}</div>
+    <div class="card-body text-muted">
+        {% if table.empty_text %}{{ table.empty_text }}{% else %}{% trans "None" %}{% endif %}
+    </div>
 {% endif %}

@@ -16,7 +16,9 @@
         {% endif %}
     </div>
 {% else %}
-    <div class="htmx-container card-body text-muted">{% trans "None" %}</div>
+    <div class="htmx-container card-body text-muted">
+        {% if table.empty_text %}{{ table.empty_text }}{% else %}{% trans "None" %}{% endif %}
+    </div>
 {% endif %}
 
 {% if request.htmx %}

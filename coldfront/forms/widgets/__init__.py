@@ -4,7 +4,7 @@
 
 from .apiselect import APISelectMultipleWidget, APISelectWidget
 from .select import BulkEditNullBooleanSelect, HTMXSelectWidget
-from .widgets import MarkdownWidget
+from .widgets import MarkdownWidget, MoneyWidget
 
 __all__ = (
     "HTMXSelectWidget",
@@ -12,4 +12,5 @@ __all__ = (
     "APISelectWidget",
     "APISelectMultipleWidget",
     "MarkdownWidget",
+    "MoneyWidget",
 )

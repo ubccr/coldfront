@@ -1,0 +1,114 @@
+{% extends 'generic/base.html' %}
+{% load crispy_forms_tags %}
+{% load i18n %}
+{% load render_table from django_tables2 %}
+
+{% comment %}
+Blocks:
+  - title:    Page title
+  - tabs:     Page tabs
+  - content:  Primary page content
+
+Context:
+  - model:       The model class of the objects being unlinked
+  - form:        The bulk delete (confirmation) form
+  - table:       The table of selected child objects
+  - return_url:  The URL to which the user is redirected after submitting the form
+{% endcomment %}
+
+{% block title %}
+    {% trans "Remove" %} {{ table.rows|length }} {{ model|meta:"verbose_name_plural"|bettertitle }} from this project?
+{% endblock %}
+
+{% block tabs %}
+    <ul class="nav nav-tabs">
+        <li class="nav-item" role="presentation">
+            <button
+                class="nav-link active"
+                id="unlink-form-tab"
+                data-bs-toggle="tab"
+                data-bs-target="#unlink-form"
+                type="button"
+                role="tab"
+                aria-controls="unlink-form"
+                aria-selected="true"
+            >
+                {% trans "Remove From Project" %}
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button
+                class="nav-link"
+                id="object-list-tab"
+                data-bs-toggle="tab"
+                data-bs-target="#object-list"
+                type="button"
+                role="tab"
+                aria-controls="object-list"
+                aria-selected="false"
+            >
+                {% trans "Selected Objects" %}
+                <c-ui.badge value="{{ table.rows|length }}" />
+            </button>
+        </li>
+    </ul>
+{% endblock tabs %}
+
+{% block alerts %}
+    <c-alert.messages :form="form" only />
+{% endblock %}
+
+{% block content %}
+    {# Confirmation form #}
+    <div class="tab-pane show active" id="unlink-form" role="tabpanel" aria-labelledby="unlink-form-tab">
+        <div class="alert alert-danger bg-danger-subtle" role="alert">
+            <div class="d-flex">
+                <div>
+                    <i class="fa-solid fa-circle-exlamation p-2"></i>
+                </div>
+                <div>
+                    <h4 class="alert-title">{% trans "Confirm Removal" %}</h4>
+                    {% blocktrans trimmed with count=table.rows|length type_plural=model|meta:"verbose_name_plural" %}
+                        The following operation will remove <strong>{{ count }}</strong> {{ type_plural }} from this
+                        project. Please carefully review the selected objects and confirm this action.
+                    {% endblocktrans %}
+                </div>
+            </div>
+        </div>
+
+        <form action="" method="post" class="form form-horizontal mt-5">
+            <div id="form_fields">
+                {% csrf_token %}
+
+                {# Form fields #}
+                {% for field in form.hidden_fields %}
+                    {{ field|as_crispy_field }}
+                {% endfor %}
+
+                {# Meta fields #}
+                {% if form.changelog_message %}
+                    {{ form.changelog_message|as_crispy_field }}
+                {% endif %}
+
+                {# Form buttons #}
+                <div class="col-lg-9 text-end">
+                    <a href="{{ return_url }}" class="btn btn-outline-secondary">{% trans "Cancel" %}</a>
+                    <button type="submit" name="_confirm" class="btn btn-danger">
+                        {% trans "Remove" %} {{ table.rows|length }} {{ model|meta:"verbose_name_plural" }}
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+    {# /Confirmation form #}
+
+    {# Selected objects list #}
+    <div class="tab-pane" id="object-list" role="tabpanel" aria-labelledby="object-list-tab">
+        <div class="card">
+            <div class="table-responsive">
+                <c-table :table="table" />
+            </div>
+        </div>
+    </div>
+    {# /Selected objects list #}
+{% endblock content %}

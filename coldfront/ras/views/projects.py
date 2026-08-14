@@ -2,11 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from django.contrib import messages
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
+from coldfront.forms import BulkDeleteForm
 from coldfront.ras import filtersets, forms, tables
 from coldfront.ras.models import Allocation, Project, ProjectUser
 from coldfront.registry import register_model_view
+from coldfront.users.permissions import get_permission_for_model
 from coldfront.utils.query import count_related
 from coldfront.views import ViewTab, generic
 from coldfront.views.mixins import GetRelatedModelsMixin
@@ -135,6 +140,94 @@ class ProjectAllocationTabView(generic.ObjectChildrenView):
 
     def get_children(self, request, parent):
         return parent.allocations.restrict(request.user, "view")
+
+
+#
+# Project bulk-unlink views: remove child records' links to the current project.
+#
+
+
+class ProjectBulkUnlinkView(generic.BulkDeleteView):
+    """
+    Base view for removing selected child records' links to the current project.
+
+    Unlike ``BulkDeleteView``, which calls ``obj.delete()`` and destroys the global
+    child instance, this view only removes the child objects from the current
+    project's ``projects`` relation. The global record (and its links to other
+    projects) is left untouched.
+
+    Requires the custom ``unlink`` permission on the child model.
+    """
+
+    template_name = "ras/project/unlink.html"
+    return_url_name = None
+    child_relation = None
+
+    def get_required_permission(self):
+        return get_permission_for_model(self.queryset.model, "unlink")
+
+    def get_queryset(self, request):
+        self.project = get_object_or_404(Project, pk=request.resolver_match.kwargs["pk"])
+        return self.queryset.model.objects.filter(projects=self.project)
+
+    def get_return_url(self, request, obj=None):
+        if request.GET.get("return_url") or request.POST.get("return_url"):
+            return super().get_return_url(request, obj)
+        return reverse(self.return_url_name, kwargs={"pk": self.project.pk})
+
+    def post(self, request, **kwargs):
+        model = self.queryset.model
+
+        # Resolve the selected child objects. The queryset is already scoped to the
+        # current project and restricted by the ``unlink`` permission.
+        if request.POST.get("_all"):
+            qs = self.queryset
+            if self.filterset is not None:
+                qs = self.filterset(request.GET, qs, request=request).qs
+            pk_list = list(qs.only("pk").values_list("pk", flat=True))
+        else:
+            pk_list = [int(pk) for pk in request.POST.getlist("pk")]
+
+        if "_confirm" in request.POST:
+            form = BulkDeleteForm(model, request.POST)
+            if form.is_valid():
+                # Sever the links only; do not delete the child instances.
+                queryset = self.queryset.filter(pk__in=pk_list)
+                unlinked = queryset.count()
+                getattr(self.project, self.child_relation).remove(*pk_list)
+
+                msg = _("Removed {count} {object_type} from the project.").format(
+                    count=unlinked,
+                    object_type=model._meta.verbose_name_plural,
+                )
+                messages.success(request, msg)
+                return redirect(self.get_return_url(request))
+        else:
+            form = BulkDeleteForm(
+                model,
+                initial={"pk": pk_list, "return_url": self.get_return_url(request)},
+            )
+
+        # Render the confirmation page listing the selected child objects.
+        table = self.table(self.queryset.filter(pk__in=pk_list), orderable=False)
+        if not table.rows:
+            messages.warning(
+                request,
+                _("No {object_type} were selected.").format(object_type=model._meta.verbose_name_plural),
+            )
+            return redirect(self.get_return_url(request))
+
+        return render(
+            request,
+            self.template_name,
+            {
+                "model": model,
+                "form": form,
+                "table": table,
+                "return_url": self.get_return_url(request),
+                **self.get_extra_context(request),
+            },
+        )
 
 
 #

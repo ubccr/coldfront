@@ -1,0 +1,61 @@
+{% extends 'generic/object.html' %}
+{% load i18n %}
+{% load djmoney %}
+
+{% block breadcrumbs %}
+    <li class="breadcrumb-item">
+        <a href="{% url 'ris:funding_list' %}">{{ object|meta:'verbose_name_plural'|title }}</a>
+    </li>
+{% endblock breadcrumbs %}
+
+{% block content %}
+    <c-layout.panels>
+        <c-slot name="left">
+            <c-card.fields only>
+                <c-slot name="header">
+                    Funding
+                </c-slot>
+
+                <c-card.fields.item label="{% trans 'Award Number' %}">
+                    {{ object.award_number }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Funding Agency' %}">
+                    {{ object.funding_agency }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Title' %}">
+                    {{ object.title }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Amount Awarded' %}">
+                    {% if object.amount_awarded %}{% money_localize object.amount_awarded %}{% else %}—{% endif %}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Start Date' %}">
+                    {{ object.start_date|isodate|default:'—' }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'End Date' %}">
+                    {{ object.end_date|isodate|default:'—' }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Status' %}">
+                    {{ object.status|default:'—' }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Source' %}">
+                    {{ object.source }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Projects' %}">
+                    {% for project in object.projects.all %}
+                        <div>{{ project|linkify }}</div>
+                    {% empty %}
+                        —
+                    {% endfor %}
+                </c-card.fields.item>
+            </c-card.fields>
+        </c-slot>
+    </c-layout.panels>
+{% endblock content %}

@@ -49,15 +49,15 @@ class ObjectPermissionTest(TestCase):
         permissions = (
             ObjectPermission(
                 name="Permission 1",
-                actions={"view": True, "add": True, "change": True, "delete": True},
+                actions=["view", "add", "change", "delete"],
                 constraints={"username": "User3"},
                 description="foobar1",
             ),
             ObjectPermission(
                 name="Permission 2",
-                actions={"view": True},
+                actions=["view"],
             ),
-            ObjectPermission(name="Permission 3", actions={"add": True}, enabled=False),
+            ObjectPermission(name="Permission 3", actions=["add"], enabled=False),
         )
 
         ObjectPermission.objects.bulk_create(permissions)

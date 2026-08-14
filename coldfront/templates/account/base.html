@@ -1,5 +1,6 @@
 {% extends 'generic/base.html' %}
 {% load i18n %}
+{% load accounts %}
 
 {% block tabs %}
     <ul class="nav nav-tabs" role="presentation">
@@ -23,6 +24,15 @@
                 href="{% url 'account:usertoken_list' %}"
             >{% trans "API Tokens" %}</a>
         </li>
+        {% get_thirdparty_accounts as thirdparty_accounts %}
+        {% if thirdparty_accounts %}
+            <li class="nav-item">
+                <a
+                    class="nav-link{% if active_tab == 'third-party' %} active{% endif %}"
+                    href="{% url 'account:third_party_accounts' %}"
+                >{% trans "Third-Party Accounts" %}</a>
+            </li>
+        {% endif %}
         <li class="nav-item">
             <a
                 class="nav-link{% if active_tab == 'notifications' %} active{% endif %}"

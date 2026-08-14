@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import django_filters
+from django.db import connection
 from django.db.models import Q
 from django.utils.translation import gettext as _
 from drf_spectacular.types import OpenApiTypes
@@ -191,9 +192,18 @@ class ObjectPermissionFilterSet(BaseFilterSet):
 
     def _check_action(self, queryset, name, value):
         action = name.split("_")[1]
-        if value:
-            return queryset.filter(actions__contains=[action])
-        return queryset.exclude(actions__contains=[action])
+        if connection.features.supports_json_field_contains:
+            if value:
+                return queryset.filter(actions__contains=[action])
+            return queryset.exclude(actions__contains=[action])
+
+        # ``actions`` is a JSON list and ``__contains`` is unsupported on some
+        # backends (e.g. SQLite). Resolve the matching object pks in Python and
+        # filter the queryset by them so pagination/ordering still apply.
+        matching_pks = [
+            pk for pk, actions in queryset.values_list("pk", "actions") if value == (action in (actions or []))
+        ]
+        return queryset.filter(pk__in=matching_pks)
 
 
 class TokenFilterSet(BaseFilterSet):

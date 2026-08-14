@@ -1,0 +1,31 @@
+{% extends 'account/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Third-Party Accounts" %}{% endblock %}
+
+{% block content %}
+    <c-layout.panels>
+        <c-slot name="left">
+            <c-card.fields header="{% trans 'Linked Accounts' %}" only>
+                {% for provider in providers %}
+                    <c-card.fields.item label="{{ provider.display_name }}">
+                        {% if provider.linked %}
+                            {{ provider.account.account_id }}
+                            <a class="btn btn-danger btn-sm ms-2" href="{% url provider.unlink_url %}">
+                                {% trans "Unlink" %}
+                            </a>
+                        {% else %}
+                            <a class="btn btn-primary btn-sm" href="{% url provider.link_url %}">
+                                {% trans "Link" %} {{ provider.display_name }}
+                            </a>
+                        {% endif %}
+                    </c-card.fields.item>
+                {% empty %}
+                    <c-card.fields.item label="{% trans 'Providers' %}">
+                        {% trans "No third-party providers are configured." %}
+                    </c-card.fields.item>
+                {% endfor %}
+            </c-card.fields>
+        </c-slot>
+    </c-layout.panels>
+{% endblock %}

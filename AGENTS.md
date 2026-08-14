@@ -179,6 +179,12 @@ coldfront/<app>/
 
 ### Templates
 
+> **Important:** ALL templates live under `coldfront/templates/` — never inside the
+> app package itself (e.g. `coldfront/<app>/templates/`). Django's global
+> `TEMPLATES["DIRS"]` includes `coldfront/templates`, so templates placed under
+> `coldfront/templates/<app>/` are resolved automatically; the app does not need
+> its own `templates` directory.
+
 - `coldfront/templates/<app>/base.html` — extends `generic/base.html`
 - `coldfront/templates/<app>/<model>.html` — detail view template
 

@@ -103,7 +103,10 @@ def fgcolor(value, dark="000000", light="ffffff"):
 def isodate(value):
     if type(value) is datetime.date:
         text = value.isoformat()
-        return mark_safe(f'<span title="{naturaltime(value)}">{text}</span>')
+        # ``naturaltime`` requires a datetime (it calls ``utcoffset()``), so a
+        # bare ``date`` must be combined with a time before formatting.
+        natural = naturaltime(datetime.datetime.combine(value, datetime.time.min))
+        return mark_safe(f'<span title="{natural}">{text}</span>')
     elif type(value) is datetime.datetime:
         local_value = localtime(value) if value.tzinfo else value
         text = local_value.date().isoformat()

@@ -72,9 +72,12 @@ class TestCase(_TestCase):
         """
         for name in names:
             object_type, action = resolve_permission_type(name)
-            ObjectPermission.objects.filter(
-                actions__contains=[action], object_types=object_type, users=self.user
-            ).delete()
+            # The ``actions`` JSON list cannot be queried with ``__contains`` on all
+            # backends (e.g. SQLite), so filter the portable FK/M2M criteria in SQL
+            # and check action membership in Python.
+            for perm in ObjectPermission.objects.filter(object_types=object_type, users=self.user):
+                if action in (perm.actions or []):
+                    perm.delete()
 
     def assertHttpStatus(self, response, expected_status):
         """

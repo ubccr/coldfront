@@ -27,7 +27,7 @@ from social_core.backends.utils import load_backends
 from coldfront.account.models import UserToken
 from coldfront.core.models import ObjectChange
 from coldfront.core.tables import ObjectChangeTable
-from coldfront.registry import register_model_view
+from coldfront.registry import get_thirdparty_accounts, register_model_view
 from coldfront.users import forms
 from coldfront.views import generic
 
@@ -178,6 +178,33 @@ class ChangePasswordView(LoginRequiredMixin, View):
             {
                 "form": form,
                 "active_tab": "change_password",
+            },
+        )
+
+
+class ThirdPartyAccountsView(LoginRequiredMixin, View):
+    """
+    Shared "Third-Party Accounts" page. Loops over the registered third-party
+    account providers (see ``coldfront.registry``) and renders, for each
+    provider, either a Link button or the linked account plus an Unlink button.
+    """
+
+    template_name = "account/third_party_accounts.html"
+
+    def get(self, request):
+        account_by_provider = {account.provider: account for account in request.user.third_party_accounts.all()}
+
+        providers = []
+        for provider in get_thirdparty_accounts():
+            account = account_by_provider.get(provider["key"])
+            providers.append({**provider, "linked": bool(account), "account": account})
+
+        return render(
+            request,
+            self.template_name,
+            {
+                "providers": providers,
+                "active_tab": "third-party",
             },
         )
 

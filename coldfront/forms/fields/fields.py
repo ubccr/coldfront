@@ -11,8 +11,10 @@ from django.db.models import Count
 from django.forms.fields import InvalidJSONInput
 from django.forms.fields import JSONField as _JSONField
 from django.utils.translation import gettext_lazy as _
+from djmoney.forms import MoneyField as DjangoMoneyField
 
 from coldfront.forms import widgets
+from coldfront.models.utils import get_default_currency
 
 
 class SimpleArrayField(forms.CharField):
@@ -137,3 +139,22 @@ class CommentField(forms.CharField):
 
     def __init__(self, *, label=label, help_text=help_text, required=False, **kwargs):
         super().__init__(label=label, help_text=help_text, required=required, **kwargs)
+
+
+class MoneyField(DjangoMoneyField):
+    """
+    A django-money amount + currency field rendered as a Bootstrap input-group.
+
+    Keeps the MultiValueField contract (POST keys ``amount_awarded_0`` /
+    ``amount_awarded_1``) while swapping django-money's default ``MoneyWidget``
+    for ``MoneyWidget`` so the amount input and currency select sit
+    side-by-side in a single row.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.widget = widgets.MoneyWidget(
+            amount_widget=self.fields[0].widget,
+            currency_widget=self.fields[1].widget,
+            default_currency=get_default_currency(),
+        )
