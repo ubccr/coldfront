@@ -20,7 +20,7 @@ class LocalProvider(ResearchWorkProviderClient):
 
     @classmethod
     def display_name(cls):
-        return "Local"
+        return "Local Cache"
 
     def __init__(self, project):
         self.project = project
@@ -29,6 +29,13 @@ class LocalProvider(ResearchWorkProviderClient):
         # Local records are only searched when a filter is applied, matching the
         # API-only providers.
         if filterset is None:
+            return []
+        # ``filterset`` is not ``None`` whenever the query params validate, even
+        # when no searchable filter is applied (the add/link view returns
+        # ``None`` only when the filterset is invalid). So an empty-but-valid
+        # filterset must be treated as "no searchable filter": the local cache
+        # returns no candidates unless a searchable filter value is set.
+        if not any(filterset.form.cleaned_data.values()):
             return []
         qs = model.objects.exclude(projects=self.project)
         # django-filter's ``filter_queryset`` reads ``form.cleaned_data``,

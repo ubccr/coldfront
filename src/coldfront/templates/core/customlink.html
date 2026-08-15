@@ -11,9 +11,9 @@
 
                 <c-card.fields.item label='{% trans "Enabled" %}'>
                     {% if object.enabled %}
-                        <i class="mdi mdi-check-bold text-green"></i>
+                        <i class="fa-solid fa-check text-success"></i>
                     {% else %}
-                        <i class="mdi mdi-close-thick text-red"></i>
+                        <i class="fa-solid fa-xmark text-danger"></i>
                     {% endif %}
                 </c-card.fields.item>
 
@@ -31,9 +31,9 @@
 
                 <c-card.fields.item label='{% trans "New Window" %}'>
                     {% if object.new_window %}
-                        <i class="mdi mdi-check-bold text-green"></i>
+                        <i class="fa-solid fa-check text-success"></i>
                     {% else %}
-                        <i class="mdi mdi-close-thick text-red"></i>
+                        <i class="fa-solid fa-xmark text-danger"></i>
                     {% endif %}
                 </c-card.fields.item>
             </c-card.fields>

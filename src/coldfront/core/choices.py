@@ -152,36 +152,21 @@ class CustomFieldUIEditableChoices(ChoiceSet):
 
 class ButtonColorChoices(ChoiceSet):
     DEFAULT = "default"
-    BLUE = "blue"
-    INDIGO = "indigo"
-    PURPLE = "purple"
-    PINK = "pink"
-    RED = "red"
-    ORANGE = "orange"
-    YELLOW = "yellow"
-    GREEN = "green"
-    TEAL = "teal"
-    CYAN = "cyan"
-    GRAY = "gray"
-    GREY = "gray"
-    BLACK = "black"
-    WHITE = "white"
+    PRIMARY = "primary"
+    SECONDARY = "secondary"
+    SUCCESS = "success"
+    DANGER = "danger"
+    WARNING = "warning"
+    INFO = "info"
 
     CHOICES = (
         (DEFAULT, _("Default")),
-        (BLUE, _("Blue")),
-        (INDIGO, _("Indigo")),
-        (PURPLE, _("Purple")),
-        (PINK, _("Pink")),
-        (RED, _("Red")),
-        (ORANGE, _("Orange")),
-        (YELLOW, _("Yellow")),
-        (GREEN, _("Green")),
-        (TEAL, _("Teal")),
-        (CYAN, _("Cyan")),
-        (GRAY, _("Gray")),
-        (BLACK, _("Black")),
-        (WHITE, _("White")),
+        (PRIMARY, _("Primary")),
+        (SECONDARY, _("Secondary")),
+        (SUCCESS, _("Success")),
+        (DANGER, _("Danger")),
+        (WARNING, _("Warning")),
+        (INFO, _("Info")),
     )
 
 
@@ -272,29 +257,28 @@ class JobNotificationChoices(ChoiceSet):
 class CustomLinkButtonClassChoices(ChoiceSet):
     key = "CustomLink.button_class"
 
-    DEFAULT = "default"
-    BLUE = "blue"
-    INDIGO = "indigo"
-    PURPLE = "purple"
-    PINK = "pink"
-    RED = "red"
-    ORANGE = "orange"
-    YELLOW = "yellow"
-    GREEN = "green"
-    TEAL = "teal"
-    CYAN = "cyan"
-    GRAY = "gray"
-    GREY = "gray"
-    BLACK = "black"
-    WHITE = "white"
-    LINK = "ghost-dark"
+    DEFAULT = ButtonColorChoices.DEFAULT
+    PRIMARY = ButtonColorChoices.PRIMARY
+    SECONDARY = ButtonColorChoices.SECONDARY
+    SUCCESS = ButtonColorChoices.SUCCESS
+    DANGER = ButtonColorChoices.DANGER
+    WARNING = ButtonColorChoices.WARNING
+    INFO = ButtonColorChoices.INFO
 
-    CHOICES = list(
-        (
-            *ButtonColorChoices.CHOICES,
-            (LINK, _("Link")),
-        )
-    )
+    CHOICES = list(ButtonColorChoices.CHOICES)
+
+
+def button_class(value):
+    """
+    Return the CSS framework button class suffix for a semantic button class.
+
+    This is the single framework-specific function in the codebase. To switch
+    CSS frameworks, modify only this mapping; the stored choice values (and
+    therefore the database) never change.
+    """
+    if value == ButtonColorChoices.DEFAULT:
+        return "outline-secondary"
+    return value
 
 
 class CommentKindChoices(ChoiceSet):

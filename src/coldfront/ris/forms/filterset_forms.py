@@ -8,8 +8,16 @@ from django.utils.translation import gettext_lazy as _
 
 from coldfront.forms import ColdFrontModelFilterSetForm
 from coldfront.ris.models import Funding, Publication
+from coldfront.ris.providers.local import LocalProvider
+from coldfront.ris.registry import get_providers_for_model
 
-__all__ = ("FundingFilterSetForm", "PublicationFilterSetForm")
+__all__ = (
+    "FundingAddFilterForm",
+    "FundingFilterSetForm",
+    "ProviderSelectionMixin",
+    "PublicationAddFilterForm",
+    "PublicationFilterSetForm",
+)
 
 
 class PublicationFilterSetForm(ColdFrontModelFilterSetForm):
@@ -33,7 +41,31 @@ class FundingFilterSetForm(ColdFrontModelFilterSetForm):
     fieldsets = (Fieldset(_("Funding"), "award_number", "funding_agency", "title", "status"),)
 
 
-class PublicationAddFilterForm(ColdFrontModelFilterSetForm):
+class ProviderSelectionMixin(forms.Form):
+    """
+    Adds a multi-select ``providers`` field to an add/link filter form, letting
+    the user restrict which research-work providers (including the local cache)
+    are searched. Choices are built from the model's registered providers plus
+    the local cache; no selection means every provider is searched.
+    """
+
+    providers = forms.MultipleChoiceField(
+        required=False,
+        label=_("Providers"),
+        help_text=_("Search only the selected providers; all are searched by default."),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        providers = [LocalProvider] + list(get_providers_for_model(self.model))
+        self.fields["providers"].choices = [(cls.key, cls.display_name()) for cls in providers]
+
+    def provider_fieldset(self):
+        """Return the layout fieldset holding the provider selection field."""
+        return Fieldset(_("Providers"), "providers")
+
+
+class PublicationAddFilterForm(ProviderSelectionMixin, ColdFrontModelFilterSetForm):
     """
     Filter/search form for the publication link view. Fields mirror the fields
     the Crossref/ORCID APIs can search (title, DOI, author, journal, year).
@@ -53,10 +85,11 @@ class PublicationAddFilterForm(ColdFrontModelFilterSetForm):
         return Layout(
             Fieldset(_("Search"), "q"),
             Fieldset(_("Publication"), "title", "doi", "author", "year", "journal", "source"),
+            self.provider_fieldset(),
         )
 
 
-class FundingAddFilterForm(ColdFrontModelFilterSetForm):
+class FundingAddFilterForm(ProviderSelectionMixin, ColdFrontModelFilterSetForm):
     """
     Filter/search form for the funding link view. Fields mirror the fields the
     NSF/ORCID APIs can search (title, award number, agency, status). The
@@ -74,4 +107,5 @@ class FundingAddFilterForm(ColdFrontModelFilterSetForm):
         return Layout(
             Fieldset(_("Search"), "q"),
             Fieldset(_("Funding"), "title", "award_number", "funding_agency", "status"),
+            self.provider_fieldset(),
         )

@@ -406,8 +406,8 @@ docs = [
 
 [[package]]
 name = "coldfront-initializer"
-version = "0.0.8"
-source = { git = "https://github.com/coldfront/coldfront-initializer?branch=main#8eb4edd25f5e7f6cd9565d8e58350f0e1be8bb11" }
+version = "0.0.9"
+source = { git = "https://github.com/coldfront/coldfront-initializer?branch=main#ee46d3ea6de29884e1fd745e2293dc1a63c013f7" }
 dependencies = [
     { name = "jinja2" },
     { name = "ruamel-yaml" },

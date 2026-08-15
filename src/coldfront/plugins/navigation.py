@@ -78,7 +78,7 @@ class PluginMenuButton:
     ButtonColorChoices.
     """
 
-    color = ButtonColorChoices.DEFAULT
+    color = ButtonColorChoices.SECONDARY
     _url = None
 
     def __init__(self, link, title, icon_class, color=None, permissions=None):

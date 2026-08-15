@@ -181,7 +181,7 @@ class ProjectPublicationTabView(generic.ObjectChildrenView):
     tab = ViewTab(
         label=_("Publications"),
         badge=lambda obj: obj.publications.count(),
-        permission="ras.view_publication",
+        permission="ris.view_publication",
         weight=300,
     )
 
@@ -201,7 +201,7 @@ class ProjectFundingTabView(generic.ObjectChildrenView):
     tab = ViewTab(
         label=_("Funding"),
         badge=lambda obj: obj.funding.count(),
-        permission="ras.view_funding",
+        permission="ris.view_funding",
         weight=700,
     )
 
@@ -323,8 +323,8 @@ class ProjectAddResearchWorkView(BaseObjectView):
     permission_action = "change"
     model = None
     key_fields = ()
-    filter_form_class = None
-    filterset_class = None
+    filterset_form = None
+    filterset = None
     return_url_name = ""
     table_class = None
     model_label = "records"
@@ -336,7 +336,7 @@ class ProjectAddResearchWorkView(BaseObjectView):
         project = self.get_object(**kwargs)
         filter_form = self._filter_form(request)
         filterset = self._search_filterset(request)
-        rows = self._build_rows(request, project, filterset)
+        rows = self._build_rows(request, project, filterset, filter_form)
 
         table = self.table_class(rows, project=project)
         table.configure(request)
@@ -358,24 +358,24 @@ class ProjectAddResearchWorkView(BaseObjectView):
                 "model": self.model,
                 "filter_form": filter_form,
                 "return_url": return_url,
-                "providers": [cls.display_name() for cls in get_providers_for_model(self.model)],
+                "providers": self._provider_badges(filter_form),
             },
         )
 
     def _filter_form(self, request):
-        return self.filter_form_class(request.GET)
+        return self.filterset_form(request.GET)
 
     def _search_filterset(self, request):
         """
         Build and validate the provider-search ``FilterSet`` for this model.
 
-        The add/link UI keeps its own filter form (``filter_form_class``); the
+        The add/link UI keeps its own filter form (``filterset_form``); the
         provider search instead drives each provider through a bound django-
         filter ``FilterSet`` built from the same query params. Validation
         happens here once: an invalid filterset means no searchable filter was
         applied, so ``None`` is returned (providers then see no filters).
         """
-        filterset = self.filterset_class(request.GET)
+        filterset = self.filterset(request.GET)
         if filterset.is_valid():
             return filterset
         return None
@@ -390,23 +390,59 @@ class ProjectAddResearchWorkView(BaseObjectView):
             values.append(str(value).lower())
         return tuple(values)
 
-    def _build_rows(self, request, project, filterset):
+    def _selected_provider_keys(self, filter_form):
         """
-        Merge local + provider candidates, dedup by canonical key (local wins).
+        Return the provider keys selected on the add/link filter form, or
+        ``None`` when none were selected (meaning every provider is searched).
+        """
+        if filter_form is None:
+            return None
+        # Accessing ``cleaned_data`` triggers validation on a bound form.
+        filter_form.is_valid()
+        return filter_form.cleaned_data.get("providers")
 
-        Each provider receives the validated ``filterset`` (or ``None`` when no
-        searchable filter was applied) and decides itself whether to search:
-        API-only providers (Crossref, NSF) and the local provider return no
-        candidates without a filter, while providers that read a user's linked
-        account (e.g. ORCID) return the user's records unfiltered. Each
-        provider returns at most ``limit`` candidates.
+    def _effective_providers(self, filter_form):
+        """
+        Return the provider classes this model's search will actually use:
+        the local cache plus every registered provider when none are selected
+        on ``filter_form``, otherwise only the selected ones.
+        """
+        selected = self._selected_provider_keys(filter_form)
+        providers = [LocalProvider] + list(get_providers_for_model(self.model))
+        if not selected:
+            return providers
+        selected = set(selected)
+        return [cls for cls in providers if cls.key in selected]
+
+    def _provider_badges(self, filter_form):
+        """
+        Display names of the providers the current search will actually use:
+        all of them by default, otherwise only the selected ones. Empty when
+        the model has no registered providers.
+        """
+        if not get_providers_for_model(self.model):
+            return []
+        return [cls.display_name() for cls in self._effective_providers(filter_form)]
+
+    def _build_rows(self, request, project, filterset, filter_form):
+        """
+        Merge provider candidates, dedup by canonical key (local wins).
+
+        Only the providers selected on ``filter_form`` (all by default) are
+        searched. Each provider receives the validated ``filterset`` (or
+        ``None`` when no searchable filter was applied) and decides itself
+        whether to search: API-only providers (Crossref, NSF) and the local
+        cache return no candidates without a filter, while providers that read
+        a user's linked account (e.g. ORCID) return the user's records
+        unfiltered. Each provider returns at most ``limit`` candidates.
         """
         rows = []
         seen = set()
         limit = settings.DEFAULT_RESEARCH_WORK_PROVIDER_SEARCH_LIMIT
 
-        clients = [LocalProvider(project=project)]
-        clients.extend(cls() for cls in get_providers_for_model(self.model))
+        clients = []
+        for cls in self._effective_providers(filter_form):
+            clients.append(cls(project=project) if cls is LocalProvider else cls())
 
         for client in clients:
             try:
@@ -512,8 +548,8 @@ class ProjectAddPublicationView(ProjectAddResearchWorkView):
     template_name = "ris/publication_add.html"
     model = Publication
     key_fields = ("doi",)
-    filter_form_class = forms.PublicationAddFilterForm
-    filterset_class = filtersets.PublicationFilterSet
+    filterset_form = forms.PublicationAddFilterForm
+    filterset = filtersets.PublicationFilterSet
     return_url_name = "ras:project_publications"
     table_class = tables.PublicationAddTable
     model_label = "publication(s)"
@@ -556,8 +592,8 @@ class ProjectAddFundingView(ProjectAddResearchWorkView):
     template_name = "ris/funding_add.html"
     model = Funding
     key_fields = ("award_number", "funding_agency")
-    filter_form_class = forms.FundingAddFilterForm
-    filterset_class = filtersets.FundingFilterSet
+    filterset_form = forms.FundingAddFilterForm
+    filterset = filtersets.FundingFilterSet
     return_url_name = "ras:project_funding"
     table_class = tables.FundingAddTable
     model_label = "funding record(s)"

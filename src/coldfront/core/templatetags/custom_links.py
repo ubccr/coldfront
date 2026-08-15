@@ -7,7 +7,7 @@ from django import template
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 
-from coldfront.core.choices import CustomLinkButtonClassChoices
+from coldfront.core.choices import button_class
 from coldfront.core.models import CustomLink
 
 register = template.Library()
@@ -65,18 +65,16 @@ def custom_links(context, obj):
 
         # Add non-grouped links
         else:
-            button_class = (
-                "outline-secondary" if cl.button_class == CustomLinkButtonClassChoices.DEFAULT else cl.button_class
-            )
+            btn_class = button_class(cl.button_class)
             try:
                 if rendered := cl.render(link_context):
                     template_code += LINK_BUTTON.format(
-                        rendered["link"], rendered["link_target"], button_class, rendered["text"]
+                        rendered["link"], rendered["link_target"], btn_class, rendered["text"]
                     )
             except Exception as e:
                 template_code += (
                     f'<a class="btn btn-sm btn-outline-secondary" disabled="disabled" title="{e}">'
-                    f'<i class="mdi mdi-alert"></i> {cl.name}</a>\n'
+                    f'<i class="fa-solid fa-triangle-exclamation"></i> {cl.name}</a>\n'
                 )
 
     # Add grouped links to template
@@ -92,10 +90,12 @@ def custom_links(context, obj):
             except Exception as e:
                 links_rendered.append(
                     f'<li><a class="dropdown-item" disabled="disabled" title="{e}">'
-                    f'<span class="text-muted"><i class="mdi mdi-alert"></i> {cl.name}</span></a></li>'
+                    f'<span class="text-muted"><i class="fa-solid fa-triangle-exclamation"></i> {cl.name}</span></a></li>'
                 )
 
         if links_rendered:
-            template_code += GROUP_BUTTON.format(links[0].button_class, escape(group), "".join(links_rendered))
+            template_code += GROUP_BUTTON.format(
+                button_class(links[0].button_class), escape(group), "".join(links_rendered)
+            )
 
     return mark_safe(template_code)

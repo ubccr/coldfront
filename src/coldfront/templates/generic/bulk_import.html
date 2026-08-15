@@ -163,7 +163,7 @@ Context:
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#{{ name }}_choices"
                                                 aria-label='{{ name }} {% trans "choices" %}'
-                                            ><i class="mdi mdi-help-circle"></i></a>
+                                            ><i class="fa-solid fa-circle-question"></i></a>
                                             <div class="modal fade" id="{{ name }}_choices" tabindex="-1" role="dialog">
                                                 <div class="modal-dialog" role="document">
                                                     <div class="modal-content">
@@ -216,13 +216,13 @@ Context:
             </div>
         </div>
         <p class="small text-muted">
-            <i class="mdi mdi-check-bold text-success"></i>
+            <i class="fa-solid fa-check text-success"></i>
             {% blocktrans trimmed %}
                 Required fields <strong>must</strong> be specified for all objects.
             {% endblocktrans %}
         </p>
         <p class="small text-muted">
-            <i class="mdi mdi-information-outline"></i>
+            <i class="fa-solid fa-circle-info"></i>
             {% blocktrans trimmed with example="vrf.rd" %}
                 Related objects may be referenced by any unique attribute. For example, <code>{{ example }}</code> would
                 identify a VRF by its route distinguisher.

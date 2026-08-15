@@ -118,6 +118,16 @@ DEFAULT_PERMISSIONS = ENV.dict(
             {"allocation__project__owner": "$user"},
             {"allocation__project__users__user": "$user"},
         ),
+        # Permit users to view publications linked to projects they own or are members of
+        "ris.view_publication": (
+            {"projects__owner": "$user"},
+            {"projects__users__user": "$user"},
+        ),
+        # Permit users to view funding linked to projects they own or are members of
+        "ris.view_funding": (
+            {"projects__owner": "$user"},
+            {"projects__users__user": "$user"},
+        ),
     },
 )
 

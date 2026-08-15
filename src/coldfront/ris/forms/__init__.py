@@ -7,6 +7,7 @@ from .bulk_import import FundingImportForm, PublicationImportForm
 from .filterset_forms import (
     FundingAddFilterForm,
     FundingFilterSetForm,
+    ProviderSelectionMixin,
     PublicationAddFilterForm,
     PublicationFilterSetForm,
 )
@@ -18,6 +19,7 @@ __all__ = (
     "FundingFilterSetForm",
     "FundingForm",
     "FundingImportForm",
+    "ProviderSelectionMixin",
     "PublicationAddFilterForm",
     "PublicationBulkEditForm",
     "PublicationFilterSetForm",

@@ -199,7 +199,7 @@ class PluginNavigationTest(TestCase):
 
     def test_plugin_menu_item_independent_buttons(self):
         item1 = PluginMenuItem(link="test1", link_text="Test 1")
-        button = PluginMenuButton(link="button1", title="Button 1", icon_class="mdi-test")
+        button = PluginMenuButton(link="button1", title="Button 1", icon_class="fa-solid fa-test")
         item1.buttons.append(button)
 
         item2 = PluginMenuItem(link="test2", link_text="Test 2")
@@ -210,10 +210,10 @@ class PluginNavigationTest(TestCase):
         self.assertEqual(item2.buttons, [])
 
     def test_plugin_menu_button_independent_permissions(self):
-        button1 = PluginMenuButton(link="button1", title="Button 1", icon_class="mdi-test")
+        button1 = PluginMenuButton(link="button1", title="Button 1", icon_class="fa-solid fa-test")
         button1.permissions.append("leaked_permission")
 
-        button2 = PluginMenuButton(link="button2", title="Button 2", icon_class="mdi-test")
+        button2 = PluginMenuButton(link="button2", title="Button 2", icon_class="fa-solid fa-test")
 
         self.assertIsNot(button1.permissions, button2.permissions)
         self.assertEqual(button1.permissions, ["leaked_permission"])

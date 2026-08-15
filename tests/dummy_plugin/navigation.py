@@ -15,12 +15,12 @@ items = (
             PluginMenuButton(
                 link="plugins:dummy_plugin:dummy_model_add",
                 title="Button 1",
-                icon_class="mdi mdi-plus-thick",
+                icon_class="fa-solid fa-plus",
             ),
             PluginMenuButton(
                 link="plugins:dummy_plugin:dummy_model_add",
                 title="Button 2",
-                icon_class="mdi mdi-plus-thick",
+                icon_class="fa-solid fa-plus",
             ),
         ),
     ),

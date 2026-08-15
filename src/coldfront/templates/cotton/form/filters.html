@@ -4,6 +4,9 @@
 <form class="form-horizontal" action="." method="get">
     <div class="card">
         <div class="card-body justify-content-between py-3">
+            {% if return_url %}
+                <input type="hidden" name="return_url" value="{{ return_url }}">
+            {% endif %}
             {% crispy filter_form %}
 
             {% if filter_form.custom_fields %}
@@ -25,7 +28,7 @@
         </div>
     </div>
     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-        <button type="button" class="btn btn-outline-danger btn-float" data-reset="">
+        <button type="button" class="btn btn-outline-danger btn-float" data-reset="" data-reset-preserve="return_url">
             <i class="fa-solid fa-filter-circle-xmark"></i> {% trans "Reset" %}
         </button>
         <button type="submit" class="btn btn-primary">

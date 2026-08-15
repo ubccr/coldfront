@@ -74,7 +74,7 @@
     {# Filters tab #}
     {% if filter_form %}
         <div class="tab-pane show" id="filters-form" role="tabpanel" aria-labelledby="filters-form-tab">
-            <c-form.filters :filter_form="filter_form" only />
+            <c-form.filters :filter_form="filter_form" :return_url="return_url" only />
         </div>
     {% endif %}
     {# /Filters tab #}

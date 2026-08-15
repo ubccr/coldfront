@@ -71,8 +71,8 @@ class CustomLinkTestCase(ViewTestCases.PrimaryObjectViewTestCase):
 
         cls.csv_data = (
             "name,object_types,enabled,link_text,link_url,weight,group_name,button_class,new_window",
-            "CSV Import 1,ras.project,true,{{ object.name }},https://example.com/{{ object.pk }},100,,blue,false",
-            "CSV Import 2,ras.project,false,{{ object.name }},https://example.com/{{ object.pk }},200,,green,true",
+            "CSV Import 1,ras.project,true,{{ object.name }},https://example.com/{{ object.pk }},100,,primary,false",
+            "CSV Import 2,ras.project,false,{{ object.name }},https://example.com/{{ object.pk }},200,,success,true",
         )
 
         cls.csv_update_data = (

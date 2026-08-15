@@ -20,7 +20,20 @@ export function initForm(): void {
     document.querySelector<HTMLButtonElement>('button[data-reset]');
   if (resetButton !== null) {
     resetButton.addEventListener('click', () => {
-      window.location.assign(window.location.origin + window.location.pathname);
+      // Drop the filter query params, but keep any listed in data-reset-preserve
+      // (e.g. return_url) so a reset still returns the user where they came from.
+      const url = new URL(window.location.href);
+      const preserve = (resetButton.dataset.resetPreserve ?? '').split(',');
+      const params = new URLSearchParams();
+      for (const rawName of preserve) {
+        const name = rawName.trim();
+        const value = url.searchParams.get(name);
+        if (value) params.set(name, value);
+      }
+      const qs = params.toString();
+      window.location.assign(
+        window.location.origin + window.location.pathname + (qs ? `?${qs}` : '')
+      );
     });
   }
 

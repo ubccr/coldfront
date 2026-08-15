@@ -342,6 +342,50 @@ class ProjectAddPublicationViewTestCase(ColdFrontTestCase):
         self.assertContains(response, 'name="author"')
         search.assert_called_once()
 
+    def test_provider_select_renders(self):
+        """The add filter form renders a multi-select listing Local Cache plus the registered providers."""
+        response = self.client.get(reverse("ras:project_add_publication", kwargs={"pk": self.project.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="providers"')
+        self.assertContains(response, "Local Cache")
+        self.assertContains(response, "Crossref")
+        self.assertContains(response, "ORCID")
+
+    @mock.patch(
+        "coldfront.ris.plugins.crossref.client.CrossrefClient.search",
+        return_value=[Publication(doi="10.1000/xyz", title="Publication Crossref", year=2020, source="crossref")],
+    )
+    def test_provider_selection_only_orcid_skips_crossref(self, crossref_search):
+        """Selecting only the ORCID provider skips Crossref entirely."""
+        ThirdPartyAccount.objects.create(user=self.user, provider="orcid", account_id="0000-0000")
+        with mock.patch(
+            "coldfront.ris.plugins.orcid.client.ORCIDClient.fetch_works",
+            return_value=[Publication(doi="10.1000/orcid", title="Orcid Publication", year=2020, source="orcid")],
+        ):
+            response = self.client.get(
+                reverse("ras:project_add_publication", kwargs={"pk": self.project.pk}),
+                {"providers": "orcid"},
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Orcid Publication")
+        self.assertNotContains(response, "Publication Crossref")
+        crossref_search.assert_not_called()
+
+    @mock.patch(
+        "coldfront.ris.plugins.crossref.client.CrossrefClient.search",
+        return_value=[Publication(doi="10.1000/xyz", title="Publication Crossref", year=2020, source="crossref")],
+    )
+    def test_provider_selection_only_local_skips_external(self, crossref_search):
+        """Selecting only the local cache skips all external providers."""
+        response = self.client.get(
+            reverse("ras:project_add_publication", kwargs={"pk": self.project.pk}),
+            {"providers": "local", "q": "Publication"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Local Publication")
+        self.assertNotContains(response, "Publication Crossref")
+        crossref_search.assert_not_called()
+
     def test_local_search_is_not_view_restricted(self):
         """A user without ris.view_publication can still search all local records."""
         self.remove_permissions("ris.view_publication")
@@ -378,9 +422,12 @@ class ProjectAddPublicationViewTestCase(ColdFrontTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Orcid Publication")
         self.assertNotContains(response, "Local Publication")
-        # No Crossref-sourced result rows (the "Crossref" provider badge is
-        # always shown, but no crossref candidate rows appear without a filter).
-        self.assertNotContains(response, "crossref")
+        # No provider is selected by default (all are searched), so neither the
+        # Crossref nor ORCID dropdown option is marked selected, and no
+        # Crossref-sourced candidate row appears (Crossref is an API-only
+        # provider that returns nothing without a filter).
+        self.assertNotContains(response, '<option value="crossref" selected>')
+        self.assertNotContains(response, '<option value="orcid" selected>')
 
     def test_empty_state_when_no_rows(self):
         """With no local records and no search, an empty state is shown."""
@@ -534,6 +581,74 @@ class ProjectAddFundingViewTestCase(ColdFrontTestCase):
         self.assertContains(response, 'name="award_number"')
         self.assertContains(response, 'name="funding_agency"')
         search.assert_called_once()
+
+    def test_provider_select_renders(self):
+        """The add filter form renders a multi-select listing Local Cache plus the registered providers."""
+        response = self.client.get(reverse("ras:project_add_funding", kwargs={"pk": self.project.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="providers"')
+        self.assertContains(response, "Local Cache")
+        self.assertContains(response, "NSF")
+        self.assertContains(response, "ORCID")
+
+    @mock.patch(
+        "coldfront.ris.plugins.nsf.client.NSFClient.search",
+        return_value=[
+            Funding(
+                award_number="Award-N",
+                funding_agency="NSF",
+                title="Funding NSF",
+                status="active",
+                source="nsf",
+            )
+        ],
+    )
+    def test_provider_selection_only_orcid_skips_nsf(self, nsf_search):
+        """Selecting only the ORCID provider skips NSF entirely."""
+        ThirdPartyAccount.objects.create(user=self.user, provider="orcid", account_id="0000-0000")
+        with mock.patch(
+            "coldfront.ris.plugins.orcid.client.ORCIDClient.fetch_fundings",
+            return_value=[
+                Funding(
+                    award_number="Award-O",
+                    funding_agency="ORCID",
+                    title="Funding ORCID",
+                    status="active",
+                    source="orcid",
+                )
+            ],
+        ):
+            response = self.client.get(
+                reverse("ras:project_add_funding", kwargs={"pk": self.project.pk}),
+                {"providers": "orcid"},
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Funding ORCID")
+        self.assertNotContains(response, "Funding NSF")
+        nsf_search.assert_not_called()
+
+    @mock.patch(
+        "coldfront.ris.plugins.nsf.client.NSFClient.search",
+        return_value=[
+            Funding(
+                award_number="Award-N",
+                funding_agency="NSF",
+                title="Funding NSF",
+                status="active",
+                source="nsf",
+            )
+        ],
+    )
+    def test_provider_selection_only_local_skips_external(self, nsf_search):
+        """Selecting only the local cache skips all external providers."""
+        response = self.client.get(
+            reverse("ras:project_add_funding", kwargs={"pk": self.project.pk}),
+            {"providers": "local", "q": "Funding"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Local Funding")
+        self.assertNotContains(response, "Funding NSF")
+        nsf_search.assert_not_called()
 
     def test_link_local_record(self):
         response = self.client.post(
