@@ -279,28 +279,31 @@ class ORCIDClient(ResearchWorkProviderClient):
         Fetch the works summaries for an ORCID record and return unsaved
         ``Publication`` instances. Works without a DOI are dropped (a DOI is
         required on every Publication).
+
+        The /works endpoint returns ``group`` entries, each holding one or
+        more ``work-summary`` records (one per source), so they are flattened
+        into one publication per summary.
         """
         from coldfront.ris.models import Publication
 
         data = self._request(self.works_url(orcid_id))
-        works = data.get("works", {}).get("work", [])
         publications = []
-        for work in works:
-            put_code = work.get("put-code")
-            work = work.get("work", work)
-            doi = _extract_external_id(work, "doi")
-            if not doi:
-                continue
-            publications.append(
-                Publication(
-                    doi=doi,
-                    title=_first_title(work),
-                    year=_year(work.get("publication-date")),
-                    journal=_first_title(work.get("journal-title")),
-                    source="orcid",
-                    external_id=put_code,
+        for group in data.get("group", []):
+            for work in group.get("work-summary", []):
+                put_code = work.get("put-code")
+                doi = _extract_external_id(work, "doi")
+                if not doi:
+                    continue
+                publications.append(
+                    Publication(
+                        doi=doi,
+                        title=_first_title(work),
+                        year=_year(work.get("publication-date")),
+                        journal=_first_title(work.get("journal-title")),
+                        source="orcid",
+                        external_id=str(put_code) if put_code is not None else "",
+                    )
                 )
-            )
         return publications
 
     def fetch_work(self, orcid_id, put_codes):
@@ -341,31 +344,34 @@ class ORCIDClient(ResearchWorkProviderClient):
         """
         Fetch the funding summaries for an ORCID record and return unsaved
         ``Funding`` instances. Fundings without an award number are dropped.
+
+        The /fundings endpoint returns ``group`` entries, each holding one or
+        more ``funding-summary`` records (one per source), so they are
+        flattened into one funding per summary.
         """
         from coldfront.ris.models import Funding
 
         data = self._request(self.fundings_url(orcid_id))
-        fundings = data.get("fundings", {}).get("funding", [])
         results = []
-        for funding in fundings:
-            put_code = funding.get("put-code")
-            funding = funding.get("funding", funding)
-            award_number = _extract_external_id(funding, "grant_number")
-            agency = _org_name(funding.get("organization"))
-            if not award_number or not agency:
-                continue
-            results.append(
-                Funding(
-                    award_number=award_number,
-                    funding_agency=agency,
-                    title=_first_title(funding),
-                    start_date=_date(funding.get("start-date")),
-                    end_date=_date(funding.get("end-date")),
-                    status="",
-                    source="orcid",
-                    external_id=put_code,
+        for group in data.get("group", []):
+            for funding in group.get("funding-summary", []):
+                put_code = funding.get("put-code")
+                award_number = _extract_external_id(funding, "grant_number")
+                agency = _org_name(funding.get("organization"))
+                if not award_number or not agency:
+                    continue
+                results.append(
+                    Funding(
+                        award_number=award_number,
+                        funding_agency=agency,
+                        title=_first_title(funding),
+                        start_date=_date(funding.get("start-date")),
+                        end_date=_date(funding.get("end-date")),
+                        status="",
+                        source="orcid",
+                        external_id=str(put_code) if put_code is not None else "",
+                    )
                 )
-            )
         return results
 
     def fetch_funding(self, orcid_id, put_codes):
@@ -410,6 +416,9 @@ def _first_title(node):
     """Extract the first title value from an ORCID title node."""
     if not node:
         return ""
+    # Some title nodes carry the value directly (e.g. journal-title {"value": ...}).
+    if node.get("value"):
+        return node["value"]
     title = node.get("title") or {}
     value = title.get("value")
     return value or (title.get("title") or {}).get("value") or ""
@@ -433,12 +442,15 @@ def _extract_external_id(node, id_type):
     """Extract an external id value (e.g. ``doi``, ``grant_number``) from an ORCID node."""
     if not node:
         return ""
+    # ORCID v3 uses hyphenated keys (external-ids / external-id / -type / -value);
+    # accept the underscore variants too for older fixtures/tests.
     external_ids = node.get("external_ids") or node.get("external-ids") or {}
-    for external_id in external_ids.get("external_id", []):
-        if external_id.get("external_id_type") == id_type:
-            value = external_id.get("external_id_value") or ""
-            # Strip any DOI resolver prefix so we store the bare DOI.
-            return value.replace("https://doi.org/", "").replace("http://doi.org/", "")
+    for external_id in external_ids.get("external_id", []) + external_ids.get("external-id", []):
+        value = external_id.get("external_id_value") or external_id.get("external-id-value") or ""
+        if (external_id.get("external_id_type") or external_id.get("external-id-type")) != id_type:
+            continue
+        # Strip any DOI resolver prefix so we store the bare DOI.
+        return value.replace("https://doi.org/", "").replace("http://doi.org/", "")
     return ""
 
 
@@ -448,11 +460,10 @@ def _authors(node):
         return []
     authors = []
     for contributor in node.get("contributor", []):
-        credit = contributor.get("credit_name") or {}
-        given = (credit.get("given-names") or {}).get("value", "")
-        family = (credit.get("family-name") or {}).get("value", "")
-        name = " ".join(part for part in (given, family) if part)
-        orcid = (contributor.get("contributor_orcid") or {}).get("path") or ""
+        credit = contributor.get("credit-name") or {}
+        # ORCID credit-name carries the full display name directly.
+        name = credit.get("value") or ""
+        orcid = (contributor.get("contributor-orcid") or {}).get("path") or ""
         authors.append({"name": name, "orcid": orcid or None})
     return [a for a in authors if a["name"]]
 
@@ -461,7 +472,10 @@ def _org_name(node):
     """Extract the organization name from an ORCID organization node."""
     if not node:
         return ""
-    return (node.get("name") or {}).get("value") or ""
+    name = node.get("name") or {}
+    if isinstance(name, str):
+        return name
+    return name.get("value") or ""
 
 
 def _date(node):

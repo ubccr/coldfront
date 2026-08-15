@@ -60,11 +60,14 @@ class DateColumn(tables.Column):
 
     def render(self, value):
         if value:
-            return naturalday(value.date().isoformat())
+            # DateField values are datetime.date (no .date()); DateTimeField
+            # values are datetime.datetime and need the date() conversion.
+            iso = value.date().isoformat() if hasattr(value, "date") else value.isoformat()
+            return naturalday(iso)
 
     def value(self, value):
         if value:
-            return naturalday(value.date().isoformat())
+            return naturalday(value.date().isoformat() if hasattr(value, "date") else value.isoformat())
 
     @classmethod
     def from_field(cls, field, **kwargs):

@@ -22,8 +22,6 @@ SESSION_STATE_KEY = "account_state_orcid"
 __all__ = ("OrcidCallbackView", "OrcidLinkView", "OrcidUnlinkView")
 
 
-# Renamed from ris_state_orcid/ris_nonce_orcid when the third-party account
-# flow moved from the ris app to the account app.
 def _callback_url(request):
     return request.build_absolute_uri(reverse("plugins:orcid:callback"))
 

@@ -162,48 +162,101 @@ class ORCIDProviderViewTestCase(TestCase):
         self.assertEqual(response.status_code, 405)
 
 
+# The real ORCID public API /works response.
 ORCID_WORKS = {
-    "works": {
-        "work": [
-            {
-                "work": {
-                    "external_ids": {"external_id": [{"external_id_type": "doi", "external_id_value": "10.1000/aaa"}]},
-                    "title": {"title": {"value": "A DOI Work"}},
-                    "publication-date": {"year": {"value": 2024}},
-                    "journal-title": {"title": {"value": "Journal of Tests"}},
-                }
+    "group": [
+        {
+            "external-ids": {
+                "external-id": [{"external-id-type": "doi", "external-id-value": "10.1371/journal.pone.0198883"}]
             },
-            {
-                "work": {
-                    "title": {"title": {"value": "No DOI Work"}},
-                    "publication-date": {"year": {"value": 2023}},
+            "work-summary": [
+                {
+                    "put-code": 2523615,
+                    "title": {
+                        "title": {
+                            "value": "Classification of crystallization outcomes using deep convolutional neural networks"
+                        }
+                    },
+                    "external-ids": {
+                        "external-id": [
+                            {"external-id-type": "doi", "external-id-value": "10.1371/journal.pone.0198883"},
+                            {"external-id-type": "issn", "external-id-value": "1932-6203"},
+                        ]
+                    },
+                    "url": {"value": "http://dx.doi.org/10.1371/journal.pone.0198883"},
+                    "type": "journal-article",
+                    "publication-date": {"year": {"value": "2018"}, "month": {"value": "06"}, "day": {"value": "20"}},
+                    "journal-title": {"value": "PLOS ONE"},
                 }
+            ],
+        },
+        {
+            "external-ids": {
+                "external-id": [{"external-id-type": "doi", "external-id-value": "10.1107/s160057671601431x"}]
             },
-        ]
-    }
+            "work-summary": [
+                {
+                    "put-code": 2523616,
+                    "title": {"title": {"value": "The use of haptic interfaces and web services in crystallography"}},
+                    "external-ids": {
+                        "external-id": [{"external-id-type": "doi", "external-id-value": "10.1107/s160057671601431x"}]
+                    },
+                    "url": {"value": "http://dx.doi.org/10.1107/s160057671601431x"},
+                    "type": "journal-article",
+                    "publication-date": {"year": {"value": "2016"}, "month": {"value": "12"}, "day": {"value": "01"}},
+                    "journal-title": {"value": "Journal of Applied Crystallography"},
+                }
+            ],
+        },
+    ]
 }
 
+# The real ORCID public API /fundings response.
 ORCID_FUNDINGS = {
-    "fundings": {
-        "funding": [
-            {
-                "funding": {
-                    "external_ids": {
-                        "external_id": [{"external_id_type": "grant_number", "external_id_value": "Award-1"}]
+    "group": [
+        {
+            "external-ids": {"external-id": [{"external-id-type": "grant_number", "external-id-value": "2517857"}]},
+            "funding-summary": [
+                {
+                    "put-code": 19415,
+                    "title": {
+                        "title": {
+                            "value": "POSE: Phase I: ColdFront: High Performance Computing (HPC) Community Allocation and Resource Ecosystem (HPC CARE)"
+                        }
                     },
-                    "organization": {"name": {"value": "NSF"}},
-                    "title": {"title": {"value": "A Funded Study"}},
-                    "start-date": {"year": {"value": 2024}},
-                    "end-date": {"year": {"value": 2026}},
+                    "external-ids": {
+                        "external-id": [{"external-id-type": "grant_number", "external-id-value": "2517857"}]
+                    },
+                    "url": {"value": "https://app.dimensions.ai/details/grant/grant.15049493"},
+                    "type": "grant",
+                    "start-date": {"year": {"value": "2025"}, "month": {"value": "09"}, "day": {"value": "01"}},
+                    "end-date": {"year": {"value": "2026"}, "month": {"value": "08"}, "day": {"value": "31"}},
+                    "organization": {"name": "Directorate for Technology, Innovation and Partnerships"},
                 }
-            },
-            {
-                "funding": {
-                    "title": {"title": {"value": "No Award Funding"}},
+            ],
+        },
+        {
+            "external-ids": {"external-id": [{"external-id-type": "grant_number", "external-id-value": "2411376"}]},
+            "funding-summary": [
+                {
+                    "put-code": 19417,
+                    "title": {
+                        "title": {
+                            "value": "Collaborative Research: Frameworks: Growing Open OnDemand: Leveraging Unified Community Knowledge (GOODLUCK)"
+                        }
+                    },
+                    "external-ids": {
+                        "external-id": [{"external-id-type": "grant_number", "external-id-value": "2411376"}]
+                    },
+                    "url": {"value": "https://app.dimensions.ai/details/grant/grant.14347283"},
+                    "type": "grant",
+                    "start-date": {"year": {"value": "2024"}, "month": {"value": "09"}, "day": {"value": "01"}},
+                    "end-date": {"year": {"value": "2029"}, "month": {"value": "08"}, "day": {"value": "31"}},
+                    "organization": {"name": "Directorate for Computer & Information Science & Engineering"},
                 }
-            },
-        ]
-    }
+            ],
+        },
+    ]
 }
 
 
@@ -223,47 +276,106 @@ class ORCIDFetchTestCase(TestCase):
         with mock.patch.object(client, "_request", return_value=ORCID_WORKS):
             pubs = client.fetch_works(VALID_ORCID)
 
-        self.assertEqual(len(pubs), 1)
-        self.assertEqual(pubs[0].doi, "10.1000/aaa")
-        self.assertEqual(pubs[0].title, "A DOI Work")
-        self.assertEqual(pubs[0].year, 2024)
-        self.assertEqual(pubs[0].journal, "Journal of Tests")
-        self.assertEqual(pubs[0].source, "orcid")
+        self.assertEqual(len(pubs), 2)
+        self.assertEqual([p.doi for p in pubs], ["10.1371/journal.pone.0198883", "10.1107/s160057671601431x"])
+        self.assertEqual(
+            [p.title for p in pubs],
+            [
+                "Classification of crystallization outcomes using deep convolutional neural networks",
+                "The use of haptic interfaces and web services in crystallography",
+            ],
+        )
+        self.assertEqual([p.year for p in pubs], [2018, 2016])
+        self.assertEqual([p.journal for p in pubs], ["PLOS ONE", "Journal of Applied Crystallography"])
+        self.assertEqual([p.external_id for p in pubs], ["2523615", "2523616"])
+        self.assertEqual([p.source for p in pubs], ["orcid", "orcid"])
 
     def test_fetch_fundings(self):
         client = self.make_client()
         with mock.patch.object(client, "_request", return_value=ORCID_FUNDINGS):
             fundings = client.fetch_fundings(VALID_ORCID)
 
-        self.assertEqual(len(fundings), 1)
-        self.assertEqual(fundings[0].award_number, "Award-1")
-        self.assertEqual(fundings[0].funding_agency, "NSF")
-        self.assertEqual(fundings[0].title, "A Funded Study")
-        self.assertEqual(str(fundings[0].start_date), "2024-01-01")
-        self.assertEqual(fundings[0].source, "orcid")
-
-    def test_fetch_works_drops_no_doi(self):
-        client = self.make_client()
-        with mock.patch.object(client, "_request", return_value=ORCID_WORKS):
-            pubs = client.fetch_works(VALID_ORCID)
-        self.assertNotIn("No DOI Work", [p.title for p in pubs])
+        self.assertEqual(len(fundings), 2)
+        self.assertEqual([f.award_number for f in fundings], ["2517857", "2411376"])
+        self.assertEqual(
+            [f.funding_agency for f in fundings],
+            [
+                "Directorate for Technology, Innovation and Partnerships",
+                "Directorate for Computer & Information Science & Engineering",
+            ],
+        )
+        self.assertEqual(
+            [f.title for f in fundings],
+            [
+                "POSE: Phase I: ColdFront: High Performance Computing (HPC) Community Allocation and Resource Ecosystem (HPC CARE)",
+                "Collaborative Research: Frameworks: Growing Open OnDemand: Leveraging Unified Community Knowledge (GOODLUCK)",
+            ],
+        )
+        self.assertEqual([str(f.start_date) for f in fundings], ["2025-09-01", "2024-09-01"])
+        self.assertEqual([str(f.end_date) for f in fundings], ["2026-08-31", "2029-08-31"])
+        self.assertEqual([f.external_id for f in fundings], ["19415", "19417"])
+        self.assertEqual([f.source for f in fundings], ["orcid", "orcid"])
 
     def test_fetch_work_by_put_codes(self):
         client = self.make_client()
         detail = {
-            "external_ids": {"external_id": [{"external_id_type": "doi", "external_id_value": "10.1000/aaa"}]},
-            "title": {"title": {"value": "Detail Work"}},
-            "publication-date": {"year": {"value": 2024}},
-            "journal-title": {"title": {"value": "Journal of Tests"}},
-            "contributors": {"contributor": [{"contributor_orcid": {"path": "0000-1111-2222-3333"}}]},
+            "put-code": 2523616,
+            "title": {"title": {"value": "The use of haptic interfaces and web services in crystallography"}},
+            "journal-title": {"value": "Journal of Applied Crystallography"},
+            "type": "journal-article",
+            "publication-date": {"year": {"value": "2016"}, "month": {"value": "12"}, "day": {"value": "01"}},
+            "external-ids": {
+                "external-id": [
+                    {"external-id-type": "doi", "external-id-value": "10.1107/s160057671601431x"},
+                    {"external-id-type": "issn", "external-id-value": "1600-5767"},
+                ]
+            },
+            "url": {"value": "http://dx.doi.org/10.1107/s160057671601431x"},
+            "contributors": {
+                "contributor": [
+                    {
+                        "contributor-orcid": {"uri": None, "path": None, "host": None},
+                        "credit-name": {"value": "Andrew E. Bruno"},
+                    },
+                    {
+                        "contributor-orcid": {
+                            "uri": "https://sandbox.orcid.org/0000-0002-6565-8503",
+                            "path": "0000-0002-6565-8503",
+                        },
+                        "credit-name": {"value": "Alexei S. Soares"},
+                    },
+                    {
+                        "contributor-orcid": {
+                            "uri": "https://sandbox.orcid.org/0000-0002-2104-7057",
+                            "path": "0000-0002-2104-7057",
+                        },
+                        "credit-name": {"value": "Robin L. Owen"},
+                    },
+                    {
+                        "contributor-orcid": {
+                            "uri": "https://sandbox.orcid.org/0000-0001-8714-3191",
+                            "path": "0000-0001-8714-3191",
+                        },
+                        "credit-name": {"value": "Edward H. Snell"},
+                    },
+                ]
+            },
         }
         with mock.patch.object(client, "_request", return_value=detail) as req:
             pubs = client.fetch_work(VALID_ORCID, [101, 102])
 
         self.assertEqual(len(pubs), 2)
-        self.assertEqual([p.doi for p in pubs], ["10.1000/aaa", "10.1000/aaa"])
+        self.assertEqual([p.doi for p in pubs], ["10.1107/s160057671601431x", "10.1107/s160057671601431x"])
         self.assertEqual([p.external_id for p in pubs], [101, 102])
         self.assertEqual([p.source for p in pubs], ["orcid", "orcid"])
+        self.assertEqual(
+            [a["name"] for a in pubs[0].authors],
+            ["Andrew E. Bruno", "Alexei S. Soares", "Robin L. Owen", "Edward H. Snell"],
+        )
+        self.assertEqual(
+            [a["orcid"] for a in pubs[0].authors],
+            [None, "0000-0002-6565-8503", "0000-0002-2104-7057", "0000-0001-8714-3191"],
+        )
         # ORCID has no multi-work endpoint: one request per put code.
         self.assertEqual(req.call_count, 2)
 

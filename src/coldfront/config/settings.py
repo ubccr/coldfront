@@ -2,10 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from pathlib import Path
+
 import environ
 from split_settings.tools import include, optional
 
-from coldfront.config.env import ENV, PROJECT_ROOT
+from coldfront.config.env import ENV
 
 # ColdFront split settings
 coldfront_configs = [
@@ -25,8 +27,8 @@ local_configs = [
     "local_settings.py",
     # System wide settings for production deployments
     "/etc/coldfront/local_settings.py",
-    # Local settings relative to coldfront project root
-    PROJECT_ROOT("local_settings.py"),
+    # Local settings in the current working directory
+    environ.Path(Path.cwd(), "local_settings.py"),
 ]
 
 if ENV.str("COLDFRONT_CONFIG", default="") != "":
