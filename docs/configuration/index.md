@@ -34,7 +34,7 @@ standard Python assignment.
 
 ## Base Settings
 
-These settings are defined in `coldfront/config/base.py`.
+These settings are defined in `src/coldfront/config/base.py`.
 
 | Variable | Default | Description |
 |---|---|---|
@@ -52,7 +52,7 @@ These settings are defined in `coldfront/config/base.py`.
 
 ## Database Settings
 
-These settings are defined in `coldfront/config/database.py`.
+These settings are defined in `src/coldfront/config/database.py`.
 
 | Variable | Default | Description |
 |---|---|---|
@@ -60,7 +60,7 @@ These settings are defined in `coldfront/config/database.py`.
 
 ## Authentication Settings
 
-These settings are defined in `coldfront/config/auth.py`.
+These settings are defined in `src/coldfront/config/auth.py`.
 
 | Variable | Default | Description |
 |---|---|---|
@@ -121,7 +121,7 @@ These settings are defined in `coldfront/config/auth.py`.
 
 ## Core Settings
 
-These settings are defined in `coldfront/config/core.py`.
+These settings are defined in `src/coldfront/config/core.py`.
 
 | Variable | Default | Description |
 |---|---|---|
@@ -153,7 +153,7 @@ users. These control what users can see and do by default:
 
 ## Email Settings
 
-These settings are defined in `coldfront/config/email.py`.
+These settings are defined in `src/coldfront/config/email.py`.
 
 | Variable | Default | Description |
 |---|---|---|
@@ -170,7 +170,7 @@ These settings are defined in `coldfront/config/email.py`.
 
 ## Slurm Settings
 
-These settings are defined in `coldfront/config/slurm.py`.
+These settings are defined in `src/coldfront/config/slurm.py`.
 
 | Variable | Default | Description |
 |---|---|---|
@@ -198,7 +198,7 @@ COLDFRONT_SLURMRESTD_CLUSTERS = {
 
 ## Plugin Settings
 
-These settings are defined in `coldfront/config/plugins.py`.
+These settings are defined in `src/coldfront/config/plugins.py`.
 
 | Variable | Default | Description |
 |---|---|---|
@@ -208,7 +208,7 @@ These settings are defined in `coldfront/config/plugins.py`.
 
 ## Redis Queue Settings
 
-These settings are defined in `coldfront/config/base.py`.
+These settings are defined in `src/coldfront/config/base.py`.
 
 | Variable | Default | Description |
 |---|---|---|
@@ -225,7 +225,7 @@ For advanced configuration, create a `local_settings.py` file. This is a
 standard Python file that can override any Django or ColdFront setting.
 Place it in one of these locations:
 
-- `coldfront/config/local_settings.py` (relative to the config package)
+- `src/coldfront/config/local_settings.py` (relative to the config package)
 - `/etc/coldfront/local_settings.py` (system-wide)
 - `local_settings.py` in the project root directory
 

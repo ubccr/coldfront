@@ -26,7 +26,7 @@ Decide on:
 | `NestedGroupModel` | Hierarchical (MPTT) models — adds `parent` FK, `_depth` |
 | `ChangeLoggedModel` | Minimal changelog-only models |
 
-All defined in `coldfront/models/base.py`. Feature mixins are in `coldfront/models/features.py`.
+All defined in `src/coldfront/models/base.py`. Feature mixins are in `src/coldfront/models/features.py`.
 
 ### Feature Mixins (applied before the base class)
 
@@ -43,11 +43,11 @@ class MyModel(AllocatableResourceMixin, PrimaryModel): ...
 
 `TagsMixin` and `CustomFieldsMixin` are included automatically by `PrimaryModel`/`OrganizationalModel`/`NestedGroupModel`.
 
-Additionally, `coldfront/ras/models/mixins.py` provides **`AllocationExtensionMixin`** for models extending allocations (used by `SlurmAssociation`, `StorageQuota`).
+Additionally, `src/coldfront/ras/models/mixins.py` provides **`AllocationExtensionMixin`** for models extending allocations (used by `SlurmAssociation`, `StorageQuota`).
 
 ## 1. Define the Model
 
-**File:** `coldfront/<app>/models.py` (or `coldfront/<app>/models/<module>.py` for apps with a models package)
+**File:** `src/coldfront/<app>/models.py` (or `src/coldfront/<app>/models/<module>.py` for apps with a models package)
 
 ```python
 from django.db import models
@@ -96,7 +96,7 @@ class MyModel(AllocatableResourceMixin, PrimaryModel):
 
 ## 2. Define Field Choices (if needed)
 
-**File:** `coldfront/<app>/choices.py` (or `coldfront/choices.py` for shared choices)
+**File:** `src/coldfront/<app>/choices.py` (or `src/coldfront/choices.py` for shared choices)
 
 ```python
 from coldfront.choices import ChoiceSet
@@ -116,7 +116,7 @@ Reference with `choices=MyModelStatusChoices` on the model field and `choices=My
 
 ## 3. Create the FilterSet
 
-**File:** `coldfront/<app>/filtersets.py`
+**File:** `src/coldfront/<app>/filtersets.py`
 
 ```python
 import django_filters
@@ -141,14 +141,14 @@ class MyModelFilterSet(PrimaryModelFilterSet):
 ```
 
 - Add both `<field>` (name lookup) and `<field>_id` (PK lookup) for every FK.
-- Match the base class: `PrimaryModelFilterSet`, `OrganizationalModelFilterSet`, `NestedGroupModelFilterSet`, or `ChangeLoggedModelFilterSet` (all in `coldfront/views/filtersets.py`).
-- For tenancy: use `TenancyFilterSet` from `coldfront/tenancy/filtersets.py` as a mixin.
+- Match the base class: `PrimaryModelFilterSet`, `OrganizationalModelFilterSet`, `NestedGroupModelFilterSet`, or `ChangeLoggedModelFilterSet` (all in `src/coldfront/views/filtersets.py`).
+- For tenancy: use `TenancyFilterSet` from `src/coldfront/tenancy/filtersets.py` as a mixin.
 
 ## 4. Create Forms
 
 ### Model Form
 
-**File:** `coldfront/<app>/forms/model_forms.py`
+**File:** `src/coldfront/<app>/forms/model_forms.py`
 
 ```python
 from coldfront.forms import PrimaryModelForm
@@ -162,7 +162,7 @@ class MyModelForm(PrimaryModelForm):
 
 ### Filter Form
 
-**File:** `coldfront/<app>/forms/filterset_forms.py`
+**File:** `src/coldfront/<app>/forms/filterset_forms.py`
 
 ```python
 from coldfront.forms import PrimaryModelFilterForm
@@ -180,7 +180,7 @@ class MyModelFilterForm(PrimaryModelFilterForm):
 
 ### Bulk Import Form
 
-**File:** `coldfront/<app>/forms/model_forms.py` (or a separate import module)
+**File:** `src/coldfront/<app>/forms/model_forms.py` (or a separate import module)
 
 ```python
 from coldfront.forms import PrimaryModelImportForm
@@ -199,15 +199,15 @@ class MyModelImportForm(PrimaryModelImportForm):
         fields = ["name", "some_fk", "description", "tags"]
 ```
 
-**Tenancy forms:** If the model has a `tenant` FK, use `TenancyForm` (regular form) and `TenancyImportForm` (import form) as mixins. See `coldfront/tenancy/forms/` and examples in `coldfront/ras/forms/resources.py` or `coldfront/slurm/forms/model_forms.py`.
+**Tenancy forms:** If the model has a `tenant` FK, use `TenancyForm` (regular form) and `TenancyImportForm` (import form) as mixins. See `src/coldfront/tenancy/forms/` and examples in `src/coldfront/ras/forms/resources.py` or `src/coldfront/slurm/forms/model_forms.py`.
 
-**Bulk edit forms:** Follow the same pattern with `PrimaryModelBulkEditForm` (see `coldfront/forms/bulk_edit.py`).
+**Bulk edit forms:** Follow the same pattern with `PrimaryModelBulkEditForm` (see `src/coldfront/forms/bulk_edit.py`).
 
-Export each new form from `coldfront/<app>/forms/__init__.py`.
+Export each new form from `src/coldfront/<app>/forms/__init__.py`.
 
 ## 5. Create the Table
 
-**File:** `coldfront/<app>/tables.py`
+**File:** `src/coldfront/<app>/tables.py`
 
 ```python
 from coldfront.tables import PrimaryModelTable
@@ -220,12 +220,12 @@ class MyModelTable(PrimaryModelTable):
     default_columns = ("pk", "name", "some_fk", "description")
 ```
 
-- For models with a `tenant` FK, mix in `TenancyColumnsMixin` from `coldfront/tenancy/tables/columns.py`.
+- For models with a `tenant` FK, mix in `TenancyColumnsMixin` from `src/coldfront/tenancy/tables/columns.py`.
 - Match the base class: `PrimaryModelTable`, `OrganizationalModelTable`, `NestedGroupModelTable`, `ChangeLoggedModelTable`.
 
 ## 6. Add Views
 
-**File:** `coldfront/<app>/views.py` (or `coldfront/<app>/views/<module>.py`)
+**File:** `src/coldfront/<app>/views.py` (or `src/coldfront/<app>/views/<module>.py`)
 
 ```python
 from coldfront.registry import register_model_view
@@ -278,11 +278,11 @@ class MyModelBulkDeleteView(ObjectBulkDeleteView):
 
 - The `@register_model_view` decorator attaches the view to the model's URL namespace. For detail views, omit `detail=False` (defaults to True). For list/add views, pass `detail=False` and provide a `path`.
 - `path="import"`/`"edit"`/`"delete"` keep URLs short.
-- For FSM workflow views, use `ObjectFlowView` instead (see `coldfront/ras/views/allocations.py`).
+- For FSM workflow views, use `ObjectFlowView` instead (see `src/coldfront/ras/views/allocations.py`).
 
 ## 7. Add URL Routes
 
-**File:** `coldfront/<app>/urls.py`
+**File:** `src/coldfront/<app>/urls.py`
 
 ```python
 from django.urls import path
@@ -292,9 +292,9 @@ app_name = "<app>"
 urlpatterns = []
 ```
 
-**Note:** Most view routing is handled by the generic views module (`coldfront/views/generic/__init__.py`). URL patterns are only needed for custom views not registered via `@register_model_view`. The registry handles URL dispatch automatically.
+**Note:** Most view routing is handled by the generic views module (`src/coldfront/views/generic/__init__.py`). URL patterns are only needed for custom views not registered via `@register_model_view`. The registry handles URL dispatch automatically.
 
-**API URLs** — `coldfront/<app>/api/urls.py`:
+**API URLs** — `src/coldfront/<app>/api/urls.py`:
 
 ```python
 from rest_framework.routers import DefaultRouter
@@ -313,7 +313,7 @@ app_name = "<app>-api"
 
 ### Serializer
 
-**File:** `coldfront/<app>/api/serializers/<model>.py`
+**File:** `src/coldfront/<app>/api/serializers/<model>.py`
 
 ```python
 from coldfront.api.serializers import PrimaryModelSerializer
@@ -343,11 +343,11 @@ class MyModelSerializer(PrimaryModelSerializer):
 
 - Use a single FK field with `nested=True` — no separate `_id` companion.
 - Match the base class: `PrimaryModelSerializer`, `OrganizationalModelSerializer`, `NestedGroupModelSerializer`, `ChangeLoggedModelSerializer`.
-- For tenancy: use `TenantSerializer(nested=True)` from `coldfront/tenancy/api/serializers/tenants.py`.
+- For tenancy: use `TenantSerializer(nested=True)` from `src/coldfront/tenancy/api/serializers/tenants.py`.
 
 ### Nested Serializer
 
-**File:** `coldfront/<app>/api/serializers/nested.py`
+**File:** `src/coldfront/<app>/api/serializers/nested.py`
 
 ```python
 from coldfront.api.serializers import WritableNestedSerializer
@@ -360,11 +360,11 @@ class NestedMyModelSerializer(WritableNestedSerializer):
         brief_fields = ("id", "url", "display", "name")
 ```
 
-**Critical:** Every nested serializer **must** define `brief_fields`. Without it, `get_prefetches_for_serializer()` in `coldfront/api/utils.py` raises `AttributeError`, which cascades to `KeyError: 'request'`. Also, the nested serializer's `Meta.model` must match the FK target model, not the source model.
+**Critical:** Every nested serializer **must** define `brief_fields`. Without it, `get_prefetches_for_serializer()` in `src/coldfront/api/utils.py` raises `AttributeError`, which cascades to `KeyError: 'request'`. Also, the nested serializer's `Meta.model` must match the FK target model, not the source model.
 
 ### ViewSet
 
-**File:** `coldfront/<app>/api/views.py`
+**File:** `src/coldfront/<app>/api/views.py`
 
 ```python
 from coldfront.api.viewsets import ColdFrontModelViewSet
@@ -380,7 +380,7 @@ Skip `prefetch_related()` — `ColdFrontModelViewSet` resolves prefetches dynami
 
 ## 9. Add Navigation Menu Entry
 
-**File:** `coldfront/navigation/menu.py`
+**File:** `src/coldfront/navigation/menu.py`
 
 Find the relevant `MenuGroup` and add:
 
@@ -396,7 +396,7 @@ If creating a new menu group, define it in the appropriate `Menu` (ALLOCATIONS_M
 
 ### View Tests
 
-**File:** `coldfront/tests/<app>/test_views.py`
+**File:** `tests/<app>/test_views.py`
 
 ```python
 from coldfront.utils.testing import ViewTestCases
@@ -436,7 +436,7 @@ class MyModelTestCase(ViewTestCases.PrimaryObjectViewTestCase):
 
 ### API Tests
 
-**File:** `coldfront/tests/<app>/test_api.py`
+**File:** `tests/<app>/test_api.py`
 
 ```python
 from coldfront.utils.testing import APIViewTestCases
@@ -468,7 +468,7 @@ class MyModelTest(APIViewTestCases.APIViewTestCase):
 ### Running Tests
 
 ```bash
-COLDFRONT_ENV=.env.testing uv run -m pytest coldfront/tests/<app>/
+COLDFRONT_ENV=.env.testing uv run -m pytest tests/<app>/
 ```
 
 ## Common Gotchas
@@ -484,13 +484,13 @@ COLDFRONT_ENV=.env.testing uv run -m pytest coldfront/tests/<app>/
 
 ## References
 
-- Model base classes: `coldfront/models/base.py`, `coldfront/models/features.py`
-- Example models: `coldfront/slurm/models.py`, `coldfront/storage/models.py`, `coldfront/ras/models/resources.py`
-- Navigation menu: `coldfront/navigation/menu.py`
-- API viewsets: `coldfront/api/viewsets/base.py`
-- Generic views: `coldfront/views/generic/`
-- Forms: `coldfront/forms/`
-- Tables: `coldfront/tables/`
-- Filtersets: `coldfront/views/filtersets.py`
-- Tenancy patterns: `coldfront/tenancy/forms/`, `coldfront/tenancy/tables/columns.py`, `coldfront/tenancy/filtersets.py`, `coldfront/tenancy/api/serializers/tenants.py`
-- Tests: `coldfront/utils/testing/` (ViewTestCases, APIViewTestCases)
+- Model base classes: `src/coldfront/models/base.py`, `src/coldfront/models/features.py`
+- Example models: `src/coldfront/slurm/models.py`, `src/coldfront/storage/models.py`, `src/coldfront/ras/models/resources.py`
+- Navigation menu: `src/coldfront/navigation/menu.py`
+- API viewsets: `src/coldfront/api/viewsets/base.py`
+- Generic views: `src/coldfront/views/generic/`
+- Forms: `src/coldfront/forms/`
+- Tables: `src/coldfront/tables/`
+- Filtersets: `src/coldfront/views/filtersets.py`
+- Tenancy patterns: `src/coldfront/tenancy/forms/`, `src/coldfront/tenancy/tables/columns.py`, `src/coldfront/tenancy/filtersets.py`, `src/coldfront/tenancy/api/serializers/tenants.py`
+- Tests: `src/coldfront/utils/testing/` (ViewTestCases, APIViewTestCases)

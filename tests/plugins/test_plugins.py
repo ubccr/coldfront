@@ -14,21 +14,21 @@ from coldfront.core.models import ObjectType
 from coldfront.plugins.navigation import PluginMenu, PluginMenuButton, PluginMenuItem
 from coldfront.plugins.utils import get_plugin_config
 from coldfront.registry import registry
-from coldfront.tests.dummy_plugin import config as dummy_config
 from coldfront.utils.testing import APITestCase
+from tests.dummy_plugin import config as dummy_config
 
 
-@skipIf("coldfront.tests.dummy_plugin" not in settings.PLUGINS, "dummy_plugin not in settings.PLUGINS")
+@skipIf("tests.dummy_plugin" not in settings.PLUGINS, "dummy_plugin not in settings.PLUGINS")
 class PluginTest(TestCase):
     def test_config(self):
 
-        self.assertIn("coldfront.tests.dummy_plugin.DummyPluginConfig", settings.INSTALLED_APPS)
+        self.assertIn("tests.dummy_plugin.DummyPluginConfig", settings.INSTALLED_APPS)
 
     def test_model_registration(self):
         self.assertTrue(ObjectType.objects.filter(app_label="dummy_plugin", model="dummymodel").exists())
 
     def test_get_absolute_url_plugin(self):
-        from coldfront.tests.dummy_plugin.models import DummyColdFrontModel
+        from tests.dummy_plugin.models import DummyColdFrontModel
 
         m = DummyColdFrontModel()
         m.pk = 123
@@ -36,7 +36,7 @@ class PluginTest(TestCase):
         self.assertEqual(m.get_absolute_url(), f"/plugins/dummy-plugin/coldfrontmodel/{m.pk}/")
 
     def test_models(self):
-        from coldfront.tests.dummy_plugin.models import DummyModel
+        from tests.dummy_plugin.models import DummyModel
 
         # Test saving an instance
         instance = DummyModel(name="Instance 1", number=100)
@@ -102,7 +102,7 @@ class PluginTest(TestCase):
         """
         Check that plugin TemplateExtensions are registered.
         """
-        from coldfront.tests.dummy_plugin.template_content import GlobalContent, ProjectContent
+        from tests.dummy_plugin.template_content import GlobalContent, ProjectContent
 
         self.assertIn(GlobalContent, registry["plugins"]["template_extensions"][None])
         self.assertIn(ProjectContent, registry["plugins"]["template_extensions"]["ras.project"])
@@ -111,7 +111,7 @@ class PluginTest(TestCase):
         """
         Check that plugin middleware is registered.
         """
-        self.assertIn("coldfront.tests.dummy_plugin.middleware.DummyMiddleware", settings.MIDDLEWARE)
+        self.assertIn("tests.dummy_plugin.middleware.DummyMiddleware", settings.MIDDLEWARE)
 
     def test_min_version(self):
         """
@@ -162,12 +162,12 @@ class PluginTest(TestCase):
         DummyConfigWithDefaultSettings.validate(user_config, settings.VERSION)
         self.assertEqual(user_config["bar"], 456)
 
-    @override_settings(PLUGINS_CONFIG={"coldfront.tests.dummy_plugin": {"foo": 123}})
+    @override_settings(PLUGINS_CONFIG={"tests.dummy_plugin": {"foo": 123}})
     def test_get_plugin_config(self):
         """
         Validate that get_plugin_config() returns config parameters correctly.
         """
-        plugin = "coldfront.tests.dummy_plugin"
+        plugin = "tests.dummy_plugin"
         self.assertEqual(get_plugin_config(plugin, "foo"), 123)
         self.assertEqual(get_plugin_config(plugin, "bar"), None)
         self.assertEqual(get_plugin_config(plugin, "bar", default=456), 456)

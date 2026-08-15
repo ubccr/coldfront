@@ -2,7 +2,7 @@
 
 This guide describes how to develop a plugin for ColdFront. Plugins are
 packaged Django apps that follow a specific structure. Refer to the
-`coldfront/tests/dummy_plugin` directory for a complete working example.
+`tests/dummy_plugin` directory for a complete working example.
 
 ## Plugin Structure
 
@@ -349,6 +349,6 @@ warning and skip loading the plugin.
 ## Example Plugin
 
 A complete working example plugin is available at
-`coldfront/tests/dummy_plugin`. This plugin demonstrates all the features
+`tests/dummy_plugin`. This plugin demonstrates all the features
 described in this guide, including models, views, navigation, template
 content, middleware, API endpoints, and custom table columns.

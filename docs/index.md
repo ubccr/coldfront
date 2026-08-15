@@ -75,7 +75,7 @@ ColdFront is an open source **resource and allocation management system** design
     git clone https://github.com/coldfront/coldfront.git
     cd coldfront
     uv sync --group dev --extra initializer
-    DEBUG=True uv run coldfront initial_setup
+    DEBUG=True uv run coldfront migrate
     DEBUG=True PLUGINS="coldfront_initializer" uv run coldfront load_test_data
     DEBUG=True uv run coldfront runserver
     ```

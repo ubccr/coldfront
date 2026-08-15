@@ -41,28 +41,28 @@ SPDX-License-Identifier = "CC-BY-NC-ND-4.0"
 path = [
     "NOTICE",
     "uv.lock",
-    "coldfront/static/package-lock.json",
-    "coldfront/static/bundles/manifest.json",
-    "coldfront/static/package.json",
-    "coldfront/static/tsconfig.json",
-    "coldfront/static/.prettierignore",
-    "coldfront/static/.prettierrc",
-    "coldfront/**.png",
-    "coldfront/**.jpg",
+    "src/coldfront/static/package-lock.json",
+    "src/coldfront/static/bundles/manifest.json",
+    "src/coldfront/static/package.json",
+    "src/coldfront/static/tsconfig.json",
+    "src/coldfront/static/.prettierignore",
+    "src/coldfront/static/.prettierrc",
+    "src/coldfront/**.png",
+    "src/coldfront/**.jpg",
 ]
 SPDX-FileCopyrightText = "NONE"
 SPDX-License-Identifier = "CC0-1.0"
 
 [[annotations]]
 path = [
-    "coldfront/static/bundles/fa-*.woff2",
+    "src/coldfront/static/bundles/fa-*.woff2",
 ]
 SPDX-FileCopyrightText = "Copyright (c) 2011-2025 The Bootstrap Authors"
 SPDX-License-Identifier = "MIT"
 
 [[annotations]]
 path = [
-    "coldfront/tests/slurm/specs/openapi_spec*",
+    "tests/slurm/specs/openapi_spec*",
 ]
 SPDX-FileCopyrightText = "Copyright (C) SchedMD LLC"
 SPDX-License-Identifier = "GPL-2.0-or-later"

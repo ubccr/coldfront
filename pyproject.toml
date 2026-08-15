@@ -119,10 +119,6 @@ explicit = true
 requires = ["uv_build>=0.11.2,<0.12"]
 build-backend = "uv_build"
 
-[tool.uv.build-backend]
-module-root = ""
-module-name = "coldfront"
-
 [tool.uv]
 required-version = ">=0.11.2"
 
@@ -141,7 +137,7 @@ docstring-code-format = true
 [tool.pytest]
 minversion = "9.0"
 DJANGO_SETTINGS_MODULE = "coldfront.config.settings"
-testpaths = ["coldfront/tests"]
+testpaths = ["tests"]
 python_files = ["tests.py", "test_*.py", "*_tests.py"]
 filterwarnings = [
     'ignore::DeprecationWarning',
@@ -149,7 +145,7 @@ filterwarnings = [
 
 [tool.coverage.run]
 branch = true
-source = ["coldfront/"]
+source = ["src/coldfront/"]
 
 [tool.uv.sources]
 coldfront-initializer = { git = "https://github.com/coldfront/coldfront-initializer", branch = "main" }

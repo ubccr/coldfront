@@ -37,7 +37,7 @@ jobs:
         run: uv sync --locked --dev
 
       - name: Install frontend packages
-        run: npm --prefix coldfront/static install
+        run: npm --prefix src/coldfront/static install
 
       - name: Check for lint violations
         run: uv run ruff check
@@ -46,7 +46,7 @@ jobs:
         run: uv run ruff format --check
 
       - name: Check django template formatting
-        run: uv run djangofmt coldfront
+        run: uv run djangofmt src/coldfront
 
       - name: Check django template formatting have been commited
         run: |
@@ -59,10 +59,10 @@ jobs:
           fi
 
       - name: Check frontend with eslint and prettier
-        run: npm --prefix coldfront/static run check
+        run: npm --prefix src/coldfront/static run check
 
       - name: Compile and bundle frontend static assets
-        run: npm --prefix coldfront/static run build
+        run: npm --prefix src/coldfront/static run build
 
       - name: Check bundled frontend static assets have been commited
         run: |

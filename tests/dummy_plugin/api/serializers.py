@@ -5,7 +5,7 @@
 
 from rest_framework.serializers import ModelSerializer
 
-from coldfront.tests.dummy_plugin.models import DummyModel
+from tests.dummy_plugin.models import DummyModel
 
 
 class DummySerializer(ModelSerializer):

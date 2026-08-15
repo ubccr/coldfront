@@ -5,7 +5,7 @@
 
 from rest_framework.viewsets import ModelViewSet
 
-from coldfront.tests.dummy_plugin.models import DummyModel
+from tests.dummy_plugin.models import DummyModel
 
 from .serializers import DummySerializer
 

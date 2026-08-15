@@ -48,10 +48,10 @@ ORM models, and the REST API views.
 
 ## Spec Files
 
-The OpenAPI spec files live in `coldfront/tests/slurm/specs/`:
+The OpenAPI spec files live in `tests/slurm/specs/`:
 
 ```
-coldfront/tests/slurm/specs/
+tests/slurm/specs/
 ├── openapi_spec_v41.json  (401 KB)
 ├── openapi_spec_v42.json  (394 KB)
 ├── openapi_spec_v43.json  (432 KB)
@@ -69,11 +69,11 @@ When Slurm releases a new API version (e.g., `v0.0.46`):
 1. **Obtain the new spec file** — copy from the Slurm source tree:
    ```
    cp /path/to/slurm/testsuite/python/data/openapi_spec_v46.json \
-      coldfront/tests/slurm/specs/openapi_spec_v46.json
+      tests/slurm/specs/openapi_spec_v46.json
    ```
 
 2. **Register the version** — add `"v0.0.46"` to `_SUPPORTED_VERSIONS` in
-   `coldfront/slurm/client/client.py`:
+   `src/coldfront/slurm/client/client.py`:
    ```python
    _SUPPORTED_VERSIONS = [
        "v0.0.41",
@@ -89,7 +89,7 @@ When Slurm releases a new API version (e.g., `v0.0.46`):
    new version via the `spec_version` fixture (which iterates over all
    `.json` files in `specs/`):
    ```
-   COLDFRONT_ENV=.env.testing uv run -m pytest coldfront/tests/slurm/test_client.py \
+   COLDFRONT_ENV=.env.testing uv run -m pytest tests/slurm/test_client.py \
        -k "TestSpecValidation" -v
    ```
 
@@ -99,8 +99,8 @@ When Slurm releases a new API version (e.g., `v0.0.46`):
    ```
    python3 -c "
    import json
-   v45 = json.load(open('coldfront/tests/slurm/specs/openapi_spec_v45.json'))
-   v46 = json.load(open('coldfront/tests/slurm/specs/openapi_spec_v46.json'))
+   v45 = json.load(open('tests/slurm/specs/openapi_spec_v45.json'))
+   v46 = json.load(open('tests/slurm/specs/openapi_spec_v46.json'))
    # Compare the schemas that matter to us
    for name in ['assoc_rec_set', 'kill_jobs_msg', 'users_add_cond', 'accounts_add_cond',
                 'account', 'user', 'account_short', 'user_short']:
@@ -112,14 +112,14 @@ When Slurm releases a new API version (e.g., `v0.0.46`):
    ```
 
 5. **Update serializers if needed** — if schemas changed, modify the
-   corresponding `serialize_*` methods in `coldfront/slurm/client/client.py`.
+   corresponding `serialize_*` methods in `src/coldfront/slurm/client/client.py`.
    If the changes are *additive* (new optional fields), include them
    unconditionally — older versions ignore unknown fields. If changes are
    *breaking* (renamed or removed fields), add version-conditional logic.
 
 6. **Run the full suite** — confirm nothing regressed:
    ```
-   COLDFRONT_ENV=.env.testing uv run -m pytest coldfront/tests/slurm/ -v
+   COLDFRONT_ENV=.env.testing uv run -m pytest tests/slurm/ -v
    ```
 
 ### Automated Compatibility Check
@@ -133,12 +133,12 @@ a detailed diff. This is the first signal that the client may need updating.
 
 ```bash
 # Full slurm test suite
-COLDFRONT_ENV=.env.testing uv run -m pytest coldfront/tests/slurm/
+COLDFRONT_ENV=.env.testing uv run -m pytest tests/slurm/
 
 # Just the client tests
-COLDFRONT_ENV=.env.testing uv run -m pytest coldfront/tests/slurm/test_client.py
+COLDFRONT_ENV=.env.testing uv run -m pytest tests/slurm/test_client.py
 
 # With coverage
-COLDFRONT_ENV=.env.testing uv run -m coverage run -m pytest coldfront/tests/slurm/
+COLDFRONT_ENV=.env.testing uv run -m coverage run -m pytest tests/slurm/
 COLDFRONT_ENV=.env.testing uv run -m coverage report
 ```

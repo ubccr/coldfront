@@ -76,7 +76,7 @@ After you configure the database, initialize the ColdFront database. Do this
 only one time:
 
 ```
-$ uv run coldfront initial_setup
+$ uv run coldfront migrate
 ```
 
 ## Create a Super User

@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from pathlib import Path
+
 import environ
 
 ENV = environ.Env()
@@ -9,7 +11,7 @@ PROJECT_ROOT = environ.Path(__file__) - 3
 
 # Default paths to environment files
 env_paths = [
-    PROJECT_ROOT.path(".env"),
+    environ.Path(Path.cwd(), ".env"),
     environ.Path("/etc/coldfront/coldfront.env"),
 ]
 
