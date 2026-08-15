@@ -7,7 +7,7 @@ from unittest import mock
 
 from django.test import TestCase
 
-from coldfront.ris.providers.nsf.client import NSFClient
+from coldfront.ris.plugins.nsf.client import NSFClient
 
 NSF_SEARCH = {
     "response": {

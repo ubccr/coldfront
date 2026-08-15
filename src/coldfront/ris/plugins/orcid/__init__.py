@@ -6,7 +6,7 @@ from coldfront.plugins import PluginConfig
 
 
 class OrcidConfig(PluginConfig):
-    name = "coldfront.ris.providers.orcid"
+    name = "coldfront.ris.plugins.orcid"
     verbose_name = "ORCID provider"
     version = "0.1"
     description = "Links ORCID accounts to ColdFront via a link-only OAuth flow."

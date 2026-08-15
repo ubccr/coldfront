@@ -321,7 +321,7 @@ class ProjectAddPublicationViewTestCase(ColdFrontTestCase):
         self.assertEqual(response.status_code, 302)
 
     @mock.patch(
-        "coldfront.ris.providers.crossref.client.CrossrefClient.search",
+        "coldfront.ris.plugins.crossref.client.CrossrefClient.search",
         return_value=[Publication(doi="10.1000/xyz", title="Publication Crossref", year=2020, source="crossref")],
     )
     def test_get_renders_local_and_external_rows(self, search):
@@ -371,7 +371,7 @@ class ProjectAddPublicationViewTestCase(ColdFrontTestCase):
         ThirdPartyAccount.objects.create(user=self.user, provider="orcid", account_id="0000-0000")
         self.local_pub.projects.add(self.project)
         with mock.patch(
-            "coldfront.ris.providers.orcid.client.ORCIDClient.fetch_works",
+            "coldfront.ris.plugins.orcid.client.ORCIDClient.fetch_works",
             return_value=[Publication(doi="10.1000/orcid", title="Orcid Publication", year=2020, source="orcid")],
         ):
             response = self.client.get(reverse("ras:project_add_publication", kwargs={"pk": self.project.pk}))
@@ -392,7 +392,7 @@ class ProjectAddPublicationViewTestCase(ColdFrontTestCase):
         self.assertContains(response, "card-body text-muted")
 
     @mock.patch(
-        "coldfront.ris.providers.crossref.client.CrossrefClient.search",
+        "coldfront.ris.plugins.crossref.client.CrossrefClient.search",
         return_value=[Publication(doi="10.1000/xyz", title="Publication Crossref", year=2020, source="crossref")],
     )
     def test_get_htmx_returns_table_partial(self, search):
@@ -420,7 +420,7 @@ class ProjectAddPublicationViewTestCase(ColdFrontTestCase):
         self.assertEqual(list(self.project.publications.all()), [self.local_pub])
 
     @mock.patch(
-        "coldfront.ris.providers.crossref.client.CrossrefClient.fetch_work",
+        "coldfront.ris.plugins.crossref.client.CrossrefClient.fetch_work",
         return_value=[
             Publication(
                 doi="10.1000/xyz",
@@ -447,7 +447,7 @@ class ProjectAddPublicationViewTestCase(ColdFrontTestCase):
         self.assertEqual(list(self.project.publications.all()), [pub])
 
     @mock.patch(
-        "coldfront.ris.providers.crossref.client.CrossrefClient.fetch_work",
+        "coldfront.ris.plugins.crossref.client.CrossrefClient.fetch_work",
         return_value=[None],
     )
     def test_link_external_record_fallback_when_refetch_fails(self, fetch):
@@ -463,7 +463,7 @@ class ProjectAddPublicationViewTestCase(ColdFrontTestCase):
         self.assertEqual(list(self.project.publications.all()), [pub])
 
     @mock.patch(
-        "coldfront.ris.providers.crossref.client.CrossrefClient.fetch_work",
+        "coldfront.ris.plugins.crossref.client.CrossrefClient.fetch_work",
         return_value=[
             Publication(doi="10.1000/one", title="One", year=2020, source="crossref"),
             Publication(doi="10.1000/two", title="Two", year=2021, source="crossref"),
@@ -508,7 +508,7 @@ class ProjectAddFundingViewTestCase(ColdFrontTestCase):
         )
 
     @mock.patch(
-        "coldfront.ris.providers.nsf.client.NSFClient.search",
+        "coldfront.ris.plugins.nsf.client.NSFClient.search",
         return_value=[
             Funding(
                 award_number="Award-N",
@@ -544,7 +544,7 @@ class ProjectAddFundingViewTestCase(ColdFrontTestCase):
         self.assertEqual(list(self.project.funding.all()), [self.local_funding])
 
     @mock.patch(
-        "coldfront.ris.providers.nsf.client.NSFClient.fetch_funding",
+        "coldfront.ris.plugins.nsf.client.NSFClient.fetch_funding",
         return_value=[
             Funding(
                 award_number="Award-X",

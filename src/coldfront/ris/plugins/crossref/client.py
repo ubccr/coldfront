@@ -36,7 +36,7 @@ class CrossrefClient(ResearchWorkProviderClient):
     returns ``Publication`` instances (unsaved) for import/search and can later
     be used to refresh a publication's metadata by DOI.
 
-    Configuration is read from ``PLUGINS_CONFIG["coldfront.ris.providers.crossref"]``
+    Configuration is read from ``PLUGINS_CONFIG["coldfront.ris.plugins.crossref"]``
     (e.g. ``base_url``, ``mailto``, ``timeout``), with sensible defaults.
     """
 

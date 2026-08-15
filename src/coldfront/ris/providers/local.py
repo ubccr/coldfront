@@ -2,19 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""
-Local-provider implementation of the research-work provider contract.
-
-``LocalProvider`` serves a project's already-existing local records that are
-not yet linked to it. It is never registered in the provider registry (it is
-instantiated per-project by the add/link views) and performs no view
-restriction: local records are searched regardless of the user's view
-permissions.
-"""
-
 from coldfront.ris.providers.base import ResearchWorkProviderClient
-
-__all__ = ("LocalProvider",)
 
 
 class LocalProvider(ResearchWorkProviderClient):

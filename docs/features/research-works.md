@@ -14,15 +14,21 @@ ColdFront currently captures two specific research works:
 Each links to projects through a many-to-many field. The `source` field records
 which provider imported the record first.
 
-## Providers
+## Provider Plugins
 
-Providers search external systems and return candidate works for import.
-ColdFront bundles these providers:
+Research providers search external systems and return candidate works for
+import. ColdFront includes the following provider plugins by default:
 
 - **ORCID** — Searches works and funding from a user's linked ORCID account.
 - **Crossref** — Searches publications through the public Crossref API.
 - **NSF** — Searches funding through the NSF Awards API.
 - **Local** — Serves records already stored in ColdFront (never registered).
+
+You can enabled these by adding them to your plugin config, for example:
+
+```
+PLUGINS='coldfront.ris.plugins.orcid,coldfront.ris.plugins.crossref,coldfront.ris.plugins.nsf'
+```
 
 Providers implement the `ResearchWorkProviderClient` interface and register
 themselves using the `register_research_work_provider` decorator. The ris

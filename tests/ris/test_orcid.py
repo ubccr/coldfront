@@ -8,8 +8,8 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from coldfront.account.models import ThirdPartyAccount
-from coldfront.ris.providers.orcid import views
-from coldfront.ris.providers.orcid.client import ORCIDClient
+from coldfront.ris.plugins.orcid import views
+from coldfront.ris.plugins.orcid.client import ORCIDClient
 from coldfront.users.models import User
 
 ORCID_CONFIG = {"client_id": "test-client", "client_secret": "test-secret"}
@@ -17,7 +17,7 @@ ORCID_CONFIG = {"client_id": "test-client", "client_secret": "test-secret"}
 VALID_ORCID = "0000-0000-0000-0000"
 
 
-@override_settings(PLUGINS_CONFIG={"coldfront.ris.providers.orcid": ORCID_CONFIG})
+@override_settings(PLUGINS_CONFIG={"coldfront.ris.plugins.orcid": ORCID_CONFIG})
 class ORCIDClientTestCase(TestCase):
     """Tests for the self-contained ORCID client."""
 
@@ -56,7 +56,7 @@ class ORCIDClientTestCase(TestCase):
             client.extract_orcid_id({})
 
 
-@override_settings(PLUGINS_CONFIG={"coldfront.ris.providers.orcid": ORCID_CONFIG})
+@override_settings(PLUGINS_CONFIG={"coldfront.ris.plugins.orcid": ORCID_CONFIG})
 class ORCIDProviderViewTestCase(TestCase):
     """Tests for the ORCID link-only flow."""
 
@@ -207,7 +207,7 @@ ORCID_FUNDINGS = {
 }
 
 
-@override_settings(PLUGINS_CONFIG={"coldfront.ris.providers.orcid": ORCID_CONFIG})
+@override_settings(PLUGINS_CONFIG={"coldfront.ris.plugins.orcid": ORCID_CONFIG})
 class ORCIDFetchTestCase(TestCase):
     """Tests for the ORCID public read API import methods."""
 

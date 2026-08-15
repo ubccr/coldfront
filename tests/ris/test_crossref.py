@@ -6,7 +6,7 @@ from unittest import mock
 
 from django.test import TestCase
 
-from coldfront.ris.providers.crossref.client import CrossrefClient, CrossrefError
+from coldfront.ris.plugins.crossref.client import CrossrefClient, CrossrefError
 
 CROSSREF_SEARCH = {
     "message": {

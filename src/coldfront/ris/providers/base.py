@@ -2,25 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""
-Base contract for research-work providers (Publications/Funding) in the ris app.
-
-Providers subclass ``ResearchWorkProviderClient`` and are registered via
-``register_research_work_provider`` so that the add/link views can drive them
-uniformly.
-
-``search`` receives a bound django-filter ``FilterSet`` built from the add/link
-view's query params (validated once by the view). API-only providers (Crossref,
-NSF) and the local provider require a ``filterset`` and return no candidates
-when it is ``None``; providers that read a user's linked account (e.g. ORCID)
-return the user's records unfiltered when ``filterset`` is ``None``. If a
-provider filters candidates locally (e.g. ORCID), that is its own
-implementation detail and lives in the provider, not here.
-"""
-
 from django.utils.translation import gettext as _
-
-__all__ = ("ResearchWorkProviderClient",)
 
 
 class ResearchWorkProviderClient:

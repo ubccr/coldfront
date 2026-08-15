@@ -43,7 +43,7 @@ class ORCIDClient(ResearchWorkProviderClient):
     A thin, self-contained ORCID client. This is the only ORCID-specific code
     in the codebase and borrows nothing from python-social-auth.
 
-    Configuration is read from ``PLUGINS_CONFIG["coldfront.ris.providers.orcid"]``
+    Configuration is read from ``PLUGINS_CONFIG["coldfront.ris.plugins.orcid"]``
     (e.g. client_id, client_secret, base_url, scope), with sensible defaults.
     """
 
