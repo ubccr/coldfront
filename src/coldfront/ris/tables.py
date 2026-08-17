@@ -57,7 +57,7 @@ class PublicationTable(ColdFrontTable):
             "created",
             "last_updated",
         )
-        default_columns = ("pk", "doi", "title", "year", "journal", "source", "projects")
+        default_columns = ("pk", "doi", "title", "year", "journal")
 
 
 class PublicationAddTable(ColdFrontTable):
@@ -199,4 +199,4 @@ class FundingTable(ColdFrontTable):
             "created",
             "last_updated",
         )
-        default_columns = ("pk", "award_number", "funding_agency", "title", "status", "amount_awarded", "source")
+        default_columns = ("pk", "award_number", "funding_agency", "title", "amount_awarded", "status")

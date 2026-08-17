@@ -9,6 +9,7 @@ from functools import cached_property
 
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+from django.contrib.contenttypes.models import ContentType
 from django.core.validators import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -378,6 +379,10 @@ class AllocatableResourceMixin(models.Model):
     def allocatable(self, user):
         """Checks if this resource is allocatable. Override to provide custom checks"""
         return not self.locked
+
+    def content_type(self):
+        """Returns the content type for this allocatable resource"""
+        return ContentType.objects.get_for_model(self)
 
 
 register_model_feature("change_logging", lambda model: issubclass(model, ChangeLoggingMixin))

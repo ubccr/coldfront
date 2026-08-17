@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from django import forms as django_forms
 from django.shortcuts import get_object_or_404
 
 from coldfront.ras import filtersets, flows, forms, tables
@@ -90,9 +91,9 @@ class BaseAllocationFlowView(generic.ObjectFlowView):
     flow = flows.AllocationStatusFlow
 
 
-# Allocations are requested from a project
+# Allocations requested from a project
 @register_model_view(Project, "allocationrequest", path="allocation-request")
-class AllocationRequestView(BaseAllocationFlowView):
+class ProjectAllocationRequestView(BaseAllocationFlowView):
     template_name = "ras/project/allocation_request.html"
     form = forms.AllocationRequestForm
     action = actions.RequestObject
@@ -101,13 +102,24 @@ class AllocationRequestView(BaseAllocationFlowView):
         project = get_object_or_404(Project.objects.all(), **kwargs)
         return Allocation(project=project, tenant=project.tenant)
 
+    def alter_form(self, form, obj, request):
+        form.fields["project"].widget = django_forms.HiddenInput()
+        form.fields["project"].required = False
+        return form
+
     def alter_object(self, obj, request, url_args, url_kwargs):
         obj.owner = request.user
         return obj
 
-    def get_extra_context(self, request, instance):
-        context = super().get_extra_context(request, instance)
-        return context
+
+@register_model_view(Allocation, "request", detail=False)
+class AllocationRequestView(BaseAllocationFlowView):
+    form = forms.AllocationRequestForm
+    action = actions.RequestObject
+
+    def alter_object(self, obj, request, url_args, url_kwargs):
+        obj.owner = request.user
+        return obj
 
 
 @register_model_view(Allocation, "approve")

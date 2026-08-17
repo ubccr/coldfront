@@ -1,0 +1,9 @@
+{% load i18n %}
+{% cotton:vars resource %}
+
+{% if not resource.locked and perms.ras.request_allocation %}
+    <c-button.request
+        url="{% url 'ras:allocation_request' %}?resource_object={{ resource.content_type.id }}:{{ resource.id }}"
+        label='{% trans "Request Allocation" %}'
+    />
+{% endif %}

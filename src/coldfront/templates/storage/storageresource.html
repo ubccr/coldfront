@@ -1,6 +1,11 @@
 {% extends 'storage/base.html' %}
 {% load i18n %}
 
+{% block extra_controls %}
+    {{ block.super }}
+    <c-button.request_allocation :resource="object" />
+{% endblock extra_controls %}
+
 {% block content %}
     <c-layout.panels>
         <c-slot name="left">

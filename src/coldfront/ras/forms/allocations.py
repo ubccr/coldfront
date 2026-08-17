@@ -178,9 +178,7 @@ class AllocationRequestForm(AllocationBaseForm):
     project = forms.ModelChoiceField(
         label=_("Project"),
         queryset=Project.objects.all(),
-        required=False,
-        disabled=True,
-        widget=forms.HiddenInput(),
+        required=True,
     )
     justification = forms.CharField(
         widget=forms.Textarea(attrs={"rows": 5}),

@@ -627,6 +627,17 @@ class ObjectFlowView(GetReturnURLMixin, BaseObjectView):
         """
         return obj
 
+    def alter_form(self, form, obj, request):
+        """
+        Provides a hook for views to modify the form.
+
+        Args:
+            form: The form instance
+            obj: The object being edited
+            request: The current request
+        """
+        return form
+
     #
     # Request handlers
     #
@@ -644,6 +655,7 @@ class ObjectFlowView(GetReturnURLMixin, BaseObjectView):
 
         initial_data = normalize_querydict(request.GET)
         form = self.form(instance=obj, initial=initial_data, user=request.user)
+        form = self.alter_form(form, obj, request)
 
         restrict_form_fields(form, request.user)
 
