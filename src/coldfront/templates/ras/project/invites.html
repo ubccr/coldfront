@@ -1,0 +1,19 @@
+{% extends 'generic/object_children.html' %}
+{% load i18n %}
+
+{% block extra_controls %}
+    {% if perms.ras.add_projectinvite %}
+        <a
+            href="{% url 'ras:projectinvite_add' %}?project={{ object.pk }}&return_url={% url 'ras:project_invites' pk=object.pk %}"
+            class="btn btn-primary"
+        >
+            <i class="fa-solid fa-plus" aria-hidden="true"></i> {% trans "Invite User" %}
+        </a>
+        <a
+            href="{% url 'ras:projectinvite_bulk_import' %}?project={{ object.pk }}&return_url={% url 'ras:project_invites' pk=object.pk %}"
+            class="btn btn-success"
+        >
+            <i class="fa-solid fa-upload" aria-hidden="true"></i> {% trans "Import Invites" %}
+        </a>
+    {% endif %}
+{% endblock extra_controls %}

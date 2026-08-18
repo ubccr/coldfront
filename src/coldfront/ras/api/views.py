@@ -12,6 +12,7 @@ from coldfront.ras.models import (
     Allocation,
     AllocationChangeRequest,
     Project,
+    ProjectInvite,
     ProjectUser,
     Resource,
     ResourceType,
@@ -32,6 +33,12 @@ class RASRootView(APIRootView):
 #
 # Projects
 #
+
+
+class ProjectInviteViewSet(ColdFrontModelViewSet):
+    queryset = ProjectInvite.objects.all()
+    serializer_class = serializers.ProjectInviteSerializer
+    filterset_class = filtersets.ProjectInviteFilterSet
 
 
 class ProjectViewSet(ColdFrontModelViewSet):

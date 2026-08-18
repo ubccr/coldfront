@@ -17,6 +17,7 @@ from coldfront.ras.models import (
     Allocation,
     AllocationChangeRequest,
     Project,
+    ProjectInvite,
     ProjectUser,
     Resource,
     ResourceType,
@@ -728,3 +729,60 @@ class AllocationChangeRequestTest(APIViewTestCases.APIViewTestCase):
         self.assertHttpStatus(response, status.HTTP_201_CREATED)
         instance = self._get_queryset().get(pk=response.data["id"])
         self.assertIn("nonexistent_field", instance.attribute_changes)
+
+
+class ProjectInviteTest(APIViewTestCases.APIViewTestCase):
+    model = ProjectInvite
+    brief_fields = ["display", "email", "id", "project", "url"]
+
+    @classmethod
+    def setUpTestData(cls):
+        owner = User.objects.create(username="pi")
+        users = (
+            User(username="User1"),
+            User(username="User2"),
+            User(username="User3"),
+            User(username="User4"),
+            User(username="User5"),
+            User(username="User6"),
+        )
+        for user in users:
+            user.save()
+
+        projects = (
+            Project(name="Project 1", owner=owner),
+            Project(name="Project 2", owner=owner),
+            Project(name="Project 3", owner=owner),
+        )
+        for project in projects:
+            project.save()
+
+        invites = (
+            ProjectInvite(email="invite1@example.com", project=projects[0], invited_by=users[0]),
+            ProjectInvite(email="invite2@example.com", project=projects[1], invited_by=users[1]),
+            ProjectInvite(email="invite3@example.com", project=projects[2], invited_by=users[2]),
+        )
+        for invite in invites:
+            invite.save()
+
+        cls.bulk_update_data = {
+            "email": "updated@example.com",
+        }
+
+        cls.create_data = [
+            {
+                "email": "invite4@example.com",
+                "project": projects[2].pk,
+                "invited_by": users[3].pk,
+            },
+            {
+                "email": "invite5@example.com",
+                "project": projects[1].pk,
+                "invited_by": users[4].pk,
+            },
+            {
+                "email": "invite6@example.com",
+                "project": projects[0].pk,
+                "invited_by": users[5].pk,
+            },
+        ]

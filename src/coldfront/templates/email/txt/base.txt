@@ -1,0 +1,24 @@
+[{{ settings.CENTER_NAME }}] ( {{ home_link }} )
+
+****************
+{% block greeting %}Hello!{% endblock %}
+****************
+
+{% block message %}{% endblock %}
+
+{% block button_text %}{% endblock %}: {{ button_link }}
+
+{% block attribute_message %}For reference, here's the related information:{% endblock %}
+
+{% for key,value in attributes.items %}
+{{ key }}: {{ value }}
+{% endfor %}
+
+{% block footer_message %}If you were not expecting this message, please ignore this email.{% endblock %} Feel free to contact support ( {{ settings.SUPPORT_EMAIL }} ) or check out our help documentation ( {{ settings.CENTER_HELP_URL }} ) if you have questions.
+
+Thanks,
+The [{{ settings.CENTER_NAME }}] team
+
+If you're having trouble with the link above, copy and paste the URL into your web browser.
+
+{{ settings.EMAIL_SIGNATURE }}

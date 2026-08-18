@@ -4,6 +4,7 @@
 
 from .allocations import Allocation
 from .change_requests import AllocationChangeRequest
+from .invites import ProjectInvite, ProjectInviteQuerySet
 from .mixins import AllocationExtensionMixin
 from .projects import Project, ProjectUser
 from .resources import Resource, ResourceType
@@ -13,6 +14,8 @@ __all__ = (
     "AllocationChangeRequest",
     "AllocationExtensionMixin",
     "Project",
+    "ProjectInvite",
+    "ProjectInviteQuerySet",
     "ProjectUser",
     "Resource",
     "ResourceType",

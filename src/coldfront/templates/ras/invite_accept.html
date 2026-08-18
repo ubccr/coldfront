@@ -1,0 +1,35 @@
+{% extends 'generic/base.html' %}
+{% load i18n %}
+
+{% comment %}
+Blocks:
+  - title:      Page title
+  - content:    Primary page content
+
+Context:
+  - invite:      The pending ProjectInvite being accepted
+  - accept_url:  URL to POST the acceptance to
+{% endcomment %}
+
+{% block title %}{% trans "Accept Invite" %}{% endblock %}
+
+{% block content %}
+    <c-layout.panels>
+        <c-slot name="left">
+            <c-card>
+                <div class="card-body">
+                    <p>
+                        {% blocktrans with project=invite.project.name %}You are about to join the project
+                            <strong>{{ project }}</strong> as a member.{% endblocktrans %}
+                    </p>
+                    <form method="post" action="{{ accept_url }}">
+                        {% csrf_token %}
+                        <div class="d-flex">
+                            <button type="submit" class="btn btn-primary">{% trans "Accept Invite" %}</button>
+                        </div>
+                    </form>
+                </div>
+            </c-card>
+        </c-slot>
+    </c-layout.panels>
+{% endblock %}

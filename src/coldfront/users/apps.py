@@ -14,7 +14,6 @@ class UsersConfig(AppConfig):
         # Register models
         register_models(*self.get_models())
 
-        # Import and connect signals
-        from coldfront.users.signals import connect_signals
-
-        connect_signals()
+        from . import (
+            signals,  # noqa: F401
+        )

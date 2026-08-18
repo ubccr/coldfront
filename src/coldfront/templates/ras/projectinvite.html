@@ -1,0 +1,44 @@
+{% extends 'ras/base.html' %}
+{% load i18n %}
+
+{% block content %}
+    <c-layout.panels>
+        <c-slot name="left">
+            <c-card.fields :object="object" only>
+                <c-card.fields.item label="{% trans 'Email' %}">
+                    {{ object.email }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Status' %}">
+                    {% if object.accepted_at %}
+                        {% trans 'Accepted' %}
+                    {% elif object.is_expired %}
+                        {% trans 'Expired' %}
+                    {% else %}
+                        {% trans 'Pending' %}
+                    {% endif %}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Accepted' %}">
+                    {{ object.accepted_at|isodate|placeholder }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Invited By' %}">
+                    {{ object.invited_by }}
+                </c-card.fields.item>
+            </c-card.fields>
+        </c-slot>
+
+        <c-slot name="right">
+            <c-card.fields header="{% trans 'Project' %}" only>
+                <c-card.fields.item label="{% trans 'Name' %}">
+                    {{ object.project|linkify }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Owner' %}">
+                    {{ object.project.owner }}
+                </c-card.fields.item>
+            </c-card.fields>
+        </c-slot>
+    </c-layout.panels>
+{% endblock %}

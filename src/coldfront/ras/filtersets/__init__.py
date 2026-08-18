@@ -4,12 +4,14 @@
 
 from .allocations import AllocationFilterSet
 from .change_requests import AllocationChangeRequestFilterSet
+from .invites import ProjectInviteFilterSet
 from .projects import ProjectFilterSet, ProjectUserFilterSet
 from .resources import ResourceFilterSet, ResourceTypeFilterSet
 
 __all__ = (
     "AllocationChangeRequestFilterSet",
     "ProjectFilterSet",
+    "ProjectInviteFilterSet",
     "ProjectUserFilterSet",
     "AllocationFilterSet",
     "ResourceFilterSet",

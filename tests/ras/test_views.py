@@ -4,17 +4,19 @@
 
 from datetime import timedelta
 
+from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
 from coldfront.core.choices import CommentKindChoices
-from coldfront.core.models import CommentEntry
+from coldfront.core.models import CommentEntry, ObjectType
 from coldfront.ras.choices import AllocationChangeRequestStatusChoices, AllocationStatusChoices, ResourceStatusChoices
 from coldfront.ras.models import (
     Allocation,
     Project,
+    ProjectInvite,
     ProjectUser,
     Resource,
     ResourceType,
@@ -23,7 +25,7 @@ from coldfront.ras.models.change_requests import (
     AllocationChangeRequest,
 )
 from coldfront.tenancy.models import Tenant
-from coldfront.users.models import User
+from coldfront.users.models import ObjectPermission, User
 from coldfront.utils.testing import ViewTestCases, create_tags
 from coldfront.utils.testing.utils import disable_warnings
 from coldfront.utils.testing.views import ModelViewTestCase
@@ -1239,3 +1241,174 @@ class AllocationExtensionRequestableFieldsTest(TestCase):
         with override_settings(ALLOCATION_EXTENSION_REQUESTABLE_FIELDS={key: ("nonexistent_field",)}):
             with self.assertRaises(ImproperlyConfigured):
                 StorageQuota.requestable_fields()
+
+
+class ProjectInviteTestCase(
+    ViewTestCases.GetObjectViewTestCase,
+    ViewTestCases.GetObjectChangelogViewTestCase,
+    ViewTestCases.CreateObjectViewTestCase,
+    ViewTestCases.ListObjectsViewTestCase,
+    ViewTestCases.BulkImportObjectsViewTestCase,
+    ViewTestCases.BulkDeleteObjectsViewTestCase,
+):
+    """View tests for ProjectInvite (add-only; no edit or bulk-edit views)."""
+
+    model = ProjectInvite
+
+    @classmethod
+    def setUpTestData(cls):
+        users = (
+            User(username="User1"),
+            User(username="User2"),
+            User(username="User3"),
+        )
+        for user in users:
+            user.save()
+
+        projects = (
+            Project(name="Project 1", owner=users[0]),
+            Project(name="Project 2", owner=users[1]),
+            Project(name="Project 3", owner=users[2]),
+        )
+        for project in projects:
+            project.save()
+
+        invites = (
+            ProjectInvite(email="invite1@example.com", project=projects[0], invited_by=users[0]),
+            ProjectInvite(email="invite2@example.com", project=projects[0], invited_by=users[1]),
+            ProjectInvite(email="invite3@example.com", project=projects[0], invited_by=users[2]),
+        )
+        for invite in invites:
+            invite.save()
+
+        cls.form_data = {
+            "email": "invite@example.com",
+            "project": projects[1].pk,
+        }
+
+        cls.csv_data = (
+            "email,project",
+            "invite1@example.com,Project 3",
+            "invite2@example.com,Project 3",
+            "invite3@example.com,Project 3",
+        )
+
+    def test_bulk_update_objects_with_permission(self):
+        """Bulk import only supports adding not updating so we skip this test"""
+        pass
+
+
+class ProjectInviteAcceptViewTest(ModelViewTestCase):
+    """Tests for the public invite-acceptance view."""
+
+    model = ProjectInvite
+
+    def setUp(self):
+        super().setUp()
+        self.project = Project.objects.create(name="Test Project", owner=self.user)
+        self.invite = ProjectInvite(
+            email="invite@example.com",
+            project=self.project,
+            invited_by=self.user,
+        )
+        self.invite.save()
+        self.raw_token = self.invite.get_raw_token()
+
+    def test_accept_anonymous_redirects_to_login(self):
+        self.client.logout()
+        response = self.client.get(reverse("ras:accept_invite", kwargs={"code": self.raw_token}))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("login", response.url)
+
+    def test_get_shows_confirmation_page_but_does_not_accept(self):
+        # GET must never accept the invite (phishing protection); it only shows
+        # a confirmation page with an "Accept Invite" button.
+        response = self.client.get(reverse("ras:accept_invite", kwargs={"code": self.raw_token}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Accept Invite")
+        self.invite.refresh_from_db()
+        self.assertIsNone(self.invite.accepted_at)
+        self.assertFalse(ProjectUser.objects.filter(project=self.project, user=self.user).exists())
+
+    def test_post_accepts_invite(self):
+        url = reverse("ras:accept_invite", kwargs={"code": self.raw_token})
+        self.client.post(url, {"code": self.raw_token})
+        self.assertTrue(ProjectUser.objects.filter(project=self.project, user=self.user).exists())
+        self.invite.refresh_from_db()
+        self.assertIsNotNone(self.invite.accepted_at)
+
+    def test_post_is_noop_for_existing_member(self):
+        ProjectUser.objects.create(project=self.project, user=self.user)
+        url = reverse("ras:accept_invite", kwargs={"code": self.raw_token})
+        self.client.post(url, {"code": self.raw_token})
+        self.assertEqual(
+            ProjectUser.objects.filter(project=self.project, user=self.user).count(),
+            1,
+        )
+        self.invite.refresh_from_db()
+        self.assertIsNotNone(self.invite.accepted_at)
+
+    def test_accept_invalid_code_returns_404(self):
+        self.client.get(reverse("ras:accept_invite", kwargs={"code": "not-a-real-code"}))
+
+    def test_accept_expired_invite_is_rejected(self):
+        # Expired invites return 404 on both GET and POST.
+        self.invite.created = timezone.now() - timedelta(seconds=settings.INVITE_CODE_EXPIRE_SECONDS + 1)
+        self.invite.save()
+        url = reverse("ras:accept_invite", kwargs={"code": self.raw_token})
+        self.client.get(url)
+        self.client.post(url, {"code": self.raw_token})
+
+    def test_accept_already_used_invite_is_rejected(self):
+        # Already-accepted invites return 404 on both GET and POST.
+        self.invite.accept(self.user)
+        url = reverse("ras:accept_invite", kwargs={"code": self.raw_token})
+        self.client.get(url)
+        self.client.post(url, {"code": self.raw_token})
+
+
+class ProjectInviteTabViewTest(ModelViewTestCase):
+    """Tests for the project "Invites" tab."""
+
+    model = ProjectInvite
+
+    def setUp(self):
+        super().setUp()
+        self.project = Project.objects.create(name="Test Project", owner=self.user)
+        # Grant view permission on Project and ProjectInvite so the project
+        # detail page (and its Invites tab) is accessible.
+        for model, action in ((Project, "view"), (ProjectInvite, "view")):
+            obj_perm = ObjectPermission(name=f"Test {action} permission", actions=[action])
+            obj_perm.save()
+            obj_perm.users.add(self.user)
+            obj_perm.object_types.add(ObjectType.objects.get_for_model(model))
+
+    def test_tab_hidden_without_pending_invites(self):
+        response = self.client.get(reverse("ras:project", kwargs={"pk": self.project.pk}))
+        self.assertNotContains(response, "/ras/projects/1/invites/")
+
+    def test_tab_shown_with_pending_invites(self):
+        ProjectInvite.objects.create(
+            email="invite@example.com",
+            project=self.project,
+            invited_by=self.user,
+        )
+        response = self.client.get(reverse("ras:project", kwargs={"pk": self.project.pk}))
+        self.assertContains(response, "/ras/projects/1/invites/")
+
+    def test_tab_lists_only_pending_invites(self):
+        ProjectInvite.objects.create(
+            email="expired@example.com",
+            project=self.project,
+            invited_by=self.user,
+        )
+        pending = ProjectInvite.objects.create(
+            email="pending@example.com",
+            project=self.project,
+            invited_by=self.user,
+        )
+        # Accept the first invite so it disappears from the pending list.
+        pending.accept(self.user)
+        url = reverse("ras:project_invites", kwargs={"pk": self.project.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)

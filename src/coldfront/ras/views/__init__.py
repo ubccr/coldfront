@@ -28,6 +28,15 @@ from .change_requests import (
     AllocationChangeRequestView,
 )
 from .generic import AllocatableResourceRequestView
+from .invites import (
+    AcceptInviteView,
+    ProjectInviteBulkDeleteView,
+    ProjectInviteBulkImportView,
+    ProjectInviteEditView,
+    ProjectInviteListView,
+    ProjectInviteTabView,
+    ProjectInviteView,
+)
 from .projects import (
     ProjectAllocationTabView,
     ProjectBulkDeleteView,
@@ -65,6 +74,7 @@ from .resources import (
 
 __all__ = (
     "AllocatableResourceRequestView",
+    "AcceptInviteView",
     "AllocationActivateView",
     "AllocationApproveView",
     "AllocationBulkDeleteView",
@@ -86,6 +96,12 @@ __all__ = (
     "AllocationRequestView",
     "AllocationRevokeView",
     "AllocationView",
+    "ProjectInviteBulkDeleteView",
+    "ProjectInviteBulkImportView",
+    "ProjectInviteEditView",
+    "ProjectInviteListView",
+    "ProjectInviteTabView",
+    "ProjectInviteView",
     "ProjectAllocationTabView",
     "ProjectBulkDeleteView",
     "ProjectBulkEditView",

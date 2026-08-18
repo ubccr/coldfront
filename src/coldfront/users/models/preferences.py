@@ -18,7 +18,7 @@ class UserConfig(models.Model):
     """
 
     user = models.OneToOneField(
-        to="users.User",
+        to=settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="config",
     )

@@ -15,8 +15,7 @@ from coldfront.config.env import ENV
 # ------------------------------------------------------------------------------
 CENTER_NAME = ENV.str("CENTER_NAME", default="HPC Center")
 CENTER_HELP_URL = ENV.str("CENTER_HELP_URL", default="")
-CENTER_PROJECT_RENEWAL_HELP_URL = ENV.str("CENTER_PROJECT_RENEWAL_HELP_URL", default="")
-CENTER_BASE_URL = ENV.str("CENTER_BASE_URL", default="")
+SUPPORT_EMAIL = ENV.str("SUPPORT_EMAIL", default="")
 
 # Number of days to retain ObjectChange records before PruneChangeLogJob deletes
 # them.  Set to 0 (or a negative value) to never delete changelog entries.
@@ -29,6 +28,18 @@ JOB_COMPLETED_RETENTION = ENV.int("JOB_COMPLETED_RETENTION", default=90)
 # Number of days to retain failed/errored Job records before prune_tasks
 # deletes them.  Defaults to JOB_COMPLETED_RETENTION when not set.
 JOB_FAILED_RETENTION = ENV.int("JOB_FAILED_RETENTION", default=90)
+
+# Number of seconds that a ProjectInvite code remains valid. Invite expiration
+# is computed from an invite's `created` timestamp plus this setting, so changing
+# it re-evaluates every outstanding invite immediately. Set to 0 (or negative)
+# to expire all outstanding invites instantly.
+INVITE_CODE_EXPIRE_SECONDS = ENV.int("INVITE_CODE_EXPIRE_SECONDS", default=86400)
+
+# Number of days to retain accepted ProjectInvite records before
+# PruneProjectInviteJob deletes them. Expired invites are always deleted
+# regardless of this setting. Set to 0 (or a negative value) to keep accepted
+# invites indefinitely.
+ACCEPTED_INVITE_RETENTION = ENV.int("ACCEPTED_INVITE_RETENTION", default=90)
 
 
 EXEMPT_VIEW_PERMISSIONS = []

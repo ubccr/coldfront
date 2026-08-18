@@ -127,11 +127,10 @@ These settings are defined in `src/coldfront/config/core.py`.
 |---|---|---|
 | `CENTER_NAME` | `HPC Center` | Name of your center |
 | `CENTER_HELP_URL` | `""` | URL for help documentation |
-| `CENTER_PROJECT_RENEWAL_HELP_URL` | `""` | URL for project renewal help |
-| `CENTER_BASE_URL` | `""` | Base URL for the center |
 | `CHANGELOG_RETENTION` | `90` | Days to retain change log records. Set to 0 to keep forever |
 | `JOB_COMPLETED_RETENTION` | `90` | Days to retain completed job records |
 | `JOB_FAILED_RETENTION` | `90` | Days to retain failed job records |
+| `ACCEPTED_INVITE_RETENTION` | `90` | Days to retain accepted project invites. Expired invites are always deleted |
 | `PAGINATE_COUNT` | `50` | Default page size for list views |
 | `MAX_PAGE_SIZE` | `1000` | Maximum page size for API |
 | `ALLOCATION_EXTENSION_REQUESTABLE_FIELDS` | `{}` | Fields users can request for allocation extensions |
@@ -140,6 +139,7 @@ These settings are defined in `src/coldfront/config/core.py`.
 | `SYSTEM_NOTIFICATION_USERS` | `[]` | Additional users for system notifications |
 | `SYSTEM_NOTIFICATION_GROUPS` | `[]` | Additional groups for system notifications |
 | `DEFAULT_USER_PREFERENCES` | `{}` | Default preferences for new users |
+| `INVITE_CODE_EXPIRE_SECONDS` | `86400` |  Number of seconds that a ProjectInvite code remains valid |
 
 ### Default Permissions
 

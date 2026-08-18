@@ -29,6 +29,11 @@ from .filterset_forms import (
     ResourceFilterSetForm,
     ResourceTypeFilterSetForm,
 )
+from .invites import (
+    ProjectInviteFilterSetForm,
+    ProjectInviteForm,
+    ProjectInviteImportForm,
+)
 from .projects import ProjectForm, ProjectImportForm, ProjectUserForm, ProjectUserImportForm
 from .resources import ResourceForm, ResourceImportForm, ResourceTypeForm, ResourceTypeImportForm
 
@@ -48,6 +53,9 @@ __all__ = (
     "ProjectForm",
     "ProjectImportForm",
     "ProjectFilterSetForm",
+    "ProjectInviteForm",
+    "ProjectInviteImportForm",
+    "ProjectInviteFilterSetForm",
     "ProjectUserBulkEditForm",
     "ProjectUserForm",
     "ProjectUserImportForm",

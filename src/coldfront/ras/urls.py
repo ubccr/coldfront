@@ -18,6 +18,10 @@ urlpatterns = [
     path("projects/<int:pk>/", include(get_model_urls("ras", "project"))),
     path("project-users/", include(get_model_urls("ras", "projectuser", detail=False))),
     path("project-users/<int:pk>/", include(get_model_urls("ras", "projectuser"))),
+    path("project-invites/", include(get_model_urls("ras", "projectinvite", detail=False))),
+    path("project-invites/<int:pk>/", include(get_model_urls("ras", "projectinvite"))),
+    # Public invite acceptance (no login required; access is the secret code)
+    path("invite/<str:code>/", views.AcceptInviteView.as_view(), name="accept_invite"),
     path("allocations/", include(get_model_urls("ras", "allocation", detail=False))),
     path("allocations/<int:pk>/", include(get_model_urls("ras", "allocation"))),
     path("change-requests/", include(get_model_urls("ras", "allocationchangerequest", detail=False))),

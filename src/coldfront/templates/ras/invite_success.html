@@ -1,0 +1,10 @@
+{% extends 'generic/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Invite Accepted" %}{% endblock %}
+
+{% block content %}
+    <div class="alert alert-success">
+        {% blocktrans %}You have joined the project <strong>{{ invite.project.name }}</strong>.{% endblocktrans %}
+    </div>
+{% endblock %}
