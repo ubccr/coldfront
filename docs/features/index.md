@@ -17,6 +17,7 @@ This section describes each feature and how to use it.
 | [Generic Resources](resources.md) | Define and manage allocatable resources |
 | [Slurm Integration](slurm.md) | Integrate with Slurm accounting |
 | [Storage](storage.md) | Manage storage quotas and paths |
+| [Billing & Invoicing](billing.md) | Charge allocations and issue invoices |
 | [Notifications](notifications.md) | Receive alerts about allocation changes |
 | [Change Logging](change-logging.md) | Track all object changes |
 | [Background Jobs](background-jobs.md) | Run scheduled tasks |

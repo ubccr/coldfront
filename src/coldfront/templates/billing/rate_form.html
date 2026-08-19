@@ -1,0 +1,9 @@
+{% extends 'generic/object_edit.html' %}
+{% load i18n %}
+
+{% block form %}
+    {% if billing_sources_warning %}
+        <div class="alert alert-warning">{{ billing_sources_warning }}</div>
+    {% endif %}
+    <c-form :form="form" />
+{% endblock form %}

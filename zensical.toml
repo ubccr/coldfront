@@ -47,6 +47,7 @@ nav = [
   {"Features" = [
      "features/index.md",
      "features/allocations.md",
+     "features/billing.md",
      "features/background-jobs.md",
      "features/change-logging.md",
      "features/customization.md",
@@ -72,12 +73,14 @@ nav = [
   {"Plugins" = [
      "plugins/index.md",
      "plugins/development.md",
+     "plugins/billing.md",
   ]},
   {"Admin Guide" = [
      "admin-guide/index.md",
      "admin-guide/permissions.md",
      "admin-guide/allocations.md",
      "admin-guide/slurm.md",
+     "admin-guide/billing.md",
   ]},
   {"User Guide" = [
      "user-guide/index.md",

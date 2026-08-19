@@ -461,6 +461,13 @@ class SlurmAccount(PrimaryModel):
         ),
     )
 
+    service_units = models.PositiveBigIntegerField(
+        blank=True,
+        null=True,
+        verbose_name=_("service units"),
+        help_text=_("Service units (SU) granted to this account for billing."),
+    )
+
     qos_add = models.ManyToManyField(
         to="slurm.SlurmQOS",
         blank=True,
@@ -486,6 +493,7 @@ class SlurmAccount(PrimaryModel):
     clone_fields = (
         "cluster",
         "fairshare",
+        "service_units",
         "qos_add",
         "qos_remove",
     )

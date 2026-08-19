@@ -107,8 +107,8 @@ class MyModelStatusChoices(ChoiceSet):
     STATUS_PLANNED = "planned"
 
     CHOICES = [
-        (STATUS_ACTIVE, _("Active"), "green"),
-        (STATUS_PLANNED, _("Planned"), "cyan"),
+        (STATUS_ACTIVE, _("Active"), "success"),
+        (STATUS_PLANNED, _("Planned"), "danger"),
     ]
 ```
 

@@ -20,6 +20,10 @@ class BytesField(forms.CharField):
     def prepare_value(self, value):
         if value in self.empty_values:
             return ""
+        # Bound-form rendering may pass the raw submitted string (e.g. after a
+        # validation error); pass it through unchanged instead of re-humanizing.
+        if isinstance(value, str):
+            return value
         return humanize.naturalsize(value)
 
     def clean(self, value):

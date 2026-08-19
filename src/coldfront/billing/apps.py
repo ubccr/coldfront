@@ -6,10 +6,10 @@ from django.apps import AppConfig
 from django.utils.translation import gettext_lazy as _
 
 
-class SlurmConfig(AppConfig):
-    name = "coldfront.slurm"
-    label = "slurm"
-    verbose_name = _("Slurm")
+class BillingConfig(AppConfig):
+    name = "coldfront.billing"
+    label = "billing"
+    verbose_name = _("Billing")
 
     def ready(self):
         from coldfront.models.features import register_models
@@ -17,7 +17,5 @@ class SlurmConfig(AppConfig):
         register_models(*self.get_models())
 
         from . import (
-            billing,  # noqa: F401
-            listeners,  # noqa: F401
             views,  # noqa: F401
         )

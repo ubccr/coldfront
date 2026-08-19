@@ -52,6 +52,7 @@ dependencies = [
     "tablib>=3.9.0",
     "habanero>=2.9.2",
     "django-money>=3.6.1",
+    "fpdf2>=2.8.8",
 ]
 
 [project.urls]

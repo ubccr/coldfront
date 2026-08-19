@@ -107,6 +107,7 @@ INSTALLED_APPS += [
     "coldfront.slurm",
     "coldfront.storage",
     "coldfront.ris",
+    "coldfront.billing",
 ]
 
 # ------------------------------------------------------------------------------

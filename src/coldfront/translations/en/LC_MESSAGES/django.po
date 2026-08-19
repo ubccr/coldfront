@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-14 20:38-0400\n"
+"POT-Creation-Date: 2026-08-21 10:23-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -25,9 +25,9 @@ msgstr ""
 #: src/coldfront/core/filtersets.py:368
 #: src/coldfront/forms/filterset_forms.py:28
 #: src/coldfront/forms/filterset_forms.py:67 src/coldfront/forms/forms.py:53
-#: src/coldfront/ris/forms/filterset_forms.py:54
-#: src/coldfront/ris/forms/filterset_forms.py:75
-#: src/coldfront/templates/cotton/form/filters.html:32
+#: src/coldfront/ris/forms/filterset_forms.py:86
+#: src/coldfront/ris/forms/filterset_forms.py:108
+#: src/coldfront/templates/cotton/form/filters.html:35
 #: src/coldfront/templates/generic/object_selector.html:41
 #: src/coldfront/users/filtersets.py:30 src/coldfront/users/filtersets.py:56
 #: src/coldfront/users/filtersets.py:130 src/coldfront/users/filtersets.py:151
@@ -35,8 +35,8 @@ msgstr ""
 msgid "Search"
 msgstr ""
 
-#: src/coldfront/account/models.py:51 src/coldfront/slurm/models.py:735
-#: src/coldfront/users/models/users.py:111
+#: src/coldfront/account/models.py:51 src/coldfront/slurm/models.py:743
+#: src/coldfront/users/models/users.py:115
 msgid "user"
 msgstr ""
 
@@ -114,10 +114,16 @@ msgid "Read"
 msgstr ""
 
 #: src/coldfront/account/tables.py:41
+#: src/coldfront/billing/forms/bulk_edit.py:303
+#: src/coldfront/billing/forms/filterset_forms.py:168
+#: src/coldfront/billing/forms/model_forms.py:725
+#: src/coldfront/billing/forms/model_forms.py:763
+#: src/coldfront/billing/pdf.py:69 src/coldfront/billing/tables.py:224
 #: src/coldfront/core/forms/bulk_import.py:65
 #: src/coldfront/core/tables/tables.py:63
 #: src/coldfront/core/tables/tables.py:81 src/coldfront/tables/tables.py:298
 #: src/coldfront/templates/account/notification.html:32
+#: src/coldfront/templates/billing/discount.html:16
 #: src/coldfront/templates/core/customfield.html:12
 msgid "Type"
 msgstr ""
@@ -225,6 +231,1016 @@ msgid ""
 "be used on views which define a base queryset"
 msgstr ""
 
+#: src/coldfront/billing/apps.py:12 src/coldfront/navigation/menu.py:148
+msgid "Billing"
+msgstr ""
+
+#: src/coldfront/billing/choices.py:19
+msgid "Draft"
+msgstr ""
+
+#: src/coldfront/billing/choices.py:20
+msgid "Invoiced"
+msgstr ""
+
+#: src/coldfront/billing/choices.py:21
+msgid "Paid"
+msgstr ""
+
+#: src/coldfront/billing/choices.py:22
+#: src/coldfront/billing/flows/invoices.py:111
+#: src/coldfront/billing/object_actions.py:58
+msgid "Void"
+msgstr ""
+
+#: src/coldfront/billing/choices.py:35
+msgid "Charge"
+msgstr ""
+
+#: src/coldfront/billing/choices.py:36 src/coldfront/billing/generation.py:207
+#: src/coldfront/billing/generation.py:228
+msgid "Free allowance"
+msgstr ""
+
+#: src/coldfront/billing/choices.py:37
+#: src/coldfront/billing/forms/bulk_edit.py:322
+#: src/coldfront/billing/forms/filterset_forms.py:176
+#: src/coldfront/billing/forms/model_forms.py:737
+msgid "Discount"
+msgstr ""
+
+#: src/coldfront/billing/choices.py:38
+msgid "Credit"
+msgstr ""
+
+#: src/coldfront/billing/choices.py:50
+msgid "One time"
+msgstr ""
+
+#: src/coldfront/billing/choices.py:51 src/coldfront/storage/choices.py:36
+#: src/coldfront/storage/forms/bulk_edit.py:268
+msgid "Monthly"
+msgstr ""
+
+#: src/coldfront/billing/choices.py:52
+msgid "Yearly"
+msgstr ""
+
+#: src/coldfront/billing/choices.py:64
+msgid "Percentage"
+msgstr ""
+
+#: src/coldfront/billing/choices.py:65
+msgid "Flat"
+msgstr ""
+
+#: src/coldfront/billing/choices.py:66
+msgid "No cost"
+msgstr ""
+
+#: src/coldfront/billing/choices.py:79
+msgid "Wire transfer"
+msgstr ""
+
+#: src/coldfront/billing/choices.py:80
+msgid "Check"
+msgstr ""
+
+#: src/coldfront/billing/choices.py:81
+msgid "Purchase order"
+msgstr ""
+
+#: src/coldfront/billing/choices.py:82
+msgid "Internal transfer"
+msgstr ""
+
+#: src/coldfront/billing/choices.py:103
+msgid "Bytes"
+msgstr ""
+
+#: src/coldfront/billing/choices.py:104
+msgid "Service Units"
+msgstr ""
+
+#: src/coldfront/billing/choices.py:105
+msgid "Core Hours"
+msgstr ""
+
+#: src/coldfront/billing/choices.py:106
+msgid "Flat / per-item"
+msgstr ""
+
+#: src/coldfront/billing/filtersets.py:32
+#: src/coldfront/billing/filtersets.py:126
+#: src/coldfront/billing/filtersets.py:171
+msgid "Owner (ID)"
+msgstr ""
+
+#: src/coldfront/billing/filtersets.py:39
+#: src/coldfront/billing/filtersets.py:133
+#: src/coldfront/billing/filtersets.py:178
+msgid "Owner (username)"
+msgstr ""
+
+#: src/coldfront/billing/filtersets.py:44
+msgid "Projects (ID)"
+msgstr ""
+
+#: src/coldfront/billing/filtersets.py:74
+msgid "Invoice (ID)"
+msgstr ""
+
+#: src/coldfront/billing/filtersets.py:81
+#: src/coldfront/billing/filtersets.py:102
+#: src/coldfront/billing/filtersets.py:149
+#: src/coldfront/billing/forms/bulk_edit.py:154
+#: src/coldfront/billing/forms/bulk_edit.py:203
+#: src/coldfront/billing/forms/bulk_edit.py:260
+#: src/coldfront/billing/forms/filterset_forms.py:80
+#: src/coldfront/billing/forms/filterset_forms.py:98
+#: src/coldfront/billing/forms/filterset_forms.py:138
+#: src/coldfront/billing/forms/model_forms.py:251
+#: src/coldfront/billing/forms/model_forms.py:330
+#: src/coldfront/billing/forms/model_forms.py:439
+#: src/coldfront/billing/forms/model_forms.py:520
+#: src/coldfront/billing/forms/model_forms.py:593
+#: src/coldfront/billing/forms/model_forms.py:657
+msgid "Unit label"
+msgstr ""
+
+#: src/coldfront/billing/filtersets.py:138
+#: src/coldfront/billing/filtersets.py:183
+msgid "Project (ID)"
+msgstr ""
+
+#: src/coldfront/billing/filtersets.py:145
+#: src/coldfront/billing/filtersets.py:190
+msgid "Project (name)"
+msgstr ""
+
+#: src/coldfront/billing/flows/invoices.py:61
+#, python-format
+msgid "Invoice '%(slug)s' is now %(status)s."
+msgstr ""
+
+#: src/coldfront/billing/flows/invoices.py:81
+#: src/coldfront/billing/object_actions.py:16
+msgid "Generate"
+msgstr ""
+
+#: src/coldfront/billing/flows/invoices.py:90
+#: src/coldfront/billing/forms/bulk_edit.py:109
+#: src/coldfront/billing/forms/bulk_edit.py:134
+#: src/coldfront/billing/forms/filterset_forms.py:58
+#: src/coldfront/billing/forms/filterset_forms.py:72
+#: src/coldfront/billing/forms/model_forms.py:130
+#: src/coldfront/billing/forms/model_forms.py:223
+#: src/coldfront/billing/forms/model_forms.py:312
+#: src/coldfront/billing/object_actions.py:30
+#: src/coldfront/billing/tables.py:39 src/coldfront/billing/tables.py:93
+#: src/coldfront/templates/billing/invoice.html:16
+#: src/coldfront/templates/billing/invoicelineitem.html:9
+msgid "Invoice"
+msgstr ""
+
+#: src/coldfront/billing/flows/invoices.py:99
+#: src/coldfront/billing/object_actions.py:44
+msgid "Pay"
+msgstr ""
+
+#: src/coldfront/billing/forms/bulk_edit.py:44
+#: src/coldfront/billing/forms/bulk_edit.py:250
+#: src/coldfront/billing/forms/bulk_edit.py:293
+#: src/coldfront/billing/forms/filterset_forms.py:42
+#: src/coldfront/billing/forms/filterset_forms.py:130
+#: src/coldfront/billing/forms/filterset_forms.py:160
+#: src/coldfront/billing/forms/model_forms.py:69
+#: src/coldfront/billing/forms/model_forms.py:150
+#: src/coldfront/billing/forms/model_forms.py:572
+#: src/coldfront/billing/forms/model_forms.py:645
+#: src/coldfront/billing/forms/model_forms.py:704
+#: src/coldfront/billing/forms/model_forms.py:752
+#: src/coldfront/billing/forms/model_forms.py:816
+#: src/coldfront/billing/tables.py:43 src/coldfront/billing/tables.py:171
+#: src/coldfront/billing/tables.py:217 src/coldfront/core/tables/tables.py:36
+#: src/coldfront/core/tables/tables.py:205
+#: src/coldfront/ras/forms/allocations.py:249
+#: src/coldfront/ras/forms/allocations.py:301
+#: src/coldfront/ras/forms/allocations.py:412
+#: src/coldfront/ras/forms/allocations.py:502
+#: src/coldfront/ras/forms/bulk_edit.py:109
+#: src/coldfront/ras/forms/bulk_edit.py:176
+#: src/coldfront/ras/forms/filterset_forms.py:88
+#: src/coldfront/ras/forms/filterset_forms.py:133
+#: src/coldfront/ras/forms/projects.py:96
+#: src/coldfront/ras/tables/allocations.py:61
+#: src/coldfront/ras/tables/projects.py:20
+#: src/coldfront/templates/billing/discount.html:8
+#: src/coldfront/templates/billing/freeallowance.html:8
+#: src/coldfront/templates/billing/invoice.html:20
+#: src/coldfront/templates/ras/allocation.html:43
+#: src/coldfront/templates/ras/allocationuser.html:43
+#: src/coldfront/templates/ras/project.html:22
+#: src/coldfront/templates/ras/projectinvite.html:38
+msgid "Owner"
+msgstr ""
+
+#: src/coldfront/billing/forms/bulk_edit.py:49
+#: src/coldfront/billing/forms/filterset_forms.py:47
+#: src/coldfront/billing/forms/model_forms.py:81
+#: src/coldfront/billing/forms/model_forms.py:157
+#: src/coldfront/billing/tables.py:46 src/coldfront/navigation/menu.py:37
+#: src/coldfront/navigation/menu.py:39
+#: src/coldfront/ras/filtersets/allocations.py:23
+#: src/coldfront/ris/forms/bulk_edit.py:47
+#: src/coldfront/ris/forms/bulk_edit.py:115
+#: src/coldfront/ris/forms/bulk_import.py:26
+#: src/coldfront/ris/forms/bulk_import.py:64
+#: src/coldfront/ris/forms/model_forms.py:21
+#: src/coldfront/ris/forms/model_forms.py:36 src/coldfront/ris/tables.py:38
+#: src/coldfront/ris/tables.py:177
+#: src/coldfront/templates/billing/invoice.html:31
+#: src/coldfront/templates/ris/funding.html:51
+#: src/coldfront/templates/ris/publication.html:47
+msgid "Projects"
+msgstr ""
+
+#: src/coldfront/billing/forms/bulk_edit.py:50
+msgid "Leave empty to keep current projects."
+msgstr ""
+
+#: src/coldfront/billing/forms/bulk_edit.py:55
+#: src/coldfront/billing/forms/filterset_forms.py:50
+#: src/coldfront/billing/forms/model_forms.py:162
+#: src/coldfront/billing/tables.py:50 src/coldfront/core/filtersets.py:346
+#: src/coldfront/core/forms/filtersets.py:83
+#: src/coldfront/core/tables/tables.py:256
+#: src/coldfront/ras/filtersets/invites.py:27
+#: src/coldfront/ras/forms/bulk_edit.py:62
+#: src/coldfront/ras/forms/bulk_edit.py:181
+#: src/coldfront/ras/forms/filterset_forms.py:57
+#: src/coldfront/ras/forms/filterset_forms.py:127
+#: src/coldfront/ras/forms/filterset_forms.py:173
+#: src/coldfront/ras/forms/invites.py:88
+#: src/coldfront/ras/tables/allocations.py:80
+#: src/coldfront/ras/tables/change_requests.py:22
+#: src/coldfront/ras/tables/invites.py:55
+#: src/coldfront/ras/tables/resources.py:66
+#: src/coldfront/ris/forms/bulk_edit.py:98
+#: src/coldfront/ris/forms/filterset_forms.py:39
+#: src/coldfront/ris/forms/filterset_forms.py:104
+#: src/coldfront/ris/tables.py:119 src/coldfront/ris/tables.py:158
+#: src/coldfront/templates/billing/invoice.html:24
+#: src/coldfront/templates/core/job.html:12
+#: src/coldfront/templates/home.html:68 src/coldfront/templates/home.html:109
+#: src/coldfront/templates/home.html:214 src/coldfront/templates/home.html:291
+#: src/coldfront/templates/home/_pi_pending.html:13
+#: src/coldfront/templates/ras/projectinvite.html:12
+#: src/coldfront/templates/ras/resource.html:25
+#: src/coldfront/templates/ris/funding.html:43
+#: src/coldfront/users/forms/bulk_edit.py:68
+#: src/coldfront/users/forms/filterset_forms.py:67
+#: src/coldfront/users/forms/model_forms.py:71
+msgid "Status"
+msgstr ""
+
+#: src/coldfront/billing/forms/bulk_edit.py:60
+#: src/coldfront/billing/forms/model_forms.py:167
+#: src/coldfront/billing/forms/model_forms.py:872
+#: src/coldfront/billing/pdf.py:115
+msgid "Payment method"
+msgstr ""
+
+#: src/coldfront/billing/forms/bulk_edit.py:66
+#: src/coldfront/billing/forms/model_forms.py:173
+#: src/coldfront/billing/forms/model_forms.py:869
+#: src/coldfront/billing/pdf.py:113 src/coldfront/billing/tables.py:55
+msgid "Payment amount"
+msgstr ""
+
+#: src/coldfront/billing/forms/bulk_edit.py:72
+#: src/coldfront/billing/forms/model_forms.py:178
+#: src/coldfront/billing/pdf.py:98 src/coldfront/billing/tables.py:56
+#: src/coldfront/templates/billing/invoice.html:61
+msgid "Subtotal"
+msgstr ""
+
+#: src/coldfront/billing/forms/bulk_edit.py:78
+#: src/coldfront/billing/forms/model_forms.py:183
+#: src/coldfront/billing/pdf.py:100 src/coldfront/billing/tables.py:57
+msgid "Allowance total"
+msgstr ""
+
+#: src/coldfront/billing/forms/bulk_edit.py:84
+#: src/coldfront/billing/forms/model_forms.py:188
+#: src/coldfront/billing/pdf.py:102 src/coldfront/billing/tables.py:58
+msgid "Discount total"
+msgstr ""
+
+#: src/coldfront/billing/forms/bulk_edit.py:90
+#: src/coldfront/billing/forms/model_forms.py:193
+#: src/coldfront/billing/pdf.py:105 src/coldfront/billing/tables.py:59
+msgid "Grand total"
+msgstr ""
+
+#: src/coldfront/billing/forms/bulk_edit.py:116
+#: src/coldfront/templates/billing/invoice.html:80
+msgid "Payment"
+msgstr ""
+
+#: src/coldfront/billing/forms/bulk_edit.py:121 src/coldfront/billing/pdf.py:94
+#: src/coldfront/templates/billing/invoice.html:58
+msgid "Totals"
+msgstr ""
+
+#: src/coldfront/billing/forms/bulk_edit.py:139
+#: src/coldfront/billing/forms/filterset_forms.py:75
+#: src/coldfront/billing/forms/model_forms.py:227
+#: src/coldfront/billing/tables.py:97
+msgid "Line type"
+msgstr ""
+
+#: src/coldfront/billing/forms/bulk_edit.py:144 src/coldfront/billing/pdf.py:68
+#: src/coldfront/core/forms/bulk_edit.py:37
+#: src/coldfront/core/forms/bulk_edit.py:67
+#: src/coldfront/core/forms/bulk_edit.py:157
+#: src/coldfront/core/forms/bulk_edit.py:187
+#: src/coldfront/core/forms/bulk_edit.py:228
+#: src/coldfront/core/tables/tables.py:178 src/coldfront/forms/bulk_edit.py:111
+#: src/coldfront/forms/bulk_edit.py:123 src/coldfront/forms/bulk_edit.py:155
+#: src/coldfront/templates/billing/discount.html:24
+#: src/coldfront/templates/billing/freeallowance.html:44
+#: src/coldfront/templates/billing/invoice.html:39
+#: src/coldfront/templates/billing/invoicelineitem.html:21
+#: src/coldfront/templates/billing/rate.html:39
+#: src/coldfront/templates/core/customfield.html:27
+#: src/coldfront/templates/core/customfieldchoiceset.html:12
+#: src/coldfront/templates/core/plugin.html:69
+#: src/coldfront/templates/core/savedfilter.html:16
+#: src/coldfront/templates/core/tableconfig.html:12
+#: src/coldfront/templates/core/tag.html:8
+#: src/coldfront/templates/generic/bulk_import.html:133
+#: src/coldfront/templates/ras/allocation.html:64
+#: src/coldfront/templates/ras/allocationtype.html:8
+#: src/coldfront/templates/ras/allocationuser.html:39
+#: src/coldfront/templates/ras/project.html:26
+#: src/coldfront/templates/ras/resource.html:21
+#: src/coldfront/templates/ras/resourcetype.html:16
+#: src/coldfront/templates/slurm/slurmaccount.html:16
+#: src/coldfront/templates/slurm/slurmcluster.html:13
+#: src/coldfront/templates/slurm/slurmpartition.html:49
+#: src/coldfront/templates/slurm/slurmqos.html:12
+#: src/coldfront/templates/storage/storagecluster.html:12
+#: src/coldfront/templates/storage/storageresource.html:17
+#: src/coldfront/templates/tenancy/tenant.html:21
+#: src/coldfront/templates/tenancy/tenantgroup.html:29
+#: src/coldfront/templates/users/group.html:16
+#: src/coldfront/templates/users/objectpermission.html:16
+#: src/coldfront/templates/users/role.html:16
+#: src/coldfront/templates/users/token.html:40
+#: src/coldfront/users/forms/bulk_edit.py:90
+#: src/coldfront/users/forms/bulk_edit.py:119
+#: src/coldfront/users/forms/bulk_edit.py:148
+#: src/coldfront/users/forms/bulk_edit.py:183
+#: src/coldfront/users/forms/filterset_forms.py:23
+#: src/coldfront/users/forms/filterset_forms.py:80
+msgid "Description"
+msgstr ""
+
+#: src/coldfront/billing/forms/bulk_edit.py:149
+#: src/coldfront/billing/forms/bulk_edit.py:195
+#: src/coldfront/billing/forms/model_forms.py:245
+#: src/coldfront/billing/forms/model_forms.py:324
+#: src/coldfront/billing/forms/model_forms.py:432
+#: src/coldfront/billing/forms/model_forms.py:512
+#: src/coldfront/billing/pdf.py:71 src/coldfront/billing/tables.py:139
+#: src/coldfront/billing/tables.py:184
+#: src/coldfront/templates/billing/freeallowance.html:20
+#: src/coldfront/templates/billing/invoicelineitem.html:29
+msgid "Unit"
+msgstr ""
+
+#: src/coldfront/billing/forms/bulk_edit.py:160
+#: src/coldfront/billing/forms/model_forms.py:259
+#: src/coldfront/billing/forms/model_forms.py:335
+#: src/coldfront/billing/pdf.py:72 src/coldfront/billing/tables.py:109
+msgid "Unit price"
+msgstr ""
+
+#: src/coldfront/billing/forms/bulk_edit.py:166
+#: src/coldfront/billing/forms/bulk_edit.py:210
+#: src/coldfront/billing/forms/model_forms.py:265
+#: src/coldfront/billing/forms/model_forms.py:340
+#: src/coldfront/billing/forms/model_forms.py:448
+#: src/coldfront/billing/forms/model_forms.py:525
+#: src/coldfront/billing/pdf.py:73 src/coldfront/billing/tables.py:110
+#: src/coldfront/billing/tables.py:142 src/coldfront/ris/tables.py:165
+#: src/coldfront/templates/billing/invoicelineitem.html:37
+#: src/coldfront/templates/billing/rate.html:17
+msgid "Amount"
+msgstr ""
+
+#: src/coldfront/billing/forms/bulk_edit.py:180
+#: src/coldfront/billing/forms/filterset_forms.py:87
+#: src/coldfront/billing/forms/model_forms.py:287
+msgid "Invoice Line Item"
+msgstr ""
+
+#: src/coldfront/billing/forms/bulk_edit.py:197
+#: src/coldfront/billing/forms/model_forms.py:434
+#: src/coldfront/billing/forms/model_forms.py:514
+msgid ""
+"Native units per billed unit (the divisor). e.g. '1 TB' for per-TB pricing, "
+"or '1' for per-SU/per-item."
+msgstr ""
+
+#: src/coldfront/billing/forms/bulk_edit.py:204
+#: src/coldfront/billing/forms/model_forms.py:441
+#: src/coldfront/billing/forms/model_forms.py:521
+#: src/coldfront/billing/models.py:360
+msgid "The native unit dimension this rate prices"
+msgstr ""
+
+#: src/coldfront/billing/forms/bulk_edit.py:215
+#: src/coldfront/billing/forms/filterset_forms.py:103
+#: src/coldfront/billing/forms/model_forms.py:453
+#: src/coldfront/billing/forms/model_forms.py:531
+#: src/coldfront/billing/tables.py:144
+msgid "Charge basis"
+msgstr ""
+
+#: src/coldfront/billing/forms/bulk_edit.py:220
+#: src/coldfront/billing/forms/filterset_forms.py:110
+msgid "Project override"
+msgstr ""
+
+#: src/coldfront/billing/forms/bulk_edit.py:235
+#: src/coldfront/billing/forms/filterset_forms.py:116
+#: src/coldfront/billing/forms/model_forms.py:493
+msgid "Rate"
+msgstr ""
+
+#: src/coldfront/billing/forms/bulk_edit.py:255
+#: src/coldfront/billing/forms/bulk_edit.py:298
+#: src/coldfront/billing/forms/filterset_forms.py:135
+#: src/coldfront/billing/forms/filterset_forms.py:165
+#: src/coldfront/billing/forms/model_forms.py:584
+#: src/coldfront/billing/forms/model_forms.py:652
+#: src/coldfront/billing/forms/model_forms.py:716
+#: src/coldfront/billing/forms/model_forms.py:759
+#: src/coldfront/billing/tables.py:174 src/coldfront/billing/tables.py:220
+#: src/coldfront/ras/filtersets/invites.py:17
+#: src/coldfront/ras/forms/allocations.py:179
+#: src/coldfront/ras/forms/allocations.py:242
+#: src/coldfront/ras/forms/allocations.py:296
+#: src/coldfront/ras/forms/allocations.py:407
+#: src/coldfront/ras/forms/allocations.py:513
+#: src/coldfront/ras/forms/bulk_edit.py:130
+#: src/coldfront/ras/forms/bulk_edit.py:147
+#: src/coldfront/ras/forms/bulk_edit.py:171
+#: src/coldfront/ras/forms/filterset_forms.py:100
+#: src/coldfront/ras/forms/filterset_forms.py:119
+#: src/coldfront/ras/forms/filterset_forms.py:198
+#: src/coldfront/ras/forms/invites.py:32 src/coldfront/ras/forms/invites.py:57
+#: src/coldfront/ras/forms/invites.py:83 src/coldfront/ras/forms/projects.py:37
+#: src/coldfront/ras/forms/projects.py:139
+#: src/coldfront/ras/tables/allocations.py:57
+#: src/coldfront/ras/tables/invites.py:45
+#: src/coldfront/ras/tables/projects.py:67
+#: src/coldfront/templates/billing/discount.html:12
+#: src/coldfront/templates/billing/freeallowance.html:12
+#: src/coldfront/templates/home.html:66 src/coldfront/templates/home.html:152
+#: src/coldfront/templates/home.html:290
+#: src/coldfront/templates/ras/allocation.html:39
+#: src/coldfront/templates/ras/allocationuser.html:34
+#: src/coldfront/templates/ras/projectinvite.html:33
+#: src/coldfront/users/filtersets.py:77
+#: src/coldfront/users/forms/filterset_forms.py:41
+msgid "Project"
+msgstr ""
+
+#: src/coldfront/billing/forms/bulk_edit.py:261
+#: src/coldfront/billing/forms/model_forms.py:595
+#: src/coldfront/billing/forms/model_forms.py:658
+#: src/coldfront/billing/models.py:469
+msgid "The native unit dimension of the allowance"
+msgstr ""
+
+#: src/coldfront/billing/forms/bulk_edit.py:265
+#: src/coldfront/billing/forms/model_forms.py:599
+#: src/coldfront/billing/forms/model_forms.py:662
+msgid "Total quantity"
+msgstr ""
+
+#: src/coldfront/billing/forms/bulk_edit.py:266
+#: src/coldfront/billing/forms/model_forms.py:600
+#: src/coldfront/billing/forms/model_forms.py:663
+msgid "Total free units granted, in native units. e.g. '10 TB' or '100'."
+msgstr ""
+
+#: src/coldfront/billing/forms/bulk_edit.py:279
+#: src/coldfront/billing/forms/filterset_forms.py:146
+#: src/coldfront/billing/forms/model_forms.py:623
+msgid "Free Allowance"
+msgstr ""
+
+#: src/coldfront/billing/forms/bulk_edit.py:309
+#: src/coldfront/tables/tables.py:306
+#: src/coldfront/templates/billing/discount.html:20
+#: src/coldfront/templates/core/customfieldchoiceset.html:37
+msgid "Value"
+msgstr ""
+
+#: src/coldfront/billing/forms/model_forms.py:85
+msgid ""
+"Restrict the invoice to specific projects. 'All Projects' bills all of the "
+"owner's projects."
+msgstr ""
+
+#: src/coldfront/billing/forms/model_forms.py:90
+msgid "Source types"
+msgstr ""
+
+#: src/coldfront/billing/forms/model_forms.py:93
+#: src/coldfront/billing/models.py:66
+msgid ""
+"Restrict the invoice to specific registered billing source types. Leave "
+"empty to bill all."
+msgstr ""
+
+#: src/coldfront/billing/forms/model_forms.py:138
+#: src/coldfront/billing/forms/model_forms.py:634
+msgid "Period"
+msgstr ""
+
+#: src/coldfront/billing/forms/model_forms.py:158
+msgid ""
+"Project names separated by commas. Leave empty for all of the owner's "
+"projects."
+msgstr ""
+
+#: src/coldfront/billing/forms/model_forms.py:175
+#: src/coldfront/billing/forms/model_forms.py:180
+#: src/coldfront/billing/forms/model_forms.py:185
+#: src/coldfront/billing/forms/model_forms.py:190
+#: src/coldfront/billing/forms/model_forms.py:195
+#: src/coldfront/billing/forms/model_forms.py:337
+#: src/coldfront/billing/forms/model_forms.py:342
+#: src/coldfront/billing/forms/model_forms.py:527
+msgid ""
+"Amount, optionally followed by a currency code (e.g. \"100.00\" or \"100.00 "
+"USD\")."
+msgstr ""
+
+#: src/coldfront/billing/forms/model_forms.py:234
+msgid "Source type"
+msgstr ""
+
+#: src/coldfront/billing/forms/model_forms.py:235
+msgid ""
+"Content type of the billing source (e.g. a StorageQuota or SlurmAccount)."
+msgstr ""
+
+#: src/coldfront/billing/forms/model_forms.py:239
+msgid "Source object"
+msgstr ""
+
+#: src/coldfront/billing/forms/model_forms.py:246
+#: src/coldfront/billing/forms/model_forms.py:325
+msgid "Snapshot of the human-readable unit label (e.g. '1.0 TB')."
+msgstr ""
+
+#: src/coldfront/billing/forms/model_forms.py:252
+#: src/coldfront/billing/forms/model_forms.py:331
+msgid "Snapshot of the native unit dimension"
+msgstr ""
+
+#: src/coldfront/billing/forms/model_forms.py:293
+#: src/coldfront/billing/forms/model_forms.py:316
+#: src/coldfront/billing/tables.py:100 src/coldfront/ris/forms/bulk_edit.py:35
+#: src/coldfront/ris/forms/bulk_edit.py:103
+#: src/coldfront/ris/forms/filterset_forms.py:29
+#: src/coldfront/ris/forms/filterset_forms.py:82 src/coldfront/ris/tables.py:35
+#: src/coldfront/ris/tables.py:85 src/coldfront/ris/tables.py:126
+#: src/coldfront/ris/tables.py:174
+#: src/coldfront/templates/billing/invoicelineitem.html:17
+#: src/coldfront/templates/ris/funding.html:47
+#: src/coldfront/templates/ris/publication.html:43
+msgid "Source"
+msgstr ""
+
+#: src/coldfront/billing/forms/model_forms.py:298
+#: src/coldfront/navigation/menu.py:156
+msgid "Pricing"
+msgstr ""
+
+#: src/coldfront/billing/forms/model_forms.py:318
+msgid "Content type and object, e.g. \"storage.storagequota:12\"."
+msgstr ""
+
+#: src/coldfront/billing/forms/model_forms.py:372
+msgid "Scope type"
+msgstr ""
+
+#: src/coldfront/billing/forms/model_forms.py:373
+msgid ""
+"Content type of the rate scope (e.g. a StorageResource or SlurmCluster)."
+msgstr ""
+
+#: src/coldfront/billing/forms/model_forms.py:379
+msgid "Scope object"
+msgstr ""
+
+#: src/coldfront/billing/forms/model_forms.py:380
+msgid ""
+"Select the object to scope this rate to. Options are filtered by the scope "
+"type."
+msgstr ""
+
+#: src/coldfront/billing/forms/model_forms.py:449
+#: src/coldfront/billing/models.py:369
+msgid "Price per billing unit."
+msgstr ""
+
+#: src/coldfront/billing/forms/model_forms.py:468
+#: src/coldfront/billing/views.py:255
+msgid ""
+"No registered billable sources for this resource — nothing will be billed "
+"until one is configured."
+msgstr ""
+
+#: src/coldfront/billing/forms/model_forms.py:472
+#, python-format
+msgid "This rate will bill: %(sources)s."
+msgstr ""
+
+#: src/coldfront/billing/forms/model_forms.py:503
+msgid "Effective Dates"
+msgstr ""
+
+#: src/coldfront/billing/forms/model_forms.py:536
+#: src/coldfront/billing/forms/model_forms.py:667
+#: src/coldfront/billing/tables.py:133 src/coldfront/billing/tables.py:178
+#: src/coldfront/templates/billing/freeallowance.html:16
+#: src/coldfront/templates/billing/rate.html:9
+msgid "Scope"
+msgstr ""
+
+#: src/coldfront/billing/forms/model_forms.py:538
+#: src/coldfront/billing/forms/model_forms.py:669
+msgid "Content type and object, e.g. \"storage.storageresource:3\"."
+msgstr ""
+
+#: src/coldfront/billing/forms/model_forms.py:588
+#: src/coldfront/billing/models.py:447
+msgid ""
+"Optional project scope. Leave empty to apply across all of the owner's "
+"projects."
+msgstr ""
+
+#: src/coldfront/billing/forms/model_forms.py:720
+#: src/coldfront/billing/models.py:541
+msgid "Optional project scope. Leave empty for a user-level discount."
+msgstr ""
+
+#: src/coldfront/billing/forms/model_forms.py:856
+#: src/coldfront/billing/generation.py:360
+msgid ""
+"This invoice has no valid line items; fix invalid lines or generate first."
+msgstr ""
+
+#: src/coldfront/billing/forms/model_forms.py:862
+#: src/coldfront/billing/pdf.py:111
+msgid "Payment date"
+msgstr ""
+
+#: src/coldfront/billing/generation.py:89
+#, python-brace-format
+msgid ""
+"Free allowance {pk} has no scope — allowances must be scoped to a resource."
+msgstr ""
+
+#: src/coldfront/billing/generation.py:160
+msgid "Needs fixing: quantity not set"
+msgstr ""
+
+#: src/coldfront/billing/generation.py:254
+#: src/coldfront/billing/generation.py:267
+#, python-brace-format
+msgid "Discount ({type})"
+msgstr ""
+
+#: src/coldfront/billing/models.py:58
+#: src/coldfront/core/models/saved_filters.py:35
+#: src/coldfront/models/base.py:162 src/coldfront/ras/models/allocations.py:26
+#: src/coldfront/ras/models/change_requests.py:32
+#: src/coldfront/ras/models/projects.py:17
+#: src/coldfront/ras/models/resources.py:26 src/coldfront/slurm/models.py:379
+#: src/coldfront/tenancy/models/tenants.py:24
+#: src/coldfront/tenancy/models/tenants.py:45
+msgid "slug"
+msgstr ""
+
+#: src/coldfront/billing/models.py:65
+msgid "source types"
+msgstr ""
+
+#: src/coldfront/billing/models.py:74 src/coldfront/billing/models.py:436
+#: src/coldfront/billing/models.py:531
+msgid "owner"
+msgstr ""
+
+#: src/coldfront/billing/models.py:75
+msgid "The user responsible for paying this invoice."
+msgstr ""
+
+#: src/coldfront/billing/models.py:82 src/coldfront/ras/models/projects.py:52
+#: src/coldfront/ris/models.py:80 src/coldfront/ris/models.py:163
+msgid "projects"
+msgstr ""
+
+#: src/coldfront/billing/models.py:83
+msgid ""
+"Restrict the invoice to specific projects. Leave empty to bill all of the "
+"owner's projects."
+msgstr ""
+
+#: src/coldfront/billing/models.py:87 src/coldfront/billing/models.py:484
+#: src/coldfront/ras/models/allocations.py:56 src/coldfront/ris/models.py:124
+msgid "start date"
+msgstr ""
+
+#: src/coldfront/billing/models.py:92 src/coldfront/billing/models.py:489
+#: src/coldfront/ras/models/allocations.py:61 src/coldfront/ris/models.py:129
+msgid "end date"
+msgstr ""
+
+#: src/coldfront/billing/models.py:97
+msgid "due date"
+msgstr ""
+
+#: src/coldfront/billing/models.py:103 src/coldfront/core/models/jobs.py:181
+#: src/coldfront/ras/models/allocations.py:50
+#: src/coldfront/ras/models/change_requests.py:35
+#: src/coldfront/ras/models/resources.py:68 src/coldfront/ris/models.py:134
+msgid "status"
+msgstr ""
+
+#: src/coldfront/billing/models.py:111
+msgid "payment date"
+msgstr ""
+
+#: src/coldfront/billing/models.py:122
+msgid "payment amount"
+msgstr ""
+
+#: src/coldfront/billing/models.py:125
+msgid "payment method"
+msgstr ""
+
+#: src/coldfront/billing/models.py:139
+msgid "subtotal"
+msgstr ""
+
+#: src/coldfront/billing/models.py:148
+msgid "allowance total"
+msgstr ""
+
+#: src/coldfront/billing/models.py:157
+msgid "discount total"
+msgstr ""
+
+#: src/coldfront/billing/models.py:166
+msgid "grand total"
+msgstr ""
+
+#: src/coldfront/billing/models.py:178 src/coldfront/billing/models.py:221
+msgid "invoice"
+msgstr ""
+
+#: src/coldfront/billing/models.py:179
+msgid "invoices"
+msgstr ""
+
+#: src/coldfront/billing/models.py:181
+msgid "Generate invoice"
+msgstr ""
+
+#: src/coldfront/billing/models.py:182
+msgid "Finalize invoice"
+msgstr ""
+
+#: src/coldfront/billing/models.py:183
+msgid "Pay invoice"
+msgstr ""
+
+#: src/coldfront/billing/models.py:184
+msgid "Void invoice"
+msgstr ""
+
+#: src/coldfront/billing/models.py:225
+msgid "line type"
+msgstr ""
+
+#: src/coldfront/billing/models.py:237
+msgid "source type"
+msgstr ""
+
+#: src/coldfront/billing/models.py:242
+msgid "source object"
+msgstr ""
+
+#: src/coldfront/billing/models.py:250
+msgid "valid"
+msgstr ""
+
+#: src/coldfront/billing/models.py:252
+msgid ""
+"False if the line could not be priced at generation time and needs fixing."
+msgstr ""
+
+#: src/coldfront/billing/models.py:256
+#: src/coldfront/core/models/customfields.py:248
+#: src/coldfront/core/models/saved_filters.py:40
+#: src/coldfront/core/models/table_configs.py:40
+#: src/coldfront/core/models/tags.py:28 src/coldfront/models/base.py:110
+#: src/coldfront/models/base.py:130 src/coldfront/models/base.py:166
+#: src/coldfront/ras/models/allocations.py:71
+#: src/coldfront/storage/models.py:145
+#: src/coldfront/users/models/permissions.py:30
+#: src/coldfront/users/models/roles.py:29
+#: src/coldfront/users/models/tokens.py:40
+#: src/coldfront/users/models/users.py:158
+msgid "description"
+msgstr ""
+
+#: src/coldfront/billing/models.py:264
+msgid "quantity"
+msgstr ""
+
+#: src/coldfront/billing/models.py:265
+msgid "Quantity in the source's native units (e.g. bytes)."
+msgstr ""
+
+#: src/coldfront/billing/models.py:269 src/coldfront/billing/models.py:351
+msgid "unit"
+msgstr ""
+
+#: src/coldfront/billing/models.py:272
+msgid ""
+"Snapshot of the human-readable unit label at generation time (e.g. '1.0 TB')."
+msgstr ""
+
+#: src/coldfront/billing/models.py:276 src/coldfront/billing/models.py:357
+#: src/coldfront/billing/models.py:465
+msgid "unit format"
+msgstr ""
+
+#: src/coldfront/billing/models.py:280
+msgid "Snapshot of the native unit dimension at generation time"
+msgstr ""
+
+#: src/coldfront/billing/models.py:290
+msgid "unit price"
+msgstr ""
+
+#: src/coldfront/billing/models.py:300 src/coldfront/billing/models.py:368
+msgid "amount"
+msgstr ""
+
+#: src/coldfront/billing/models.py:305
+msgid "invoice line item"
+msgstr ""
+
+#: src/coldfront/billing/models.py:306
+msgid "invoice line items"
+msgstr ""
+
+#: src/coldfront/billing/models.py:340 src/coldfront/billing/models.py:454
+msgid "scope type"
+msgstr ""
+
+#: src/coldfront/billing/models.py:343 src/coldfront/billing/models.py:457
+msgid "scope object"
+msgstr ""
+
+#: src/coldfront/billing/models.py:353
+msgid ""
+"Native units per billed unit (the divisor). e.g. 1.0 TB for per-TB pricing."
+msgstr ""
+
+#: src/coldfront/billing/models.py:373
+msgid "charge basis"
+msgstr ""
+
+#: src/coldfront/billing/models.py:380
+msgid "effective start"
+msgstr ""
+
+#: src/coldfront/billing/models.py:385
+msgid "effective end"
+msgstr ""
+
+#: src/coldfront/billing/models.py:400
+msgid "rate"
+msgstr ""
+
+#: src/coldfront/billing/models.py:401
+msgid "rates"
+msgstr ""
+
+#: src/coldfront/billing/models.py:437
+msgid "The user granted this free allowance."
+msgstr ""
+
+#: src/coldfront/billing/models.py:446 src/coldfront/billing/models.py:540
+#: src/coldfront/ras/models/projects.py:51
+msgid "project"
+msgstr ""
+
+#: src/coldfront/billing/models.py:473
+msgid "total quantity"
+msgstr ""
+
+#: src/coldfront/billing/models.py:474
+msgid "Total free units granted, in native units (e.g. bytes)."
+msgstr ""
+
+#: src/coldfront/billing/models.py:478 src/coldfront/storage/models.py:73
+#: src/coldfront/storage/models.py:190 src/coldfront/storage/models.py:350
+msgid "used"
+msgstr ""
+
+#: src/coldfront/billing/models.py:480
+msgid "Free units already consumed against invoices."
+msgstr ""
+
+#: src/coldfront/billing/models.py:498
+msgid "free allowance"
+msgstr ""
+
+#: src/coldfront/billing/models.py:499
+msgid "free allowances"
+msgstr ""
+
+#: src/coldfront/billing/models.py:545
+#: src/coldfront/core/models/customfields.py:204
+msgid "type"
+msgstr ""
+
+#: src/coldfront/billing/models.py:552
+msgid "value"
+msgstr ""
+
+#: src/coldfront/billing/models.py:557
+msgid "Percentage (0-100) or flat amount depending on the type."
+msgstr ""
+
+#: src/coldfront/billing/models.py:564
+msgid "discount"
+msgstr ""
+
+#: src/coldfront/billing/models.py:565
+msgid "discounts"
+msgstr ""
+
+#: src/coldfront/billing/object_actions.py:72
+msgid "Export PDF"
+msgstr ""
+
+#: src/coldfront/billing/pdf.py:54
+#: src/coldfront/templates/billing/invoice.html:35
+msgid "All projects"
+msgstr ""
+
+#: src/coldfront/billing/pdf.py:60
+msgid "Line items"
+msgstr ""
+
+#: src/coldfront/billing/pdf.py:70 src/coldfront/billing/tables.py:106
+#: src/coldfront/billing/tables.py:187
+#: src/coldfront/templates/billing/invoicelineitem.html:25
+msgid "Quantity"
+msgstr ""
+
+#: src/coldfront/billing/pdf.py:89
+msgid "No line items."
+msgstr ""
+
+#: src/coldfront/billing/tables.py:53
+#: src/coldfront/templates/billing/invoice.html:51
+msgid "Due Date"
+msgstr ""
+
+#: src/coldfront/billing/views.py:234
+#, python-format
+msgid "This rate bills: %(sources)s."
+msgstr ""
+
+#: src/coldfront/billing/views.py:250
+msgid "Before you can add a Rate, you must first register a billing source."
+msgstr ""
+
 #: src/coldfront/choices.py:29
 #, python-brace-format
 msgid "{name} has a key defined but CHOICES is not a list"
@@ -245,6 +1261,7 @@ msgstr ""
 
 #: src/coldfront/core/choices.py:18 src/coldfront/core/tables/tables.py:259
 #: src/coldfront/core/tables/tables.py:403
+#: src/coldfront/ras/tables/invites.py:60
 #: src/coldfront/templates/core/commententry.html:8
 #: src/coldfront/templates/core/job.html:18
 #: src/coldfront/templates/generic/quick_add_created.html:5
@@ -266,11 +1283,11 @@ msgstr ""
 msgid "Dark Red"
 msgstr ""
 
-#: src/coldfront/core/choices.py:55 src/coldfront/core/choices.py:176
+#: src/coldfront/core/choices.py:55
 msgid "Red"
 msgstr ""
 
-#: src/coldfront/core/choices.py:56 src/coldfront/core/choices.py:175
+#: src/coldfront/core/choices.py:56
 msgid "Pink"
 msgstr ""
 
@@ -282,7 +1299,7 @@ msgstr ""
 msgid "Fuchsia"
 msgstr ""
 
-#: src/coldfront/core/choices.py:59 src/coldfront/core/choices.py:174
+#: src/coldfront/core/choices.py:59
 msgid "Purple"
 msgstr ""
 
@@ -290,11 +1307,11 @@ msgstr ""
 msgid "Dark Purple"
 msgstr ""
 
-#: src/coldfront/core/choices.py:61 src/coldfront/core/choices.py:173
+#: src/coldfront/core/choices.py:61
 msgid "Indigo"
 msgstr ""
 
-#: src/coldfront/core/choices.py:62 src/coldfront/core/choices.py:172
+#: src/coldfront/core/choices.py:62
 msgid "Blue"
 msgstr ""
 
@@ -302,11 +1319,11 @@ msgstr ""
 msgid "Light Blue"
 msgstr ""
 
-#: src/coldfront/core/choices.py:64 src/coldfront/core/choices.py:181
+#: src/coldfront/core/choices.py:64
 msgid "Cyan"
 msgstr ""
 
-#: src/coldfront/core/choices.py:65 src/coldfront/core/choices.py:180
+#: src/coldfront/core/choices.py:65
 msgid "Teal"
 msgstr ""
 
@@ -318,7 +1335,7 @@ msgstr ""
 msgid "Dark Green"
 msgstr ""
 
-#: src/coldfront/core/choices.py:68 src/coldfront/core/choices.py:179
+#: src/coldfront/core/choices.py:68
 msgid "Green"
 msgstr ""
 
@@ -330,7 +1347,7 @@ msgstr ""
 msgid "Lime"
 msgstr ""
 
-#: src/coldfront/core/choices.py:71 src/coldfront/core/choices.py:178
+#: src/coldfront/core/choices.py:71
 msgid "Yellow"
 msgstr ""
 
@@ -338,7 +1355,7 @@ msgstr ""
 msgid "Amber"
 msgstr ""
 
-#: src/coldfront/core/choices.py:73 src/coldfront/core/choices.py:177
+#: src/coldfront/core/choices.py:73
 msgid "Orange"
 msgstr ""
 
@@ -362,11 +1379,11 @@ msgstr ""
 msgid "Dark Grey"
 msgstr ""
 
-#: src/coldfront/core/choices.py:79 src/coldfront/core/choices.py:183
+#: src/coldfront/core/choices.py:79
 msgid "Black"
 msgstr ""
 
-#: src/coldfront/core/choices.py:80 src/coldfront/core/choices.py:184
+#: src/coldfront/core/choices.py:80
 msgid "White"
 msgstr ""
 
@@ -431,7 +1448,7 @@ msgstr ""
 msgid "Exact"
 msgstr ""
 
-#: src/coldfront/core/choices.py:130 src/coldfront/core/choices.py:266
+#: src/coldfront/core/choices.py:130 src/coldfront/core/choices.py:251
 msgid "Always"
 msgstr ""
 
@@ -459,99 +1476,99 @@ msgstr ""
 msgid "No"
 msgstr ""
 
-#: src/coldfront/core/choices.py:171 src/coldfront/slurm/forms/bulk_edit.py:194
+#: src/coldfront/core/choices.py:163 src/coldfront/slurm/forms/bulk_edit.py:194
 #: src/coldfront/slurm/forms/filterset_forms.py:77
 #: src/coldfront/templates/core/job.html:49
 #: src/coldfront/templates/core/tableconfig.html:75
-#: src/coldfront/templates/slurm/slurmpartition.html:24
+#: src/coldfront/templates/slurm/slurmpartition.html:29
 msgid "Default"
 msgstr ""
 
-#: src/coldfront/core/choices.py:182
-msgid "Gray"
+#: src/coldfront/core/choices.py:164
+msgid "Primary"
 msgstr ""
 
-#: src/coldfront/core/choices.py:196 src/coldfront/core/choices.py:221
+#: src/coldfront/core/choices.py:165
+msgid "Secondary"
+msgstr ""
+
+#: src/coldfront/core/choices.py:166 src/coldfront/core/choices.py:294
+msgid "Success"
+msgstr ""
+
+#: src/coldfront/core/choices.py:167 src/coldfront/core/choices.py:296
+msgid "Danger"
+msgstr ""
+
+#: src/coldfront/core/choices.py:168 src/coldfront/core/choices.py:295
+msgid "Warning"
+msgstr ""
+
+#: src/coldfront/core/choices.py:169 src/coldfront/core/choices.py:293
+msgid "Info"
+msgstr ""
+
+#: src/coldfront/core/choices.py:181 src/coldfront/core/choices.py:206
 msgid "Auto-detect"
 msgstr ""
 
-#: src/coldfront/core/choices.py:197
+#: src/coldfront/core/choices.py:182
 msgid "Comma"
 msgstr ""
 
-#: src/coldfront/core/choices.py:198
+#: src/coldfront/core/choices.py:183
 msgid "Semicolon"
 msgstr ""
 
-#: src/coldfront/core/choices.py:199
+#: src/coldfront/core/choices.py:184
 msgid "Pipe"
 msgstr ""
 
-#: src/coldfront/core/choices.py:200
+#: src/coldfront/core/choices.py:185
 msgid "Tab"
 msgstr ""
 
-#: src/coldfront/core/choices.py:209
+#: src/coldfront/core/choices.py:194
 msgid "Direct"
 msgstr ""
 
-#: src/coldfront/core/choices.py:210
+#: src/coldfront/core/choices.py:195
 msgid "Upload"
 msgstr ""
 
-#: src/coldfront/core/choices.py:237
+#: src/coldfront/core/choices.py:222 src/coldfront/ras/filtersets/invites.py:22
+#: src/coldfront/ras/forms/invites.py:22 src/coldfront/ras/tables/invites.py:29
+#: src/coldfront/templates/ras/projectinvite.html:18
 msgid "Pending"
 msgstr ""
 
-#: src/coldfront/core/choices.py:238
+#: src/coldfront/core/choices.py:223
 msgid "Scheduled"
 msgstr ""
 
-#: src/coldfront/core/choices.py:239
+#: src/coldfront/core/choices.py:224
 msgid "Running"
 msgstr ""
 
-#: src/coldfront/core/choices.py:240 src/coldfront/core/tables/tables.py:267
+#: src/coldfront/core/choices.py:225 src/coldfront/core/tables/tables.py:267
 #: src/coldfront/templates/core/job.html:26
 msgid "Completed"
 msgstr ""
 
-#: src/coldfront/core/choices.py:241
+#: src/coldfront/core/choices.py:226
 msgid "Failed"
 msgstr ""
 
-#: src/coldfront/core/choices.py:242
+#: src/coldfront/core/choices.py:227
 msgid "Errored"
 msgstr ""
 
-#: src/coldfront/core/choices.py:267
+#: src/coldfront/core/choices.py:252
 msgid "On failure"
 msgstr ""
 
-#: src/coldfront/core/choices.py:268
+#: src/coldfront/core/choices.py:253
 msgid "Never"
-msgstr ""
-
-#: src/coldfront/core/choices.py:295
-#: src/coldfront/templates/account/notification.html:47
-#: src/coldfront/templates/account/third_party_accounts.html:19
-msgid "Link"
-msgstr ""
-
-#: src/coldfront/core/choices.py:309
-msgid "Info"
-msgstr ""
-
-#: src/coldfront/core/choices.py:310
-msgid "Success"
-msgstr ""
-
-#: src/coldfront/core/choices.py:311
-msgid "Warning"
-msgstr ""
-
-#: src/coldfront/core/choices.py:312
-msgid "Danger"
 msgstr ""
 
 #: src/coldfront/core/filtersets.py:46 src/coldfront/core/filtersets.py:99
@@ -568,74 +1585,6 @@ msgstr ""
 
 #: src/coldfront/core/filtersets.py:232
 msgid "User name"
-msgstr ""
-
-#: src/coldfront/core/filtersets.py:346
-#: src/coldfront/core/forms/filtersets.py:83
-#: src/coldfront/core/tables/tables.py:256
-#: src/coldfront/ras/forms/bulk_edit.py:62
-#: src/coldfront/ras/forms/bulk_edit.py:181
-#: src/coldfront/ras/forms/filterset_forms.py:57
-#: src/coldfront/ras/forms/filterset_forms.py:127
-#: src/coldfront/ras/forms/filterset_forms.py:173
-#: src/coldfront/ras/tables/allocations.py:80
-#: src/coldfront/ras/tables/change_requests.py:22
-#: src/coldfront/ras/tables/resources.py:66
-#: src/coldfront/ris/forms/bulk_edit.py:98
-#: src/coldfront/ris/forms/filterset_forms.py:31
-#: src/coldfront/ris/forms/filterset_forms.py:71
-#: src/coldfront/ris/tables.py:119 src/coldfront/ris/tables.py:158
-#: src/coldfront/templates/core/job.html:12
-#: src/coldfront/templates/home.html:68 src/coldfront/templates/home.html:109
-#: src/coldfront/templates/home.html:214 src/coldfront/templates/home.html:291
-#: src/coldfront/templates/home/_pi_pending.html:13
-#: src/coldfront/templates/ras/resource.html:20
-#: src/coldfront/templates/ris/funding.html:43
-#: src/coldfront/users/forms/bulk_edit.py:68
-#: src/coldfront/users/forms/filterset_forms.py:67
-#: src/coldfront/users/forms/model_forms.py:71
-msgid "Status"
-msgstr ""
-
-#: src/coldfront/core/forms/bulk_edit.py:37
-#: src/coldfront/core/forms/bulk_edit.py:67
-#: src/coldfront/core/forms/bulk_edit.py:157
-#: src/coldfront/core/forms/bulk_edit.py:187
-#: src/coldfront/core/forms/bulk_edit.py:228
-#: src/coldfront/core/tables/tables.py:178 src/coldfront/forms/bulk_edit.py:111
-#: src/coldfront/forms/bulk_edit.py:123 src/coldfront/forms/bulk_edit.py:155
-#: src/coldfront/templates/core/customfield.html:27
-#: src/coldfront/templates/core/customfieldchoiceset.html:12
-#: src/coldfront/templates/core/plugin.html:69
-#: src/coldfront/templates/core/savedfilter.html:16
-#: src/coldfront/templates/core/tableconfig.html:12
-#: src/coldfront/templates/core/tag.html:8
-#: src/coldfront/templates/generic/bulk_import.html:133
-#: src/coldfront/templates/ras/allocation.html:64
-#: src/coldfront/templates/ras/allocationtype.html:8
-#: src/coldfront/templates/ras/allocationuser.html:39
-#: src/coldfront/templates/ras/project.html:26
-#: src/coldfront/templates/ras/resource.html:16
-#: src/coldfront/templates/ras/resourcetype.html:16
-#: src/coldfront/templates/slurm/slurmaccount.html:16
-#: src/coldfront/templates/slurm/slurmcluster.html:8
-#: src/coldfront/templates/slurm/slurmpartition.html:44
-#: src/coldfront/templates/slurm/slurmqos.html:12
-#: src/coldfront/templates/storage/storagecluster.html:12
-#: src/coldfront/templates/storage/storageresource.html:12
-#: src/coldfront/templates/tenancy/tenant.html:21
-#: src/coldfront/templates/tenancy/tenantgroup.html:29
-#: src/coldfront/templates/users/group.html:16
-#: src/coldfront/templates/users/objectpermission.html:16
-#: src/coldfront/templates/users/role.html:16
-#: src/coldfront/templates/users/token.html:40
-#: src/coldfront/users/forms/bulk_edit.py:90
-#: src/coldfront/users/forms/bulk_edit.py:119
-#: src/coldfront/users/forms/bulk_edit.py:148
-#: src/coldfront/users/forms/bulk_edit.py:183
-#: src/coldfront/users/forms/filterset_forms.py:23
-#: src/coldfront/users/forms/filterset_forms.py:80
-msgid "Description"
 msgstr ""
 
 #: src/coldfront/core/forms/bulk_edit.py:49
@@ -910,8 +1859,8 @@ msgstr ""
 #: src/coldfront/core/forms/bulk_import.py:209
 #: src/coldfront/core/tables/tables.py:419 src/coldfront/core/views.py:744
 #: src/coldfront/forms/fields/fields.py:134
-#: src/coldfront/ras/forms/allocations.py:394
-#: src/coldfront/ras/forms/allocations.py:483
+#: src/coldfront/ras/forms/allocations.py:392
+#: src/coldfront/ras/forms/allocations.py:481
 #: src/coldfront/templates/cotton/card/comments.html:4
 msgid "Comments"
 msgstr ""
@@ -933,7 +1882,7 @@ msgstr ""
 #: src/coldfront/core/forms/filtersets.py:50
 #: src/coldfront/core/forms/filtersets.py:166
 #: src/coldfront/core/forms/filtersets.py:308
-#: src/coldfront/ras/forms/allocations.py:498
+#: src/coldfront/ras/forms/allocations.py:496
 #: src/coldfront/tables/tables.py:308
 #: src/coldfront/templates/ras/allocation.html:79
 msgid "Attributes"
@@ -1042,7 +1991,7 @@ msgstr ""
 msgid "Send this notification to every registered user."
 msgstr ""
 
-#: src/coldfront/core/forms/misc.py:35 src/coldfront/navigation/menu.py:115
+#: src/coldfront/core/forms/misc.py:35 src/coldfront/navigation/menu.py:116
 #: src/coldfront/ras/views/projects.py:108
 #: src/coldfront/templates/users/group.html:23
 #: src/coldfront/templates/users/role.html:39
@@ -1055,7 +2004,7 @@ msgstr ""
 msgid "Users"
 msgstr ""
 
-#: src/coldfront/core/forms/misc.py:40 src/coldfront/navigation/menu.py:116
+#: src/coldfront/core/forms/misc.py:40 src/coldfront/navigation/menu.py:117
 #: src/coldfront/templates/users/role.html:51
 #: src/coldfront/users/forms/bulk_edit.py:72
 #: src/coldfront/users/forms/model_forms.py:41
@@ -1273,10 +2222,6 @@ msgstr ""
 msgid "The object(s) to which this field applies."
 msgstr ""
 
-#: src/coldfront/core/models/customfields.py:204
-msgid "type"
-msgstr ""
-
 #: src/coldfront/core/models/customfields.py:208
 msgid "The type of data this custom field holds"
 msgstr ""
@@ -1291,14 +2236,14 @@ msgstr ""
 #: src/coldfront/core/models/saved_filters.py:30
 #: src/coldfront/core/models/table_configs.py:36
 #: src/coldfront/models/base.py:125 src/coldfront/models/base.py:158
-#: src/coldfront/models/features.py:358
+#: src/coldfront/models/features.py:359
 #: src/coldfront/ras/models/resources.py:49 src/coldfront/slurm/models.py:442
 #: src/coldfront/storage/models.py:139 src/coldfront/storage/models.py:452
 #: src/coldfront/tenancy/models/tenants.py:19
 #: src/coldfront/tenancy/models/tenants.py:41
 #: src/coldfront/users/models/permissions.py:26
 #: src/coldfront/users/models/roles.py:24
-#: src/coldfront/users/models/users.py:149
+#: src/coldfront/users/models/users.py:153
 msgid "name"
 msgstr ""
 
@@ -1331,20 +2276,6 @@ msgstr ""
 
 #: src/coldfront/core/models/customfields.py:246
 msgid "Custom fields within the same group will be displayed together"
-msgstr ""
-
-#: src/coldfront/core/models/customfields.py:248
-#: src/coldfront/core/models/saved_filters.py:40
-#: src/coldfront/core/models/table_configs.py:40
-#: src/coldfront/core/models/tags.py:28 src/coldfront/models/base.py:110
-#: src/coldfront/models/base.py:130 src/coldfront/models/base.py:166
-#: src/coldfront/ras/models/allocations.py:71
-#: src/coldfront/storage/models.py:145
-#: src/coldfront/users/models/permissions.py:30
-#: src/coldfront/users/models/roles.py:29
-#: src/coldfront/users/models/tokens.py:40
-#: src/coldfront/users/models/users.py:154
-msgid "description"
 msgstr ""
 
 #: src/coldfront/core/models/customfields.py:250
@@ -1669,7 +2600,7 @@ msgstr ""
 msgid "custom links"
 msgstr ""
 
-#: src/coldfront/core/models/jobs.py:148 src/coldfront/models/features.py:51
+#: src/coldfront/core/models/jobs.py:148 src/coldfront/models/features.py:52
 #: src/coldfront/users/models/tokens.py:45
 msgid "created"
 msgstr ""
@@ -1692,13 +2623,6 @@ msgstr ""
 
 #: src/coldfront/core/models/jobs.py:169
 msgid "completed"
-msgstr ""
-
-#: src/coldfront/core/models/jobs.py:181
-#: src/coldfront/ras/models/allocations.py:50
-#: src/coldfront/ras/models/change_requests.py:35
-#: src/coldfront/ras/models/resources.py:68 src/coldfront/ris/models.py:134
-msgid "status"
 msgstr ""
 
 #: src/coldfront/core/models/jobs.py:187
@@ -1795,16 +2719,6 @@ msgstr ""
 
 #: src/coldfront/core/models/saved_filters.py:27
 msgid "The object type(s) to which this filter applies."
-msgstr ""
-
-#: src/coldfront/core/models/saved_filters.py:35
-#: src/coldfront/models/base.py:162 src/coldfront/ras/models/allocations.py:26
-#: src/coldfront/ras/models/change_requests.py:32
-#: src/coldfront/ras/models/projects.py:17
-#: src/coldfront/ras/models/resources.py:26 src/coldfront/slurm/models.py:379
-#: src/coldfront/tenancy/models/tenants.py:24
-#: src/coldfront/tenancy/models/tenants.py:45
-msgid "slug"
 msgstr ""
 
 #: src/coldfront/core/models/saved_filters.py:59
@@ -1931,10 +2845,11 @@ msgstr ""
 #: src/coldfront/templates/core/savedfilter.html:8
 #: src/coldfront/templates/core/tableconfig.html:8
 #: src/coldfront/templates/ras/allocationuser.html:35
+#: src/coldfront/templates/ras/projectinvite.html:34
 #: src/coldfront/templates/slurm/slurmaccount.html:12
 #: src/coldfront/templates/slurm/slurmqos.html:8
 #: src/coldfront/templates/storage/storagecluster.html:8
-#: src/coldfront/templates/storage/storageresource.html:8
+#: src/coldfront/templates/storage/storageresource.html:13
 #: src/coldfront/templates/storage/storagesnapshotpolicy.html:8
 #: src/coldfront/templates/tenancy/tenantgroup.html:25
 #: src/coldfront/templates/users/group.html:12
@@ -1949,7 +2864,7 @@ msgid "Name"
 msgstr ""
 
 #: src/coldfront/core/tables/plugins.py:39 src/coldfront/ris/filtersets.py:20
-#: src/coldfront/ris/forms/filterset_forms.py:47
+#: src/coldfront/ris/forms/filterset_forms.py:79
 #: src/coldfront/templates/core/plugin.html:57
 msgid "Author"
 msgstr ""
@@ -1990,25 +2905,6 @@ msgstr ""
 #: src/coldfront/templates/users/objectpermission.html:54
 #: src/coldfront/users/tables.py:107
 msgid "Object Types"
-msgstr ""
-
-#: src/coldfront/core/tables/tables.py:36
-#: src/coldfront/core/tables/tables.py:205
-#: src/coldfront/ras/forms/allocations.py:251
-#: src/coldfront/ras/forms/allocations.py:303
-#: src/coldfront/ras/forms/allocations.py:414
-#: src/coldfront/ras/forms/allocations.py:504
-#: src/coldfront/ras/forms/bulk_edit.py:109
-#: src/coldfront/ras/forms/bulk_edit.py:176
-#: src/coldfront/ras/forms/filterset_forms.py:88
-#: src/coldfront/ras/forms/filterset_forms.py:133
-#: src/coldfront/ras/forms/projects.py:96
-#: src/coldfront/ras/tables/allocations.py:61
-#: src/coldfront/ras/tables/projects.py:20
-#: src/coldfront/templates/ras/allocation.html:43
-#: src/coldfront/templates/ras/allocationuser.html:43
-#: src/coldfront/templates/ras/project.html:22
-msgid "Owner"
 msgstr ""
 
 #: src/coldfront/core/tables/tables.py:59
@@ -2157,8 +3053,8 @@ msgstr ""
 #: src/coldfront/ras/forms/filterset_forms.py:77
 #: src/coldfront/ras/forms/filterset_forms.py:106
 #: src/coldfront/ras/forms/filterset_forms.py:158
-#: src/coldfront/templates/slurm/slurmcluster.html:16
-#: src/coldfront/templates/storage/storageresource.html:20
+#: src/coldfront/templates/slurm/slurmcluster.html:21
+#: src/coldfront/templates/storage/storageresource.html:25
 #: src/coldfront/tenancy/forms/bulk_edit.py:56
 #: src/coldfront/tenancy/forms/filterset_forms.py:58
 #: src/coldfront/tenancy/tables/columns.py:54
@@ -2180,14 +3076,14 @@ msgstr ""
 #: src/coldfront/slurm/forms/filterset_forms.py:92
 #: src/coldfront/storage/filtersets.py:23
 #: src/coldfront/storage/forms/filterset_forms.py:29
-#: src/coldfront/templates/ras/resource.html:24
-#: src/coldfront/templates/slurm/slurmcluster.html:12
-#: src/coldfront/templates/slurm/slurmpartition.html:48
-#: src/coldfront/templates/storage/storageresource.html:16
+#: src/coldfront/templates/ras/resource.html:29
+#: src/coldfront/templates/slurm/slurmcluster.html:17
+#: src/coldfront/templates/slurm/slurmpartition.html:53
+#: src/coldfront/templates/storage/storageresource.html:21
 msgid "Locked"
 msgstr ""
 
-#: src/coldfront/forms/bulk_edit.py:140 src/coldfront/models/features.py:372
+#: src/coldfront/forms/bulk_edit.py:140 src/coldfront/models/features.py:373
 msgid "Prevent users from submitting allocations for this resource."
 msgstr ""
 
@@ -2208,7 +3104,7 @@ msgstr ""
 
 #: src/coldfront/forms/bulk_import.py:22
 #: src/coldfront/forms/fields/fields.py:97 src/coldfront/forms/mixins.py:234
-#: src/coldfront/forms/model_forms.py:110 src/coldfront/tables/columns.py:237
+#: src/coldfront/forms/model_forms.py:110 src/coldfront/tables/columns.py:240
 #: src/coldfront/templates/cotton/card/tags.html:2
 msgid "Tags"
 msgstr ""
@@ -2287,7 +3183,7 @@ msgstr ""
 #: src/coldfront/templates/ras/allocation.html:35
 #: src/coldfront/templates/ras/project.html:18
 #: src/coldfront/templates/ras/resourcetype.html:8
-#: src/coldfront/templates/slurm/slurmpartition.html:12
+#: src/coldfront/templates/slurm/slurmpartition.html:17
 msgid "Slug"
 msgstr ""
 
@@ -2307,9 +3203,9 @@ msgid ""
 msgstr ""
 
 #: src/coldfront/forms/filterset_forms.py:83
-#: src/coldfront/navigation/menu.py:98
+#: src/coldfront/navigation/menu.py:99
 #: src/coldfront/templates/cotton/card/custom_fields.html:5
-#: src/coldfront/templates/cotton/form/filters.html:11
+#: src/coldfront/templates/cotton/form/filters.html:14
 #: src/coldfront/templates/cotton/form/index.html:18
 msgid "Custom Fields"
 msgstr ""
@@ -2407,35 +3303,39 @@ msgstr ""
 msgid "Missing required value for static query param: '{static_params}'"
 msgstr ""
 
-#: src/coldfront/models/features.py:57
+#: src/coldfront/models/features.py:58
 msgid "last updated"
 msgstr ""
 
-#: src/coldfront/models/features.py:313
+#: src/coldfront/models/features.py:314
 #, python-brace-format
 msgid "Invalid value for custom field '{name}': {error}"
 msgstr ""
 
-#: src/coldfront/models/features.py:323
+#: src/coldfront/models/features.py:324
 #, python-brace-format
 msgid "Custom field '{name}' must have a unique value."
 msgstr ""
 
-#: src/coldfront/models/features.py:328
+#: src/coldfront/models/features.py:329
 #, python-brace-format
 msgid "Missing required custom field '{name}'."
 msgstr ""
 
-#: src/coldfront/models/features.py:366
+#: src/coldfront/models/features.py:367
 msgid "schema"
 msgstr ""
 
-#: src/coldfront/models/features.py:370
+#: src/coldfront/models/features.py:371
 msgid "locked"
 msgstr ""
 
 #: src/coldfront/models/fields.py:41
 msgid "RGB color in hexadecimal. Example: "
+msgstr ""
+
+#: src/coldfront/models/fields.py:52
+msgid "Unique slug. Leave blank and one will be auto generated."
 msgstr ""
 
 #: src/coldfront/navigation/menu.py:19
@@ -2455,145 +3355,136 @@ msgstr ""
 msgid "Tenant Groups"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:33 src/coldfront/navigation/menu.py:46
-#: src/coldfront/navigation/menu.py:48
+#: src/coldfront/navigation/menu.py:33 src/coldfront/navigation/menu.py:47
+#: src/coldfront/navigation/menu.py:49
 #: src/coldfront/ras/filtersets/change_requests.py:18
 #: src/coldfront/ras/views/projects.py:135
 msgid "Allocations"
-msgstr ""
-
-#: src/coldfront/navigation/menu.py:37 src/coldfront/navigation/menu.py:39
-#: src/coldfront/ras/filtersets/allocations.py:23
-#: src/coldfront/ris/forms/bulk_edit.py:47
-#: src/coldfront/ris/forms/bulk_edit.py:115
-#: src/coldfront/ris/forms/bulk_import.py:26
-#: src/coldfront/ris/forms/bulk_import.py:64
-#: src/coldfront/ris/forms/model_forms.py:21
-#: src/coldfront/ris/forms/model_forms.py:36 src/coldfront/ris/tables.py:38
-#: src/coldfront/ris/tables.py:177 src/coldfront/templates/ris/funding.html:51
-#: src/coldfront/templates/ris/publication.html:47
-msgid "Projects"
 msgstr ""
 
 #: src/coldfront/navigation/menu.py:40
 msgid "Project Users"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:41 src/coldfront/ris/views.py:182
+#: src/coldfront/navigation/menu.py:41 src/coldfront/ras/views/invites.py:91
+msgid "Invites"
+msgstr ""
+
+#: src/coldfront/navigation/menu.py:42 src/coldfront/ris/views.py:182
 msgid "Publications"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:42 src/coldfront/ris/forms/bulk_edit.py:133
-#: src/coldfront/ris/forms/filterset_forms.py:33
-#: src/coldfront/ris/forms/filterset_forms.py:76
+#: src/coldfront/navigation/menu.py:43 src/coldfront/ris/forms/bulk_edit.py:133
+#: src/coldfront/ris/forms/filterset_forms.py:41
+#: src/coldfront/ris/forms/filterset_forms.py:109
 #: src/coldfront/ris/forms/model_forms.py:61 src/coldfront/ris/views.py:202
 msgid "Funding"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:49
+#: src/coldfront/navigation/menu.py:50
 #: src/coldfront/ras/views/change_requests.py:228
 msgid "Change Requests"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:50
+#: src/coldfront/navigation/menu.py:51
 msgid "Comment Entires"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:57 src/coldfront/navigation/menu.py:63
+#: src/coldfront/navigation/menu.py:58 src/coldfront/navigation/menu.py:64
 #: src/coldfront/templates/ras/allocation.html:55
 msgid "Resources"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:61
+#: src/coldfront/navigation/menu.py:62
 msgid "Generic Resources"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:64
+#: src/coldfront/navigation/menu.py:65
 msgid "Resource Types"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:68 src/coldfront/slurm/apps.py:12
+#: src/coldfront/navigation/menu.py:69 src/coldfront/slurm/apps.py:12
 msgid "Slurm"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:70
+#: src/coldfront/navigation/menu.py:71
 msgid "Slurm Clusters"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:71
+#: src/coldfront/navigation/menu.py:72
 msgid "Slurm Partitions"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:72
+#: src/coldfront/navigation/menu.py:73
 msgid "Slurm Accounts"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:73
+#: src/coldfront/navigation/menu.py:74
 msgid "Slurm Users"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:74
+#: src/coldfront/navigation/menu.py:75
 msgid "Associations"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:75 src/coldfront/slurm/filtersets.py:86
+#: src/coldfront/navigation/menu.py:76 src/coldfront/slurm/filtersets.py:86
 #: src/coldfront/slurm/forms/bulk_edit.py:262
 #: src/coldfront/slurm/forms/filterset_forms.py:89
 #: src/coldfront/slurm/forms/model_forms.py:207
 #: src/coldfront/slurm/models.py:291
-#: src/coldfront/templates/slurm/slurmpartition.html:88
+#: src/coldfront/templates/slurm/slurmpartition.html:93
 msgid "QOS"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:79 src/coldfront/storage/apps.py:12
+#: src/coldfront/navigation/menu.py:80 src/coldfront/storage/apps.py:12
 msgid "Storage"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:81
+#: src/coldfront/navigation/menu.py:82
 msgid "Storage Resources"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:82
+#: src/coldfront/navigation/menu.py:83
 msgid "Storage Clusters"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:83
+#: src/coldfront/navigation/menu.py:84
 msgid "Storage Quotas"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:84
+#: src/coldfront/navigation/menu.py:85
 msgid "Snapshot Policies"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:91 src/coldfront/navigation/menu.py:95
+#: src/coldfront/navigation/menu.py:92 src/coldfront/navigation/menu.py:96
 msgid "Customization"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:99
+#: src/coldfront/navigation/menu.py:100
 msgid "Custom Field Choices"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:100
+#: src/coldfront/navigation/menu.py:101
 msgid "Saved Filters"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:101
+#: src/coldfront/navigation/menu.py:102
 msgid "Table Configs"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:102
+#: src/coldfront/navigation/menu.py:103
 msgid "Custom Links"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:109
+#: src/coldfront/navigation/menu.py:110
 msgid "Admin"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:113
+#: src/coldfront/navigation/menu.py:114
 msgid "Authentication"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:117
+#: src/coldfront/navigation/menu.py:118
 #: src/coldfront/users/forms/model_forms.py:46
 #: src/coldfront/users/forms/model_forms.py:76
 #: src/coldfront/users/forms/model_forms.py:135
@@ -2601,12 +3492,12 @@ msgstr ""
 msgid "Roles"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:118
+#: src/coldfront/navigation/menu.py:119
 #: src/coldfront/templates/account/base.html:25
 msgid "API Tokens"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:119
+#: src/coldfront/navigation/menu.py:120
 #: src/coldfront/templates/users/role.html:27
 #: src/coldfront/users/forms/model_forms.py:52
 #: src/coldfront/users/forms/model_forms.py:80
@@ -2618,36 +3509,52 @@ msgstr ""
 msgid "Permissions"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:123
+#: src/coldfront/navigation/menu.py:124
 msgid "System"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:127 src/coldfront/navigation/menu.py:168
+#: src/coldfront/navigation/menu.py:128 src/coldfront/navigation/menu.py:190
 #: src/coldfront/templates/core/plugin.html:10
 #: src/coldfront/templates/core/plugin_list.html:4
 #: src/coldfront/templates/core/plugin_list.html:9
 msgid "Plugins"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:132
+#: src/coldfront/navigation/menu.py:133
 #: src/coldfront/templates/account/base.html:40
 #: src/coldfront/templates/account/notification_list.html:4
 #: src/coldfront/templates/base/layout.html:50
 msgid "Notifications"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:135
+#: src/coldfront/navigation/menu.py:136
 msgid "Jobs"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:139
+#: src/coldfront/navigation/menu.py:140
 msgid "Logging"
 msgstr ""
 
-#: src/coldfront/navigation/menu.py:140
+#: src/coldfront/navigation/menu.py:141
 #: src/coldfront/templates/core/objectchange.html:7
 #: src/coldfront/templates/core/objectchange_list.html:4
 msgid "Change Log"
+msgstr ""
+
+#: src/coldfront/navigation/menu.py:152 src/coldfront/navigation/menu.py:153
+msgid "Invoices"
+msgstr ""
+
+#: src/coldfront/navigation/menu.py:158
+msgid "Rates"
+msgstr ""
+
+#: src/coldfront/navigation/menu.py:159
+msgid "Free Allowances"
+msgstr ""
+
+#: src/coldfront/navigation/menu.py:160
+msgid "Discounts"
 msgstr ""
 
 #: src/coldfront/plugins/navigation.py:55
@@ -2719,7 +3626,10 @@ msgstr ""
 msgid "Denied"
 msgstr ""
 
-#: src/coldfront/ras/choices.py:47 src/coldfront/templates/home.html:154
+#: src/coldfront/ras/choices.py:47 src/coldfront/ras/filtersets/invites.py:23
+#: src/coldfront/ras/forms/invites.py:23 src/coldfront/ras/tables/invites.py:30
+#: src/coldfront/templates/home.html:154
+#: src/coldfront/templates/ras/projectinvite.html:16
 msgid "Expired"
 msgstr ""
 
@@ -2780,6 +3690,13 @@ msgstr ""
 #: src/coldfront/ras/tables/change_requests.py:25
 #: src/coldfront/templates/ras/allocationchangerequest.html:47
 msgid "Requested by"
+msgstr ""
+
+#: src/coldfront/ras/filtersets/invites.py:24
+#: src/coldfront/ras/forms/invites.py:24 src/coldfront/ras/tables/invites.py:31
+#: src/coldfront/templates/ras/projectinvite.html:14
+#: src/coldfront/templates/ras/projectinvite.html:22
+msgid "Accepted"
 msgstr ""
 
 #: src/coldfront/ras/filtersets/projects.py:18
@@ -2865,9 +3782,9 @@ msgid "Validation error applying {ext_path}: {error}"
 msgstr ""
 
 #: src/coldfront/ras/forms/allocations.py:40
-#: src/coldfront/ras/forms/allocations.py:378
-#: src/coldfront/ras/forms/allocations.py:469
-#: src/coldfront/ras/forms/allocations.py:525
+#: src/coldfront/ras/forms/allocations.py:376
+#: src/coldfront/ras/forms/allocations.py:467
+#: src/coldfront/ras/forms/allocations.py:523
 #: src/coldfront/ras/forms/bulk_edit.py:86
 #: src/coldfront/ras/forms/filterset_forms.py:70
 #: src/coldfront/ras/forms/resources.py:87
@@ -2889,37 +3806,14 @@ msgstr ""
 msgid "Selected resource object does not exist."
 msgstr ""
 
-#: src/coldfront/ras/forms/allocations.py:179
-#: src/coldfront/ras/forms/allocations.py:244
-#: src/coldfront/ras/forms/allocations.py:298
-#: src/coldfront/ras/forms/allocations.py:409
-#: src/coldfront/ras/forms/allocations.py:515
-#: src/coldfront/ras/forms/bulk_edit.py:130
-#: src/coldfront/ras/forms/bulk_edit.py:147
-#: src/coldfront/ras/forms/bulk_edit.py:171
-#: src/coldfront/ras/forms/filterset_forms.py:100
-#: src/coldfront/ras/forms/filterset_forms.py:119
-#: src/coldfront/ras/forms/filterset_forms.py:198
-#: src/coldfront/ras/forms/projects.py:37
-#: src/coldfront/ras/forms/projects.py:139
-#: src/coldfront/ras/tables/allocations.py:57
-#: src/coldfront/ras/tables/projects.py:67 src/coldfront/templates/home.html:66
-#: src/coldfront/templates/home.html:152 src/coldfront/templates/home.html:290
-#: src/coldfront/templates/ras/allocation.html:39
-#: src/coldfront/templates/ras/allocationuser.html:34
-#: src/coldfront/users/filtersets.py:77
-#: src/coldfront/users/forms/filterset_forms.py:41
-msgid "Project"
-msgstr ""
-
-#: src/coldfront/ras/forms/allocations.py:188
+#: src/coldfront/ras/forms/allocations.py:186
 msgid ""
 "Please provide the justification for how you intend to use the resource to "
 "further the research goals of your project"
 msgstr ""
 
-#: src/coldfront/ras/forms/allocations.py:383
-#: src/coldfront/ras/forms/allocations.py:474
+#: src/coldfront/ras/forms/allocations.py:381
+#: src/coldfront/ras/forms/allocations.py:472
 #: src/coldfront/ras/forms/bulk_edit.py:213
 #: src/coldfront/ras/forms/change_requests.py:32
 #: src/coldfront/ras/forms/filterset_forms.py:148
@@ -2949,33 +3843,34 @@ msgstr ""
 msgid "Allocation"
 msgstr ""
 
-#: src/coldfront/ras/forms/allocations.py:500
+#: src/coldfront/ras/forms/allocations.py:498
 msgid ""
 "Attribute values for the assigned allocation type, passed as a dictionary"
 msgstr ""
 
-#: src/coldfront/ras/forms/allocations.py:508
+#: src/coldfront/ras/forms/allocations.py:506
 msgid "The owner of the allocation"
 msgstr ""
 
-#: src/coldfront/ras/forms/allocations.py:510
+#: src/coldfront/ras/forms/allocations.py:508
 #: src/coldfront/ras/forms/projects.py:102
 #: src/coldfront/ras/forms/projects.py:134
 msgid "User not found."
 msgstr ""
 
-#: src/coldfront/ras/forms/allocations.py:520
+#: src/coldfront/ras/forms/allocations.py:518
+#: src/coldfront/ras/forms/invites.py:62
 #: src/coldfront/ras/forms/projects.py:144
 msgid "Project not found."
 msgstr ""
 
-#: src/coldfront/ras/forms/allocations.py:528
+#: src/coldfront/ras/forms/allocations.py:526
 msgid ""
 "Resource in the format <app_label>.<model>:<name> (e.g. ras.resource:My "
 "Cluster)"
 msgstr ""
 
-#: src/coldfront/ras/forms/allocations.py:530
+#: src/coldfront/ras/forms/allocations.py:528
 msgid "Resource not found."
 msgstr ""
 
@@ -2987,7 +3882,7 @@ msgstr ""
 #: src/coldfront/ras/forms/resources.py:109
 #: src/coldfront/ras/forms/resources.py:112
 #: src/coldfront/ras/tables/resources.py:58
-#: src/coldfront/templates/ras/resource.html:8
+#: src/coldfront/templates/ras/resource.html:13
 msgid "Resource Type"
 msgstr ""
 
@@ -3014,6 +3909,8 @@ msgstr ""
 
 #: src/coldfront/ras/forms/bulk_edit.py:185
 #: src/coldfront/ras/tables/allocations.py:72 src/coldfront/ris/tables.py:168
+#: src/coldfront/templates/billing/freeallowance.html:36
+#: src/coldfront/templates/billing/invoice.html:43
 #: src/coldfront/templates/ras/allocation.html:47
 #: src/coldfront/templates/ris/funding.html:35
 msgid "Start Date"
@@ -3021,6 +3918,8 @@ msgstr ""
 
 #: src/coldfront/ras/forms/bulk_edit.py:189
 #: src/coldfront/ras/tables/allocations.py:76 src/coldfront/ris/tables.py:171
+#: src/coldfront/templates/billing/freeallowance.html:40
+#: src/coldfront/templates/billing/invoice.html:47
 #: src/coldfront/templates/home.html:215 src/coldfront/templates/home.html:292
 #: src/coldfront/templates/ras/allocation.html:51
 #: src/coldfront/templates/ris/funding.html:39
@@ -3053,6 +3952,14 @@ msgstr ""
 msgid "Attribute Changes"
 msgstr ""
 
+#: src/coldfront/ras/forms/invites.py:46
+msgid "Project Invite"
+msgstr ""
+
+#: src/coldfront/ras/forms/invites.py:93
+msgid "Invite"
+msgstr ""
+
 #: src/coldfront/ras/forms/projects.py:100
 msgid "Owner of the project"
 msgstr ""
@@ -3067,14 +3974,6 @@ msgstr ""
 
 #: src/coldfront/ras/forms/resources.py:105
 msgid "Parent resource"
-msgstr ""
-
-#: src/coldfront/ras/models/allocations.py:56 src/coldfront/ris/models.py:124
-msgid "start date"
-msgstr ""
-
-#: src/coldfront/ras/models/allocations.py:61 src/coldfront/ris/models.py:129
-msgid "end date"
 msgstr ""
 
 #: src/coldfront/ras/models/allocations.py:66
@@ -3216,8 +4115,34 @@ msgstr ""
 msgid "A change request must have at least one proposed change."
 msgstr ""
 
+#: src/coldfront/ras/models/invites.py:59
+#: src/coldfront/users/models/users.py:69
+msgid "email address"
+msgstr ""
+
+#: src/coldfront/ras/models/invites.py:63
+msgid "invite code"
+msgstr ""
+
+#: src/coldfront/ras/models/invites.py:67
+msgid ""
+"SHA-256 digest of the one-time invite token. Auto-generated on creation."
+msgstr ""
+
+#: src/coldfront/ras/models/invites.py:71
+msgid "accepted"
+msgstr ""
+
+#: src/coldfront/ras/models/invites.py:92
+msgid "project invite"
+msgstr ""
+
+#: src/coldfront/ras/models/invites.py:93
+msgid "project invites"
+msgstr ""
+
 #: src/coldfront/ras/models/projects.py:41
-#: src/coldfront/users/models/users.py:184
+#: src/coldfront/users/models/users.py:188
 msgid "group"
 msgstr ""
 
@@ -3225,15 +4150,6 @@ msgstr ""
 msgid ""
 "The Group associated with this project. Users added to the project are "
 "automatically added to this group."
-msgstr ""
-
-#: src/coldfront/ras/models/projects.py:51
-msgid "project"
-msgstr ""
-
-#: src/coldfront/ras/models/projects.py:52 src/coldfront/ris/models.py:80
-#: src/coldfront/ris/models.py:163
-msgid "projects"
 msgstr ""
 
 #: src/coldfront/ras/models/projects.py:78
@@ -3288,9 +4204,26 @@ msgstr ""
 msgid "Apply Change"
 msgstr ""
 
+#: src/coldfront/ras/signals.py:75
+msgid "You have been invited to join a project"
+msgstr ""
+
 #: src/coldfront/ras/tables/change_requests.py:28
 #: src/coldfront/templates/ras/allocationchangerequest.html:51
 msgid "Reviewer"
+msgstr ""
+
+#: src/coldfront/ras/tables/invites.py:50
+#: src/coldfront/templates/account/profile.html:22
+#: src/coldfront/templates/ras/projectinvite.html:8
+#: src/coldfront/templates/users/user.html:20
+#: src/coldfront/users/forms/bulk_edit.py:36
+msgid "Email"
+msgstr ""
+
+#: src/coldfront/ras/tables/invites.py:64
+#: src/coldfront/templates/ras/projectinvite.html:26
+msgid "Invited By"
 msgstr ""
 
 #: src/coldfront/ras/tables/projects.py:29
@@ -3349,21 +4282,34 @@ msgstr ""
 msgid "Cannot delete stores from registry"
 msgstr ""
 
-#: src/coldfront/registry.py:116
+#: src/coldfront/registry.py:125
+msgid "Billing source scope must be a model class."
+msgstr ""
+
+#: src/coldfront/registry.py:127
+msgid "Billing source model must be a model class."
+msgstr ""
+
+#: src/coldfront/registry.py:132
+#, python-brace-format
+msgid "Billing source {name} must be callable."
+msgstr ""
+
+#: src/coldfront/registry.py:207
 msgid "Third-party account key must be a non-empty string."
 msgstr ""
 
-#: src/coldfront/registry.py:118
+#: src/coldfront/registry.py:209
 #, python-brace-format
 msgid "Third-party account '{key}' is already registered."
 msgstr ""
 
-#: src/coldfront/registry.py:120
+#: src/coldfront/registry.py:211
 #, python-brace-format
 msgid "Third-party account '{key}' must specify a display name."
 msgstr ""
 
-#: src/coldfront/registry.py:124
+#: src/coldfront/registry.py:215
 #, python-brace-format
 msgid ""
 "Third-party account '{key}' must specify link_url, callback_url and "
@@ -3376,40 +4322,31 @@ msgstr ""
 
 #: src/coldfront/ris/forms/bulk_edit.py:21
 #: src/coldfront/ris/forms/bulk_edit.py:78
-#: src/coldfront/ris/forms/filterset_forms.py:18
-#: src/coldfront/ris/forms/filterset_forms.py:30
-#: src/coldfront/ris/forms/filterset_forms.py:46
-#: src/coldfront/ris/forms/filterset_forms.py:68 src/coldfront/ris/tables.py:26
-#: src/coldfront/ris/tables.py:75 src/coldfront/ris/tables.py:116
-#: src/coldfront/ris/tables.py:154 src/coldfront/templates/ris/funding.html:27
+#: src/coldfront/ris/forms/filterset_forms.py:26
+#: src/coldfront/ris/forms/filterset_forms.py:38
+#: src/coldfront/ris/forms/filterset_forms.py:78
+#: src/coldfront/ris/forms/filterset_forms.py:101
+#: src/coldfront/ris/tables.py:26 src/coldfront/ris/tables.py:75
+#: src/coldfront/ris/tables.py:116 src/coldfront/ris/tables.py:154
+#: src/coldfront/templates/ris/funding.html:27
 #: src/coldfront/templates/ris/publication.html:22
 msgid "Title"
 msgstr ""
 
 #: src/coldfront/ris/forms/bulk_edit.py:25
-#: src/coldfront/ris/forms/filterset_forms.py:19
-#: src/coldfront/ris/forms/filterset_forms.py:48 src/coldfront/ris/tables.py:29
+#: src/coldfront/ris/forms/filterset_forms.py:27
+#: src/coldfront/ris/forms/filterset_forms.py:80 src/coldfront/ris/tables.py:29
 #: src/coldfront/ris/tables.py:77
 #: src/coldfront/templates/ris/publication.html:26
 msgid "Year"
 msgstr ""
 
 #: src/coldfront/ris/forms/bulk_edit.py:30
-#: src/coldfront/ris/forms/filterset_forms.py:20
-#: src/coldfront/ris/forms/filterset_forms.py:49 src/coldfront/ris/tables.py:32
+#: src/coldfront/ris/forms/filterset_forms.py:28
+#: src/coldfront/ris/forms/filterset_forms.py:81 src/coldfront/ris/tables.py:32
 #: src/coldfront/ris/tables.py:78
 #: src/coldfront/templates/ris/publication.html:30
 msgid "Journal"
-msgstr ""
-
-#: src/coldfront/ris/forms/bulk_edit.py:35
-#: src/coldfront/ris/forms/bulk_edit.py:103
-#: src/coldfront/ris/forms/filterset_forms.py:21
-#: src/coldfront/ris/forms/filterset_forms.py:50 src/coldfront/ris/tables.py:35
-#: src/coldfront/ris/tables.py:85 src/coldfront/ris/tables.py:126
-#: src/coldfront/ris/tables.py:174 src/coldfront/templates/ris/funding.html:47
-#: src/coldfront/templates/ris/publication.html:43
-msgid "Source"
 msgstr ""
 
 #: src/coldfront/ris/forms/bulk_edit.py:36
@@ -3433,8 +4370,8 @@ msgid "Projects this publication is linked to."
 msgstr ""
 
 #: src/coldfront/ris/forms/bulk_edit.py:63
-#: src/coldfront/ris/forms/filterset_forms.py:23
-#: src/coldfront/ris/forms/filterset_forms.py:55
+#: src/coldfront/ris/forms/filterset_forms.py:31
+#: src/coldfront/ris/forms/filterset_forms.py:87
 #: src/coldfront/ris/forms/model_forms.py:29
 msgid "Publication"
 msgstr ""
@@ -3482,23 +4419,33 @@ msgid ""
 "\"10000.00 USD\")."
 msgstr ""
 
-#: src/coldfront/ris/forms/filterset_forms.py:17
-#: src/coldfront/ris/forms/filterset_forms.py:45 src/coldfront/ris/models.py:30
+#: src/coldfront/ris/forms/filterset_forms.py:25
+#: src/coldfront/ris/forms/filterset_forms.py:77 src/coldfront/ris/models.py:30
 #: src/coldfront/ris/tables.py:22 src/coldfront/ris/tables.py:76
 #: src/coldfront/templates/ris/publication.html:18
 msgid "DOI"
 msgstr ""
 
-#: src/coldfront/ris/forms/filterset_forms.py:28
-#: src/coldfront/ris/forms/filterset_forms.py:69
+#: src/coldfront/ris/forms/filterset_forms.py:36
+#: src/coldfront/ris/forms/filterset_forms.py:102
 #: src/coldfront/ris/tables.py:117 src/coldfront/ris/tables.py:148
 msgid "Award number"
 msgstr ""
 
-#: src/coldfront/ris/forms/filterset_forms.py:29
-#: src/coldfront/ris/forms/filterset_forms.py:70
+#: src/coldfront/ris/forms/filterset_forms.py:37
+#: src/coldfront/ris/forms/filterset_forms.py:103
 #: src/coldfront/ris/tables.py:118 src/coldfront/ris/tables.py:151
 msgid "Funding agency"
+msgstr ""
+
+#: src/coldfront/ris/forms/filterset_forms.py:54
+#: src/coldfront/ris/forms/filterset_forms.py:65
+#: src/coldfront/templates/account/third_party_accounts.html:24
+msgid "Providers"
+msgstr ""
+
+#: src/coldfront/ris/forms/filterset_forms.py:55
+msgid "Search only the selected providers; all are searched by default."
 msgstr ""
 
 #: src/coldfront/ris/forms/model_forms.py:22
@@ -3593,17 +4540,17 @@ msgstr ""
 msgid "Remove Selected"
 msgstr ""
 
-#: src/coldfront/ris/providers/base.py:51 src/coldfront/ris/registry.py:67
+#: src/coldfront/ris/providers/base.py:33 src/coldfront/ris/registry.py:67
 #, python-brace-format
 msgid "{class_name} must implement display_name()"
 msgstr ""
 
-#: src/coldfront/ris/providers/base.py:55
+#: src/coldfront/ris/providers/base.py:37
 #, python-brace-format
 msgid "{class_name} must implement search()"
 msgstr ""
 
-#: src/coldfront/ris/providers/base.py:59
+#: src/coldfront/ris/providers/base.py:41
 #, python-brace-format
 msgid "{class_name} must implement fetch()"
 msgstr ""
@@ -3628,10 +4575,6 @@ msgstr ""
 
 #: src/coldfront/ris/tables.py:135
 msgid "No results found. Please use the filter tab to search for funding"
-msgstr ""
-
-#: src/coldfront/ris/tables.py:165
-msgid "Amount"
 msgstr ""
 
 #: src/coldfront/slurm/choices.py:19
@@ -3737,7 +4680,7 @@ msgstr ""
 #: src/coldfront/slurm/forms/model_forms.py:658
 #: src/coldfront/templates/slurm/allocation/slurm_association.html:32
 #: src/coldfront/templates/slurm/slurmassociation.html:24
-#: src/coldfront/templates/slurm/slurmcluster.html:20
+#: src/coldfront/templates/slurm/slurmcluster.html:25
 #: src/coldfront/templates/slurm/slurmuser.html:24
 msgid "Default QOS"
 msgstr ""
@@ -3745,7 +4688,7 @@ msgstr ""
 #: src/coldfront/slurm/filtersets.py:50
 #: src/coldfront/slurm/forms/bulk_edit.py:131
 #: src/coldfront/slurm/forms/filterset_forms.py:49
-#: src/coldfront/templates/slurm/slurmcluster.html:32
+#: src/coldfront/templates/slurm/slurmcluster.html:37
 msgid "Classification"
 msgstr ""
 
@@ -3795,7 +4738,7 @@ msgstr ""
 
 #: src/coldfront/slurm/forms/bulk_edit.py:32
 #: src/coldfront/slurm/forms/bulk_edit.py:186
-#: src/coldfront/templates/slurm/slurmpartition.html:20
+#: src/coldfront/templates/slurm/slurmpartition.html:25
 #: src/coldfront/templates/slurm/slurmqos.html:16
 msgid "Priority"
 msgstr ""
@@ -3862,7 +4805,7 @@ msgstr ""
 
 #: src/coldfront/slurm/forms/bulk_edit.py:112
 #: src/coldfront/slurm/forms/model_forms.py:99
-#: src/coldfront/templates/slurm/slurmcluster.html:36
+#: src/coldfront/templates/slurm/slurmcluster.html:41
 msgid "QOS List"
 msgstr ""
 
@@ -3873,14 +4816,14 @@ msgstr ""
 #: src/coldfront/templates/slurm/allocation/slurm_association.html:36
 #: src/coldfront/templates/slurm/slurmaccount.html:20
 #: src/coldfront/templates/slurm/slurmassociation.html:28
-#: src/coldfront/templates/slurm/slurmcluster.html:24
-#: src/coldfront/templates/slurm/slurmpartition.html:60
+#: src/coldfront/templates/slurm/slurmcluster.html:29
+#: src/coldfront/templates/slurm/slurmpartition.html:65
 msgid "Fairshare"
 msgstr ""
 
 #: src/coldfront/slurm/forms/bulk_edit.py:119
 #: src/coldfront/slurm/forms/model_forms.py:80
-#: src/coldfront/templates/slurm/slurmcluster.html:28
+#: src/coldfront/templates/slurm/slurmcluster.html:33
 msgid "Features"
 msgstr ""
 
@@ -3923,14 +4866,14 @@ msgstr ""
 #: src/coldfront/storage/forms/model_forms.py:374
 #: src/coldfront/storage/forms/model_forms.py:408
 #: src/coldfront/templates/slurm/slurmaccount.html:8
-#: src/coldfront/templates/slurm/slurmpartition.html:8
+#: src/coldfront/templates/slurm/slurmpartition.html:13
 #: src/coldfront/templates/slurm/slurmuser.html:12
 #: src/coldfront/templates/storage/storagesnapshotpolicy.html:12
 msgid "Cluster"
 msgstr ""
 
 #: src/coldfront/slurm/forms/bulk_edit.py:182
-#: src/coldfront/templates/slurm/slurmpartition.html:16
+#: src/coldfront/templates/slurm/slurmpartition.html:21
 msgid "Nodes"
 msgstr ""
 
@@ -3941,7 +4884,7 @@ msgstr ""
 #: src/coldfront/slurm/forms/bulk_edit.py:205
 #: src/coldfront/slurm/forms/filterset_forms.py:72
 #: src/coldfront/storage/forms/filterset_forms.py:102
-#: src/coldfront/templates/slurm/slurmpartition.html:32
+#: src/coldfront/templates/slurm/slurmpartition.html:37
 #: src/coldfront/templates/storage/allocation/storage_quota.html:82
 #: src/coldfront/templates/storage/storagequota.html:58
 msgid "State"
@@ -3949,7 +4892,7 @@ msgstr ""
 
 #: src/coldfront/slurm/forms/bulk_edit.py:210
 #: src/coldfront/slurm/forms/filterset_forms.py:82
-#: src/coldfront/templates/slurm/slurmpartition.html:36
+#: src/coldfront/templates/slurm/slurmpartition.html:41
 msgid "Preempt Mode"
 msgstr ""
 
@@ -3961,7 +4904,7 @@ msgstr ""
 #: src/coldfront/slurm/forms/bulk_edit.py:422
 #: src/coldfront/templates/slurm/allocation/slurm_association.html:40
 #: src/coldfront/templates/slurm/slurmassociation.html:32
-#: src/coldfront/templates/slurm/slurmpartition.html:52
+#: src/coldfront/templates/slurm/slurmpartition.html:57
 msgid "Max Jobs"
 msgstr ""
 
@@ -3969,7 +4912,7 @@ msgstr ""
 #: src/coldfront/slurm/forms/bulk_edit.py:426
 #: src/coldfront/templates/slurm/allocation/slurm_association.html:44
 #: src/coldfront/templates/slurm/slurmassociation.html:36
-#: src/coldfront/templates/slurm/slurmpartition.html:56
+#: src/coldfront/templates/slurm/slurmpartition.html:61
 msgid "Max Submit Jobs"
 msgstr ""
 
@@ -3979,7 +4922,7 @@ msgstr ""
 #: src/coldfront/slurm/forms/model_forms.py:435
 #: src/coldfront/templates/slurm/allocation/slurm_association.html:48
 #: src/coldfront/templates/slurm/slurmassociation.html:40
-#: src/coldfront/templates/slurm/slurmpartition.html:92
+#: src/coldfront/templates/slurm/slurmpartition.html:97
 msgid "Max TRES per Job"
 msgstr ""
 
@@ -3987,12 +4930,12 @@ msgstr ""
 #: src/coldfront/slurm/forms/bulk_edit.py:431
 #: src/coldfront/slurm/forms/model_forms.py:179
 #: src/coldfront/slurm/forms/model_forms.py:437
-#: src/coldfront/slurm/models.py:238 src/coldfront/slurm/models.py:589
+#: src/coldfront/slurm/models.py:238 src/coldfront/slurm/models.py:597
 msgid "JSON dict of TRES limits per job (e.g., {\"node\":5,\"cpu\":20})."
 msgstr ""
 
 #: src/coldfront/slurm/forms/bulk_edit.py:231
-#: src/coldfront/templates/slurm/slurmpartition.html:96
+#: src/coldfront/templates/slurm/slurmpartition.html:101
 msgid "Max TRES per Node"
 msgstr ""
 
@@ -4006,7 +4949,7 @@ msgstr ""
 #: src/coldfront/slurm/forms/bulk_edit.py:434
 #: src/coldfront/templates/slurm/allocation/slurm_association.html:52
 #: src/coldfront/templates/slurm/slurmassociation.html:44
-#: src/coldfront/templates/slurm/slurmpartition.html:100
+#: src/coldfront/templates/slurm/slurmpartition.html:105
 msgid "Max TRES Minutes per Job"
 msgstr ""
 
@@ -4014,7 +4957,7 @@ msgstr ""
 #: src/coldfront/slurm/forms/bulk_edit.py:436
 #: src/coldfront/slurm/forms/model_forms.py:191
 #: src/coldfront/slurm/forms/model_forms.py:443
-#: src/coldfront/slurm/models.py:252 src/coldfront/slurm/models.py:596
+#: src/coldfront/slurm/models.py:252 src/coldfront/slurm/models.py:604
 msgid "JSON dict of TRES minute limits per job (e.g., {\"cpu\":360})."
 msgstr ""
 
@@ -4042,7 +4985,7 @@ msgstr ""
 
 #: src/coldfront/slurm/forms/bulk_edit.py:273
 #: src/coldfront/slurm/forms/model_forms.py:219
-#: src/coldfront/templates/slurm/slurmpartition.html:64
+#: src/coldfront/templates/slurm/slurmpartition.html:69
 msgid "Allowed Groups"
 msgstr ""
 
@@ -4057,7 +5000,7 @@ msgstr ""
 
 #: src/coldfront/slurm/forms/bulk_edit.py:283
 #: src/coldfront/slurm/forms/model_forms.py:230
-#: src/coldfront/templates/slurm/slurmpartition.html:72
+#: src/coldfront/templates/slurm/slurmpartition.html:77
 msgid "Allowed Accounts"
 msgstr ""
 
@@ -4100,13 +5043,13 @@ msgstr ""
 msgid "QOS Remove"
 msgstr ""
 
-#: src/coldfront/slurm/forms/bulk_edit.py:448 src/coldfront/slurm/models.py:613
+#: src/coldfront/slurm/forms/bulk_edit.py:448 src/coldfront/slurm/models.py:621
 msgid ""
 "QOSes to add to this association via QOS+= in the dump format. These are "
 "added on top of the cluster/account defaults."
 msgstr ""
 
-#: src/coldfront/slurm/forms/bulk_edit.py:457 src/coldfront/slurm/models.py:624
+#: src/coldfront/slurm/forms/bulk_edit.py:457 src/coldfront/slurm/models.py:632
 msgid ""
 "QOSes to remove from this association via QOS-= in the dump format. These "
 "are subtracted from the inherited QOS list."
@@ -4134,7 +5077,7 @@ msgstr ""
 
 #: src/coldfront/slurm/forms/bulk_edit.py:521
 #: src/coldfront/slurm/forms/model_forms.py:587
-#: src/coldfront/slurm/models.py:751
+#: src/coldfront/slurm/models.py:759
 msgid ""
 "User's default Slurm account on this cluster. Jobs submitted by this user "
 "without specifying an account use this."
@@ -4145,13 +5088,13 @@ msgstr ""
 msgid "Default WCKey"
 msgstr ""
 
-#: src/coldfront/slurm/forms/bulk_edit.py:529 src/coldfront/slurm/models.py:761
+#: src/coldfront/slurm/forms/bulk_edit.py:529 src/coldfront/slurm/models.py:769
 msgid "Default wckey for fairshare and accounting."
 msgstr ""
 
 #: src/coldfront/slurm/forms/bulk_edit.py:535
 #: src/coldfront/slurm/forms/model_forms.py:596
-#: src/coldfront/slurm/models.py:771
+#: src/coldfront/slurm/models.py:779
 msgid ""
 "Default QOS for this user on this cluster. Applies to all jobs regardless of "
 "association."
@@ -4163,7 +5106,7 @@ msgstr ""
 msgid "Admin Level"
 msgstr ""
 
-#: src/coldfront/slurm/forms/bulk_edit.py:542 src/coldfront/slurm/models.py:780
+#: src/coldfront/slurm/forms/bulk_edit.py:542 src/coldfront/slurm/models.py:788
 msgid ""
 "Slurm administrator level for this user. Not Set (0), None (1), Operator "
 "(2), or Administrator (3). Operators can modify accounting entities; "
@@ -4260,7 +5203,7 @@ msgid ""
 msgstr ""
 
 #: src/coldfront/slurm/models.py:74 src/coldfront/slurm/models.py:258
-#: src/coldfront/slurm/models.py:602
+#: src/coldfront/slurm/models.py:610
 msgid "max wall duration per job"
 msgstr ""
 
@@ -4294,8 +5237,8 @@ msgstr ""
 msgid "slurm qos"
 msgstr ""
 
-#: src/coldfront/slurm/models.py:139 src/coldfront/slurm/models.py:558
-#: src/coldfront/slurm/models.py:770
+#: src/coldfront/slurm/models.py:139 src/coldfront/slurm/models.py:566
+#: src/coldfront/slurm/models.py:778
 msgid "default QOS"
 msgstr ""
 
@@ -4316,7 +5259,7 @@ msgid ""
 msgstr ""
 
 #: src/coldfront/slurm/models.py:155 src/coldfront/slurm/models.py:265
-#: src/coldfront/slurm/models.py:457 src/coldfront/slurm/models.py:567
+#: src/coldfront/slurm/models.py:457 src/coldfront/slurm/models.py:575
 msgid "fairshare"
 msgstr ""
 
@@ -4355,11 +5298,11 @@ msgid "slurm clusters"
 msgstr ""
 
 #: src/coldfront/slurm/models.py:217 src/coldfront/slurm/models.py:450
-#: src/coldfront/slurm/models.py:742 src/coldfront/storage/models.py:448
+#: src/coldfront/slurm/models.py:750 src/coldfront/storage/models.py:448
 msgid "cluster"
 msgstr ""
 
-#: src/coldfront/slurm/models.py:223 src/coldfront/slurm/models.py:574
+#: src/coldfront/slurm/models.py:223 src/coldfront/slurm/models.py:582
 msgid "max jobs"
 msgstr ""
 
@@ -4367,15 +5310,15 @@ msgstr ""
 msgid "Maximum number of jobs that can run simultaneously in this partition."
 msgstr ""
 
-#: src/coldfront/slurm/models.py:230 src/coldfront/slurm/models.py:581
+#: src/coldfront/slurm/models.py:230 src/coldfront/slurm/models.py:589
 msgid "max submit jobs"
 msgstr ""
 
-#: src/coldfront/slurm/models.py:231 src/coldfront/slurm/models.py:582
+#: src/coldfront/slurm/models.py:231 src/coldfront/slurm/models.py:590
 msgid "Maximum number of jobs that can be submitted by this association."
 msgstr ""
 
-#: src/coldfront/slurm/models.py:237 src/coldfront/slurm/models.py:588
+#: src/coldfront/slurm/models.py:237 src/coldfront/slurm/models.py:596
 msgid "max TRES per job"
 msgstr ""
 
@@ -4383,11 +5326,11 @@ msgstr ""
 msgid "max TRES per node"
 msgstr ""
 
-#: src/coldfront/slurm/models.py:251 src/coldfront/slurm/models.py:595
+#: src/coldfront/slurm/models.py:251 src/coldfront/slurm/models.py:603
 msgid "max TRES minutes per job"
 msgstr ""
 
-#: src/coldfront/slurm/models.py:259 src/coldfront/slurm/models.py:603
+#: src/coldfront/slurm/models.py:259 src/coldfront/slurm/models.py:611
 msgid "Maximum wall clock duration per job."
 msgstr ""
 
@@ -4474,107 +5417,115 @@ msgid ""
 "inherit via Fairshare=parent in the dump. "
 msgstr ""
 
-#: src/coldfront/slurm/models.py:469 src/coldfront/slurm/models.py:611
+#: src/coldfront/slurm/models.py:467
+msgid "service units"
+msgstr ""
+
+#: src/coldfront/slurm/models.py:468
+msgid "Service units (SU) granted to this account for billing."
+msgstr ""
+
+#: src/coldfront/slurm/models.py:476 src/coldfront/slurm/models.py:619
 msgid "QOS add"
 msgstr ""
 
-#: src/coldfront/slurm/models.py:471
+#: src/coldfront/slurm/models.py:478
 msgid ""
 "QOSes to add to this account via QOS+= in the dump format. These are added "
 "on top of the cluster defaults."
 msgstr ""
 
-#: src/coldfront/slurm/models.py:479 src/coldfront/slurm/models.py:622
+#: src/coldfront/slurm/models.py:486 src/coldfront/slurm/models.py:630
 msgid "QOS remove"
 msgstr ""
 
-#: src/coldfront/slurm/models.py:481
+#: src/coldfront/slurm/models.py:488
 msgid ""
 "QOSes to remove from this account via QOS-= in the dump format. These are "
 "subtracted from the inherited QOS list."
 msgstr ""
 
-#: src/coldfront/slurm/models.py:497
+#: src/coldfront/slurm/models.py:505
 msgid "slurm account"
 msgstr ""
 
-#: src/coldfront/slurm/models.py:498
+#: src/coldfront/slurm/models.py:506
 msgid "slurm accounts"
 msgstr ""
 
-#: src/coldfront/slurm/models.py:529
+#: src/coldfront/slurm/models.py:537
 msgid "slurm association"
 msgstr ""
 
-#: src/coldfront/slurm/models.py:530
+#: src/coldfront/slurm/models.py:538
 msgid "slurm associations"
 msgstr ""
 
-#: src/coldfront/slurm/models.py:538
+#: src/coldfront/slurm/models.py:546
 msgid "Slurm account"
 msgstr ""
 
-#: src/coldfront/slurm/models.py:539
+#: src/coldfront/slurm/models.py:547
 msgid ""
 "The Slurm account for this allocation. Links the allocation to a named Slurm "
 "accounting account."
 msgstr ""
 
-#: src/coldfront/slurm/models.py:548
+#: src/coldfront/slurm/models.py:556
 msgid "parent account"
 msgstr ""
 
-#: src/coldfront/slurm/models.py:549
+#: src/coldfront/slurm/models.py:557
 msgid "Parent account in the Slurm hierarchy for this association."
 msgstr ""
 
-#: src/coldfront/slurm/models.py:560
+#: src/coldfront/slurm/models.py:568
 msgid ""
 "Default QOS for this association. Jobs under this association inherit this "
 "QOS unless they specify one."
 msgstr ""
 
-#: src/coldfront/slurm/models.py:568
+#: src/coldfront/slurm/models.py:576
 msgid ""
 "Fairshare value for this association. Determines relative priority within "
 "the fairshare tree."
 msgstr ""
 
-#: src/coldfront/slurm/models.py:575
+#: src/coldfront/slurm/models.py:583
 msgid "Maximum number of jobs that can run simultaneously in this association."
 msgstr ""
 
-#: src/coldfront/slurm/models.py:667
+#: src/coldfront/slurm/models.py:675
 #, python-format
 msgid ""
 "Another association already uses account '%(account)s' for a direct "
 "allocation on cluster '%(cluster)s'."
 msgstr ""
 
-#: src/coldfront/slurm/models.py:689
+#: src/coldfront/slurm/models.py:697
 #, python-format
 msgid ""
 "Another association already uses account '%(account)s' for partition "
 "'%(partition)s' on cluster '%(cluster)s'."
 msgstr ""
 
-#: src/coldfront/slurm/models.py:749
+#: src/coldfront/slurm/models.py:757
 msgid "default account"
 msgstr ""
 
-#: src/coldfront/slurm/models.py:760
+#: src/coldfront/slurm/models.py:768
 msgid "default wckey"
 msgstr ""
 
-#: src/coldfront/slurm/models.py:778
+#: src/coldfront/slurm/models.py:786
 msgid "admin level"
 msgstr ""
 
-#: src/coldfront/slurm/models.py:800
+#: src/coldfront/slurm/models.py:808
 msgid "slurm user"
 msgstr ""
 
-#: src/coldfront/slurm/models.py:801
+#: src/coldfront/slurm/models.py:809
 msgid "slurm users"
 msgstr ""
 
@@ -4618,11 +5569,6 @@ msgstr ""
 msgid "Weekly"
 msgstr ""
 
-#: src/coldfront/storage/choices.py:36
-#: src/coldfront/storage/forms/bulk_edit.py:268
-msgid "Monthly"
-msgstr ""
-
 #: src/coldfront/storage/filtersets.py:20
 #: src/coldfront/storage/forms/bulk_edit.py:30
 #: src/coldfront/storage/forms/bulk_edit.py:157
@@ -4631,7 +5577,7 @@ msgstr ""
 #: src/coldfront/storage/forms/model_forms.py:208
 #: src/coldfront/templates/storage/allocation/storage_quota.html:40
 #: src/coldfront/templates/storage/storagequota.html:32
-#: src/coldfront/templates/storage/storageresource.html:24
+#: src/coldfront/templates/storage/storageresource.html:29
 msgid "Clusters"
 msgstr ""
 
@@ -4679,7 +5625,7 @@ msgid "Retention Days"
 msgstr ""
 
 #: src/coldfront/storage/forms/bulk_edit.py:35
-#: src/coldfront/templates/storage/storageresource.html:30
+#: src/coldfront/templates/storage/storageresource.html:35
 msgid "Path Template"
 msgstr ""
 
@@ -4694,7 +5640,7 @@ msgstr ""
 #: src/coldfront/storage/forms/model_forms.py:163
 #: src/coldfront/storage/forms/model_forms.py:171
 #: src/coldfront/templates/storage/storagecluster.html:32
-#: src/coldfront/templates/storage/storageresource.html:34
+#: src/coldfront/templates/storage/storageresource.html:39
 msgid "Capacity"
 msgstr ""
 
@@ -4929,11 +5875,6 @@ msgstr ""
 msgid "Sum of hard_limit_bytes for all active quotas. Updated automatically."
 msgstr ""
 
-#: src/coldfront/storage/models.py:73 src/coldfront/storage/models.py:190
-#: src/coldfront/storage/models.py:350
-msgid "used"
-msgstr ""
-
 #: src/coldfront/storage/models.py:74
 msgid "Sum of actual usage from all active quotas. Updated by sync."
 msgstr ""
@@ -5081,15 +6022,15 @@ msgstr ""
 msgid "storage snapshot policies"
 msgstr ""
 
-#: src/coldfront/tables/columns.py:149
+#: src/coldfront/tables/columns.py:152
 msgid "Select all"
 msgstr ""
 
-#: src/coldfront/tables/columns.py:160
+#: src/coldfront/tables/columns.py:163
 msgid "Toggle all"
 msgstr ""
 
-#: src/coldfront/tables/columns.py:328
+#: src/coldfront/tables/columns.py:331
 #: src/coldfront/templates/cotton/table/controls.html:60
 msgid "Toggle Dropdown"
 msgstr ""
@@ -5102,11 +6043,6 @@ msgstr ""
 #: src/coldfront/tables/tables.py:303
 #: src/coldfront/templates/generic/bulk_import.html:130
 msgid "Field"
-msgstr ""
-
-#: src/coldfront/tables/tables.py:306
-#: src/coldfront/templates/core/customfieldchoiceset.html:37
-msgid "Value"
 msgstr ""
 
 #: src/coldfront/tables/utils.py:58
@@ -5143,6 +6079,11 @@ msgstr ""
 
 #: src/coldfront/templates/account/notification.html:41
 msgid "Read At"
+msgstr ""
+
+#: src/coldfront/templates/account/notification.html:47
+#: src/coldfront/templates/account/third_party_accounts.html:19
+msgid "Link"
 msgstr ""
 
 #: src/coldfront/templates/account/notification.html:50
@@ -5219,12 +6160,6 @@ msgstr ""
 msgid "User Profile"
 msgstr ""
 
-#: src/coldfront/templates/account/profile.html:22
-#: src/coldfront/templates/users/user.html:20
-#: src/coldfront/users/forms/bulk_edit.py:36
-msgid "Email"
-msgstr ""
-
 #: src/coldfront/templates/account/profile.html:26
 #: src/coldfront/templates/users/user.html:24
 msgid "Account Created"
@@ -5264,10 +6199,6 @@ msgstr ""
 msgid "Unlink"
 msgstr ""
 
-#: src/coldfront/templates/account/third_party_accounts.html:24
-msgid "Providers"
-msgstr ""
-
 #: src/coldfront/templates/account/third_party_accounts.html:25
 msgid "No third-party providers are configured."
 msgstr ""
@@ -5296,6 +6227,82 @@ msgstr ""
 
 #: src/coldfront/templates/base/layout.html:58
 msgid "unread notifications"
+msgstr ""
+
+#: src/coldfront/templates/billing/freeallowance.html:24
+msgid "Total Quantity"
+msgstr ""
+
+#: src/coldfront/templates/billing/freeallowance.html:28
+#: src/coldfront/templates/storage/allocation/storage_quota.html:74
+#: src/coldfront/templates/storage/storagecluster.html:44
+#: src/coldfront/templates/storage/storagequota.html:54
+#: src/coldfront/templates/storage/storageresource.html:51
+msgid "Used"
+msgstr ""
+
+#: src/coldfront/templates/billing/freeallowance.html:32
+msgid "Remaining"
+msgstr ""
+
+#: src/coldfront/templates/billing/invoice.html:27
+msgid "Overdue"
+msgstr ""
+
+#: src/coldfront/templates/billing/invoice.html:65
+msgid "Allowance Total"
+msgstr ""
+
+#: src/coldfront/templates/billing/invoice.html:69
+msgid "Discount Total"
+msgstr ""
+
+#: src/coldfront/templates/billing/invoice.html:73
+msgid "Grand Total"
+msgstr ""
+
+#: src/coldfront/templates/billing/invoice.html:83
+msgid "Payment Date"
+msgstr ""
+
+#: src/coldfront/templates/billing/invoice.html:87
+msgid "Payment Amount"
+msgstr ""
+
+#: src/coldfront/templates/billing/invoice.html:91
+msgid "Payment Method"
+msgstr ""
+
+#: src/coldfront/templates/billing/invoice.html:100
+msgid "Line Items"
+msgstr ""
+
+#: src/coldfront/templates/billing/invoicelineitem.html:13
+msgid "Line Type"
+msgstr ""
+
+#: src/coldfront/templates/billing/invoicelineitem.html:33
+msgid "Unit Price"
+msgstr ""
+
+#: src/coldfront/templates/billing/rate.html:13
+msgid "Billing Unit"
+msgstr ""
+
+#: src/coldfront/templates/billing/rate.html:21
+msgid "Charge Basis"
+msgstr ""
+
+#: src/coldfront/templates/billing/rate.html:26
+msgid "Billed Sources"
+msgstr ""
+
+#: src/coldfront/templates/billing/rate.html:31
+msgid "Effective Start"
+msgstr ""
+
+#: src/coldfront/templates/billing/rate.html:35
+msgid "Effective End"
 msgstr ""
 
 #: src/coldfront/templates/builtins/applied_filters.html:11
@@ -5331,7 +6338,7 @@ msgid "Move Down"
 msgstr ""
 
 #: src/coldfront/templates/builtins/table_config_form.html:43
-#: src/coldfront/templates/cotton/form/filters.html:29
+#: src/coldfront/templates/cotton/form/filters.html:32
 msgid "Reset"
 msgstr ""
 
@@ -5600,6 +6607,12 @@ msgstr ""
 msgid "All Data"
 msgstr ""
 
+#: src/coldfront/templates/cotton/button/request_allocation.html:7
+#: src/coldfront/templates/ras/project.html:9
+#: src/coldfront/templates/ras/project/allocations.html:8
+msgid "Request Allocation"
+msgstr ""
+
 #: src/coldfront/templates/cotton/card/comments.html:8
 msgid "comment(s)"
 msgstr ""
@@ -5608,7 +6621,7 @@ msgstr ""
 msgid "Related"
 msgstr ""
 
-#: src/coldfront/templates/cotton/card/schema.html:2
+#: src/coldfront/templates/cotton/card/schema.html:4
 msgid "Allocation Attribute Schema"
 msgstr ""
 
@@ -5664,6 +6677,46 @@ msgstr ""
 
 #: src/coldfront/templates/cotton/table/paginator.html:103
 msgid "Per Page"
+msgstr ""
+
+#: src/coldfront/templates/email/html/project_invite.html:10
+#, python-format
+msgid ""
+"You have been invited to join the\n"
+"        project\n"
+"        %(project_name)s at %(center_name)s. To accept this invitation, "
+"click the link below and login:\n"
+"    "
+msgstr ""
+
+#: src/coldfront/templates/email/html/project_invite.html:17
+#: src/coldfront/templates/email/txt/project_invite.txt:11
+msgid "Accept Invitation"
+msgstr ""
+
+#: src/coldfront/templates/email/html/project_invite.html:21
+#, python-format
+msgid ""
+"\n"
+"        This invitation will expire %(expire)s. If you were not expecting "
+"this invitation, you can safely ignore this\n"
+"        email.\n"
+"    "
+msgstr ""
+
+#: src/coldfront/templates/email/txt/project_invite.txt:7
+#, python-format
+msgid ""
+"\n"
+"You have been invited to join the project %(project_name)s at "
+"%(center_name)s. To accept this invitation, click the link below and login:"
+msgstr ""
+
+#: src/coldfront/templates/email/txt/project_invite.txt:13
+#, python-format
+msgid ""
+"This invitation will expire %(expire)s. If you were not expecting this "
+"invitation, you can safely ignore this email."
 msgstr ""
 
 #: src/coldfront/templates/generic/bulk_delete.html:36
@@ -5924,14 +6977,38 @@ msgstr ""
 msgid "End"
 msgstr ""
 
-#: src/coldfront/templates/ras/project.html:9
-#: src/coldfront/templates/ras/project/allocations.html:8
-msgid "Request Allocation"
+#: src/coldfront/templates/ras/invite_accept.html:14
+#: src/coldfront/templates/ras/invite_accept.html:28
+msgid "Accept Invite"
+msgstr ""
+
+#: src/coldfront/templates/ras/invite_accept.html:22
+#, python-format
+msgid ""
+"You are about to join the project\n"
+"                            <strong>%(project)s</strong> as a member."
+msgstr ""
+
+#: src/coldfront/templates/ras/invite_success.html:4
+msgid "Invite Accepted"
+msgstr ""
+
+#: src/coldfront/templates/ras/invite_success.html:8
+#, python-format
+msgid "You have joined the project <strong>%(invite.project.name)s</strong>."
 msgstr ""
 
 #: src/coldfront/templates/ras/project/funding.html:10
 #: src/coldfront/templates/ris/funding_add.html:4
 msgid "Add Funding"
+msgstr ""
+
+#: src/coldfront/templates/ras/project/invites.html:10
+msgid "Invite User"
+msgstr ""
+
+#: src/coldfront/templates/ras/project/invites.html:16
+msgid "Import Invites"
 msgstr ""
 
 #: src/coldfront/templates/ras/project/publications.html:10
@@ -6001,7 +7078,7 @@ msgstr ""
 
 #: src/coldfront/templates/slurm/allocation/slurm_association.html:56
 #: src/coldfront/templates/slurm/slurmassociation.html:48
-#: src/coldfront/templates/slurm/slurmpartition.html:104
+#: src/coldfront/templates/slurm/slurmpartition.html:109
 #: src/coldfront/templates/slurm/slurmqos.html:36
 msgid "Max Wall Duration per Job"
 msgstr ""
@@ -6018,15 +7095,15 @@ msgstr ""
 msgid "Slurm Dump"
 msgstr ""
 
-#: src/coldfront/templates/slurm/slurmpartition.html:28
+#: src/coldfront/templates/slurm/slurmpartition.html:33
 msgid "Default Time"
 msgstr ""
 
-#: src/coldfront/templates/slurm/slurmpartition.html:40
+#: src/coldfront/templates/slurm/slurmpartition.html:45
 msgid "Default Memory Per CPU"
 msgstr ""
 
-#: src/coldfront/templates/slurm/slurmpartition.html:80
+#: src/coldfront/templates/slurm/slurmpartition.html:85
 msgid "Allow QOS"
 msgstr ""
 
@@ -6041,13 +7118,6 @@ msgstr ""
 
 #: src/coldfront/templates/storage/allocation/storage_quota.html:66
 msgid "Grace Period"
-msgstr ""
-
-#: src/coldfront/templates/storage/allocation/storage_quota.html:74
-#: src/coldfront/templates/storage/storagecluster.html:44
-#: src/coldfront/templates/storage/storagequota.html:54
-#: src/coldfront/templates/storage/storageresource.html:46
-msgid "Used"
 msgstr ""
 
 #: src/coldfront/templates/storage/allocation/storage_quota.html:78
@@ -6067,12 +7137,12 @@ msgid " minutes"
 msgstr ""
 
 #: src/coldfront/templates/storage/storagecluster.html:36
-#: src/coldfront/templates/storage/storageresource.html:38
+#: src/coldfront/templates/storage/storageresource.html:43
 msgid "Unlimited"
 msgstr ""
 
 #: src/coldfront/templates/storage/storagecluster.html:40
-#: src/coldfront/templates/storage/storageresource.html:42
+#: src/coldfront/templates/storage/storageresource.html:47
 msgid "Allocated"
 msgstr ""
 
@@ -6399,7 +7469,7 @@ msgid "permission"
 msgstr ""
 
 #: src/coldfront/users/models/permissions.py:68
-#: src/coldfront/users/models/users.py:163
+#: src/coldfront/users/models/users.py:167
 msgid "permissions"
 msgstr ""
 
@@ -6498,58 +7568,54 @@ msgid ""
 "({timezone})."
 msgstr ""
 
-#: src/coldfront/users/models/users.py:45
+#: src/coldfront/users/models/users.py:49
 msgid "username"
 msgstr ""
 
-#: src/coldfront/users/models/users.py:48
+#: src/coldfront/users/models/users.py:52
 msgid "Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only."
 msgstr ""
 
-#: src/coldfront/users/models/users.py:51
+#: src/coldfront/users/models/users.py:55
 msgid "A user with that username already exists."
 msgstr ""
 
-#: src/coldfront/users/models/users.py:55
+#: src/coldfront/users/models/users.py:59
 msgid "first name"
 msgstr ""
 
-#: src/coldfront/users/models/users.py:60
+#: src/coldfront/users/models/users.py:64
 msgid "last name"
 msgstr ""
 
-#: src/coldfront/users/models/users.py:65
-msgid "email address"
-msgstr ""
-
-#: src/coldfront/users/models/users.py:69
+#: src/coldfront/users/models/users.py:73
 msgid "staff status"
 msgstr ""
 
-#: src/coldfront/users/models/users.py:71
+#: src/coldfront/users/models/users.py:75
 msgid "Designates whether the user can log into this admin site."
 msgstr ""
 
-#: src/coldfront/users/models/users.py:74
+#: src/coldfront/users/models/users.py:78
 msgid "active"
 msgstr ""
 
-#: src/coldfront/users/models/users.py:77
+#: src/coldfront/users/models/users.py:81
 msgid ""
 "Designates whether this user should be treated as active. Unselect this "
 "instead of deleting accounts."
 msgstr ""
 
-#: src/coldfront/users/models/users.py:81
+#: src/coldfront/users/models/users.py:85
 msgid "date joined"
 msgstr ""
 
-#: src/coldfront/users/models/users.py:86
-#: src/coldfront/users/models/users.py:185
+#: src/coldfront/users/models/users.py:90
+#: src/coldfront/users/models/users.py:189
 msgid "groups"
 msgstr ""
 
-#: src/coldfront/users/models/users.py:112
+#: src/coldfront/users/models/users.py:116
 msgid "users"
 msgstr ""
 

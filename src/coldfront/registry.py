@@ -42,6 +42,7 @@ registry = Registry(
         "tables": collections.defaultdict(dict),
         "views": collections.defaultdict(dict),
         "allocation_extensions": collections.defaultdict(list),
+        "billing_sources": dict(),
         "third_party_accounts": dict(),
     }
 )
@@ -89,6 +90,96 @@ def get_allocation_extensions(model_or_path):
     else:
         path = str(model_or_path)
     return list(registry["allocation_extensions"].get(path, []))
+
+
+def register_billing_source(scope, model, *, get_billable=None, get_rate_scope=None, get_quantity=None):
+    """
+    Register a billing source model with ColdFront billing.
+
+    Registration is last-wins: registering the same model again replaces the
+    previous entry, so a center plugin can override a built-in source.
+
+    Args:
+        scope: The resource model class the Rate's ``scope_object`` GenericFK
+            targets (e.g. ``StorageResource``, ``SlurmCluster``, ``SlurmQOS``).
+            Used by the Rate form to discover registered sources and by invoice
+            generation to resolve rates.
+        model: The Django model class for the billing source
+            (e.g. ``StorageQuota``, ``SlurmAccount``, ``SlurmQOS``).
+        get_billable: Optional callable ``(user=None, project=None)`` returning
+            a queryset of billable source instances. Defaults to
+            ``model.objects.all()``.
+        get_rate_scope: Optional callable ``(source)`` returning the rate scope
+            object instance for a source. Must return an instance of ``scope``.
+        get_quantity: Optional callable ``(source)`` returning the native units
+            to bill for a source (e.g. ``hard_limit_bytes``, ``service_units``,
+            or ``1`` for a per-item fixed fee).
+
+    Raises:
+        ValueError: If ``scope`` or ``model`` is not a model class, or a
+            provided callback is not callable.
+    """
+    from django.db import models
+
+    if not isinstance(scope, type) or not issubclass(scope, models.Model):
+        raise ValueError(_("Billing source scope must be a model class."))
+    if not isinstance(model, type) or not issubclass(model, models.Model):
+        raise ValueError(_("Billing source model must be a model class."))
+
+    callbacks = {"get_billable": get_billable, "get_rate_scope": get_rate_scope, "get_quantity": get_quantity}
+    for name, cb in callbacks.items():
+        if cb is not None and not callable(cb):
+            raise ValueError(_("Billing source {name} must be callable.").format(name=name))
+
+    registry["billing_sources"][model._meta.label_lower] = {
+        "scope": scope,
+        "model": model,
+        "get_billable": get_billable or (lambda user=None, project=None: model.objects.all()),
+        "get_rate_scope": get_rate_scope,
+        "get_quantity": get_quantity,
+    }
+
+
+def get_billing_source(model_or_path):
+    """
+    Return the billing source registration for a model class or dotted string
+    path, or ``None`` if the model is not a registered billing source.
+    """
+    if hasattr(model_or_path, "_meta"):
+        path = model_or_path._meta.label_lower
+    else:
+        path = str(model_or_path)
+    return registry["billing_sources"].get(path)
+
+
+def get_billing_sources(scope=None):
+    """
+    Return the list of registered billing source descriptors, optionally
+    filtered to those whose rate scope is the given ``scope`` model class.
+    """
+    sources = registry["billing_sources"].values()
+    if scope is not None:
+        sources = [src for src in sources if src["scope"] is scope]
+    return list(sources)
+
+
+def billing_scope_types():
+    """
+    Return an ObjectType queryset for every model class registered as a
+    billing-source rate scope. Empty when no billing sources are registered.
+
+    Rate scope types are the ``scope`` of each registration (the object a
+    Rate attaches to), not the billable ``model``.
+    """
+    from django.db.models import Q
+
+    from coldfront.core.models import ObjectType
+
+    q = Q()
+    for src in get_billing_sources():
+        scope = src["scope"]
+        q |= Q(app_label=scope._meta.app_label, model=scope._meta.model_name)
+    return ObjectType.objects.filter(q).order_by("app_label", "model") if q else ObjectType.objects.none()
 
 
 def register_thirdparty_account(key, *, display_name, link_url, callback_url, unlink_url):

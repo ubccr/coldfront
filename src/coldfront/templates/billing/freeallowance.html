@@ -1,0 +1,57 @@
+{% extends 'billing/base.html' %}
+{% load i18n %}
+
+{% block content %}
+    <c-layout.panels>
+        <c-slot name="left">
+            <c-card.fields :object="object" only>
+                <c-card.fields.item label="{% trans 'Owner' %}">
+                    {{ object.owner|linkify }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Project' %}">
+                    {{ object.project|placeholder }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Scope' %}">
+                    {{ object.scope_object|placeholder }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Unit' %}">
+                    {{ object.unit_format }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Total Quantity' %}">
+                    {{ object.quantity_display }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Used' %}">
+                    {{ object.used }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Remaining' %}">
+                    {{ object.remaining }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Start Date' %}">
+                    {{ object.start_date|isodate|default:'—' }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'End Date' %}">
+                    {{ object.end_date|isodate|default:'—' }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Description' %}">
+                    {{ object.description|placeholder }}
+                </c-card.fields.item>
+            </c-card.fields>
+
+            <c-card.tags :object="object" only />
+        </c-slot>
+
+        <c-slot name="right">
+            <c-card.custom_fields :object="object" only />
+            <c-card.related_objects :object="object" :models="related_models" only />
+        </c-slot>
+    </c-layout.panels>
+{% endblock %}

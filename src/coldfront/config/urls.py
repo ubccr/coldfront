@@ -51,6 +51,7 @@ urlpatterns = [
     path("slurm/", include("coldfront.slurm.urls")),
     path("storage/", include("coldfront.storage.urls")),
     path("ris/", include("coldfront.ris.urls")),
+    path("billing/", include("coldfront.billing.urls")),
     # REST API
     path("api/", APIRootView.as_view(), name="api-root"),
     path("api/status/", StatusView.as_view(), name="api-status"),
@@ -62,6 +63,7 @@ urlpatterns = [
     path("api/ris/", include("coldfront.ris.api.urls")),
     path("api/slurm/", include("coldfront.slurm.api.urls")),
     path("api/storage/", include("coldfront.storage.api.urls")),
+    path("api/billing/", include("coldfront.billing.api.urls")),
     # REST API schema
     path(
         "api/schema/",

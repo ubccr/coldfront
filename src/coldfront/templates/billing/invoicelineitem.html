@@ -1,0 +1,43 @@
+{% extends 'billing/base.html' %}
+{% load i18n %}
+{% load djmoney %}
+
+{% block content %}
+    <c-layout.panels>
+        <c-slot name="left">
+            <c-card.fields :object="object" only>
+                <c-card.fields.item label="{% trans 'Invoice' %}">
+                    {{ object.invoice|linkify }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Line Type' %}">
+                    <c-ui.badge value="{{ object.get_line_type_display }}" :bg_color="object.get_status_color" />
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Source' %}">
+                    {{ object.source_object|placeholder }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Description' %}">
+                    {{ object.description|placeholder }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Quantity' %}">
+                    {{ object.quantity_display|placeholder }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Unit' %}">
+                    {{ object.unit|placeholder }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Unit Price' %}">
+                    {% if object.unit_price %}{% money_localize object.unit_price %}{% else %}—{% endif %}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Amount' %}">
+                    {% if object.amount %}{% money_localize object.amount %}{% else %}—{% endif %}
+                </c-card.fields.item>
+            </c-card.fields>
+        </c-slot>
+    </c-layout.panels>
+{% endblock %}

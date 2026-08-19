@@ -1,0 +1,52 @@
+{% extends 'billing/base.html' %}
+{% load i18n %}
+{% load djmoney %}
+
+{% block content %}
+    <c-layout.panels>
+        <c-slot name="left">
+            <c-card.fields :object="object" only>
+                <c-card.fields.item label="{% trans 'Scope' %}">
+                    {{ object.scope_object|placeholder }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Billing Unit' %}">
+                    {{ object.unit_display }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Amount' %}">
+                    {% if object.amount %}{% money_localize object.amount %}{% else %}—{% endif %}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Charge Basis' %}">
+                    {{ object.get_charge_basis_display }}
+                </c-card.fields.item>
+
+                {% if billing_sources_hint %}
+                    <c-card.fields.item label="{% trans 'Billed Sources' %}">
+                        {{ billing_sources_hint }}
+                    </c-card.fields.item>
+                {% endif %}
+
+                <c-card.fields.item label="{% trans 'Effective Start' %}">
+                    {{ object.effective_start|isodate|default:'—' }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Effective End' %}">
+                    {{ object.effective_end|isodate|default:'—' }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Description' %}">
+                    {{ object.description|placeholder }}
+                </c-card.fields.item>
+            </c-card.fields>
+
+            <c-card.tags :object="object" only />
+        </c-slot>
+
+        <c-slot name="right">
+            <c-card.custom_fields :object="object" only />
+            <c-card.related_objects :object="object" :models="related_models" only />
+        </c-slot>
+    </c-layout.panels>
+{% endblock %}

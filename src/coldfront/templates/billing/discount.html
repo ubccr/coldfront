@@ -1,0 +1,37 @@
+{% extends 'billing/base.html' %}
+{% load i18n %}
+
+{% block content %}
+    <c-layout.panels>
+        <c-slot name="left">
+            <c-card.fields :object="object" only>
+                <c-card.fields.item label="{% trans 'Owner' %}">
+                    {{ object.owner|linkify }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Project' %}">
+                    {{ object.project|placeholder }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Type' %}">
+                    {{ object.get_type_display }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Value' %}">
+                    {{ object.value|placeholder }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Description' %}">
+                    {{ object.description|placeholder }}
+                </c-card.fields.item>
+            </c-card.fields>
+
+            <c-card.tags :object="object" only />
+        </c-slot>
+
+        <c-slot name="right">
+            <c-card.custom_fields :object="object" only />
+            <c-card.related_objects :object="object" :models="related_models" only />
+        </c-slot>
+    </c-layout.panels>
+{% endblock %}

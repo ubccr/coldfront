@@ -1,0 +1,113 @@
+{% extends 'billing/base.html' %}
+{% load buttons %}
+{% load i18n %}
+{% load djmoney %}
+
+{% block extra_controls %}
+    {% if transitions %}
+        {% action_buttons transitions object %}
+    {% endif %}
+{% endblock extra_controls %}
+
+{% block content %}
+    <c-layout.panels>
+        <c-slot name="left">
+            <c-card.fields :object="object" only>
+                <c-card.fields.item label="{% trans 'Invoice' %}">
+                    {{ object.slug }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Owner' %}">
+                    {{ object.owner|linkify }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Status' %}">
+                    <c-ui.badge value="{{ object.get_status_display }}" :bg_color="object.get_status_color" />
+                    {% if object.is_overdue %}
+                        <c-ui.badge value="{% trans 'Overdue' %}" bg_color="red" />
+                    {% endif %}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Projects' %}">
+                    {% for project in object.projects.all %}
+                        {{ project|linkify }}{% if not forloop.last %}, {% endif %}
+                    {% empty %}
+                        {% trans 'All projects' %}
+                    {% endfor %}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Description' %}">
+                    {{ object.description|placeholder }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Start Date' %}">
+                    {{ object.start_date|isodate|default:'—' }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'End Date' %}">
+                    {{ object.end_date|isodate|default:'—' }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Due Date' %}">
+                    {{ object.due_date|isodate|default:'—' }}
+                </c-card.fields.item>
+            </c-card.fields>
+
+            <c-card.fields only>
+                <c-slot name="header">
+                    {% trans 'Totals' %}
+                </c-slot>
+
+                <c-card.fields.item label="{% trans 'Subtotal' %}">
+                    {% if object.subtotal %}{% money_localize object.subtotal %}{% else %}—{% endif %}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Allowance Total' %}">
+                    {% if object.allowance_total %}{% money_localize object.allowance_total %}{% else %}—{% endif %}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Discount Total' %}">
+                    {% if object.discount_total %}{% money_localize object.discount_total %}{% else %}—{% endif %}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Grand Total' %}">
+                    {% if object.grand_total %}{% money_localize object.grand_total %}{% else %}—{% endif %}
+                </c-card.fields.item>
+            </c-card.fields>
+
+            <c-card.fields only>
+                <c-slot name="header">
+                    {% trans 'Payment' %}
+                </c-slot>
+
+                <c-card.fields.item label="{% trans 'Payment Date' %}">
+                    {{ object.payment_date|isodate|default:'—' }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Payment Amount' %}">
+                    {% if object.payment_amount %}{% money_localize object.payment_amount %}{% else %}—{% endif %}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Payment Method' %}">
+                    {{ object.payment_method|default:'—' }}
+                </c-card.fields.item>
+            </c-card.fields>
+
+            <c-card.tags :object="object" only />
+        </c-slot>
+
+        <c-slot name="right">
+            <c-card.list header='{% trans "Line Items" %}' only>
+                {% for l in object.line_items.all %}
+                    <c-card.list.item :count="l.quantity_display" link="{{ l.get_absolute_url }}">
+                        {% if l.amount %}{% money_localize l.amount %}{% endif %}
+                        {{ l.description|placeholder }}
+                    </c-card.list.item>
+                {% endfor %}
+            </c-card.list>
+
+            <c-card.custom_fields :object="object" only />
+            <c-card.related_objects :object="object" :models="related_models" only />
+        </c-slot>
+    </c-layout.panels>
+{% endblock %}

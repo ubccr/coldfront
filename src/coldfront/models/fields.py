@@ -49,6 +49,7 @@ class AutoSlugField(SlugField):
         kwargs.setdefault("blank", True)
         kwargs.setdefault("unique", True)
         kwargs.setdefault("db_index", True)
+        kwargs.setdefault("help_text", _("Unique slug. Leave blank and one will be auto generated."))
 
         self.allow_unicode = kwargs.pop("allow_unicode", False)
         self.max_retries = 5
