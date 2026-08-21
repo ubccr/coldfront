@@ -248,7 +248,7 @@
                         {% for resource_type, resource_list in resources.items %}
                             <h6 class="mt-2 mb-1">{{ resource_type }}</h6>
                             <div class="d-flex flex-wrap gap-1">
-                                {% for resource in resource_list %}
+                                {% for resource in resource_list|slice:":10" %}
                                     <a href="{{ resource.link }}" class="btn btn-outline-primary btn-sm">
                                         {{ resource.name }}
                                     </a>
@@ -326,7 +326,7 @@
                         {% for resource_type, resource_list in resources.items %}
                             <h6 class="mt-2 mb-1">{{ resource_type }}</h6>
                             <div class="d-flex flex-wrap gap-1">
-                                {% for resource in resource_list %}
+                                {% for resource in resource_list|slice:":10" %}
                                     <a href="{{ resource.link }}" class="btn btn-outline-primary btn-sm">
                                         {{ resource.name }}
                                     </a>
@@ -346,9 +346,12 @@
         {% for resource_type, resource_list in resources.items %}
             <c-layout.col>
                 <c-card>
-                    <h2 class="card-header">{{ resource_type }}</h2>
+                    <h2 class="card-header">
+                        {{ resource_type }}
+                        <c-ui.badge value="{{ resource_list|length }}" bg_color="primary" />
+                    </h2>
                     <div class="card-body">
-                        {% for resource in resource_list %}
+                        {% for resource in resource_list|slice:":10" %}
                             <a href="{{ resource.link }}" class="btn btn-outline-primary mb-1 w-100 text-start">
                                 {{ resource.name }}
                             </a>
