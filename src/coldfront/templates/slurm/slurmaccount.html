@@ -21,6 +21,10 @@
                     {{ object.fairshare|placeholder }}
                 </c-card.fields.item>
 
+                <c-card.fields.item label="{% trans 'Service Units' %}">
+                    {{ object.service_units|placeholder }}
+                </c-card.fields.item>
+
                 <c-card.fields.item label="{% trans 'QOS Add' %}">
                     {% for qos in object.qos_add.all %}
                         <c-ui.badge link="{{ qos.get_absolute_url }}" :value="qos" />

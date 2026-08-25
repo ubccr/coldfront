@@ -54,6 +54,15 @@ ALLOCATION_EXTENSION_REQUESTABLE_FIELDS = ENV.dict(
     cast={"value": tuple},
     default={},
 )
+# Fields exposed only on the allocation change request form (not the
+# allocation request form).  Keyed by the fully-qualified class path, e.g.
+# "coldfront.slurm.models.SlurmAssociation".  Values may be plain field names
+# or related-object markers like "$related:<fk>.<field>".
+ALLOCATION_EXTENSION_CHANGEABLE_FIELDS = ENV.dict(
+    "ALLOCATION_EXTENSION_CHANGEABLE_FIELDS",
+    cast={"value": tuple},
+    default={},
+)
 FIELD_CHOICES = ENV.dict("FIELD_CHOICES", cast={"value": parse_choices_from_env}, default={})
 AUTO_SLUG_FUNC = ENV.str("AUTO_SLUG_FUNC", default="coldfront.models.utils.auto_generate_slug")
 # ------------------------------------------------------------------------------

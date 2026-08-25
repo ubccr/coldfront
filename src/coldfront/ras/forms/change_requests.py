@@ -28,6 +28,8 @@ class AllocationChangeRequestForm(AllocationExtensionFormMixin, PrimaryModelForm
     the resource schema, and extension fields from registered extensions.
     """
 
+    form_mode = "change"
+
     allocation = forms.ModelChoiceField(
         label=_("Allocation"),
         queryset=Allocation.objects.all(),
@@ -100,7 +102,7 @@ class AllocationChangeRequestForm(AllocationExtensionFormMixin, PrimaryModelForm
             # Extension changes
             if self.instance.extension_changes:
                 for ext_path, values in self.instance.extension_changes.items():
-                    # Find the matching model in _extension_field_map
+                    # Scalar extension fields
                     for entry in self._extension_field_map:
                         if entry["model_path"] == ext_path:
                             model_name = entry["model"]._meta.model_name
@@ -109,6 +111,14 @@ class AllocationChangeRequestForm(AllocationExtensionFormMixin, PrimaryModelForm
                                 if form_field_name in self.fields:
                                     self.fields[form_field_name].initial = value
                             break
+                    # Related-object fields
+                    for entry in self._extension_field_map:
+                        for rel in entry["related_fields"]:
+                            if f"{entry['model_path']}.{rel['fk_name']}" == ext_path:
+                                form_field_name = rel["form_field_name"]
+                                if form_field_name in self.fields:
+                                    self.fields[form_field_name].initial = values.get(rel["target_field"])
+                                break
 
     def _resolve_allocation(self):
         """Resolve the allocation from POST data, initial data, or instance."""
@@ -194,9 +204,10 @@ class AllocationChangeRequestForm(AllocationExtensionFormMixin, PrimaryModelForm
         # Extension fieldsets
         for entry in self._extension_field_map:
             header = _(f"{entry['model']._meta.verbose_name.title()} Changes")
-            field_names = [f"ext_{entry['model']._meta.model_name}_{fn}" for fn in entry["field_names"]]
-            if field_names:
-                fieldsets.append(Fieldset(header, *field_names))
+            ext_names = [f"ext_{entry['model']._meta.model_name}_{fn}" for fn in entry["field_names"]]
+            rel_names = [rel["form_field_name"] for rel in entry["related_fields"]]
+            if ext_names or rel_names:
+                fieldsets.append(Fieldset(header, *(ext_names + rel_names)))
 
         return fieldsets
 

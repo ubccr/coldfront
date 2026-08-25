@@ -82,13 +82,22 @@ class AllocationChangeRequestSerializer(PrimaryModelSerializer):
 
         validated = {}
         for ext_path, values in extension_changes.items():
-            model = ext_model_map.get(ext_path)
+            # Distinguish scalar (app.model) from related (app.model.fk) keys
+            parts = ext_path.split(".")
+            if len(parts) == 3:
+                model_path = f"{parts[0]}.{parts[1]}"
+                fk_name = parts[2]
+            else:
+                model_path = ext_path
+                fk_name = None
+
+            model = ext_model_map.get(model_path)
             if model is None:
                 raise serializers.ValidationError(
                     {
                         "extension_changes": {
                             ext_path: (
-                                f"Extension model '{ext_path}' is not supported by "
+                                f"Extension model '{model_path}' is not supported by "
                                 f"resource type '{resource.__class__.__name__}'. "
                                 f"Supported extensions: {', '.join(sorted(m._meta.label_lower for m in supported_models))}"
                             )
@@ -96,17 +105,61 @@ class AllocationChangeRequestSerializer(PrimaryModelSerializer):
                     }
                 )
 
-            normalized_path = model._meta.label_lower
-            validated[normalized_path] = values
-
-            requestable = model.requestable_fields()
-            for field_name, value in values.items():
-                if field_name not in requestable:
+            if fk_name is not None:
+                # Related-object target: validate against the model's changeable markers
+                valid_fields = set()
+                for token in model.fields_for_change():
+                    if model.is_related_field_token(token):
+                        m_fk, m_field = model.parse_related_field_token(token)
+                        if m_fk == fk_name:
+                            valid_fields.add(m_field)
+                if not valid_fields:
                     raise serializers.ValidationError(
-                        {"extension_changes": {ext_path: f"'{field_name}' is not a requestable field."}}
+                        {"extension_changes": {ext_path: f"'{fk_name}' is not a changeable related field."}}
+                    )
+                for field_name, value in values.items():
+                    if field_name not in valid_fields:
+                        raise serializers.ValidationError(
+                            {"extension_changes": {ext_path: f"'{field_name}' is not a requestable field."}}
+                        )
+
+                # The related target must exist on the extension for this
+                # allocation, or the change could not be applied.  Block it
+                # here so a doomed request isn't created.
+                try:
+                    ext_instance = model.objects.get(allocation=allocation)
+                    target = getattr(ext_instance, fk_name)
+                except model.DoesNotExist:
+                    target = None
+                if target is None:
+                    fk_label = str(model._meta.get_field(fk_name).verbose_name).capitalize()
+                    target_model = model._meta.get_field(fk_name).remote_field.model
+                    field_label = str(target_model._meta.get_field(field_name).verbose_name).capitalize()
+                    raise serializers.ValidationError(
+                        {
+                            "extension_changes": {
+                                ext_path: (
+                                    f"No {fk_label} is linked to this allocation yet — "
+                                    f"{field_label} cannot be changed until one is set."
+                                )
+                            }
+                        }
                     )
 
-            validated[ext_path] = values
+                normalized_path = f"{model._meta.label_lower}.{fk_name}"
+                validated[normalized_path] = values
+                validated[ext_path] = values
+            else:
+                # Scalar fields: requestable + changeable are legal on a change request
+                changeable = model.fields_for_change()
+                for field_name, value in values.items():
+                    if field_name not in changeable:
+                        raise serializers.ValidationError(
+                            {"extension_changes": {ext_path: f"'{field_name}' is not a requestable field."}}
+                        )
+                normalized_path = model._meta.label_lower
+                validated[normalized_path] = values
+                validated[ext_path] = values
 
         attrs["extension_changes"] = validated
         return attrs
@@ -147,28 +200,43 @@ class AllocationChangeRequestSerializer(PrimaryModelSerializer):
 
             ext_path = model._meta.label_lower
 
-            # Get proposed values from the change request JSON
+            # --- Scalar fields ---
             proposed = instance.extension_changes.get(ext_path, {})
-
-            # Get current values — use snapshot if available (applied), otherwise live
             if instance.snapshot_extension_values:
                 current = instance.snapshot_extension_values.get(ext_path, {})
             else:
                 current = {}
                 try:
                     ext_instance = model.objects.get(allocation=instance.allocation)
-                    requestable = model.requestable_fields()
-                    for field_name in requestable:
-                        value = getattr(ext_instance, field_name, None)
+                    for token in model.fields_for_change():
+                        if model.is_related_field_token(token):
+                            continue
+                        value = getattr(ext_instance, token, None)
                         if value is not None:
-                            current[field_name] = value
+                            current[token] = value
                 except model.DoesNotExist:
                     pass
+            result[ext_path] = {"proposed": proposed, "current": current}
 
-            result[ext_path] = {
-                "proposed": proposed,
-                "current": current,
-            }
+            # --- Related-object fields ---
+            for token in model.fields_for_change():
+                if not model.is_related_field_token(token):
+                    continue
+                fk_name, target_field = model.parse_related_field_token(token)
+                rkey = f"{ext_path}.{fk_name}"
+                proposed = instance.extension_changes.get(rkey, {})
+                if instance.snapshot_extension_values:
+                    current = instance.snapshot_extension_values.get(rkey, {})
+                else:
+                    current = {}
+                    try:
+                        ext_instance = model.objects.get(allocation=instance.allocation)
+                        target = getattr(ext_instance, fk_name)
+                        if target is not None:
+                            current[target_field] = getattr(target, target_field)
+                    except model.DoesNotExist:
+                        pass
+                result[rkey] = {"proposed": proposed, "current": current}
 
         return result
 

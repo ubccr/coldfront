@@ -3,12 +3,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import logging
 import time
 
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout
 from django import forms
 from django.core.validators import EMPTY_VALUES
+from django.db import models as dj_models
 from django.db.models import Q
 from django.utils.translation import gettext as _
 
@@ -17,6 +19,8 @@ from coldfront.core.models import CustomField, ObjectType, SavedFilter, Tag
 from coldfront.forms.fields import DynamicModelMultipleChoiceField
 from coldfront.registry import get_allocation_extensions
 from coldfront.users.permissions import get_permission_for_model
+
+logger = logging.getLogger(__name__)
 
 
 class AllocationExtensionFormMixin:
@@ -27,12 +31,20 @@ class AllocationExtensionFormMixin:
     registered for the allocation's resource.  Stores field-to-extension
     mapping in ``self._extension_field_map`` for use in save logic.
 
+    In ``form_mode="change"`` (allocation change request forms), also adds
+    fields for each ``changeable_fields`` token, including related-object
+    markers (``$related:<fk>.<field>``) which surface fields on the FK target.
+
     Usage:
         class MyForm(AllocationExtensionFormMixin, PrimaryModelForm):
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
                 self._build_extension_fields()
     """
+
+    # "request" builds requestable fields only; "change" also builds
+    # changeable fields (scalar + related-object markers).
+    form_mode = "request"
 
     def __init__(self, *args, **kwargs):
         self._extension_field_map = []
@@ -75,42 +87,113 @@ class AllocationExtensionFormMixin:
             if model is None:
                 continue
 
-            requestable = model.requestable_fields()
-            if not requestable:
+            tokens = model.fields_for_change() if self.form_mode == "change" else model.requestable_fields()
+            if not tokens:
                 continue
 
             # Fetch the current extension instance for pre-filling
             extension_instance = None
             if allocation and allocation.pk:
-                related_name = model._meta.default_related_name or f"{model._meta.model_name}_set"
+                # Resolve the reverse accessor name for the allocation FK
+                related_name = None
+                try:
+                    allocation_field = model._meta.get_field("allocation")
+                    related_name = allocation_field.remote_field.related_name
+                except (AttributeError, ValueError):
+                    logger.warning(
+                        "Could not resolve the allocation reverse accessor for extension %s: pre-fill will be skipped.",
+                        model.__qualname__,
+                    )
+                if not related_name:
+                    related_name = f"{model._meta.model_name}_set"
                 try:
                     extension_instance = getattr(allocation, related_name).first()
                 except (AttributeError, ValueError):
-                    pass
+                    logger.warning(
+                        "Could not fetch the current extension instance for %s via %r: pre-fill will be skipped.",
+                        model.__qualname__,
+                        related_name,
+                    )
 
             field_names = []
-            for field_name in requestable:
-                # Find the corresponding model field
-                model_field = None
-                for f in model._meta.local_fields:
-                    if f.name == field_name:
-                        model_field = f
-                        break
-                if model_field is None:
+            related_fields = []
+            for token in tokens:
+                if model.is_related_field_token(token):
+                    fk_name, target_field = model.parse_related_field_token(token)
+
+                    # Resolve the FK field and its target model
+                    fk = next((f for f in model._meta.local_fields if f.name == fk_name), None)
+                    if fk is None or not isinstance(fk, dj_models.ForeignKey):
+                        logger.error(
+                            "Related-object token '$related:%s.%s' on %s does not "
+                            "resolve to a ForeignKey named '%s': field will be skipped.",
+                            fk_name,
+                            target_field,
+                            model.__qualname__,
+                            fk_name,
+                        )
+                        continue
+                    target_model = fk.remote_field.model
+                    target_model_field = next(
+                        (f for f in target_model._meta.local_fields if f.name == target_field), None
+                    )
+                    if target_model_field is None:
+                        logger.error(
+                            "Related-object token '$related:%s.%s' on %s references "
+                            "field '%s' on %s which does not exist: field will be skipped.",
+                            fk_name,
+                            target_field,
+                            model.__qualname__,
+                            target_field,
+                            target_model.__qualname__,
+                        )
+                        continue
+
+                    target_instance = getattr(extension_instance, fk_name) if extension_instance is not None else None
+                    form_field = self._form_field_for_model_field(target_model_field, target_instance)
+                    if form_field is not None:
+                        if target_instance is None:
+                            # No related object is linked yet — disable the field
+                            # and explain, so the change can't be silently dropped.
+                            form_field.disabled = True
+                            fk_label = str(model._meta.get_field(fk_name).verbose_name).capitalize()
+                            field_label = str(target_model_field.verbose_name).capitalize()
+                            form_field.help_text = _(
+                                "No {fk} is linked to this allocation yet — {field} cannot be changed until one is set."
+                            ).format(fk=fk_label, field=field_label)
+                        form_field_name = f"rel_{target_model._meta.model_name}_{target_field}"
+                        self.fields[form_field_name] = form_field
+                        related_fields.append(
+                            {
+                                "fk_name": fk_name,
+                                "target_field": target_field,
+                                "target_model": target_model,
+                                "form_field_name": form_field_name,
+                            }
+                        )
                     continue
 
-                # Build a Django form field
+                # Scalar requestable/changeable field on the extension model
+                model_field = next((f for f in model._meta.local_fields if f.name == token), None)
+                if model_field is None:
+                    logger.error(
+                        "Extension field '%s' on %s does not exist: field will be skipped.",
+                        token,
+                        model.__qualname__,
+                    )
+                    continue
                 form_field = self._form_field_for_model_field(model_field, extension_instance)
                 if form_field is not None:
-                    self.fields[f"ext_{model._meta.model_name}_{field_name}"] = form_field
-                    field_names.append(field_name)
+                    self.fields[f"ext_{model._meta.model_name}_{token}"] = form_field
+                    field_names.append(token)
 
-            if field_names:
+            if field_names or related_fields:
                 self._extension_field_map.append(
                     {
                         "model_path": f"{model._meta.app_label}.{model._meta.model_name}",
                         "model": model,
                         "field_names": field_names,
+                        "related_fields": related_fields,
                     }
                 )
 
@@ -129,7 +212,10 @@ class AllocationExtensionFormMixin:
 
         # Check for a custom field override registered on the extension model
         extension_model_class = model_field.model
-        overrides = extension_model_class.requestable_fields_overrides()
+        if hasattr(extension_model_class, "requestable_fields_overrides"):
+            overrides = extension_model_class.requestable_fields_overrides()
+        else:
+            overrides = {}
         if field_name in overrides:
             custom_field = overrides[field_name]
             if custom_field is not None:
@@ -180,11 +266,15 @@ class AllocationExtensionFormMixin:
         cleaned field values collected from the form.
 
         Called in ``_post_clean`` or ``save`` to gather extension values.
+        Scalar fields map to the extension path; related-object markers map to
+        ``<extension path>.<fk>`` with values keyed by the target field name.
         """
         result = {}
         for entry in self._extension_field_map:
             path = entry["model_path"]
             model_name = entry["model"]._meta.model_name
+
+            # Scalar extension fields
             values = {}
             for field_name in entry["field_names"]:
                 value = self.cleaned_data.get(f"ext_{model_name}_{field_name}")
@@ -192,6 +282,13 @@ class AllocationExtensionFormMixin:
                     values[field_name] = value
             if values:
                 result[path] = values
+
+            # Related-object fields (change requests only)
+            for rel in entry["related_fields"]:
+                value = self.cleaned_data.get(rel["form_field_name"])
+                if value not in EMPTY_VALUES:
+                    rdict = result.setdefault(f"{path}.{rel['fk_name']}", {})
+                    rdict[rel["target_field"]] = value
         return result
 
 

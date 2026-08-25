@@ -141,6 +141,21 @@ class AllocationBaseForm(AllocationExtensionFormMixin, PrimaryModelForm):
 
         return super()._post_clean()
 
+    def _create_extensions(self, allocation):
+        """Create extension instances for the allocation."""
+        extension_data = getattr(allocation, "_extension_create_data", {}) or {}
+
+        # Always create each registered extension instance, even when no
+        # requestable values were filled in.  ``create_for_allocation`` builds
+        # kwargs only from the provided values, so empty dicts still produce
+        # (and link) the extension object.
+        for entry in self._extension_field_map:
+            model = entry["model"]
+            if model is None:
+                continue
+            values = extension_data.get(entry["model_path"], {})
+            model.create_for_allocation(allocation, values=values)
+
     def _get_attr_form_fields(self):
         """
         Return a dictionary mapping of attribute names to form fields, suitable for extending
@@ -202,20 +217,6 @@ class AllocationRequestForm(AllocationBaseForm):
             # Create extension instances from collected data
             self._create_extensions(instance)
         return instance
-
-    def _create_extensions(self, allocation):
-        """Create extension instances for the allocation."""
-        extension_data = getattr(allocation, "_extension_create_data", {}) or {}
-        if not extension_data:
-            return
-
-        # Build a lookup from path → model class from _extension_field_map
-        path_to_model = {e["model_path"]: e["model"] for e in self._extension_field_map}
-
-        for ext_path, values in extension_data.items():
-            model = path_to_model.get(ext_path)
-            if model is not None:
-                model.create_for_allocation(allocation, values=values)
 
     @property
     def fieldsets(self):
@@ -330,20 +331,6 @@ class AllocationForm(AllocationBaseForm, TenancyForm, PrimaryModelForm):
             self._create_extensions(instance)
         return instance
 
-    def _create_extensions(self, allocation):
-        """Create extension instances for the allocation."""
-        extension_data = getattr(allocation, "_extension_create_data", {}) or {}
-        if not extension_data:
-            return
-
-        # Build a lookup from path → model class from _extension_field_map
-        path_to_model = {e["model_path"]: e["model"] for e in self._extension_field_map}
-
-        for ext_path, values in extension_data.items():
-            model = path_to_model.get(ext_path)
-            if model is not None:
-                model.create_for_allocation(allocation, values=values)
-
     def _create_comment_entry(self):
         comments = self.cleaned_data.get("comments")
         if comments:
@@ -435,20 +422,6 @@ class AllocationActivateForm(AllocationBaseForm, PrimaryModelForm):
             # Create extension instances from collected data
             self._create_extensions(instance)
         return instance
-
-    def _create_extensions(self, allocation):
-        """Create extension instances for the allocation."""
-        extension_data = getattr(allocation, "_extension_create_data", {}) or {}
-        if not extension_data:
-            return
-
-        # Build a lookup from path → model class from _extension_field_map
-        path_to_model = {e["model_path"]: e["model"] for e in self._extension_field_map}
-
-        for ext_path, values in extension_data.items():
-            model = path_to_model.get(ext_path)
-            if model is not None:
-                model.create_for_allocation(allocation, values=values)
 
     def _create_comment_entry(self):
         comments = self.cleaned_data.get("comments")

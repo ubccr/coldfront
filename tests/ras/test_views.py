@@ -1014,6 +1014,29 @@ class AllocationWithExtensionTest(ModelViewTestCase):
         self.assertIsNotNone(ext)
         self.assertEqual(ext.hard_limit_bytes, 500)
 
+    def test_allocation_create_without_extension_values(self):
+        """
+        Create an allocation with NO extension values filled in; verify the
+        extension instance is STILL created and linked to the allocation.
+        """
+        from coldfront.storage.models import StorageQuota, StorageResource
+
+        self.add_permissions("ras.add_allocation")
+        form_data = {
+            "justification": "Need storage",
+            "description": "Test extension",
+            "owner": self.user.pk,
+            "project": self.project.pk,
+            "resource_object": f"{ContentType.objects.get_for_model(StorageResource).pk}:{self.storage_resource.pk}",
+            "status": AllocationStatusChoices.STATUS_REQUESTED,
+        }
+        response = self.client.post(self._get_url("add"), form_data)
+        self.assertHttpStatus(response, 302)
+        new_id = response.url.rstrip("/").split("/")[-1]
+        ext = StorageQuota.objects.filter(allocation_id=new_id).first()
+        self.assertIsNotNone(ext)
+        self.assertEqual(ext.allocation_id, int(new_id))
+
     def test_allocation_detail_shows_extension_tab(self):
         """
         Verify the allocation detail page shows a tab for the extension.

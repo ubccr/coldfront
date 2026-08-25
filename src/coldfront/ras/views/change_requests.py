@@ -95,16 +95,17 @@ class AllocationChangeRequestView(generic.ObjectView):
                 if model is None:
                     continue
                 ext_path = model._meta.label_lower
-                requestable = model.requestable_fields()
+                overrides = model.requestable_fields_overrides()
+                scalar_tokens = [t for t in model.fields_for_change() if not model.is_related_field_token(t)]
 
-                # Current values: snapshot if applied, else live
+                # Current scalar values: snapshot if applied, else live
                 if instance.snapshot_extension_values:
                     current_ext = instance.snapshot_extension_values.get(ext_path, {})
                 else:
                     current_ext = {}
                     try:
                         ext_instance = model.objects.get(allocation=allocation)
-                        for field_name in requestable:
+                        for field_name in scalar_tokens:
                             value = getattr(ext_instance, field_name, None)
                             if value is not None and value != "":
                                 current_ext[field_name] = value
@@ -113,10 +114,7 @@ class AllocationChangeRequestView(generic.ObjectView):
 
                 proposed_ext = instance.extension_changes.get(ext_path, {})
 
-                # Apply form-field display formatting for fields with overrides
-                overrides = model.requestable_fields_overrides()
-
-                for field_name in requestable:
+                for field_name in scalar_tokens:
                     key = f"{ext_path}.{field_name}"
                     cur = current_ext.get(field_name)
                     prop = proposed_ext.get(field_name, cur)
@@ -133,6 +131,39 @@ class AllocationChangeRequestView(generic.ObjectView):
                         if override_field is not None and hasattr(override_field, "prepare_value"):
                             cur = override_field.prepare_value(cur)
                             prop = override_field.prepare_value(prop)
+
+                    pre[key] = cur
+                    post[key] = prop
+
+                # Related-object fields (e.g. $related:slurm_account.service_units)
+                for token in model.fields_for_change():
+                    if not model.is_related_field_token(token):
+                        continue
+                    fk_name, target_field = model.parse_related_field_token(token)
+                    rkey = f"{ext_path}.{fk_name}"
+
+                    if instance.snapshot_extension_values:
+                        current_rel = instance.snapshot_extension_values.get(rkey, {})
+                    else:
+                        current_rel = {}
+                        try:
+                            ext_instance = model.objects.get(allocation=allocation)
+                            target = getattr(ext_instance, fk_name)
+                            if target is not None:
+                                current_rel[target_field] = getattr(target, target_field)
+                        except model.DoesNotExist:
+                            pass
+
+                    proposed_rel = instance.extension_changes.get(rkey, {})
+
+                    key = f"{rkey}.{target_field}"
+                    cur = current_rel.get(target_field)
+                    prop = proposed_rel.get(target_field, cur)
+
+                    if isinstance(cur, timedelta):
+                        cur = str(cur)
+                    if isinstance(prop, timedelta):
+                        prop = str(prop)
 
                     pre[key] = cur
                     post[key] = prop

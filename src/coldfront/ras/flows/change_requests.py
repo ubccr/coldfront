@@ -7,6 +7,7 @@ import logging
 from datetime import timedelta
 
 import jsonschema
+from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
@@ -25,6 +26,18 @@ from coldfront.ras.signals import allocation_change_request_status_change
 from coldfront.users.permissions import get_permission_for_model
 
 logger = logging.getLogger(__name__)
+
+
+def _model_for_change_key(change_key):
+    """Resolve the extension model for an extension_changes key.
+
+    Keys are either ``'<app_label>.<model>'`` (scalar) or
+    ``'<app_label>.<model>.<fk>'`` (related-object target).
+    """
+    parts = change_key.split(".")
+    if len(parts) < 2:
+        return None
+    return apps.get_model(parts[0], parts[1])
 
 
 class AllocationChangeRequestFlow(ColdFrontFlow):
@@ -147,12 +160,10 @@ class AllocationChangeRequestFlow(ColdFrontFlow):
 
             # --- Apply extension_changes ---
             if change_request.extension_changes:
-                from django.apps import apps as django_apps
-
                 # Snapshot current extension values before applying
                 current_values = {}
                 for ext_path in change_request.extension_changes:
-                    model = django_apps.get_model(ext_path)
+                    model = _model_for_change_key(ext_path)
                     if model is None:
                         logger.error(
                             "Extension model '%s' not found — ignoring extension_changes for allocation %s",
@@ -162,16 +173,23 @@ class AllocationChangeRequestFlow(ColdFrontFlow):
                         continue
                     try:
                         ext_instance = model.objects.get(allocation=allocation)
-                        current_values[ext_path] = ext_instance.serialize_object()
                     except model.DoesNotExist:
                         current_values[ext_path] = {}
                         continue
+                    # Related-object key ('app.model.fk') snapshots the FK target;
+                    # scalar keys snapshot the extension instance itself.
+                    parts = ext_path.split(".")
+                    if len(parts) == 3:
+                        target = getattr(ext_instance, parts[2])
+                        current_values[ext_path] = target.serialize_object() if target is not None else {}
+                    else:
+                        current_values[ext_path] = ext_instance.serialize_object()
                 if current_values:
                     change_request.snapshot_extension_values = current_values
 
                 # Apply proposed changes to live instances
                 for ext_path, values in change_request.extension_changes.items():
-                    model = django_apps.get_model(ext_path)
+                    model = _model_for_change_key(ext_path)
                     if model is None:
                         continue
                     try:

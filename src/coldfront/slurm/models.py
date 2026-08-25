@@ -532,6 +532,10 @@ class SlurmAssociation(AllocationExtensionMixin, PrimaryModel):
 
     _requestable_fields = ["fairshare", "max_jobs", "max_submit_jobs", "max_wall_duration_per_job"]
 
+    # service_units lives on the linked SlurmAccount and is only editable via
+    # allocation change requests (not the allocation request form).
+    _changeable_fields = ["$related:slurm_account.service_units"]
+
     class Meta:
         ordering = ["allocation__slug"]
         verbose_name = _("slurm association")
