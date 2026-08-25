@@ -158,6 +158,7 @@ class SlurmAccountSerializer(PrimaryModelSerializer):
             "created",
             "last_updated",
             "fairshare",
+            "service_units",
             "qos_add",
             "qos_remove",
         ]
