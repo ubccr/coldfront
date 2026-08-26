@@ -6,7 +6,7 @@ import logging
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
-from django.db.models import ExpressionWrapper, F, OuterRef, Q, Subquery, fields
+from django.db.models import ExpressionWrapper, F, OuterRef, Prefetch, Q, Subquery, fields
 from django.db.models.functions import Cast
 from django_filters import rest_framework as filters
 from rest_framework import viewsets
@@ -17,7 +17,7 @@ from rest_framework.response import Response
 from simple_history.utils import get_history_model_for_model
 
 from coldfront.core.allocation.models import Allocation, AllocationChangeRequest
-from coldfront.core.project.models import Project
+from coldfront.core.project.models import Project, ProjectUser
 from coldfront.core.resource.models import Resource
 from coldfront.plugins.api import serializers
 
@@ -301,7 +301,7 @@ class ProjectViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = serializers.ProjectSerializer
 
     def get_queryset(self):
-        projects = Project.objects.prefetch_related("status")
+        projects = Project.objects.select_related("status", "pi", "field_of_science")
 
         if self.request.query_params.get("show_all") in ["False", "false"] or not (
             self.request.user.is_superuser
@@ -318,14 +318,21 @@ class ProjectViewSet(viewsets.ReadOnlyModelViewSet):
                     )
                 )
                 .distinct()
+                .select_related("status", "field_of_science", "pi")
                 .order_by("pi")
             )
 
         if self.request.query_params.get("project_users") in ["True", "true"]:
-            projects = projects.prefetch_related("projectuser_set")
+            projects = projects.prefetch_related(
+                Prefetch("projectuser_set", queryset=ProjectUser.objects.select_related("user", "status", "role"))
+            )
 
         if self.request.query_params.get("allocations") in ["True", "true"]:
-            projects = projects.prefetch_related("allocation_set")
+            projects = projects.prefetch_related(
+                Prefetch(
+                    "allocation_set", queryset=Allocation.objects.select_related("status").prefetch_related("resources")
+                )
+            )
 
         if self.request.query_params.get("project_attributes") in ["True", "true"]:
             projects = projects.prefetch_related("projectattribute_set")
