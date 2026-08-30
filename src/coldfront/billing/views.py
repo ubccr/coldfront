@@ -97,7 +97,7 @@ class InvoicePdfView(generic.ObjectView):
 
     def get(self, request, **kwargs):
         instance = self.get_object(**kwargs)
-        response = HttpResponse(render_invoice_pdf(instance), content_type="application/pdf")
+        response = HttpResponse(render_invoice_pdf(instance, request=request), content_type="application/pdf")
         response["Content-Disposition"] = f'attachment; filename="invoice-{instance.slug}.pdf"'
         return response
 

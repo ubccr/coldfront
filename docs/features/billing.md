@@ -8,13 +8,14 @@ Slurm accounts — and issue invoices for each billing period.
 ## Core Models
 
 - **Invoice** — A bill sent to a responsible owner for a billing period,
-  optionally restricted to a subset of the owner's projects.
+  optionally restricted to specific billing source types.
 - **Invoice Line Item** — A single row on an invoice: a charge, free
   allowance, discount, or credit.
 - **Rate** — A per-unit price scoped to a resource (one rate per scope).
-- **Free Allowance** — A quantity of a unit granted free, per owner or
-  per project.
-- **Discount** — A percentage or flat reduction applied to an invoice.
+- **Free Allowance** — A quantity of a unit granted free to an owner, scoped
+  to a single resource.
+- **Discount** — A percentage or flat reduction applied to an invoice, scoped
+  by owner and/or resource (or global).
 - **Unit Format** — The billing dimension: `bytes`, `service_units`,
   `core_hours`, or `per_item`.
 
@@ -40,14 +41,19 @@ Invoices are generated from registered **billing sources**, for example:
 - **Slurm** — `SlurmAccount` compute usage is billed per service unit against
   the cluster's rate.
 
-Free allowances are stacked (owner-level first, then project-level) before
-discounts are applied to the net total.
+Free allowances are stacked (per owner, resource, and unit format) before a
+single discount is applied to each resource's net total. Discounts are never
+stacked; the most specific match (owner+resource > resource > owner > global)
+wins. A global No Cost discount reduces the grand total to zero while still
+showing the underlying charges.
 
 ## Extensibility
 
 Billing sources are registered through the plugin registry with
-`register_billing_source`. Plugins can add their own billable models (e.g. a
-custom metering system) without modifying core ColdFront. See
+`register_billing_source`. Each source must provide `get_billable`,
+`get_rate_scope`, and `get_quantity` callbacks — a registration missing one
+fails fast with `ImproperlyConfigured`. Plugins can add their own billable
+models (e.g. a custom metering system) without modifying core ColdFront. See
 [Billing Plugins](../plugins/billing.md).
 
 ## PDF Export

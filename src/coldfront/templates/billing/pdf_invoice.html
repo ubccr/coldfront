@@ -1,0 +1,126 @@
+{% load i18n %}
+{% load djmoney %}
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>{% trans 'Invoice' %} {{ invoice.slug }}</title>
+    </head>
+    <body>
+        <h1>{% trans 'Invoice' %} {{ invoice.slug }}</h1>
+
+        <p><b>{{ settings.CENTER_NAME }}</b></p>
+        {% if settings.CENTER_ADDRESS %}<p>{{ settings.CENTER_ADDRESS|linebreaksbr }}</p>{% endif %}
+        {% if settings.CENTER_PHONE %}<p>{% trans 'Phone' %}: {{ settings.CENTER_PHONE }}</p>{% endif %}
+        {% if settings.SUPPORT_EMAIL %}<p>{% trans 'Email' %}: {{ settings.SUPPORT_EMAIL }}</p>{% endif %}
+
+        <p>{% trans 'Owner' %}: {{ invoice.owner }}</p>
+        <p>{% trans 'Status' %}: {{ invoice.get_status_display }}</p>
+        {% if invoice.start_date or invoice.end_date %}
+            <p>
+                {% trans 'Period' %}: {{ invoice.start_date|isodate|default:'-' }} -
+                {{ invoice.end_date|isodate|default:'-' }}
+            </p>
+        {% endif %}
+
+        <h2>{% trans 'Line items' %}</h2>
+
+        {% if line_items %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>{% trans 'Type' %}</th>
+                        <th align="right">{% trans 'Quantity' %}</th>
+                        <th align="right">{% trans 'Unit' %}</th>
+                        <th align="right">{% trans 'Unit price' %}</th>
+                        <th align="right">{% trans 'Amount' %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in line_items %}
+                        <tr>
+                            <td bgcolor="#f0f0f0" colspan="5">
+                                {{ item.description|default:'-' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>{{ item.get_line_type_display }}</td>
+                            <td align="right">{{ item.quantity_display|default:'-' }}</td>
+                            <td align="right">{{ item.unit|default:'-' }}</td>
+                            <td align="right">
+                                {% if item.unit_price %}{% money_localize item.unit_price %}{% else %}-{% endif %}
+                            </td>
+                            <td align="right">
+                                {% if item.amount %}{% money_localize item.amount %}{% else %}-{% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>{% trans 'No line items.' %}</p>
+        {% endif %}
+
+        <br>
+        <br>
+        <hr>
+
+        <table align="right" width="50%">
+            <tbody>
+                <tr>
+                    <td align="right">{% trans 'Subtotal' %}:</td>
+                    <td align="right">
+                        {% if invoice.subtotal %}{% money_localize invoice.subtotal %}{% else %}-{% endif %}
+                    </td>
+                </tr>
+                {% if invoice.allowance_total %}
+                    <tr>
+                        <td align="right">{% trans 'Allowance total' %}:</td>
+                        <td align="right">
+                            {% money_localize invoice.allowance_total %}
+                        </td>
+                    </tr>
+                {% endif %}
+                {% if invoice.discount_total %}
+                    <tr>
+                        <td align="right">{% trans 'Discount total' %}:</td>
+                        <td align="right">
+                            {% money_localize invoice.discount_total %}
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+        <p align="right">
+            <font color="#107C41">
+                <b>Total Due:
+                    {% if invoice.grand_total %}{% money_localize invoice.grand_total %}{% else %}-{% endif %}</b>
+            </font>
+        </p>
+
+        {% if invoice.status == status_paid %}
+            <h2>{% trans 'Payment' %}</h2>
+
+            <table align="right" width="50%">
+                <tbody>
+                    <tr>
+                        <td align="right">{% trans 'Payment date' %}</td>
+                        <td align="right">{{ invoice.payment_date|isodate|default:'-' }}</td>
+                    </tr>
+                    <tr>
+                        <td align="right">{% trans 'Payment amount' %}</td>
+                        <td align="right">
+                            {% if invoice.payment_amount %}{% money_localize invoice.payment_amount %}{% else %}-{% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="right">{% trans 'Payment method' %}</td>
+                        <td align="right">{{ invoice.payment_method|default:'-' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        {% elif invoice.due_date %}
+            <br><br>
+            <p><i>{% trans 'Thank you! Payment is due on' %}: {{ invoice.due_date|isodate }}</i></p>
+        {% endif %}
+    </body>
+</html>

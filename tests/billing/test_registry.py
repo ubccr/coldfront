@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import pytest
+from django.core.exceptions import ImproperlyConfigured
 
 from coldfront.ras.choices import AllocationStatusChoices
 from coldfront.ras.models import Allocation, Project
@@ -23,7 +24,25 @@ def test_register_billing_source_rejects_invalid_scope():
 @pytest.mark.django_db
 def test_register_billing_source_rejects_non_callable_callbacks():
     with pytest.raises(ValueError):
-        register_billing_source(StorageResource, StorageQuota, get_quantity=7)
+        register_billing_source(
+            StorageResource,
+            StorageQuota,
+            get_billable=lambda user: StorageQuota.objects.all(),
+            get_rate_scope=lambda source: source.storage,
+            get_quantity=7,
+        )
+
+
+@pytest.mark.django_db
+def test_register_billing_source_requires_callbacks():
+    with pytest.raises(ImproperlyConfigured):
+        register_billing_source(StorageResource, StorageQuota)
+    with pytest.raises(ImproperlyConfigured):
+        register_billing_source(
+            StorageResource,
+            StorageQuota,
+            get_billable=lambda user: StorageQuota.objects.all(),
+        )
 
 
 @pytest.mark.django_db
@@ -34,11 +53,15 @@ def test_register_billing_source_last_wins():
         register_billing_source(
             SlurmCluster,
             SlurmAccount,
+            get_billable=lambda user: SlurmAccount.objects.all(),
+            get_rate_scope=lambda source: source.cluster,
             get_quantity=lambda source: 7,
         )
         register_billing_source(
             SlurmCluster,
             SlurmAccount,
+            get_billable=lambda user: SlurmAccount.objects.all(),
+            get_rate_scope=lambda source: source.cluster,
             get_quantity=lambda source: 9,
         )
         entry = get_billing_source(SlurmAccount)
@@ -129,7 +152,7 @@ def test_storage_quota_billable_requires_active_allocation():
     quota_active = StorageQuota.objects.create(allocation=active, storage=resource, path="/active")
     StorageQuota.objects.create(allocation=expired, storage=resource, path="/expired")
 
-    billable = get_billing_source("storage.storagequota")["get_billable"](project=project)
+    billable = get_billing_source("storage.storagequota")["get_billable"](owner)
     assert list(billable) == [quota_active]
 
 
@@ -156,7 +179,7 @@ def test_slurm_account_billable_requires_active_allocation():
     SlurmAssociation.objects.create(allocation=active, slurm_account=account)
     SlurmAssociation.objects.create(allocation=expired, slurm_account=account)
 
-    billable = get_billing_source("slurm.slurmaccount")["get_billable"](project=project)
+    billable = get_billing_source("slurm.slurmaccount")["get_billable"](owner)
     assert list(billable) == [account]
 
 
@@ -190,5 +213,5 @@ def test_slurm_qos_billable_requires_active_allocation():
     account_active.qos_add.add(qos_active)
     account_inactive.qos_add.add(qos_inactive)
 
-    billable = get_billing_source("slurm.slurmqos")["get_billable"](project=project)
+    billable = get_billing_source("slurm.slurmqos")["get_billable"](owner)
     assert list(billable) == [qos_active]

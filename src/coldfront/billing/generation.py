@@ -16,7 +16,6 @@ from coldfront.billing.choices import (
 )
 from coldfront.billing.models import Discount, FreeAllowance, Invoice, InvoiceLineItem, Rate
 from coldfront.models.utils import get_default_currency
-from coldfront.ras.models import Project
 from coldfront.registry import get_billing_sources
 
 __all__ = ("BillingConfigurationError", "finalize_invoice", "generate_invoice")
@@ -46,12 +45,6 @@ def _in_period(obj_start, obj_end, invoice_start, invoice_end):
 def _resolve_rate(scope):
     ct = ContentType.objects.get_for_model(scope)
     return Rate.objects.filter(scope_object_type=ct, scope_object_id=scope.pk).first()
-
-
-def _invoice_projects(invoice):
-    if invoice.projects.exists():
-        return invoice.projects.all()
-    return Project.objects.filter(owner=invoice.owner)
 
 
 def _already_billed(source, invoice):
@@ -94,13 +87,8 @@ def _allowance_matches(allowance, charge):
     return True
 
 
-def _matching_allowances(invoice, project, unit_format):
-    qs = FreeAllowance.objects.filter(owner=invoice.owner, unit_format=unit_format)
-    if project is not None:
-        qs = qs.filter(project=project)
-    else:
-        qs = qs.filter(project__isnull=True)
-    return list(qs)
+def _matching_allowances(invoice, unit_format):
+    return FreeAllowance.objects.filter(owner=invoice.owner, unit_format=unit_format)
 
 
 def generate_invoice(invoice):
@@ -109,7 +97,6 @@ def generate_invoice(invoice):
     and recreates charge/free-allowance/discount lines, leaving manual credit
     lines untouched. Never consumes allowance pools (finalize does that once).
     """
-    projects = _invoice_projects(invoice)
     selected_cts = set(invoice.source_types.values_list("pk", flat=True))
     default_currency = DEFAULT_CURRENCY
 
@@ -120,75 +107,71 @@ def generate_invoice(invoice):
             ct = ContentType.objects.get_for_model(src["model"])
             if ct.pk not in selected_cts:
                 continue
-        for project in projects:
-            for instance in src["get_billable"](user=invoice.owner, project=project):
-                if _already_billed(instance, invoice):
-                    continue
-                scope = src["get_rate_scope"](instance)
-                if not isinstance(scope, src["scope"]):
-                    raise BillingConfigurationError(
-                        "Billing source {model} registered with scope {scope} "
-                        "but get_rate_scope returned {actual} ({actual_type}) — "
-                        "please fix the registration config.".format(
-                            model=src["model"]._meta.label_lower,
-                            scope=src["scope"]._meta.label_lower,
-                            actual=scope,
-                            actual_type=scope.__class__._meta.label_lower if scope else "None",
-                        )
+        for instance in src["get_billable"](invoice.owner):
+            if _already_billed(instance, invoice):
+                continue
+            scope = src["get_rate_scope"](instance)
+            if not isinstance(scope, src["scope"]):
+                raise BillingConfigurationError(
+                    "Billing source {model} registered with scope {scope} "
+                    "but get_rate_scope returned {actual} ({actual_type}) — "
+                    "please fix the registration config.".format(
+                        model=src["model"]._meta.label_lower,
+                        scope=src["scope"]._meta.label_lower,
+                        actual=scope,
+                        actual_type=scope.__class__._meta.label_lower if scope else "None",
                     )
-                qty = src["get_quantity"](instance)
-                if qty == 0:
-                    continue
-                rate = _resolve_rate(scope) if scope is not None else None
-                if rate is not None and not _in_period(
-                    rate.effective_start, rate.effective_end, invoice.start_date, invoice.end_date
-                ):
-                    rate = None
-                if rate is None:
-                    continue  # no rate -> the admin chooses not to bill
-                if str(rate.amount.currency) != str(default_currency):
-                    continue  # v1: single currency, no conversion
-                if qty is None:
-                    charges.append(
-                        {
-                            "project": project,
-                            "scope": scope,
-                            "source": instance,
-                            "qty": None,
-                            "rate": None,
-                            "is_valid": False,
-                            "description": _("Needs fixing: quantity not set"),
-                        }
-                    )
-                    continue
-                billed = Decimal(qty) / Decimal(rate.unit)
-                amount = _round2(billed * Decimal(rate.amount.amount))
+                )
+            qty = src["get_quantity"](instance)
+            if qty == 0:
+                continue
+            rate = _resolve_rate(scope) if scope is not None else None
+            if rate is not None and not _in_period(
+                rate.effective_start, rate.effective_end, invoice.start_date, invoice.end_date
+            ):
+                rate = None
+            if rate is None:
+                continue  # no rate -> the admin chooses not to bill
+            if str(rate.amount.currency) != str(default_currency):
+                continue  # v1: single currency, no conversion
+            if qty is None:
                 charges.append(
                     {
-                        "project": project,
                         "scope": scope,
                         "source": instance,
-                        "qty": qty,
-                        "rate": rate,
-                        "billed": billed,
-                        "amount": amount,
-                        "unit_format": rate.unit_format,
-                        "is_valid": True,
-                        "description": f"{scope} - {instance}",
+                        "qty": None,
+                        "rate": None,
+                        "is_valid": False,
+                        "description": _("Needs fixing: quantity not set"),
                     }
                 )
+                continue
+            billed = Decimal(qty) / Decimal(rate.unit)
+            amount = _round2(billed * Decimal(rate.amount.amount))
+            charges.append(
+                {
+                    "scope": scope,
+                    "source": instance,
+                    "qty": qty,
+                    "rate": rate,
+                    "billed": billed,
+                    "amount": amount,
+                    "unit_format": rate.unit_format,
+                    "is_valid": True,
+                    "description": f"{scope} - {instance}",
+                }
+            )
 
     # ---- Pass B: free allowances (stacking) --------------------------------
     free_lines = []
     valid_charges = [c for c in charges if c["is_valid"]]
-    # Group by unit_format; deterministic order: project, then source
+    # Group by unit_format; deterministic order: source
     for unit_format in {c["unit_format"] for c in valid_charges}:
         group = [c for c in valid_charges if c["unit_format"] == unit_format]
-        user_allowances = _matching_allowances(invoice, None, unit_format)
+        allowances = _matching_allowances(invoice, unit_format)
         for charge in group:
             remaining = charge["billed"]
-            # user-level allowances first
-            for allowance in user_allowances:
+            for allowance in allowances:
                 if not _allowance_matches(allowance, charge):
                     continue
                 if remaining <= 0:
@@ -204,65 +187,65 @@ def generate_invoice(invoice):
                             "unit": charge["rate"].unit_display,
                             "unit_format": charge["rate"].unit_format,
                             "amount": -_round2(coverage * Decimal(charge["rate"].amount.amount)),
-                            "description": _("Free allowance"),
-                        }
-                    )
-                    remaining -= coverage
-            # project-level allowances
-            for allowance in _matching_allowances(invoice, charge["project"], unit_format):
-                if not _allowance_matches(allowance, charge):
-                    continue
-                if remaining <= 0:
-                    break
-                coverage = min(remaining, Decimal(allowance.remaining) / Decimal(charge["rate"].unit))
-                if coverage > 0:
-                    native = coverage * Decimal(charge["rate"].unit)
-                    free_lines.append(
-                        {
-                            "source": allowance,
-                            "charge": charge,
-                            "quantity": int(native),
-                            "unit": charge["rate"].unit_display,
-                            "unit_format": charge["rate"].unit_format,
-                            "amount": -_round2(coverage * Decimal(charge["rate"].amount.amount)),
-                            "description": _("Free allowance"),
+                            "description": allowance.name,
                         }
                     )
                     remaining -= coverage
 
-    # ---- Pass C: discount (single per scope level, not double-applied) ------
-    # Discount applies to the net per project, i.e. charge subtotal plus free
-    # allowances, never below zero (capped at net).
+    # ---- Pass C: discount (single per charge, not double-applied) ----------
+    # Discount applies to the net per resource scope (plus the leftover user
+    # net), i.e. charge subtotal plus free allowances, never below zero (capped
+    # at net). Precedence: owner+resource > resource > owner > global.
     discount_lines = []
-    net_by_project = {}
+    net_by_scope = {}
+    user_net = Decimal("0")
     for charge in valid_charges:
-        net_by_project[charge["project"]] = net_by_project.get(charge["project"], Decimal("0")) + charge["amount"]
+        user_net += charge["amount"]
+        net_by_scope[charge["scope"]] = net_by_scope.get(charge["scope"], Decimal("0")) + charge["amount"]
     for line in free_lines:
-        project = line["charge"]["project"]
-        net_by_project[project] = net_by_project.get(project, Decimal("0")) + line["amount"]
-    user_discount_base = Decimal("0")
-    for project in net_by_project:
-        discount = Discount.objects.filter(owner=invoice.owner, project=project).order_by("created").first()
+        user_net += line["amount"]
+        scope = line["charge"]["scope"]
+        net_by_scope[scope] = net_by_scope.get(scope, Decimal("0")) + line["amount"]
+
+    consumed = set()
+    for scope, net in net_by_scope.items():
+        ct = ContentType.objects.get_for_model(scope)
+        discount = (
+            Discount.objects.filter(owner=invoice.owner, scope_object_type=ct, scope_object_id=scope.pk)
+            .order_by("created")
+            .first()
+        )
+        if discount is None:
+            discount = (
+                Discount.objects.filter(owner__isnull=True, scope_object_type=ct, scope_object_id=scope.pk)
+                .order_by("created")
+                .first()
+            )
         if discount is not None:
-            net = net_by_project[project]
             value = _discount_value(discount, net)
             discount_lines.append(
                 {
                     "source": discount,
-                    "project": project,
+                    "scope": scope,
                     "amount": -value,
-                    "description": _("Discount ({type})").format(type=discount.type),
+                    "description": discount.name,
                 }
             )
-        else:
-            user_discount_base += net_by_project[project]
-    user_discount = Discount.objects.filter(owner=invoice.owner, project__isnull=True).order_by("created").first()
-    if user_discount is not None and user_discount_base > 0:
-        value = _discount_value(user_discount, user_discount_base)
+            consumed.add(scope)
+
+    leftover = user_net - sum((net_by_scope[s] for s in consumed), Decimal("0"))
+    user_discount = (
+        Discount.objects.filter(owner=invoice.owner, scope_object_id__isnull=True).order_by("created").first()
+    )
+    if user_discount is None:
+        user_discount = (
+            Discount.objects.filter(owner__isnull=True, scope_object_id__isnull=True).order_by("created").first()
+        )
+    if user_discount is not None and leftover > 0:
+        value = _discount_value(user_discount, leftover)
         discount_lines.append(
             {
                 "source": user_discount,
-                "project": None,
                 "amount": -value,
                 "description": _("Discount ({type})").format(type=user_discount.type),
             }

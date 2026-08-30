@@ -23,8 +23,10 @@ TB = 10**12
 
 def _storage_quota(owner, project, hard_limit_bytes=2 * TB, path="/a"):
     """Build an active StorageQuota billable to ``project``."""
-    cluster = StorageCluster.objects.create(name="Cluster")
-    resource = StorageResource.objects.create(name="Storage")
+    # Names are derived from path so tests that build several quotas in one
+    # database don't hit the unique-name constraints on cluster/resource.
+    cluster = StorageCluster.objects.create(name=f"Cluster {path}")
+    resource = StorageResource.objects.create(name=f"Storage {path}")
     resource.clusters.add(cluster)
     allocation = Allocation.objects.create(
         project=project,
@@ -38,9 +40,8 @@ def _storage_quota(owner, project, hard_limit_bytes=2 * TB, path="/a"):
 
 
 def _rate(resource, *, amount="10.00", unit=TB):
-    from django.contrib.contenttypes.models import ContentType
-
     return Rate.objects.create(
+        name=f"Test Rate {resource.pk}",
         scope_object_type=ContentType.objects.get_for_model(resource),
         scope_object_id=resource.pk,
         unit=unit,
@@ -50,10 +51,19 @@ def _rate(resource, *, amount="10.00", unit=TB):
     )
 
 
-def _invoice(owner, project, *, status=InvoiceStatusChoices.STATUS_DRAFT):
-    invoice = Invoice.objects.create(owner=owner, status=status)
-    invoice.projects.add(project)
-    return invoice
+def _invoice(owner, *, status=InvoiceStatusChoices.STATUS_DRAFT):
+    return Invoice.objects.create(owner=owner, status=status)
+
+
+def _scoped_discount(name, resource, *, owner=None, value="10", type=DiscountTypeChoices.TYPE_PERCENTAGE):
+    return Discount.objects.create(
+        name=name,
+        owner=owner,
+        scope_object_type=ContentType.objects.get_for_model(resource),
+        scope_object_id=resource.pk,
+        type=type,
+        value=value,
+    )
 
 
 @pytest.mark.django_db
@@ -63,15 +73,20 @@ def test_generate_charges_allowance_and_discount():
     quota, resource = _storage_quota(owner, project, hard_limit_bytes=2 * TB)
     _rate(resource)
     FreeAllowance.objects.create(
+        name="Test Allowance",
         owner=owner,
-        project=project,
         scope_object_type=ContentType.objects.get_for_model(resource),
         scope_object_id=resource.pk,
         unit_format=UnitFormatChoiceSet.UNIT_BYTES,
         quantity_total=1 * TB,
     )
-    Discount.objects.create(owner=owner, project=project, type=DiscountTypeChoices.TYPE_PERCENTAGE, value="10")
-    invoice = _invoice(owner, project)
+    Discount.objects.create(
+        name="Test Discount",
+        owner=owner,
+        type=DiscountTypeChoices.TYPE_PERCENTAGE,
+        value="10",
+    )
+    invoice = _invoice(owner)
 
     generate_invoice(invoice)
 
@@ -100,12 +115,128 @@ def test_generate_charges_allowance_and_discount():
 
 
 @pytest.mark.django_db
+def test_generate_applies_global_discount_to_any_owner():
+    owner = User.objects.create_user(username="pi")
+    project = Project.objects.create(name="Project 1", owner=owner)
+    _, resource = _storage_quota(owner, project, hard_limit_bytes=2 * TB)
+    _rate(resource)
+    # Global discount: owner=None, scope=None
+    Discount.objects.create(
+        name="Global Discount",
+        owner=None,
+        type=DiscountTypeChoices.TYPE_PERCENTAGE,
+        value="10",
+    )
+    invoice = _invoice(owner)
+
+    generate_invoice(invoice)
+
+    discount_lines = invoice.line_items.filter(line_type=InvoiceLineTypeChoices.TYPE_DISCOUNT)
+    assert discount_lines.count() == 1
+    # charge 20, net 20, global 10% -> -2.00
+    assert discount_lines.get().amount.amount == -2.00
+    assert discount_lines.get().source_object_id == Discount.objects.get(name="Global Discount").pk
+    assert invoice.discount_total.amount == -2.00
+
+
+@pytest.mark.django_db
+def test_generate_global_discount_is_fallback_after_owner_specific():
+    owner = User.objects.create_user(username="pi")
+    project = Project.objects.create(name="Project 1", owner=owner)
+    _, resource = _storage_quota(owner, project, hard_limit_bytes=2 * TB)
+    _rate(resource)
+    owner_discount = Discount.objects.create(
+        name="Owner Discount",
+        owner=owner,
+        type=DiscountTypeChoices.TYPE_PERCENTAGE,
+        value="20",
+    )
+    Discount.objects.create(
+        name="Global Discount",
+        owner=None,
+        type=DiscountTypeChoices.TYPE_PERCENTAGE,
+        value="10",
+    )
+    invoice = _invoice(owner)
+
+    generate_invoice(invoice)
+
+    discount_lines = invoice.line_items.filter(line_type=InvoiceLineTypeChoices.TYPE_DISCOUNT)
+    assert discount_lines.count() == 1
+    # owner-specific 20% wins over global 10% -> -4.00 on net 20
+    assert discount_lines.get().amount.amount == -4.00
+    assert discount_lines.get().source_object_id == owner_discount.pk
+
+
+@pytest.mark.django_db
+def test_generate_applies_resource_discount_to_that_resource_only():
+    owner = User.objects.create_user(username="pi")
+    project = Project.objects.create(name="Project 1", owner=owner)
+    _, resource = _storage_quota(owner, project, hard_limit_bytes=2 * TB)
+    _, resource_b = _storage_quota(owner, project, hard_limit_bytes=1 * TB, path="/b")
+    _rate(resource)
+    _rate(resource_b, amount="20.00")
+    _scoped_discount("Resource Discount", resource, value="50")
+    invoice = _invoice(owner)
+
+    generate_invoice(invoice)
+
+    discount_lines = invoice.line_items.filter(line_type=InvoiceLineTypeChoices.TYPE_DISCOUNT)
+    assert discount_lines.count() == 1
+    # only resource's net (20.00) is discounted 50% -> -10.00; resource_b untouched
+    assert discount_lines.get().amount.amount == -10.00
+    assert invoice.discount_total.amount == -10.00
+    assert invoice.grand_total.amount == 30.00  # resource_b 20 + resource 20 - 10
+
+
+@pytest.mark.django_db
+def test_generate_owner_resource_discount_beats_resource_global():
+    owner = User.objects.create_user(username="pi")
+    project = Project.objects.create(name="Project 1", owner=owner)
+    _, resource = _storage_quota(owner, project, hard_limit_bytes=2 * TB)
+    _rate(resource)
+    _scoped_discount("Owner Resource Discount", resource, owner=owner, value="20")
+    _scoped_discount("Resource Global Discount", resource, value="10")
+    invoice = _invoice(owner)
+
+    generate_invoice(invoice)
+
+    discount_lines = invoice.line_items.filter(line_type=InvoiceLineTypeChoices.TYPE_DISCOUNT)
+    assert discount_lines.count() == 1
+    # owner+resource 20% wins over resource-only 10% -> -4.00 on net 20
+    assert discount_lines.get().amount.amount == -4.00
+    assert discount_lines.get().source_object_id == Discount.objects.get(name="Owner Resource Discount").pk
+
+
+@pytest.mark.django_db
+def test_generate_global_no_cost_discount_zeroes_invoice():
+    owner = User.objects.create_user(username="pi")
+    project = Project.objects.create(name="Project 1", owner=owner)
+    _, resource = _storage_quota(owner, project, hard_limit_bytes=2 * TB)
+    _rate(resource)
+    Discount.objects.create(
+        name="No Cost",
+        owner=None,
+        type=DiscountTypeChoices.TYPE_NO_COST,
+    )
+    invoice = _invoice(owner)
+
+    generate_invoice(invoice)
+
+    # charges still visible; no-cost discount zeroes the grand total
+    assert invoice.line_items.filter(line_type=InvoiceLineTypeChoices.TYPE_CHARGE).count() == 1
+    assert invoice.subtotal.amount == 20.00
+    assert invoice.discount_total.amount == -20.00
+    assert invoice.grand_total.amount == 0.00
+
+
+@pytest.mark.django_db
 def test_generate_skips_source_without_rate():
     owner = User.objects.create_user(username="pi")
     project = Project.objects.create(name="Project 1", owner=owner)
     _storage_quota(owner, project)
     # no Rate configured for this resource scope
-    invoice = _invoice(owner, project)
+    invoice = _invoice(owner)
 
     generate_invoice(invoice)
 
@@ -119,7 +250,7 @@ def test_generate_flags_invalid_line_when_quantity_missing():
     project = Project.objects.create(name="Project 1", owner=owner)
     quota, resource = _storage_quota(owner, project, hard_limit_bytes=None)
     _rate(resource)
-    invoice = _invoice(owner, project)
+    invoice = _invoice(owner)
 
     generate_invoice(invoice)
 
@@ -137,7 +268,7 @@ def test_generate_skips_zero_quantity_source():
     project = Project.objects.create(name="Project 1", owner=owner)
     quota, resource = _storage_quota(owner, project, hard_limit_bytes=0)
     _rate(resource)
-    invoice = _invoice(owner, project)
+    invoice = _invoice(owner)
 
     generate_invoice(invoice)
 
@@ -151,14 +282,14 @@ def test_finalize_consumes_pool_once_and_drops_invalid_lines():
     quota, resource = _storage_quota(owner, project, hard_limit_bytes=2 * TB)
     _rate(resource)
     allowance = FreeAllowance.objects.create(
+        name="Test Allowance",
         owner=owner,
-        project=project,
         scope_object_type=ContentType.objects.get_for_model(resource),
         scope_object_id=resource.pk,
         unit_format=UnitFormatChoiceSet.UNIT_BYTES,
         quantity_total=1 * TB,
     )
-    invoice = _invoice(owner, project)
+    invoice = _invoice(owner)
 
     generate_invoice(invoice)
     finalize_invoice(invoice)
@@ -180,7 +311,7 @@ def test_finalize_blocks_invoice_without_valid_charge_lines():
     owner = User.objects.create_user(username="pi")
     project = Project.objects.create(name="Project 1", owner=owner)
     _storage_quota(owner, project)  # no rate -> no charge lines
-    invoice = _invoice(owner, project)
+    invoice = _invoice(owner)
 
     generate_invoice(invoice)
 
@@ -198,7 +329,7 @@ def test_generation_period_overlap_guard():
     _rate(resource)
 
     # Invoice A bills this source for January 2024 and is invoiced
-    invoice_a = _invoice(owner, project)
+    invoice_a = _invoice(owner)
     invoice_a.start_date = timezone.now().replace(year=2024, month=1, day=1)
     invoice_a.end_date = timezone.now().replace(year=2024, month=1, day=31)
     invoice_a.save()
@@ -208,7 +339,7 @@ def test_generation_period_overlap_guard():
     invoice_a.save()
 
     # Invoice B overlaps January 2024 -> source skipped
-    invoice_b = _invoice(owner, project)
+    invoice_b = _invoice(owner)
     invoice_b.start_date = timezone.now().replace(year=2024, month=1, day=15)
     invoice_b.end_date = timezone.now().replace(year=2024, month=2, day=15)
     invoice_b.save()
@@ -216,7 +347,7 @@ def test_generation_period_overlap_guard():
     assert invoice_b.line_items.filter(line_type=InvoiceLineTypeChoices.TYPE_CHARGE).count() == 0
 
     # Invoice C covers a disjoint February 2024 period -> source re-billed
-    invoice_c = _invoice(owner, project)
+    invoice_c = _invoice(owner)
     invoice_c.start_date = timezone.now().replace(year=2024, month=2, day=15)
     invoice_c.end_date = timezone.now().replace(year=2024, month=2, day=28)
     invoice_c.save()

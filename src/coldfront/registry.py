@@ -7,6 +7,7 @@ import collections
 import warnings
 from contextlib import ExitStack, contextmanager
 
+from django.core.exceptions import ImproperlyConfigured
 from django.urls import path
 from django.utils.module_loading import import_string
 from django.utils.translation import gettext as _
@@ -106,12 +107,12 @@ def register_billing_source(scope, model, *, get_billable=None, get_rate_scope=N
             generation to resolve rates.
         model: The Django model class for the billing source
             (e.g. ``StorageQuota``, ``SlurmAccount``, ``SlurmQOS``).
-        get_billable: Optional callable ``(user=None, project=None)`` returning
-            a queryset of billable source instances. Defaults to
-            ``model.objects.all()``.
-        get_rate_scope: Optional callable ``(source)`` returning the rate scope
+        get_billable: Required callable ``(user)`` returning
+            a queryset of billable source instances for that user. Must filter by
+            user; a source without it raises ImproperlyConfigured.
+        get_rate_scope: Required callable ``(source)`` returning the rate scope
             object instance for a source. Must return an instance of ``scope``.
-        get_quantity: Optional callable ``(source)`` returning the native units
+        get_quantity: Required callable ``(source)`` returning the native units
             to bill for a source (e.g. ``hard_limit_bytes``, ``service_units``,
             or ``1`` for a per-item fixed fee).
 
@@ -126,15 +127,23 @@ def register_billing_source(scope, model, *, get_billable=None, get_rate_scope=N
     if not isinstance(model, type) or not issubclass(model, models.Model):
         raise ValueError(_("Billing source model must be a model class."))
 
-    callbacks = {"get_billable": get_billable, "get_rate_scope": get_rate_scope, "get_quantity": get_quantity}
+    callbacks = {
+        "get_billable": get_billable,
+        "get_rate_scope": get_rate_scope,
+        "get_quantity": get_quantity,
+    }
     for name, cb in callbacks.items():
-        if cb is not None and not callable(cb):
+        if cb is None:
+            raise ImproperlyConfigured(
+                _("Billing source {model} must implement {name}.").format(model=model._meta.label_lower, name=name)
+            )
+        if not callable(cb):
             raise ValueError(_("Billing source {name} must be callable.").format(name=name))
 
     registry["billing_sources"][model._meta.label_lower] = {
         "scope": scope,
         "model": model,
-        "get_billable": get_billable or (lambda user=None, project=None: model.objects.all()),
+        "get_billable": get_billable,
         "get_rate_scope": get_rate_scope,
         "get_quantity": get_quantity,
     }

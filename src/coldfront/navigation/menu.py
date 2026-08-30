@@ -48,7 +48,7 @@ ALLOCATIONS_MENU = Menu(
             items=(
                 get_model_item("ras", "allocation", _("Allocations")),
                 get_model_item("ras", "allocationchangerequest", _("Change Requests"), actions=("add",)),
-                get_model_item("core", "commententry", _("Comment Entires"), actions=[]),
+                get_model_item("core", "commententry", _("Comment Entries"), actions=[]),
             ),
         ),
     ),

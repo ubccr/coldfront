@@ -9,10 +9,6 @@
                     {{ object.owner|linkify }}
                 </c-card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Project' %}">
-                    {{ object.project|placeholder }}
-                </c-card.fields.item>
-
                 <c-card.fields.item label="{% trans 'Scope' %}">
                     {{ object.scope_object|placeholder }}
                 </c-card.fields.item>
@@ -26,11 +22,11 @@
                 </c-card.fields.item>
 
                 <c-card.fields.item label="{% trans 'Used' %}">
-                    {{ object.used }}
+                    {{ object.used_display }}
                 </c-card.fields.item>
 
                 <c-card.fields.item label="{% trans 'Remaining' %}">
-                    {{ object.remaining }}
+                    {{ object.remaining_display }}
                 </c-card.fields.item>
 
                 <c-card.fields.item label="{% trans 'Start Date' %}">

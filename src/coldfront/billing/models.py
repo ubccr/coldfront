@@ -45,13 +45,24 @@ def _unit_display(unit_format, unit):
     return unit_format
 
 
+def _quantity_display(unit_format, value):
+    """Render a free-allowance quantity (total, used, or remaining) for display.
+
+    Byte quantities are humanized (e.g. 1e12 -> "1.0 TB"); anything else is
+    shown as the plain integer followed by its ``unit_format`` label.
+    """
+    if unit_format == UnitFormatChoiceSet.UNIT_BYTES:
+        return humanize.naturalsize(value)
+    return f"{value} {unit_format}"
+
+
 class Invoice(CommentingMixin, PrimaryModel):
     """
     A bill sent to a responsible user (owner) for a billing period, optionally
-    restricted to a subset of that owner's projects.
+    restricted to specific registered billing source types (``source_types``).
 
-    The owner is the party responsible for paying the bill. If ``projects`` is
-    empty, all of the owner's projects are considered.
+    The owner is the party responsible for paying the bill; all of the owner's
+    billable sources are considered unless ``source_types`` restricts them.
     """
 
     slug = AutoSlugField(
@@ -73,14 +84,6 @@ class Invoice(CommentingMixin, PrimaryModel):
         null=False,
         verbose_name=_("owner"),
         help_text=_("The user responsible for paying this invoice."),
-    )
-
-    projects = models.ManyToManyField(
-        to="ras.Project",
-        blank=True,
-        related_name="invoices",
-        verbose_name=_("projects"),
-        help_text=_("Restrict the invoice to specific projects. Leave empty to bill all of the owner's projects."),
     )
 
     start_date = models.DateTimeField(
@@ -329,9 +332,15 @@ class InvoiceLineItem(ChangeLoggedModel):
 class Rate(PrimaryModel):
     """
     A per-unit price scoped to a resource (StorageResource, SlurmCluster, or
-    SlurmQOS). An optional ``project`` override takes precedence over the
-    resource-scoped default. ``charge_basis`` describes the billing cadence.
+    SlurmQOS). ``charge_basis`` describes the billing cadence.
     """
+
+    name = models.CharField(
+        verbose_name=_("name"),
+        max_length=100,
+        unique=True,
+        default="",
+    )
 
     scope_object_type = models.ForeignKey(
         to="contenttypes.ContentType",
@@ -408,8 +417,7 @@ class Rate(PrimaryModel):
         ]
 
     def __str__(self):
-        scope = self.scope_object
-        return f"{scope} @ {self.amount}/{self.unit_display}"
+        return self.name
 
     @property
     def unit_display(self):
@@ -422,11 +430,16 @@ class Rate(PrimaryModel):
 class FreeAllowance(PrimaryModel):
     """
     A pool of free units granted to a user (owner) and scoped to a single
-    resource (scope is required). The ``project`` is optional: when set the pool
-    applies to the owner's charges within that project only; otherwise it spans
-    all of the owner's projects. ``used`` tracks consumption so the pool is drawn
-    down over the allowance period.
+    resource (scope is required). ``used`` tracks consumption so the pool is
+    drawn down over the allowance period.
     """
+
+    name = models.CharField(
+        verbose_name=_("name"),
+        max_length=100,
+        unique=True,
+        default="",
+    )
 
     owner = models.ForeignKey(
         to=settings.AUTH_USER_MODEL,
@@ -435,16 +448,6 @@ class FreeAllowance(PrimaryModel):
         null=False,
         verbose_name=_("owner"),
         help_text=_("The user granted this free allowance."),
-    )
-
-    project = models.ForeignKey(
-        to="ras.Project",
-        on_delete=models.PROTECT,
-        related_name="free_allowances",
-        blank=True,
-        null=True,
-        verbose_name=_("project"),
-        help_text=_("Optional project scope. Leave empty to apply across all of the owner's projects."),
     )
 
     scope_object_type = models.ForeignKey(
@@ -499,17 +502,22 @@ class FreeAllowance(PrimaryModel):
         verbose_name_plural = _("free allowances")
 
     def __str__(self):
-        owner = self.owner
-        return f"Free allowance for {owner} ({self.quantity_display})"
+        return self.name
 
     def get_status_color(self):
         return "green"
 
     @property
     def quantity_display(self):
-        if self.unit_format == UnitFormatChoiceSet.UNIT_BYTES:
-            return humanize.naturalsize(self.quantity_total)
-        return f"{self.quantity_total} {self.unit_format}"
+        return _quantity_display(self.unit_format, self.quantity_total)
+
+    @property
+    def used_display(self):
+        return _quantity_display(self.unit_format, self.used)
+
+    @property
+    def remaining_display(self):
+        return _quantity_display(self.unit_format, self.remaining)
 
     @property
     def remaining(self):
@@ -518,27 +526,52 @@ class FreeAllowance(PrimaryModel):
 
 class Discount(PrimaryModel):
     """
-    A reduction applied to an invoice net total. Owned by a user and optionally
-    scoped to a single project. A project-level discount is used when present;
-    otherwise the user-level discount applies.
+    A reduction applied to an invoice net total. A discount may be scoped by
+    owner (a user), by resource (``scope_object``), or both, or neither:
+
+    - owner + resource: a specific user gets a discount on a specific resource.
+    - resource only: all users get a discount on a specific resource.
+    - owner only: a specific user gets a discount on all resources.
+    - neither (global): everyone gets a discount on everything (e.g. a No Cost
+      discount that zeroes invoices while still showing the underlying charges).
+
+    Precedence for a given charge is owner+resource > resource > owner > global;
+    discounts are never stacked.
     """
+
+    name = models.CharField(
+        verbose_name=_("name"),
+        max_length=100,
+        unique=True,
+        default="",
+    )
 
     owner = models.ForeignKey(
         to=settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
         related_name="discounts",
-        null=False,
-        verbose_name=_("owner"),
-    )
-
-    project = models.ForeignKey(
-        to="ras.Project",
-        on_delete=models.PROTECT,
-        related_name="discounts",
         blank=True,
         null=True,
-        verbose_name=_("project"),
-        help_text=_("Optional project scope. Leave empty for a user-level discount."),
+        verbose_name=_("owner"),
+        help_text=_("The user this discount applies to. Leave empty for a global or resource-scoped discount."),
+    )
+
+    scope_object_type = models.ForeignKey(
+        to="contenttypes.ContentType",
+        on_delete=models.PROTECT,
+        related_name="billing_discounts",
+        blank=True,
+        null=True,
+        verbose_name=_("scope type"),
+    )
+    scope_object_id = models.PositiveBigIntegerField(
+        blank=True,
+        null=True,
+        verbose_name=_("scope object"),
+    )
+    scope_object = GenericForeignKey(
+        ct_field="scope_object_type",
+        fk_field="scope_object_id",
     )
 
     type = models.CharField(
@@ -565,10 +598,7 @@ class Discount(PrimaryModel):
         verbose_name_plural = _("discounts")
 
     def __str__(self):
-        owner = self.owner
-        if self.type == DiscountTypeChoices.TYPE_NO_COST:
-            return f"No-cost discount for {owner}"
-        return f"{self.type} discount ({self.value}) for {owner}"
+        return self.name
 
     def get_status_color(self):
         return "green"

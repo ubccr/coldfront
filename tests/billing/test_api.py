@@ -4,6 +4,7 @@
 
 from decimal import Decimal
 
+import pytest
 from django.contrib.contenttypes.models import ContentType
 from djmoney.money import Money
 
@@ -21,7 +22,7 @@ from coldfront.billing.models import (
     InvoiceLineItem,
     Rate,
 )
-from coldfront.ras.models import Project, Resource, ResourceType
+from coldfront.ras.models import Resource, ResourceType
 from coldfront.users.models import User
 from coldfront.utils.testing import APIViewTestCases
 
@@ -75,7 +76,7 @@ class InvoiceTest(APIViewTestCases.APIViewTestCase):
 
 class RateTest(APIViewTestCases.APIViewTestCase):
     model = Rate
-    brief_fields = ["amount", "charge_basis", "display", "id", "unit", "unit_format", "url"]
+    brief_fields = ["amount", "charge_basis", "display", "id", "name", "unit", "unit_format", "url"]
     bulk_update_data = {
         "description": "New description",
     }
@@ -105,6 +106,7 @@ class RateTest(APIViewTestCases.APIViewTestCase):
 
         resource_ct = ContentType.objects.get_for_model(Resource)
         Rate.objects.create(
+            name="Rate 1",
             scope_object_type=resource_ct,
             scope_object_id=resources[0].pk,
             unit=10**12,
@@ -113,6 +115,7 @@ class RateTest(APIViewTestCases.APIViewTestCase):
             charge_basis=ChargeBasisChoices.BASIS_MONTHLY,
         )
         Rate.objects.create(
+            name="Rate 2",
             scope_object_type=resource_ct,
             scope_object_id=resources[1].pk,
             unit=10**12,
@@ -121,6 +124,7 @@ class RateTest(APIViewTestCases.APIViewTestCase):
             charge_basis=ChargeBasisChoices.BASIS_MONTHLY,
         )
         Rate.objects.create(
+            name="Rate 3",
             scope_object_type=resource_ct,
             scope_object_id=resources[2].pk,
             unit=10**12,
@@ -131,6 +135,7 @@ class RateTest(APIViewTestCases.APIViewTestCase):
 
         cls.create_data = [
             {
+                "name": "Rate 4",
                 "scope_object_type": "ras.resource",
                 "scope_object_id": resources[3].pk,
                 "unit": 10**12,
@@ -140,6 +145,7 @@ class RateTest(APIViewTestCases.APIViewTestCase):
                 "description": "A new rate",
             },
             {
+                "name": "Rate 5",
                 "scope_object_type": "ras.resource",
                 "scope_object_id": resources[4].pk,
                 "unit": 10**12,
@@ -149,6 +155,7 @@ class RateTest(APIViewTestCases.APIViewTestCase):
                 "description": "A new rate",
             },
             {
+                "name": "Rate 6",
                 "scope_object_type": "ras.resource",
                 "scope_object_id": resources[5].pk,
                 "unit": 10**12,
@@ -162,7 +169,7 @@ class RateTest(APIViewTestCases.APIViewTestCase):
 
 class FreeAllowanceTest(APIViewTestCases.APIViewTestCase):
     model = FreeAllowance
-    brief_fields = ["display", "id", "owner", "project", "quantity_total", "unit_format", "url", "used"]
+    brief_fields = ["display", "id", "name", "owner", "quantity_total", "unit_format", "url", "used"]
     bulk_update_data = {
         "description": "New description",
     }
@@ -170,11 +177,6 @@ class FreeAllowanceTest(APIViewTestCases.APIViewTestCase):
     @classmethod
     def setUpTestData(cls):
         owner = User.objects.create_user(username="pi")
-        projects = (
-            Project.objects.create(name="Project 1", owner=owner),
-            Project.objects.create(name="Project 2", owner=owner),
-            Project.objects.create(name="Project 3", owner=owner),
-        )
         resource_type = ResourceType.objects.create(name="Cluster")
 
         resources = (
@@ -186,35 +188,35 @@ class FreeAllowanceTest(APIViewTestCases.APIViewTestCase):
             resource.save()
 
         resource_ct = ContentType.objects.get_for_model(Resource)
-        allowances = (
-            FreeAllowance.objects.create(
-                owner=owner,
-                scope_object_type=resource_ct,
-                scope_object_id=resources[0].pk,
-                unit_format=UnitFormatChoiceSet.UNIT_BYTES,
-                quantity_total=100,
-            ),
-            FreeAllowance.objects.create(
-                owner=owner,
-                scope_object_type=resource_ct,
-                scope_object_id=resources[1].pk,
-                unit_format=UnitFormatChoiceSet.UNIT_BYTES,
-                quantity_total=200,
-            ),
-            FreeAllowance.objects.create(
-                owner=owner,
-                scope_object_type=resource_ct,
-                scope_object_id=resources[2].pk,
-                unit_format=UnitFormatChoiceSet.UNIT_BYTES,
-                quantity_total=300,
-            ),
+        FreeAllowance.objects.create(
+            name="Allowance 1",
+            owner=owner,
+            scope_object_type=resource_ct,
+            scope_object_id=resources[0].pk,
+            unit_format=UnitFormatChoiceSet.UNIT_BYTES,
+            quantity_total=100,
         )
-        allowances[1].project = projects[1]
+        FreeAllowance.objects.create(
+            name="Allowance 2",
+            owner=owner,
+            scope_object_type=resource_ct,
+            scope_object_id=resources[1].pk,
+            unit_format=UnitFormatChoiceSet.UNIT_BYTES,
+            quantity_total=200,
+        )
+        FreeAllowance.objects.create(
+            name="Allowance 3",
+            owner=owner,
+            scope_object_type=resource_ct,
+            scope_object_id=resources[2].pk,
+            unit_format=UnitFormatChoiceSet.UNIT_BYTES,
+            quantity_total=300,
+        )
 
         cls.create_data = [
             {
+                "name": "Allowance 4",
                 "owner": owner.pk,
-                "project": projects[0].pk,
                 "scope_object_type": "ras.resource",
                 "scope_object_id": resources[0].pk,
                 "unit_format": UnitFormatChoiceSet.UNIT_BYTES,
@@ -222,8 +224,8 @@ class FreeAllowanceTest(APIViewTestCases.APIViewTestCase):
                 "description": "A new allowance",
             },
             {
+                "name": "Allowance 5",
                 "owner": owner.pk,
-                "project": projects[1].pk,
                 "scope_object_type": "ras.resource",
                 "scope_object_id": resources[1].pk,
                 "unit_format": UnitFormatChoiceSet.UNIT_BYTES,
@@ -231,8 +233,8 @@ class FreeAllowanceTest(APIViewTestCases.APIViewTestCase):
                 "description": "A new allowance",
             },
             {
+                "name": "Allowance 6",
                 "owner": owner.pk,
-                "project": projects[2].pk,
                 "scope_object_type": "ras.resource",
                 "scope_object_id": resources[2].pk,
                 "unit_format": UnitFormatChoiceSet.UNIT_BYTES,
@@ -244,7 +246,7 @@ class FreeAllowanceTest(APIViewTestCases.APIViewTestCase):
 
 class DiscountTest(APIViewTestCases.APIViewTestCase):
     model = Discount
-    brief_fields = ["display", "id", "owner", "project", "type", "url", "value"]
+    brief_fields = ["display", "id", "name", "owner", "type", "url", "value"]
     bulk_update_data = {
         "description": "New description",
     }
@@ -252,34 +254,44 @@ class DiscountTest(APIViewTestCases.APIViewTestCase):
     @classmethod
     def setUpTestData(cls):
         owner = User.objects.create_user(username="pi")
-        projects = (
-            Project.objects.create(name="Project 1", owner=owner),
-            Project.objects.create(name="Project 2", owner=owner),
-            Project.objects.create(name="Project 3", owner=owner),
-        )
+        resource_type = ResourceType.objects.create(name="Cluster")
 
-        Discount.objects.create(owner=owner, type=DiscountTypeChoices.TYPE_PERCENTAGE, value=10)
-        Discount.objects.create(owner=owner, type=DiscountTypeChoices.TYPE_PERCENTAGE, value=20)
-        Discount.objects.create(owner=owner, type=DiscountTypeChoices.TYPE_PERCENTAGE, value=30)
+        resources = (
+            Resource(name="Resource 1", slug="r-1", resource_type=resource_type),
+            Resource(name="Resource 2", slug="r-2", resource_type=resource_type),
+            Resource(name="Resource 3", slug="r-3", resource_type=resource_type),
+        )
+        for resource in resources:
+            resource.save()
+
+        Discount.objects.create(name="Discount 1", owner=owner, type=DiscountTypeChoices.TYPE_PERCENTAGE, value=10)
+        Discount.objects.create(name="Discount 2", owner=owner, type=DiscountTypeChoices.TYPE_PERCENTAGE, value=20)
+        Discount.objects.create(name="Discount 3", owner=owner, type=DiscountTypeChoices.TYPE_PERCENTAGE, value=30)
 
         cls.create_data = [
             {
+                "name": "Discount 4",
                 "owner": owner.pk,
-                "project": projects[0].pk,
+                "scope_object_type": "ras.resource",
+                "scope_object_id": resources[0].pk,
                 "type": DiscountTypeChoices.TYPE_PERCENTAGE,
                 "value": Decimal("10"),
                 "description": "A new discount",
             },
             {
+                "name": "Discount 5",
                 "owner": owner.pk,
-                "project": projects[1].pk,
+                "scope_object_type": "ras.resource",
+                "scope_object_id": resources[1].pk,
                 "type": DiscountTypeChoices.TYPE_PERCENTAGE,
                 "value": Decimal("20"),
                 "description": "A new discount",
             },
             {
+                "name": "Discount 6",
                 "owner": owner.pk,
-                "project": projects[2].pk,
+                "scope_object_type": "ras.resource",
+                "scope_object_id": resources[2].pk,
                 "type": DiscountTypeChoices.TYPE_PERCENTAGE,
                 "value": Decimal("30"),
                 "description": "A new discount",
@@ -385,3 +397,46 @@ class InvoiceLineItemTest(APIViewTestCases.APIViewTestCase):
                 "description": "A new line item",
             },
         ]
+
+
+@pytest.mark.django_db
+def test_discount_serializer_accepts_all_scope_combinations():
+    from coldfront.billing.api.serializers.allowances import DiscountSerializer
+
+    user = User.objects.create_user(username="pi")
+    resource_type = ResourceType.objects.create(name="Cluster")
+    resource = Resource.objects.create(name="Resource", slug="r", resource_type=resource_type)
+
+    # global: owner=None, scope=None
+    serializer = DiscountSerializer(data={"name": "Global", "owner": None, "type": "percentage", "value": "10"})
+    assert serializer.is_valid(), serializer.errors
+
+    # owner-only
+    serializer = DiscountSerializer(data={"name": "Owner", "owner": user.pk, "type": "percentage", "value": "10"})
+    assert serializer.is_valid(), serializer.errors
+
+    # resource-only: owner=None, scope set
+    serializer = DiscountSerializer(
+        data={
+            "name": "Resource",
+            "owner": None,
+            "scope_object_type": "ras.resource",
+            "scope_object_id": resource.pk,
+            "type": "percentage",
+            "value": "10",
+        }
+    )
+    assert serializer.is_valid(), serializer.errors
+
+    # owner + resource
+    serializer = DiscountSerializer(
+        data={
+            "name": "Owner Resource",
+            "owner": user.pk,
+            "scope_object_type": "ras.resource",
+            "scope_object_id": resource.pk,
+            "type": "percentage",
+            "value": "10",
+        }
+    )
+    assert serializer.is_valid(), serializer.errors

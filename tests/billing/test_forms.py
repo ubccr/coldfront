@@ -5,13 +5,13 @@
 import pytest
 from django.contrib.contenttypes.models import ContentType
 
-from coldfront.billing.choices import ChargeBasisChoices, UnitFormatChoiceSet
+from coldfront.billing.choices import ChargeBasisChoices, DiscountTypeChoices, UnitFormatChoiceSet
 from coldfront.billing.forms import (
+    DiscountForm,
     FreeAllowanceForm,
     RateForm,
 )
 from coldfront.billing.models import Rate
-from coldfront.ras.models import Project
 from coldfront.registry import get_billing_sources, registry
 from coldfront.storage.models import StorageResource
 from coldfront.users.models import User
@@ -41,6 +41,7 @@ def test_rate_form_edit_keeps_current_scope_type():
     admin = User.objects.create_superuser(username="admin", password="pw")
     resource = StorageResource.objects.create(name="Storage A")
     rate = Rate.objects.create(
+        name="Rate A",
         scope_object_type=ContentType.objects.get_for_model(StorageResource),
         scope_object_id=resource.pk,
         unit=10**12,
@@ -106,6 +107,7 @@ def test_rate_form_saves_scope():
     data = {
         "scope_object_type": ct.pk,
         "scope_object_id": resource.pk,
+        "name": "Test Rate",
         "unit": "1 TB",
         "unit_format": UnitFormatChoiceSet.UNIT_BYTES,
         "amount_0": "10.00",
@@ -171,6 +173,7 @@ def test_rate_form_edit_seeds_scope_initial():
     admin = User.objects.create_superuser(username="admin", password="pw")
     resource = StorageResource.objects.create(name="Storage A")
     rate = Rate.objects.create(
+        name="Rate B",
         scope_object_type=ContentType.objects.get_for_model(StorageResource),
         scope_object_id=resource.pk,
         unit=10**12,
@@ -190,7 +193,6 @@ def test_free_allowance_form_scope_is_required():
     owner = User.objects.create_user(username="pi")
     data = {
         "owner": owner.pk,
-        "project": "",
         "scope_object_type": "",
         "scope_object_id": "",
         "unit_format": UnitFormatChoiceSet.UNIT_BYTES,
@@ -207,15 +209,14 @@ def test_free_allowance_form_scope_is_required():
 def test_free_allowance_form_saves_scope():
     admin = User.objects.create_superuser(username="admin", password="pw")
     owner = User.objects.create_user(username="pi")
-    Project.objects.create(name="Project 1", owner=owner)
     resource = StorageResource.objects.create(name="Storage A")
     ct = ContentType.objects.get_for_model(StorageResource)
 
     data = {
         "owner": owner.pk,
-        "project": "",
         "scope_object_type": ct.pk,
         "scope_object_id": resource.pk,
+        "name": "Test Allowance",
         "unit_format": UnitFormatChoiceSet.UNIT_BYTES,
         "quantity_total": "100",
         "used": 0,
@@ -249,7 +250,6 @@ def test_free_allowance_add_view_filters_scope_objects_via_htmx(client):
 @pytest.mark.django_db
 def test_free_allowance_import_saves_scope():
     owner = User.objects.create_user(username="pi")
-    Project.objects.create(name="Project 1", owner=owner)
     resource = StorageResource.objects.create(name="Storage Resource 4")
     ct = ContentType.objects.get_for_model(StorageResource)
 
@@ -259,8 +259,8 @@ def test_free_allowance_import_saves_scope():
     # regression: previously the declared field was never applied to the instance).
     form = FreeAllowanceImportForm(
         data={
-            "owner": "pi",
-            "project": "Project 1",
+            "name": "Fourth allowance",
+            "owner": owner.username,
             "unit_format": "bytes",
             "quantity_total": "100",
             "used": 0,
@@ -272,3 +272,42 @@ def test_free_allowance_import_saves_scope():
     instance = form.save()
     assert instance.scope_object_type_id == ct.pk
     assert instance.scope_object_id == resource.pk
+
+
+@pytest.mark.django_db
+def test_discount_form_accepts_global_discount():
+    admin = User.objects.create_superuser(username="admin", password="pw")
+
+    data = {
+        "name": "Global discount",
+        "owner": "",
+        "type": DiscountTypeChoices.TYPE_PERCENTAGE,
+        "value": "10",
+    }
+    form = DiscountForm(data=data, user=admin)
+    assert form.is_valid(), form.errors
+    discount = form.save()
+    assert discount.owner is None
+    assert discount.scope_object is None
+
+
+@pytest.mark.django_db
+def test_discount_form_accepts_owner_and_scope():
+    admin = User.objects.create_superuser(username="admin", password="pw")
+    owner = User.objects.create_user(username="pi")
+    resource = StorageResource.objects.create(name="Storage A")
+    ct = ContentType.objects.get_for_model(StorageResource)
+
+    data = {
+        "name": "Owner resource discount",
+        "owner": owner.pk,
+        "scope_object_type": ct.pk,
+        "scope_object_id": resource.pk,
+        "type": DiscountTypeChoices.TYPE_PERCENTAGE,
+        "value": "10",
+    }
+    form = DiscountForm(data=data, user=admin)
+    assert form.is_valid(), form.errors
+    discount = form.save()
+    assert discount.owner == owner
+    assert discount.scope_object == resource

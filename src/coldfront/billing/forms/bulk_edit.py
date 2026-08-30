@@ -24,7 +24,6 @@ from coldfront.billing.models import (
 from coldfront.forms import ColdFrontModelBulkEditForm, PrimaryModelBulkEditForm
 from coldfront.forms.fields import MoneyField
 from coldfront.forms.fields.bytes import BytesField
-from coldfront.ras.models import Project
 from coldfront.users.models import User
 from coldfront.utils.forms import add_blank_choice
 
@@ -42,12 +41,6 @@ class InvoiceBulkEditForm(PrimaryModelBulkEditForm):
         queryset=User.objects.all(),
         required=False,
         label=_("Owner"),
-    )
-    projects = forms.ModelMultipleChoiceField(
-        queryset=Project.objects.all(),
-        required=False,
-        label=_("Projects"),
-        help_text=_("Leave empty to keep current projects."),
     )
     status = forms.ChoiceField(
         choices=add_blank_choice(InvoiceStatusChoices),
@@ -92,7 +85,6 @@ class InvoiceBulkEditForm(PrimaryModelBulkEditForm):
 
     model = Invoice
     nullable_fields = (
-        "projects",
         "payment_date",
         "payment_amount",
         "payment_method",
@@ -108,7 +100,6 @@ class InvoiceBulkEditForm(PrimaryModelBulkEditForm):
             Fieldset(
                 _("Invoice"),
                 "owner",
-                "projects",
                 "status",
                 "description",
             ),
@@ -214,16 +205,10 @@ class RateBulkEditForm(PrimaryModelBulkEditForm):
         required=False,
         label=_("Charge basis"),
     )
-    project = forms.ModelChoiceField(
-        queryset=Project.objects.all(),
-        required=False,
-        label=_("Project override"),
-    )
 
     model = Rate
     nullable_fields = (
         "amount",
-        "project",
         "effective_start",
         "effective_end",
     )
@@ -237,7 +222,6 @@ class RateBulkEditForm(PrimaryModelBulkEditForm):
                 "unit_format",
                 "amount",
                 "charge_basis",
-                "project",
                 "description",
             ),
         ]
@@ -248,11 +232,6 @@ class FreeAllowanceBulkEditForm(PrimaryModelBulkEditForm):
         queryset=User.objects.all(),
         required=False,
         label=_("Owner"),
-    )
-    project = forms.ModelChoiceField(
-        queryset=Project.objects.all(),
-        required=False,
-        label=_("Project"),
     )
     unit_format = forms.ChoiceField(
         choices=add_blank_choice(UnitFormatChoiceSet),
@@ -267,10 +246,7 @@ class FreeAllowanceBulkEditForm(PrimaryModelBulkEditForm):
     )
 
     model = FreeAllowance
-    nullable_fields = (
-        "project",
-        "used",
-    )
+    nullable_fields = ("used",)
 
     @property
     def fieldsets(self):
@@ -278,7 +254,6 @@ class FreeAllowanceBulkEditForm(PrimaryModelBulkEditForm):
             Fieldset(
                 _("Free Allowance"),
                 "owner",
-                "project",
                 "unit_format",
                 "quantity_total",
                 "description",
@@ -291,11 +266,6 @@ class DiscountBulkEditForm(PrimaryModelBulkEditForm):
         queryset=User.objects.all(),
         required=False,
         label=_("Owner"),
-    )
-    project = forms.ModelChoiceField(
-        queryset=Project.objects.all(),
-        required=False,
-        label=_("Project"),
     )
     type = forms.ChoiceField(
         choices=add_blank_choice(DiscountTypeChoices),
@@ -310,10 +280,7 @@ class DiscountBulkEditForm(PrimaryModelBulkEditForm):
     )
 
     model = Discount
-    nullable_fields = (
-        "project",
-        "value",
-    )
+    nullable_fields = ("value",)
 
     @property
     def fieldsets(self):
@@ -321,7 +288,6 @@ class DiscountBulkEditForm(PrimaryModelBulkEditForm):
             Fieldset(
                 _("Discount"),
                 "owner",
-                "project",
                 "type",
                 "value",
                 "description",

@@ -35,6 +35,7 @@ def _storage_quota(owner, project):
     from django.contrib.contenttypes.models import ContentType
 
     Rate.objects.create(
+        name="Test Rate",
         scope_object_type=ContentType.objects.get_for_model(resource),
         scope_object_id=resource.pk,
         unit=TB,
@@ -45,10 +46,8 @@ def _storage_quota(owner, project):
     return quota, resource
 
 
-def _invoice(owner, project):
-    invoice = Invoice.objects.create(owner=owner, status=InvoiceStatusChoices.STATUS_DRAFT)
-    invoice.projects.add(project)
-    return invoice
+def _invoice(owner):
+    return Invoice.objects.create(owner=owner, status=InvoiceStatusChoices.STATUS_DRAFT)
 
 
 @pytest.mark.django_db
@@ -56,7 +55,7 @@ def test_invoice_status_flow():
     owner = User.objects.create_user(username="pi")
     project = Project.objects.create(name="Project 1", owner=owner)
     _storage_quota(owner, project)
-    invoice = _invoice(owner, project)
+    invoice = _invoice(owner)
 
     flow = InvoiceStatusFlow(invoice)
 
@@ -77,7 +76,7 @@ def test_void_from_draft():
     owner = User.objects.create_user(username="pi")
     project = Project.objects.create(name="Project 1", owner=owner)
     _storage_quota(owner, project)
-    invoice = _invoice(owner, project)
+    invoice = _invoice(owner)
 
     flow = InvoiceStatusFlow(invoice)
     flow.generate()
@@ -90,7 +89,7 @@ def test_no_permissions_returns_no_actions():
     owner = User.objects.create_user(username="pi")
     project = Project.objects.create(name="Project 1", owner=owner)
     _storage_quota(owner, project)
-    invoice = _invoice(owner, project)
+    invoice = _invoice(owner)
 
     # Without billing ObjectPermissions the user sees no transition actions
     assert get_permitted_transition_actions(invoice, owner) == []
@@ -101,7 +100,7 @@ def test_action_mapping_per_state():
     owner = User.objects.create_user(username="pi")
     project = Project.objects.create(name="Project 1", owner=owner)
     _storage_quota(owner, project)
-    invoice = _invoice(owner, project)
+    invoice = _invoice(owner)
 
     outgoing = InvoiceStatusFlow.status.get_outgoing_transitions(invoice.status)
     actions = InvoiceStatusFlow.get_actions([t.slug for t in outgoing])

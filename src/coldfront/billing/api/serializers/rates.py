@@ -30,6 +30,7 @@ class RateSerializer(PrimaryModelSerializer):
             "url",
             "display_url",
             "display",
+            "name",
             "scope_object",
             "scope_object_type",
             "scope_object_id",
@@ -46,7 +47,7 @@ class RateSerializer(PrimaryModelSerializer):
             "created",
             "last_updated",
         ]
-        brief_fields = ("id", "url", "display", "unit", "unit_format", "amount", "charge_basis")
+        brief_fields = ("id", "url", "display", "name", "unit", "unit_format", "amount", "charge_basis")
 
     def get_scope_object(self, obj):
         scope = obj.scope_object

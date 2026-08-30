@@ -14,7 +14,6 @@ from coldfront.billing.choices import (
     UnitFormatChoiceSet,
 )
 from coldfront.billing.models import Invoice, InvoiceLineItem
-from coldfront.ras.api.serializers import ProjectSerializer
 from coldfront.users.api.serializers import UserSerializer
 
 from .nested import NestedInvoiceSerializer
@@ -24,7 +23,6 @@ __all__ = ("InvoiceLineItemSerializer", "InvoiceSerializer")
 
 class InvoiceSerializer(PrimaryModelSerializer):
     owner = UserSerializer(nested=True)
-    projects = ProjectSerializer(nested=True, many=True, required=False, read_only=True)
     status = ChoiceField(choices=InvoiceStatusChoices, required=False)
     payment_method = ChoiceField(choices=PaymentMethodChoices, required=False)
     source_types = serializers.SerializerMethodField(read_only=True)
@@ -49,7 +47,6 @@ class InvoiceSerializer(PrimaryModelSerializer):
             "display",
             "slug",
             "owner",
-            "projects",
             "source_types",
             "start_date",
             "end_date",

@@ -9,7 +9,6 @@ from coldfront.api.serializers import PrimaryModelSerializer
 from coldfront.api.serializers.fields import ChoiceField, ContentTypeField
 from coldfront.billing.choices import DiscountTypeChoices, UnitFormatChoiceSet
 from coldfront.billing.models import Discount, FreeAllowance
-from coldfront.ras.api.serializers import ProjectSerializer
 from coldfront.users.api.serializers import UserSerializer
 
 __all__ = ("DiscountSerializer", "FreeAllowanceSerializer")
@@ -17,7 +16,6 @@ __all__ = ("DiscountSerializer", "FreeAllowanceSerializer")
 
 class FreeAllowanceSerializer(PrimaryModelSerializer):
     owner = UserSerializer(nested=True)
-    project = ProjectSerializer(nested=True, required=False, allow_null=True, default=None)
     scope_object = serializers.SerializerMethodField(read_only=True)
     scope_object_type = ContentTypeField(queryset=ContentType.objects.all(), required=False)
     scope_object_id = serializers.IntegerField(required=False)
@@ -30,8 +28,8 @@ class FreeAllowanceSerializer(PrimaryModelSerializer):
             "url",
             "display_url",
             "display",
+            "name",
             "owner",
-            "project",
             "scope_object",
             "scope_object_type",
             "scope_object_id",
@@ -46,7 +44,7 @@ class FreeAllowanceSerializer(PrimaryModelSerializer):
             "created",
             "last_updated",
         ]
-        brief_fields = ("id", "url", "display", "owner", "project", "unit_format", "quantity_total", "used")
+        brief_fields = ("id", "url", "display", "name", "owner", "unit_format", "quantity_total", "used")
 
     def get_scope_object(self, obj):
         scope = obj.scope_object
@@ -61,8 +59,10 @@ class FreeAllowanceSerializer(PrimaryModelSerializer):
 
 
 class DiscountSerializer(PrimaryModelSerializer):
-    owner = UserSerializer(nested=True)
-    project = ProjectSerializer(nested=True, required=False, allow_null=True, default=None)
+    owner = UserSerializer(nested=True, required=False, allow_null=True, default=None)
+    scope_object = serializers.SerializerMethodField(read_only=True)
+    scope_object_type = ContentTypeField(queryset=ContentType.objects.all(), required=False)
+    scope_object_id = serializers.IntegerField(required=False)
     type = ChoiceField(choices=DiscountTypeChoices, required=False)
 
     class Meta:
@@ -72,8 +72,11 @@ class DiscountSerializer(PrimaryModelSerializer):
             "url",
             "display_url",
             "display",
+            "name",
             "owner",
-            "project",
+            "scope_object",
+            "scope_object_type",
+            "scope_object_id",
             "type",
             "value",
             "description",
@@ -82,4 +85,15 @@ class DiscountSerializer(PrimaryModelSerializer):
             "created",
             "last_updated",
         ]
-        brief_fields = ("id", "url", "display", "owner", "project", "type", "value")
+        brief_fields = ("id", "url", "display", "name", "owner", "type", "value")
+
+    def get_scope_object(self, obj):
+        scope = obj.scope_object
+        if scope is None:
+            return None
+        ct = obj.scope_object_type
+        return {
+            "id": obj.scope_object_id,
+            "type": f"{ct.app_label}.{ct.model}" if ct else None,
+            "display": str(scope),
+        }

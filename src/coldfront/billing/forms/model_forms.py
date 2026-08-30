@@ -30,10 +30,8 @@ from coldfront.forms.fields import (
     CommentField,
     CSVContentTypeObjectField,
     CSVModelChoiceField,
-    CSVModelMultipleChoiceField,
     CSVMoneyField,
     DynamicModelChoiceField,
-    DynamicModelMultipleChoiceField,
     MoneyField,
 )
 from coldfront.forms.fields.bytes import BytesField
@@ -41,7 +39,6 @@ from coldfront.forms.fields.content_types import ContentTypeChoiceField
 from coldfront.forms.fields.csv import CSVChoiceField
 from coldfront.forms.mixins import HorizontalFormMixin
 from coldfront.forms.widgets import HTMXSelectWidget
-from coldfront.ras.models import Project
 from coldfront.registry import billing_scope_types, get_billing_sources
 from coldfront.users.models import User
 from coldfront.users.querysets import RestrictedQuerySet
@@ -77,15 +74,6 @@ class InvoiceForm(PrimaryModelForm):
         },
     )
 
-    projects = DynamicModelMultipleChoiceField(
-        label=_("Projects"),
-        queryset=Project.objects.all(),
-        required=False,
-        null_option="All Projects",
-        help_text=_("Restrict the invoice to specific projects. 'All Projects' bills all of the owner's projects."),
-        query_params={"owner": "$owner"},
-    )
-
     source_types = forms.ModelMultipleChoiceField(
         label=_("Source types"),
         queryset=ContentType.objects.none(),
@@ -114,7 +102,6 @@ class InvoiceForm(PrimaryModelForm):
         fields = [
             "slug",
             "owner",
-            "projects",
             "source_types",
             "start_date",
             "end_date",
@@ -130,7 +117,6 @@ class InvoiceForm(PrimaryModelForm):
                 _("Invoice"),
                 "slug",
                 "owner",
-                "projects",
                 "source_types",
                 "description",
             ),
@@ -148,14 +134,6 @@ class InvoiceImportForm(PrimaryModelImportForm):
         queryset=User.objects.all(),
         to_field_name="username",
         label=_("Owner"),
-    )
-
-    projects = CSVModelMultipleChoiceField(
-        queryset=Project.objects.all(),
-        required=False,
-        to_field_name="name",
-        label=_("Projects"),
-        help_text=_("Project names separated by commas. Leave empty for all of the owner's projects."),
     )
 
     status = forms.ChoiceField(
@@ -200,7 +178,6 @@ class InvoiceImportForm(PrimaryModelImportForm):
         fields = [
             "slug",
             "owner",
-            "projects",
             "start_date",
             "end_date",
             "due_date",
@@ -474,6 +451,7 @@ class RateForm(BillingScopeFormMixin, PrimaryModelForm):
     class Meta:
         model = Rate
         fields = [
+            "name",
             "scope_object_type",
             "scope_object_id",
             "unit",
@@ -491,6 +469,7 @@ class RateForm(BillingScopeFormMixin, PrimaryModelForm):
         return [
             Fieldset(
                 _("Rate"),
+                "name",
                 "scope_object_type",
                 "scope_object_id",
                 "unit",
@@ -542,6 +521,7 @@ class RateImportForm(PrimaryModelImportForm):
         model = Rate
         # scope_object is handled explicitly by CSVContentTypeObjectField
         fields = [
+            "name",
             "unit",
             "unit_format",
             "amount",
@@ -580,15 +560,6 @@ class FreeAllowanceForm(BillingScopeFormMixin, PrimaryModelForm):
         },
     )
 
-    project = DynamicModelChoiceField(
-        label=_("Project"),
-        queryset=Project.objects.all(),
-        required=False,
-        null_option="None",
-        help_text=_("Optional project scope. Leave empty to apply across all of the owner's projects."),
-        query_params={"owner": "$owner"},
-    )
-
     unit_format = forms.ChoiceField(
         label=_("Unit label"),
         choices=UnitFormatChoiceSet,
@@ -603,8 +574,8 @@ class FreeAllowanceForm(BillingScopeFormMixin, PrimaryModelForm):
     class Meta:
         model = FreeAllowance
         fields = [
+            "name",
             "owner",
-            "project",
             "scope_object_type",
             "scope_object_id",
             "unit_format",
@@ -621,8 +592,8 @@ class FreeAllowanceForm(BillingScopeFormMixin, PrimaryModelForm):
         return [
             Fieldset(
                 _("Free Allowance"),
+                "name",
                 "owner",
-                "project",
                 "scope_object_type",
                 "scope_object_id",
                 "unit_format",
@@ -643,13 +614,6 @@ class FreeAllowanceImportForm(PrimaryModelImportForm):
         queryset=User.objects.all(),
         to_field_name="username",
         label=_("Owner"),
-    )
-
-    project = CSVModelChoiceField(
-        queryset=Project.objects.all(),
-        to_field_name="name",
-        required=False,
-        label=_("Project"),
     )
 
     unit_format = CSVChoiceField(
@@ -673,8 +637,8 @@ class FreeAllowanceImportForm(PrimaryModelImportForm):
         model = FreeAllowance
         # scope_object is handled explicitly by CSVContentTypeObjectField
         fields = [
+            "name",
             "owner",
-            "project",
             "unit_format",
             "quantity_total",
             "used",
@@ -699,26 +663,37 @@ class FreeAllowanceImportForm(PrimaryModelImportForm):
         return instance
 
 
-class DiscountForm(PrimaryModelForm):
+class DiscountForm(BillingScopeFormMixin, PrimaryModelForm):
+    # Scope is optional for discounts: a global discount has no scope, while a
+    # resource-scoped one selects a scope type + object (re-declared required=False
+    # so the shared BillingScopeFormMixin's HTMX wiring still applies).
+    scope_object_type = ContentTypeChoiceField(
+        queryset=ObjectType.objects.none(),
+        required=False,
+        widget=HTMXSelectWidget(),
+        label=_("Scope type"),
+        help_text=_("Content type of the discount scope (e.g. a StorageResource or SlurmCluster)."),
+    )
+    scope_object_id = forms.ChoiceField(
+        choices=[],
+        required=False,
+        widget=HTMXSelectWidget(),
+        label=_("Scope object"),
+        help_text=_("Select the object to scope this discount to. Leave empty for a global discount."),
+    )
+
     owner = DynamicModelChoiceField(
         label=_("Owner"),
         queryset=User.objects.all(),
-        required=True,
+        required=False,
         selector=True,
+        null_option="None (all users)",
         context={
             "label": "username",
             "title": "Username,First Name,Last Name,Email",
             "extra-columns": "first_name,last_name,email",
         },
-    )
-
-    project = DynamicModelChoiceField(
-        label=_("Project"),
-        queryset=Project.objects.all(),
-        required=False,
-        null_option="None",
-        help_text=_("Optional project scope. Leave empty for a user-level discount."),
-        query_params={"owner": "$owner"},
+        help_text=_("The user this discount applies to. Leave empty for a global or resource-scoped discount."),
     )
 
     type = forms.ChoiceField(
@@ -728,19 +703,20 @@ class DiscountForm(PrimaryModelForm):
 
     class Meta:
         model = Discount
-        fields = ["owner", "project", "type", "value", "description", "tags"]
+        fields = ["name", "owner", "scope_object_type", "scope_object_id", "type", "value", "description", "tags"]
 
     @property
     def fieldsets(self):
         return [
             Fieldset(
                 _("Discount"),
+                "name",
                 "owner",
-                "project",
+                "scope_object_type",
+                "scope_object_id",
                 "type",
                 "value",
                 "description",
-                "tags",
             ),
         ]
 
@@ -749,14 +725,15 @@ class DiscountImportForm(PrimaryModelImportForm):
     owner = CSVModelChoiceField(
         queryset=User.objects.all(),
         to_field_name="username",
+        required=False,
         label=_("Owner"),
+        help_text=_("Username of the owner, or leave empty for a global (all-users) discount."),
     )
 
-    project = CSVModelChoiceField(
-        queryset=Project.objects.all(),
-        to_field_name="name",
+    scope_object = CSVContentTypeObjectField(
+        label=_("Scope"),
         required=False,
-        label=_("Project"),
+        help_text=_('Content type and object, e.g. "storage.storageresource:3".'),
     )
 
     type = forms.ChoiceField(
@@ -766,7 +743,22 @@ class DiscountImportForm(PrimaryModelImportForm):
 
     class Meta:
         model = Discount
-        fields = ["owner", "project", "type", "value", "description", "tags"]
+        # scope_object is handled explicitly by CSVContentTypeObjectField
+        fields = ["name", "owner", "type", "value", "description", "tags"]
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+
+        # Map the resolved scope_object to the GenericForeignKey fields
+        scope_obj = self.cleaned_data.get("scope_object")
+        if scope_obj:
+            instance.scope_object_type = ContentType.objects.get_for_model(scope_obj)
+            instance.scope_object_id = scope_obj.pk
+
+        if commit:
+            instance.save()
+            self.save_m2m()
+        return instance
 
 
 class InvoiceTransitionFormMixin(forms.Form):

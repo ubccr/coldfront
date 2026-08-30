@@ -20,7 +20,6 @@ from coldfront.billing.models import (
     InvoiceLineItem,
     Rate,
 )
-from coldfront.ras.models import Project
 from coldfront.users.models import User
 from coldfront.views.filtersets import ChangeLoggedModelFilterSet, PrimaryModelFilterSet
 
@@ -38,11 +37,6 @@ class InvoiceFilterSet(PrimaryModelFilterSet):
         to_field_name="username",
         label=_("Owner (username)"),
     )
-    projects_id = django_filters.ModelMultipleChoiceFilter(
-        queryset=Project.objects.all(),
-        distinct=False,
-        label=_("Projects (ID)"),
-    )
     status = django_filters.ChoiceFilter(
         choices=InvoiceStatusChoices,
     )
@@ -52,7 +46,6 @@ class InvoiceFilterSet(PrimaryModelFilterSet):
         fields = (
             "id",
             "owner",
-            "projects_id",
             "status",
             "start_date",
             "end_date",
@@ -109,6 +102,7 @@ class RateFilterSet(PrimaryModelFilterSet):
         model = Rate
         fields = (
             "id",
+            "name",
             "unit_format",
             "charge_basis",
         )
@@ -116,7 +110,7 @@ class RateFilterSet(PrimaryModelFilterSet):
     def search(self, queryset, name, value):
         if not value.strip():
             return queryset
-        return queryset.filter(Q(description__icontains=value))
+        return queryset.filter(Q(name__icontains=value) | Q(description__icontains=value))
 
 
 class FreeAllowanceFilterSet(PrimaryModelFilterSet):
@@ -132,18 +126,6 @@ class FreeAllowanceFilterSet(PrimaryModelFilterSet):
         to_field_name="username",
         label=_("Owner (username)"),
     )
-    project_id = django_filters.ModelMultipleChoiceFilter(
-        queryset=Project.objects.all(),
-        distinct=False,
-        label=_("Project (ID)"),
-    )
-    project = django_filters.ModelMultipleChoiceFilter(
-        field_name="project__name",
-        queryset=Project.objects.all(),
-        distinct=False,
-        to_field_name="name",
-        label=_("Project (name)"),
-    )
     unit_format = django_filters.ChoiceFilter(
         choices=UnitFormatChoiceSet,
         label=_("Unit label"),
@@ -153,15 +135,17 @@ class FreeAllowanceFilterSet(PrimaryModelFilterSet):
         model = FreeAllowance
         fields = (
             "id",
+            "name",
             "owner",
-            "project",
             "unit_format",
         )
 
     def search(self, queryset, name, value):
         if not value.strip():
             return queryset
-        return queryset.filter(Q(owner__username__icontains=value) | Q(description__icontains=value))
+        return queryset.filter(
+            Q(name__icontains=value) | Q(owner__username__icontains=value) | Q(description__icontains=value)
+        )
 
 
 class DiscountFilterSet(PrimaryModelFilterSet):
@@ -177,32 +161,32 @@ class DiscountFilterSet(PrimaryModelFilterSet):
         to_field_name="username",
         label=_("Owner (username)"),
     )
-    project_id = django_filters.ModelMultipleChoiceFilter(
-        queryset=Project.objects.all(),
-        distinct=False,
-        label=_("Project (ID)"),
-    )
-    project = django_filters.ModelMultipleChoiceFilter(
-        field_name="project__name",
-        queryset=Project.objects.all(),
-        distinct=False,
-        to_field_name="name",
-        label=_("Project (name)"),
+    scope_object_id = django_filters.NumberFilter(
+        field_name="scope_object_id",
+        label=_("Scope object ID"),
     )
     type = django_filters.ChoiceFilter(
         choices=DiscountTypeChoices,
+    )
+    global_discount = django_filters.BooleanFilter(
+        field_name="owner__isnull",
+        label=_("Global (all users)"),
     )
 
     class Meta:
         model = Discount
         fields = (
             "id",
+            "name",
             "owner",
-            "project",
+            "scope_object_id",
             "type",
+            "global_discount",
         )
 
     def search(self, queryset, name, value):
         if not value.strip():
             return queryset
-        return queryset.filter(Q(owner__username__icontains=value) | Q(description__icontains=value))
+        return queryset.filter(
+            Q(name__icontains=value) | Q(owner__username__icontains=value) | Q(description__icontains=value)
+        )

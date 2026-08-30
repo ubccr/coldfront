@@ -14,6 +14,8 @@ from coldfront.config.env import ENV
 # General Center Information
 # ------------------------------------------------------------------------------
 CENTER_NAME = ENV.str("CENTER_NAME", default="HPC Center")
+CENTER_ADDRESS = ENV.str("CENTER_ADDRESS", default="")
+CENTER_PHONE = ENV.str("CENTER_PHONE", default="")
 CENTER_HELP_URL = ENV.str("CENTER_HELP_URL", default="")
 SUPPORT_EMAIL = ENV.str("SUPPORT_EMAIL", default="")
 

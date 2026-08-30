@@ -42,10 +42,6 @@ class InvoiceTable(PrimaryModelTable):
     owner = tables.Column(
         verbose_name=_("Owner"),
     )
-    projects = tables.ManyToManyColumn(
-        verbose_name=_("Projects"),
-        linkify_item=True,
-    )
     status = columns.ChoiceFieldColumn(
         verbose_name=_("Status"),
     )
@@ -68,7 +64,6 @@ class InvoiceTable(PrimaryModelTable):
             "id",
             "slug",
             "owner",
-            "projects",
             "status",
             "start_date",
             "end_date",
@@ -85,7 +80,7 @@ class InvoiceTable(PrimaryModelTable):
             "created",
             "last_updated",
         )
-        default_columns = ("pk", "slug", "owner", "projects", "status", "due_date", "grand_total")
+        default_columns = ("pk", "slug", "owner", "status", "due_date", "grand_total")
 
 
 class InvoiceLineItemTable(ColdFrontTable):
@@ -129,6 +124,10 @@ class InvoiceLineItemTable(ColdFrontTable):
 
 
 class RateTable(PrimaryModelTable):
+    name = tables.Column(
+        verbose_name=_("Name"),
+        linkify=True,
+    )
     scope_object = tables.Column(
         verbose_name=_("Scope"),
         linkify=True,
@@ -152,6 +151,7 @@ class RateTable(PrimaryModelTable):
         fields = (
             "pk",
             "id",
+            "name",
             "scope_object",
             "unit",
             "amount",
@@ -163,16 +163,16 @@ class RateTable(PrimaryModelTable):
             "created",
             "last_updated",
         )
-        default_columns = ("pk", "id", "scope_object", "unit", "amount", "charge_basis")
+        default_columns = ("pk", "id", "name", "scope_object", "unit", "amount", "charge_basis")
 
 
 class FreeAllowanceTable(PrimaryModelTable):
+    name = tables.Column(
+        verbose_name=_("Name"),
+        linkify=True,
+    )
     owner = tables.Column(
         verbose_name=_("Owner"),
-    )
-    project = tables.Column(
-        verbose_name=_("Project"),
-        linkify=True,
     )
     scope_object = tables.Column(
         verbose_name=_("Scope"),
@@ -187,6 +187,14 @@ class FreeAllowanceTable(PrimaryModelTable):
         verbose_name=_("Quantity"),
         accessor=tables.A("quantity_display"),
     )
+    used = tables.Column(
+        verbose_name=_("Used"),
+        accessor=tables.A("used_display"),
+    )
+    remaining = tables.Column(
+        verbose_name=_("Remaining"),
+        accessor=tables.A("remaining_display"),
+    )
     tags = columns.TagColumn(
         url_name="billing:freeallowance_list",
     )
@@ -196,12 +204,13 @@ class FreeAllowanceTable(PrimaryModelTable):
         fields = (
             "pk",
             "id",
+            "name",
             "owner",
-            "project",
             "scope_object",
             "unit_format",
             "quantity_total",
             "used",
+            "remaining",
             "start_date",
             "end_date",
             "description",
@@ -209,16 +218,31 @@ class FreeAllowanceTable(PrimaryModelTable):
             "created",
             "last_updated",
         )
-        default_columns = ("pk", "id", "owner", "project", "scope_object", "unit_format", "quantity_total", "used")
+        default_columns = (
+            "pk",
+            "id",
+            "name",
+            "owner",
+            "scope_object",
+            "unit_format",
+            "quantity_total",
+            "used",
+        )
 
 
 class DiscountTable(PrimaryModelTable):
+    name = tables.Column(
+        verbose_name=_("Name"),
+        linkify=True,
+    )
     owner = tables.Column(
         verbose_name=_("Owner"),
     )
-    project = tables.Column(
-        verbose_name=_("Project"),
+    scope_object = tables.Column(
+        verbose_name=_("Scope"),
         linkify=True,
+        accessor=tables.A("scope_object"),
+        order_by=("scope_object_type__model", "scope_object_id"),
     )
     type = columns.ChoiceFieldColumn(
         verbose_name=_("Type"),
@@ -227,13 +251,19 @@ class DiscountTable(PrimaryModelTable):
         url_name="billing:discount_list",
     )
 
+    def render_owner(self, record):
+        if record.owner:
+            return str(record.owner)
+        return _("(all users)")
+
     class Meta(PrimaryModelTable.Meta):
         model = Discount
         fields = (
             "pk",
             "id",
+            "name",
             "owner",
-            "project",
+            "scope_object",
             "type",
             "value",
             "description",
@@ -241,4 +271,4 @@ class DiscountTable(PrimaryModelTable):
             "created",
             "last_updated",
         )
-        default_columns = ("pk", "id", "owner", "project", "type", "value", "description")
+        default_columns = ("pk", "id", "name", "owner", "scope_object", "type", "value", "description")

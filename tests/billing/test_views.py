@@ -30,11 +30,6 @@ class InvoiceTestCase(ViewTestCases.PrimaryObjectViewTestCase):
     @classmethod
     def setUpTestData(cls):
         owner = User.objects.create_user(username="pi")
-        projects = (
-            Project.objects.create(name="Project 1", owner=owner),
-            Project.objects.create(name="Project 2", owner=owner),
-            Project.objects.create(name="Project 3", owner=owner),
-        )
 
         invoices = (
             Invoice.objects.create(
@@ -53,14 +48,10 @@ class InvoiceTestCase(ViewTestCases.PrimaryObjectViewTestCase):
                 status=InvoiceStatusChoices.STATUS_PAID,
             ),
         )
-        invoices[0].projects.add(projects[0])
-        invoices[1].projects.add(projects[0], projects[1])
-        invoices[2].projects.add(projects[0], projects[1], projects[2])
 
         cls.form_data = {
             "slug": "INV-X",
             "owner": owner.pk,
-            "projects": [projects[0].pk, projects[1].pk],
             "description": "A new invoice",
         }
 
@@ -99,6 +90,7 @@ class RateTestCase(ViewTestCases.PrimaryObjectViewTestCase):
         resource_ct = ContentType.objects.get_for_model(StorageResource)
         rates = (
             Rate.objects.create(
+                name="Rate 1",
                 scope_object_type=resource_ct,
                 scope_object_id=resources[0].pk,
                 unit=10**12,
@@ -107,6 +99,7 @@ class RateTestCase(ViewTestCases.PrimaryObjectViewTestCase):
                 charge_basis=ChargeBasisChoices.BASIS_MONTHLY,
             ),
             Rate.objects.create(
+                name="Rate 2",
                 scope_object_type=resource_ct,
                 scope_object_id=resources[1].pk,
                 unit=10**12,
@@ -115,6 +108,7 @@ class RateTestCase(ViewTestCases.PrimaryObjectViewTestCase):
                 charge_basis=ChargeBasisChoices.BASIS_MONTHLY,
             ),
             Rate.objects.create(
+                name="Rate 3",
                 scope_object_type=resource_ct,
                 scope_object_id=resources[2].pk,
                 unit=10**12,
@@ -125,6 +119,7 @@ class RateTestCase(ViewTestCases.PrimaryObjectViewTestCase):
         )
 
         cls.form_data = {
+            "name": "Fourth rate",
             "scope_object_type": resource_ct.pk,
             "scope_object_id": resources[3].pk,
             "unit": "1 TB",
@@ -137,10 +132,10 @@ class RateTestCase(ViewTestCases.PrimaryObjectViewTestCase):
         }
 
         cls.csv_data = (
-            "unit,unit_format,amount,charge_basis,description,scope_object",
-            "1 TB,bytes,10.00,monthly,Fourth rate,storage.storageresource:Storage Resource 4",
-            "1 TB,bytes,20.00,monthly,Fifth rate,storage.storageresource:Storage Resource 5",
-            "1 TB,bytes,30.00,monthly,Sixth rate,storage.storageresource:Storage Resource 6",
+            "name,unit,unit_format,amount,charge_basis,description,scope_object",
+            "Fourth rate,1 TB,bytes,10.00,monthly,Fourth rate,storage.storageresource:Storage Resource 4",
+            "Fifth rate,1 TB,bytes,20.00,monthly,Fifth rate,storage.storageresource:Storage Resource 5",
+            "Sixth rate,1 TB,bytes,30.00,monthly,Sixth rate,storage.storageresource:Storage Resource 6",
         )
 
         cls.csv_update_data = (
@@ -162,11 +157,6 @@ class FreeAllowanceTestCase(ViewTestCases.PrimaryObjectViewTestCase):
     @classmethod
     def setUpTestData(cls):
         owner = User.objects.create_user(username="pi")
-        projects = (
-            Project.objects.create(name="Project 1", owner=owner),
-            Project.objects.create(name="Project 2", owner=owner),
-            Project.objects.create(name="Project 3", owner=owner),
-        )
 
         resources = tuple(StorageResource(name=f"Storage Resource {i}") for i in range(1, 7))
         for resource in resources:
@@ -175,6 +165,7 @@ class FreeAllowanceTestCase(ViewTestCases.PrimaryObjectViewTestCase):
         resource_ct = ContentType.objects.get_for_model(StorageResource)
         allowances = (
             FreeAllowance.objects.create(
+                name="Allowance 1",
                 owner=owner,
                 scope_object_type=resource_ct,
                 scope_object_id=resources[0].pk,
@@ -182,6 +173,7 @@ class FreeAllowanceTestCase(ViewTestCases.PrimaryObjectViewTestCase):
                 quantity_total=100,
             ),
             FreeAllowance.objects.create(
+                name="Allowance 2",
                 owner=owner,
                 scope_object_type=resource_ct,
                 scope_object_id=resources[1].pk,
@@ -189,6 +181,7 @@ class FreeAllowanceTestCase(ViewTestCases.PrimaryObjectViewTestCase):
                 quantity_total=200,
             ),
             FreeAllowance.objects.create(
+                name="Allowance 3",
                 owner=owner,
                 scope_object_type=resource_ct,
                 scope_object_id=resources[2].pk,
@@ -196,11 +189,10 @@ class FreeAllowanceTestCase(ViewTestCases.PrimaryObjectViewTestCase):
                 quantity_total=300,
             ),
         )
-        allowances[1].project = projects[1]
 
         cls.form_data = {
+            "name": "Fourth allowance",
             "owner": owner.pk,
-            "project": projects[0].pk,
             "scope_object_type": resource_ct.pk,
             "scope_object_id": resources[3].pk,
             "unit_format": UnitFormatChoiceSet.UNIT_BYTES,
@@ -210,10 +202,10 @@ class FreeAllowanceTestCase(ViewTestCases.PrimaryObjectViewTestCase):
         }
 
         cls.csv_data = (
-            "owner,project,unit_format,quantity_total,used,description,scope_object",
-            "pi,Project 1,bytes,100,0,Fourth allowance,storage.storageresource:Storage Resource 4",
-            "pi,Project 2,bytes,200,0,Fifth allowance,storage.storageresource:Storage Resource 5",
-            "pi,Project 3,bytes,300,0,Sixth allowance,storage.storageresource:Storage Resource 6",
+            "name,owner,unit_format,quantity_total,used,description,scope_object",
+            "Fourth allowance,pi,bytes,100,0,Fourth allowance,storage.storageresource:Storage Resource 4",
+            "Fifth allowance,pi,bytes,200,0,Fifth allowance,storage.storageresource:Storage Resource 5",
+            "Sixth allowance,pi,bytes,300,0,Sixth allowance,storage.storageresource:Storage Resource 6",
         )
 
         cls.csv_update_data = (
@@ -234,31 +226,48 @@ class DiscountTestCase(ViewTestCases.PrimaryObjectViewTestCase):
     @classmethod
     def setUpTestData(cls):
         owner = User.objects.create_user(username="pi")
-        projects = (
-            Project.objects.create(name="Project 1", owner=owner),
-            Project.objects.create(name="Project 2", owner=owner),
-            Project.objects.create(name="Project 3", owner=owner),
-        )
+
+        resources = tuple(StorageResource(name=f"Storage Resource {i}") for i in range(1, 4))
+        for resource in resources:
+            resource.save()
+        resource_ct = ContentType.objects.get_for_model(StorageResource)
 
         discounts = (
-            Discount.objects.create(owner=owner, type=DiscountTypeChoices.TYPE_PERCENTAGE, value=10),
-            Discount.objects.create(owner=owner, type=DiscountTypeChoices.TYPE_PERCENTAGE, value=20),
-            Discount.objects.create(owner=owner, type=DiscountTypeChoices.TYPE_PERCENTAGE, value=30),
+            Discount.objects.create(
+                name="Discount 1",
+                owner=owner,
+                type=DiscountTypeChoices.TYPE_PERCENTAGE,
+                value=10,
+            ),
+            Discount.objects.create(
+                name="Discount 2",
+                owner=owner,
+                type=DiscountTypeChoices.TYPE_PERCENTAGE,
+                value=20,
+            ),
+            Discount.objects.create(
+                name="Discount 3",
+                owner=owner,
+                type=DiscountTypeChoices.TYPE_PERCENTAGE,
+                value=30,
+            ),
         )
 
         cls.form_data = {
+            "name": "Fourth discount",
             "owner": owner.pk,
-            "project": projects[0].pk,
+            "scope_object_type": resource_ct.pk,
+            "scope_object_id": resources[0].pk,
             "type": DiscountTypeChoices.TYPE_PERCENTAGE,
             "value": 10,
             "description": "A new discount",
         }
 
         cls.csv_data = (
-            "owner,project,type,value,description",
-            "pi,Project 1,percentage,10,Fourth discount",
-            "pi,Project 2,percentage,20,Fifth discount",
-            "pi,Project 3,percentage,30,Sixth discount",
+            "name,owner,type,value,description,scope_object",
+            "Fourth discount,pi,percentage,10,Fourth discount,storage.storageresource:Storage Resource 1",
+            "Fifth discount,pi,percentage,20,Fifth discount,storage.storageresource:Storage Resource 2",
+            "Sixth discount,pi,percentage,30,Sixth discount,storage.storageresource:Storage Resource 3",
         )
 
         cls.csv_update_data = (

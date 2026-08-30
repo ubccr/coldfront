@@ -28,14 +28,6 @@
                     {% endif %}
                 </c-card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Projects' %}">
-                    {% for project in object.projects.all %}
-                        {{ project|linkify }}{% if not forloop.last %}, {% endif %}
-                    {% empty %}
-                        {% trans 'All projects' %}
-                    {% endfor %}
-                </c-card.fields.item>
-
                 <c-card.fields.item label="{% trans 'Description' %}">
                     {{ object.description|placeholder }}
                 </c-card.fields.item>

@@ -7,11 +7,9 @@ from coldfront.registry import register_billing_source
 from coldfront.slurm.models import SlurmAccount, SlurmCluster, SlurmQOS
 
 
-def _slurm_account_billable(user=None, project=None):
+def _slurm_account_billable(user):
     qs = SlurmAccount.objects.filter(associations__allocation__status=AllocationStatusChoices.STATUS_ACTIVE)
-    if project is not None:
-        qs = qs.filter(associations__allocation__project=project)
-    elif user is not None:
+    if user is not None:
         qs = qs.filter(associations__allocation__project__owner=user)
     return qs.distinct()
 
@@ -24,13 +22,11 @@ def _slurm_account_quantity(source):
     return source.service_units
 
 
-def _slurm_qos_billable(user=None, project=None):
+def _slurm_qos_billable(user):
     qs = SlurmQOS.objects.filter(
         added_to_account__associations__allocation__status=AllocationStatusChoices.STATUS_ACTIVE
     )
-    if project is not None:
-        qs = qs.filter(added_to_account__associations__allocation__project=project)
-    elif user is not None:
+    if user is not None:
         qs = qs.filter(added_to_account__associations__allocation__project__owner=user)
     return qs.distinct()
 
