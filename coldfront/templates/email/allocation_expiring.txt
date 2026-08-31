@@ -10,7 +10,7 @@ Project PI: {{ project_url.1 }}
 
     {% spaceless %}{% for days_key, days_value in expiration_dict.items %}
     Allocation(s) expiring in {{days_key}} days:{% for allocations in days_value %}{% if allocations.0 == project_url.0 %}  
-        {% spaceless %}{{ allocations.2 }}{% endspaceless %}{% endif %}{% endfor %}
+        {% spaceless %}{{ allocations.2 }}: {{ allocations.1 }}{% endspaceless %}{% endif %}{% endfor %}
         {% endfor %}{% endspaceless %}
 {% endfor %}
 The group owner responsible for this project is required to renew it on a yearly basis. If you have not done so in the
