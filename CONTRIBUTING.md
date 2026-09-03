@@ -8,7 +8,7 @@ In this document you will find a set a guidelines for contributing to the ColdFr
 
 This project abides by a [Code of Conduct](CODE_OF_CONDUCT.md) that all contributors are required to uphold. Please read this document before interacting with the project.
 
-In addition, you must sign off on all commits using `git commit -s`, acknowledging you agree to the Developer Certificate of Origin.
+In addition, you must sign off on all commits using `git commit -s`, acknowledging you agree to the [Developer Certificate of Origin](DCO.md).
 
 ## Contributor's Agreement
 
