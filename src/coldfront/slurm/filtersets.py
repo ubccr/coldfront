@@ -7,8 +7,14 @@ from django.db.models import Q
 from django.utils.translation import gettext as _
 
 from coldfront.ras.models import Allocation
+from coldfront.slurm.choices import (
+    SlurmPriorityFlagsChoices,
+    SlurmPriorityTypeChoices,
+    SlurmPriorityUsageResetPeriodChoices,
+)
 from coldfront.slurm.models import (
     SlurmAccount,
+    SlurmAccountUsage,
     SlurmAssociation,
     SlurmCluster,
     SlurmPartition,
@@ -49,6 +55,25 @@ class SlurmClusterFilterSet(TenancyFilterSet, PrimaryModelFilterSet):
         lookup_expr="icontains",
         label=_("Classification"),
     )
+    priority_flags = django_filters.MultipleChoiceFilter(
+        field_name="priority_flags",
+        choices=SlurmPriorityFlagsChoices,
+        label=_("Priority Flags"),
+    )
+    priority_type = django_filters.ChoiceFilter(
+        field_name="priority_type",
+        choices=SlurmPriorityTypeChoices,
+        label=_("Priority Type"),
+    )
+    priority_usage_reset_period = django_filters.ChoiceFilter(
+        field_name="priority_usage_reset_period",
+        choices=SlurmPriorityUsageResetPeriodChoices,
+        label=_("Priority Usage Reset Period"),
+    )
+    enforce_su_limits = django_filters.BooleanFilter(
+        field_name="enforce_su_limits",
+        label=_("Enforce SU Limits"),
+    )
 
     class Meta:
         model = SlurmCluster
@@ -59,6 +84,10 @@ class SlurmClusterFilterSet(TenancyFilterSet, PrimaryModelFilterSet):
             "locked",
             "default_qos_id",
             "classification",
+            "priority_flags",
+            "priority_type",
+            "priority_usage_reset_period",
+            "enforce_su_limits",
         )
 
     def search(self, queryset, name, value):
@@ -139,6 +168,53 @@ class SlurmAccountFilterSet(PrimaryModelFilterSet):
         if not value.strip():
             return queryset
         return queryset.filter(Q(name__icontains=value) | Q(description__icontains=value))
+
+
+class SlurmAccountUsageFilterSet(PrimaryModelFilterSet):
+    cluster_id = django_filters.ModelMultipleChoiceFilter(
+        queryset=SlurmCluster.objects.all(),
+        distinct=False,
+        label=_("Cluster (ID)"),
+    )
+    cluster = django_filters.ModelMultipleChoiceFilter(
+        field_name="cluster__name",
+        queryset=SlurmCluster.objects.all(),
+        distinct=False,
+        to_field_name="name",
+        label=_("Cluster (name)"),
+    )
+    account_id = django_filters.ModelMultipleChoiceFilter(
+        queryset=SlurmAccount.objects.all(),
+        distinct=False,
+        label=_("Account (ID)"),
+    )
+    account = django_filters.ModelMultipleChoiceFilter(
+        field_name="account__name",
+        queryset=SlurmAccount.objects.all(),
+        distinct=False,
+        to_field_name="name",
+        label=_("Account (name)"),
+    )
+    period_start = django_filters.DateFilter(
+        field_name="period_start",
+        lookup_expr="gte",
+        label=_("Day (on or after)"),
+    )
+    period_start_lte = django_filters.DateFilter(
+        field_name="period_start",
+        lookup_expr="lte",
+        label=_("Day (on or before)"),
+    )
+
+    class Meta:
+        model = SlurmAccountUsage
+        fields = (
+            "id",
+            "cluster",
+            "account",
+            "period_start",
+            "period_start_lte",
+        )
 
 
 class SlurmAssociationFilterSet(PrimaryModelFilterSet):

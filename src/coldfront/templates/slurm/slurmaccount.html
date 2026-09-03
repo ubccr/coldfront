@@ -46,6 +46,19 @@
         </c-slot>
 
         <c-slot name="right">
+            {% if object.service_units or object.consumed %}
+                <c-card.fields header="{% trans 'Usage' %}" only>
+                    <c-card.fields.item label="{% trans 'Service Units' %}">
+                        {{ object.service_units|placeholder }}
+                    </c-card.fields.item>
+                    <c-card.fields.item label="{% trans 'Consumed' %}">
+                        {{ consumed|placeholder }}
+                    </c-card.fields.item>
+                    <c-card.fields.item label="{% trans 'Remaining' %}">
+                        {{ remaining|placeholder }}
+                    </c-card.fields.item>
+                </c-card.fields>
+            {% endif %}
             <c-card.custom_fields :object="object" only />
             <c-card.related_objects :object="object" :models="related_models" only />
         </c-slot>

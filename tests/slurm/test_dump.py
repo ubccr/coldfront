@@ -73,7 +73,7 @@ class DumpHelpersTestCase(TestCase):
         """Account line includes name, fairshare, and QOS list."""
         from coldfront.slurm.dump import _format_account
 
-        line = _format_account(self.account)
+        line = _format_account(self.account, self.cluster)
         self.assertIn("Account - 'acct-a'", line)
         self.assertIn("Fairshare=3", line)
         self.assertIn("QOS='+normal'", line)
@@ -83,7 +83,7 @@ class DumpHelpersTestCase(TestCase):
         account = SlurmAccount.objects.create(name="acct-b", cluster=self.cluster)
         from coldfront.slurm.dump import _format_account
 
-        line = _format_account(account)
+        line = _format_account(account, self.cluster)
         self.assertIn("Account - 'acct-b'", line)
         self.assertNotIn("Fairshare", line)
 
@@ -92,8 +92,44 @@ class DumpHelpersTestCase(TestCase):
         account = SlurmAccount.objects.create(name="acct-c", cluster=self.cluster)
         from coldfront.slurm.dump import _format_account
 
-        line = _format_account(account)
+        line = _format_account(account, self.cluster)
         self.assertNotIn("QOS+", line)
+
+    def test_format_account_grptresmins_when_enforced(self):
+        """Account line emits GrpTresMins=billing when enforce_su_limits on."""
+        from coldfront.slurm.dump import _format_account
+
+        self.cluster.enforce_su_limits = True
+        self.cluster.save()
+        account = SlurmAccount.objects.create(
+            name="acct-su",
+            cluster=self.cluster,
+            service_units=10000,
+        )
+        line = _format_account(account, self.cluster)
+        self.assertIn("GrpTresMins=billing=600000", line)
+
+    def test_format_account_omits_grptresmins_when_not_enforced(self):
+        """Account line omits GrpTresMins when enforce_su_limits off."""
+        from coldfront.slurm.dump import _format_account
+
+        account = SlurmAccount.objects.create(
+            name="acct-su",
+            cluster=self.cluster,
+            service_units=10000,
+        )
+        line = _format_account(account, self.cluster)
+        self.assertNotIn("GrpTresMins", line)
+
+    def test_format_account_omits_grptresmins_when_no_grant(self):
+        """Account line omits GrpTresMins when service_units unset."""
+        from coldfront.slurm.dump import _format_account
+
+        self.cluster.enforce_su_limits = True
+        self.cluster.save()
+        account = SlurmAccount.objects.create(name="acct-su", cluster=self.cluster)
+        line = _format_account(account, self.cluster)
+        self.assertNotIn("GrpTresMins", line)
 
     def test_get_qos_names(self):
         """Returns QOS names from a queryset."""

@@ -6,17 +6,23 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Sum
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.models import OrganizationalModel, PrimaryModel
+from coldfront.models import BaseModel, OrganizationalModel, PrimaryModel
 from coldfront.models.features import AllocatableResourceMixin
 from coldfront.ras.models.mixins import AllocationExtensionMixin
 from coldfront.registry import register_allocation_extension
 from coldfront.slurm.choices import (
     SlurmAdminLevelChoices,
+    SlurmBillingModeChoices,
     SlurmPartitionStateChoices,
     SlurmPreemptModeChoices,
+    SlurmPriorityFlagsChoices,
+    SlurmPriorityTypeChoices,
+    SlurmPriorityUsageResetPeriodChoices,
+    SlurmSuEnforcementModeChoices,
 )
 
 
@@ -180,6 +186,88 @@ class SlurmCluster(AllocatableResourceMixin, PrimaryModel):
         help_text=_("How this machine is classified."),
     )
 
+    # --- SU billing TRES configuration (1-1 mapping to slurm.conf) ---
+
+    default_tres_billing_weights = models.JSONField(
+        blank=True,
+        null=True,
+        default=dict,
+        verbose_name=_("default TRES billing weights"),
+        help_text=_(
+            "TRES billing weights applied by default to partitions without "
+            "their own. Maps to TRESBillingWeights on the "
+            "PartitionName=DEFAULT line. An empty dict is treated as "
+            '"{"CPU": 1.0}" (bill allocated CPUs).'
+        ),
+    )
+
+    priority_flags = models.JSONField(
+        blank=True,
+        null=True,
+        default=list,
+        verbose_name=_("priority flags"),
+        help_text=_("Raw PriorityFlags from slurm.conf. Used to derive billing_mode (MAX_TRES / MAX_TRES_GRES)."),
+    )
+
+    priority_type = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        default="priority/multifactor",
+        choices=SlurmPriorityTypeChoices,
+        verbose_name=_("priority type"),
+        help_text=_("Maps to PriorityType in slurm.conf. GrpTresMins enforcement requires priority/multifactor."),
+    )
+
+    priority_decay_half_life = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        default="7-0",
+        verbose_name=_("priority decay half life"),
+        help_text=_("Raw string, e.g. 30-0 or 7-0. Maps to PriorityDecayHalfLife in slurm.conf."),
+    )
+
+    priority_usage_reset_period = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        default="NONE",
+        choices=SlurmPriorityUsageResetPeriodChoices,
+        verbose_name=_("priority usage reset period"),
+        help_text=_("Maps to PriorityUsageResetPeriod in slurm.conf."),
+    )
+
+    # --- SU usage sync state ---
+
+    last_usage_sync = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name=_("last usage sync"),
+        help_text=_(
+            "The last day successfully ingested by the SU usage sync job. "
+            "The daily usage sync resumes from the day after this value, "
+            "capped at USAGE_SYNC_MAX_CATCHUP_DAYS. On-demand syncs may "
+            "advance it explicitly."
+        ),
+    )
+
+    # ColdFront-only toggle (not a slurm.conf value)
+    enforce_su_limits = models.BooleanField(
+        blank=True,
+        default=False,
+        verbose_name=_("enforce SU limits"),
+        help_text=_(
+            "ColdFront-only toggle. When enabled, service_units is pushed "
+            "to Slurm as GrpTresMins=billing on the account association. "
+            "Not a slurm.conf value. "
+            "Enforcement requires PriorityType=priority/multifactor, is not "
+            "enforced on the root account, and limits decayed usage (not a "
+            "hard balance). For hard-cap behavior set "
+            "PriorityDecayHalfLife=0 and a PriorityUsageResetPeriod."
+        ),
+    )
+
     clone_fields = (
         "locked",
         "tenant",
@@ -188,6 +276,12 @@ class SlurmCluster(AllocatableResourceMixin, PrimaryModel):
         "fairshare",
         "features",
         "classification",
+        "default_tres_billing_weights",
+        "priority_flags",
+        "priority_type",
+        "priority_decay_half_life",
+        "priority_usage_reset_period",
+        "enforce_su_limits",
     )
 
     class Meta:
@@ -200,6 +294,42 @@ class SlurmCluster(AllocatableResourceMixin, PrimaryModel):
 
     def get_status_color(self):
         return "green"
+
+    def clean(self):
+        """Validate priority_flags against the PriorityFlags choiceset."""
+        super().clean()
+        if not self.priority_flags:
+            return
+        for flag in self.priority_flags:
+            if flag not in SlurmPriorityFlagsChoices.values():
+                raise ValidationError(_("Unknown PriorityFlag: %(flag)s") % {"flag": flag})
+
+    def billing_mode(self):
+        """How TRES are aggregated into billable SUs, derived from priority_flags.
+
+        Returns a SlurmBillingModeChoices constant. Not a slurm.conf value.
+        """
+        flags = self.priority_flags or []
+        if SlurmPriorityFlagsChoices.FLAG_MAX_TRES in flags:
+            return SlurmBillingModeChoices.MODE_MAX_TRES
+        if SlurmPriorityFlagsChoices.FLAG_MAX_TRES_GRES in flags:
+            return SlurmBillingModeChoices.MODE_MAX_TRES_GRES
+        return SlurmBillingModeChoices.MODE_SUM
+
+    def su_enforcement_mode(self):
+        """How GrpTresMins usage is enforced by Slurm, derived from the raw
+        priority settings.
+
+        Returns a SlurmSuEnforcementModeChoices constant. Not a slurm.conf value.
+        """
+        if self.priority_type != SlurmPriorityTypeChoices.PRIORITY_MULTIFACTOR:
+            return SlurmSuEnforcementModeChoices.MODE_NONE
+        decay = self.priority_decay_half_life or "7-0"
+        if decay != "0-0" and decay != "0":
+            return SlurmSuEnforcementModeChoices.MODE_DECAY
+        if self.priority_usage_reset_period and self.priority_usage_reset_period != "NONE":
+            return SlurmSuEnforcementModeChoices.MODE_HARD
+        return SlurmSuEnforcementModeChoices.MODE_DECAY
 
 
 class SlurmPartition(AllocatableResourceMixin, PrimaryModel):
@@ -375,6 +505,19 @@ class SlurmPartition(AllocatableResourceMixin, PrimaryModel):
         help_text=_("Default memory per CPU in MB for jobs in this partition."),
     )
 
+    tres_billing_weights = models.JSONField(
+        blank=True,
+        null=True,
+        default=dict,
+        verbose_name=_("TRES billing weights"),
+        help_text=_(
+            "TRES billing weights for this partition. Maps to "
+            "TRESBillingWeights on the PartitionName=<name> line. An empty "
+            "dict falls through to the cluster's "
+            "default_tres_billing_weights."
+        ),
+    )
+
     slug = models.SlugField(
         verbose_name=_("slug"),
         max_length=100,
@@ -403,6 +546,7 @@ class SlurmPartition(AllocatableResourceMixin, PrimaryModel):
         "state",
         "preempt_mode",
         "def_mem_per_cpu",
+        "tres_billing_weights",
         "slug",
     )
 
@@ -429,6 +573,19 @@ class SlurmPartition(AllocatableResourceMixin, PrimaryModel):
         if not self.slug:
             self.slug = slugify(f"{self.cluster.name}-{self.name}")
         super().save(*args, **kwargs)
+
+    def effective_tres_billing_weights(self):
+        """Resolve the effective TRES billing weights for this partition.
+
+        Falls through partition -> cluster default -> {"CPU": 1.0}.
+        """
+        weights = self.tres_billing_weights
+        if weights:
+            return weights
+        cluster_default = self.cluster.default_tres_billing_weights
+        if cluster_default:
+            return cluster_default
+        return {"CPU": 1.0}
 
 
 class SlurmAccount(PrimaryModel):
@@ -465,7 +622,11 @@ class SlurmAccount(PrimaryModel):
         blank=True,
         null=True,
         verbose_name=_("service units"),
-        help_text=_("Service units (SU) granted to this account for billing."),
+        help_text=_(
+            "Service units (SU) granted to this account. When the cluster's "
+            "enforce_su_limits is on, this is pushed to Slurm as "
+            "GrpTresMins=billing on the account association."
+        ),
     )
 
     qos_add = models.ManyToManyField(
@@ -516,6 +677,18 @@ class SlurmAccount(PrimaryModel):
 
     def get_status_color(self):
         return "green"
+
+    def remaining_sus(self):
+        """SU remaining for this account: grant minus consumed usage.
+
+        Computed ColdFront-side from the daily usage aggregates (consumed
+        attribution); never reads back Slurm's decayed GrpTresMins usage.
+        Returns ``None`` when no grant is set.
+        """
+        if self.service_units is None:
+            return None
+        consumed = self.usages.aggregate(total=Sum("billing_units_consumed"))["total"] or 0.0
+        return self.service_units - consumed
 
 
 @register_allocation_extension(SlurmCluster)
@@ -823,3 +996,123 @@ class SlurmUser(PrimaryModel):
 
     def get_status_color(self):
         return "green"
+
+
+class SlurmAccountUsage(BaseModel):
+    """
+    Daily per-account SU usage aggregate for a Slurm cluster.
+
+    One row per account per day; zero-usage days are skipped. Stores both
+    attribution models from a single overlap query:
+
+    * ``*_consumed`` — usage attributed to the days the job ran
+      (pro-rated, overlap-based). Matches sreport's accounting report and is
+      the number billed (``grant - consumed``).
+    * ``*_completed`` — usage attributed to the day the job completed
+      (full elapsed). Matches sreport's job report; informational only, kept
+      for job-report parity.
+
+    ``node_hours_by_partition`` and ``billing_by_qos`` are JSON dicts
+    keyed by partition/QOS name. ``walltime_sec_*`` counts are plain seconds
+    (one node), not node-seconds.
+    """
+
+    cluster = models.ForeignKey(
+        to="slurm.SlurmCluster",
+        on_delete=models.PROTECT,
+        related_name="account_usages",
+        verbose_name=_("cluster"),
+    )
+
+    account = models.ForeignKey(
+        to="slurm.SlurmAccount",
+        on_delete=models.PROTECT,
+        related_name="usages",
+        verbose_name=_("account"),
+    )
+
+    period_start = models.DateField(
+        verbose_name=_("period start"),
+        help_text=_("First day of the usage period (inclusive)."),
+    )
+
+    period_end = models.DateField(
+        verbose_name=_("period end"),
+        help_text=_("Last day of the usage period (inclusive)."),
+    )
+
+    # --- Consumed (pro-rated, billed) ---
+
+    billing_units_consumed = models.FloatField(
+        default=0.0,
+        verbose_name=_("billing units consumed"),
+        help_text=_("Billable SU attributed to this day (overlap-based). Billed number."),
+    )
+
+    walltime_sec_consumed = models.BigIntegerField(
+        default=0,
+        verbose_name=_("walltime seconds consumed"),
+        help_text=_("Total job walltime seconds (one node) attributed to this day."),
+    )
+
+    node_hours_consumed = models.FloatField(
+        default=0.0,
+        verbose_name=_("node hours consumed"),
+        help_text=_("Node-hours attributed to this day (node count x overlap hours)."),
+    )
+
+    job_count_consumed = models.PositiveIntegerField(
+        default=0,
+        verbose_name=_("job count consumed"),
+        help_text=_("Number of jobs overlapping this day."),
+    )
+
+    # --- Completed (completion-day, informational) ---
+
+    billing_units_completed = models.FloatField(
+        default=0.0,
+        verbose_name=_("billing units completed"),
+        help_text=_("Billable SU charged on the day jobs completed (full elapsed). Informational."),
+    )
+
+    walltime_sec_completed = models.BigIntegerField(
+        default=0,
+        verbose_name=_("walltime seconds completed"),
+        help_text=_("Total job walltime seconds (one node) of jobs completing this day."),
+    )
+
+    job_count_completed = models.PositiveIntegerField(
+        default=0,
+        verbose_name=_("job count completed"),
+        help_text=_("Number of jobs completing this day."),
+    )
+
+    # --- Breakdown dicts ---
+
+    node_hours_by_partition = models.JSONField(
+        blank=True,
+        default=dict,
+        verbose_name=_("node hours by partition"),
+        help_text=_("Dict of partition name -> node-hours consumed that day."),
+    )
+
+    billing_by_qos = models.JSONField(
+        blank=True,
+        default=dict,
+        verbose_name=_("billing by QOS"),
+        help_text=_("Dict of QOS name -> billing units consumed that day."),
+    )
+
+    class Meta:
+        ordering = ["cluster__name", "account__name", "period_start"]
+        verbose_name = _("slurm account usage")
+        verbose_name_plural = _("slurm account usage")
+        constraints = (
+            models.UniqueConstraint(
+                fields=("cluster", "account", "period_start"),
+                name="%(app_label)s_%(class)s_unique_cluster_account_day",
+            ),
+        )
+
+    def __str__(self):
+        return f"{self.account.name} @ {self.cluster.name} {self.period_start}"

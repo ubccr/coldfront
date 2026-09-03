@@ -23,9 +23,10 @@ from unittest import mock
 
 from django.test import TestCase
 
-from coldfront.slurm.models import SlurmCluster
+from coldfront.slurm.models import SlurmAccount, SlurmCluster
 from coldfront.slurm.sync import (
     SyncReport,
+    _build_account_assoc_payload,
     _build_client,
     _build_config_payload,
     _build_expected_tuples,
@@ -601,6 +602,85 @@ class TestBuildHelpers(TestCase):
         ):
             result = _build_expected_tuples(mock.MagicMock())
             assert result == set()
+
+
+class TestBuildAccountAssocPayload(TestCase):
+    """Test _build_account_assoc_payload GrpTresMins emission."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cluster = SlurmCluster.objects.create(name="hpc01")
+        cls.account = SlurmAccount.objects.create(
+            name="acct-a",
+            cluster=cls.cluster,
+            service_units=10000,
+        )
+
+    def test_emits_grptresmins_when_enforced(self):
+        self.cluster.enforce_su_limits = True
+        self.cluster.save()
+        payload = _build_account_assoc_payload(self.account, self.cluster)
+        assert payload == {
+            "account": "acct-a",
+            "user": "",
+            "cluster": "hpc01",
+            "partition": "",
+            "grptresmins": {"billing": 600000},
+        }
+
+    def test_none_when_not_enforced(self):
+        payload = _build_account_assoc_payload(self.account, self.cluster)
+        assert payload is None
+
+    def test_none_when_no_grant(self):
+        self.cluster.enforce_su_limits = True
+        self.cluster.save()
+        account = SlurmAccount.objects.create(name="acct-b", cluster=self.cluster)
+        assert _build_account_assoc_payload(account, self.cluster) is None
+
+
+class TestBuildConfigIncludesAccountGrpTresMins(TestCase):
+    """_build_config_payload appends account-level associations when enforced."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cluster = SlurmCluster.objects.create(name="hpc01", enforce_su_limits=True)
+        cls.account = SlurmAccount.objects.create(
+            name="acct-a",
+            cluster=cls.cluster,
+            service_units=10000,
+        )
+
+    def _mock_active_assoc(self):
+        """A mock active association carrying self.account but no project users."""
+        mock_assoc = mock.MagicMock()
+        mock_assoc.slurm_account_id = self.account.pk
+        mock_allocation = mock.MagicMock()
+        mock_allocation.project = mock.MagicMock()
+        mock_allocation.project.users.all.return_value = []
+        mock_assoc.allocation = mock_allocation
+        mock_assoc.allocation.resource_object = None
+        return mock_assoc
+
+    def test_config_includes_account_assoc_when_enforced(self):
+        with mock.patch(
+            "coldfront.slurm.dump._get_active_associations",
+            return_value=[self._mock_active_assoc()],
+        ):
+            payload = _build_config_payload(self.cluster)
+        assert payload is not None
+        assert any(a.get("user") == "" and a.get("grptresmins") == {"billing": 600000} for a in payload["associations"])
+
+    def test_config_omits_account_assoc_when_not_enforced(self):
+        self.cluster.enforce_su_limits = False
+        self.cluster.save()
+        with mock.patch(
+            "coldfront.slurm.dump._get_active_associations",
+            return_value=[self._mock_active_assoc()],
+        ):
+            payload = _build_config_payload(self.cluster)
+        assert payload is not None
+        assert not any(a.get("user") == "" for a in payload["associations"])
 
 
 # ======================================================================

@@ -9,13 +9,22 @@ from django.utils.translation import gettext_lazy as _
 from coldfront.constants import BOOLEAN_WITH_BLANK_CHOICES
 from coldfront.forms import PrimaryModelFilterSetForm
 from coldfront.forms.fields import TagFilterField
+from coldfront.forms.layouts import Date
 from coldfront.ras.models import Allocation
 from coldfront.slurm.choices import (
     SlurmAdminLevelChoices,
     SlurmPartitionStateChoices,
     SlurmPreemptModeChoices,
 )
-from coldfront.slurm.models import SlurmAccount, SlurmAssociation, SlurmCluster, SlurmPartition, SlurmQOS, SlurmUser
+from coldfront.slurm.models import (
+    SlurmAccount,
+    SlurmAccountUsage,
+    SlurmAssociation,
+    SlurmCluster,
+    SlurmPartition,
+    SlurmQOS,
+    SlurmUser,
+)
 from coldfront.users.models import User
 from coldfront.utils.forms import add_blank_choice
 
@@ -123,6 +132,38 @@ class SlurmAccountFilterSetForm(PrimaryModelFilterSetForm):
             _("Slurm Account"),
             "cluster_id",
             "tag",
+        ),
+    )
+
+
+class SlurmAccountUsageFilterSetForm(PrimaryModelFilterSetForm):
+    model = SlurmAccountUsage
+    cluster_id = forms.ModelChoiceField(
+        queryset=SlurmCluster.objects.all(),
+        required=False,
+        label=_("Cluster"),
+    )
+    account_id = forms.ModelChoiceField(
+        queryset=SlurmAccount.objects.all(),
+        required=False,
+        label=_("Account"),
+    )
+    period_start = forms.DateField(
+        required=False,
+        label=_("Day (on or after)"),
+    )
+    period_start_lte = forms.DateField(
+        required=False,
+        label=_("Day (on or before)"),
+    )
+
+    fieldsets = (
+        Fieldset(
+            _("SU Usage"),
+            "cluster_id",
+            "account_id",
+            Date("period_start"),
+            Date("period_start_lte"),
         ),
     )
 

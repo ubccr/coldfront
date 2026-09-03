@@ -2,8 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from datetime import date
+from decimal import Decimal
+
 import pytest
 from django.contrib.contenttypes.models import ContentType
+from django.utils import timezone
 
 from coldfront.billing.choices import (
     DiscountTypeChoices,
@@ -15,6 +19,12 @@ from coldfront.billing.generation import finalize_invoice, generate_invoice
 from coldfront.billing.models import Discount, FreeAllowance, Invoice, Rate
 from coldfront.ras.choices import AllocationStatusChoices
 from coldfront.ras.models import Allocation, Project
+from coldfront.slurm.models import (
+    SlurmAccount,
+    SlurmAccountUsage,
+    SlurmAssociation,
+    SlurmCluster,
+)
 from coldfront.storage.models import StorageCluster, StorageQuota, StorageResource
 from coldfront.users.models import User
 
@@ -53,6 +63,50 @@ def _rate(resource, *, amount="10.00", unit=TB):
 
 def _invoice(owner, *, status=InvoiceStatusChoices.STATUS_DRAFT):
     return Invoice.objects.create(owner=owner, status=status)
+
+
+def _slurm_account(
+    owner,
+    project,
+    name,
+    *,
+    consumed,
+    day="2024-01-10",
+    service_units=10000,
+    cluster=None,
+):
+    """Build a SlurmAccount billable to ``owner`` with a usage row for ``day``."""
+    if cluster is None:
+        cluster = SlurmCluster.objects.create(name=f"Cluster {name}")
+    account = SlurmAccount.objects.create(name=name, cluster=cluster, service_units=service_units)
+    allocation = Allocation.objects.create(
+        project=project,
+        owner=owner,
+        status=AllocationStatusChoices.STATUS_ACTIVE,
+        resource_object=cluster,
+    )
+    SlurmAssociation.objects.create(allocation=allocation, slurm_account=account)
+    SlurmAccountUsage.objects.create(
+        cluster=cluster,
+        account=account,
+        period_start=date.fromisoformat(day),
+        period_end=date.fromisoformat(day),
+        billing_units_consumed=consumed,
+        billing_units_completed=consumed,
+    )
+    return account, cluster
+
+
+def _slurm_rate(cluster, *, amount="10.00", unit=1):
+    return Rate.objects.create(
+        name=f"Test Rate {cluster.pk}",
+        scope_object_type=ContentType.objects.get_for_model(cluster),
+        scope_object_id=cluster.pk,
+        unit=unit,
+        unit_format=UnitFormatChoiceSet.UNIT_SERVICE_UNITS,
+        amount=amount,
+        charge_basis="monthly",
+    )
 
 
 def _scoped_discount(name, resource, *, owner=None, value="10", type=DiscountTypeChoices.TYPE_PERCENTAGE):
@@ -321,8 +375,6 @@ def test_finalize_blocks_invoice_without_valid_charge_lines():
 
 @pytest.mark.django_db
 def test_generation_period_overlap_guard():
-    from django.utils import timezone
-
     owner = User.objects.create_user(username="pi")
     project = Project.objects.create(name="Project 1", owner=owner)
     quota, resource = _storage_quota(owner, project)
@@ -353,3 +405,104 @@ def test_generation_period_overlap_guard():
     invoice_c.save()
     generate_invoice(invoice_c)
     assert invoice_c.line_items.filter(line_type=InvoiceLineTypeChoices.TYPE_CHARGE).count() == 1
+
+
+# ======================================================================
+# Slurm usage-based billing
+# ======================================================================
+
+
+@pytest.mark.django_db
+def test_generate_slurm_usage_based_charge():
+    """An invoice bills consumed SU in its period, not the grant."""
+    owner = User.objects.create_user(username="pi")
+    project = Project.objects.create(name="Project 1", owner=owner)
+    account, cluster = _slurm_account(owner, project, "acct-a", consumed=10.0)
+
+    invoice = _invoice(owner)
+    invoice.start_date = timezone.now().replace(year=2024, month=1, day=1)
+    invoice.end_date = timezone.now().replace(year=2024, month=1, day=31)
+    invoice.save()
+    _slurm_rate(cluster)
+
+    generate_invoice(invoice)
+
+    charges = invoice.line_items.filter(line_type=InvoiceLineTypeChoices.TYPE_CHARGE)
+    assert charges.count() == 1
+    line = charges.first()
+    assert line.quantity == 10  # consumed SU, not grant (10000)
+    assert line.amount.amount == Decimal("100.00")  # 10 SU x 10.00
+    assert line.unit_format == UnitFormatChoiceSet.UNIT_SERVICE_UNITS
+
+
+@pytest.mark.django_db
+def test_generate_slurm_skips_zero_usage():
+    """No synced usage in the invoice period -> no charge (usage-based default)."""
+    owner = User.objects.create_user(username="pi")
+    project = Project.objects.create(name="Project 1", owner=owner)
+    # usage row outside the invoice period
+    account, cluster = _slurm_account(owner, project, "acct-a", consumed=10.0, day="2023-01-10")
+
+    invoice = _invoice(owner)
+    invoice.start_date = timezone.now().replace(year=2024, month=1, day=1)
+    invoice.end_date = timezone.now().replace(year=2024, month=1, day=31)
+    invoice.save()
+    _slurm_rate(cluster)
+
+    generate_invoice(invoice)
+    assert invoice.line_items.filter(line_type=InvoiceLineTypeChoices.TYPE_CHARGE).count() == 0
+
+
+@pytest.mark.django_db
+def test_generate_slurm_open_period_sums_all_usage():
+    """An open invoice (null dates) sums all usage rows for the account."""
+    owner = User.objects.create_user(username="pi")
+    project = Project.objects.create(name="Project 1", owner=owner)
+    account, cluster = _slurm_account(owner, project, "acct-a", consumed=10.0, day="2024-01-10")
+    SlurmAccountUsage.objects.create(
+        cluster=cluster,
+        account=account,
+        period_start=date(2024, 2, 15),
+        period_end=date(2024, 2, 15),
+        billing_units_consumed=5.0,
+        billing_units_completed=5.0,
+    )
+
+    invoice = _invoice(owner)
+    _slurm_rate(cluster)
+
+    generate_invoice(invoice)
+    charges = invoice.line_items.filter(line_type=InvoiceLineTypeChoices.TYPE_CHARGE)
+    assert charges.count() == 1
+    assert charges.first().quantity == 15  # 10 + 5
+
+
+@pytest.mark.django_db
+def test_generate_slurm_cluster_allowance_covers_all_accounts():
+    """A cluster-scoped free allowance draws across all of the owner's accounts."""
+    owner = User.objects.create_user(username="pi")
+    project = Project.objects.create(name="Project 1", owner=owner)
+    # Two accounts on the same cluster
+    cluster = SlurmCluster.objects.create(name="Cluster HPC")
+    acct_a, _ = _slurm_account(owner, project, "acct-a", consumed=8.0, cluster=cluster)
+    acct_b, _ = _slurm_account(owner, project, "acct-b", consumed=6.0, cluster=cluster)
+    _slurm_rate(cluster)
+    FreeAllowance.objects.create(
+        name="HPC Free",
+        owner=owner,
+        scope_object_type=ContentType.objects.get_for_model(cluster),
+        scope_object_id=cluster.pk,
+        unit_format=UnitFormatChoiceSet.UNIT_SERVICE_UNITS,
+        quantity_total=10,
+    )
+
+    invoice = _invoice(owner)
+    invoice.start_date = timezone.now().replace(year=2024, month=1, day=1)
+    invoice.end_date = timezone.now().replace(year=2024, month=1, day=31)
+    invoice.save()
+
+    generate_invoice(invoice)
+
+    free = invoice.line_items.filter(line_type=InvoiceLineTypeChoices.TYPE_FREE_ALLOWANCE)
+    # allowance covers 10 SU across the two accounts (8 + 6 = 14 -> 10 covered)
+    assert sum((line.quantity or 0) for line in free) == 10

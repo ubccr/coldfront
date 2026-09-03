@@ -122,7 +122,7 @@ def generate_invoice(invoice):
                         actual_type=scope.__class__._meta.label_lower if scope else "None",
                     )
                 )
-            qty = src["get_quantity"](instance)
+            qty = src["get_quantity"](instance, invoice)
             if qty == 0:
                 continue
             rate = _resolve_rate(scope) if scope is not None else None
@@ -169,6 +169,12 @@ def generate_invoice(invoice):
     for unit_format in {c["unit_format"] for c in valid_charges}:
         group = [c for c in valid_charges if c["unit_format"] == unit_format]
         allowances = _matching_allowances(invoice, unit_format)
+        # Track native units drawn from each allowance pool across charges so a
+        # shared pool is capped at its remaining amount (e.g. one cluster-scoped
+        # allowance covering several accounts). ``allowance.remaining`` is the
+        # model property (quantity_total - used); generation never persists
+        # ``used`` (finalize does), so consume in-memory per allowance here.
+        allowance_consumed = {}
         for charge in group:
             remaining = charge["billed"]
             for allowance in allowances:
@@ -176,9 +182,13 @@ def generate_invoice(invoice):
                     continue
                 if remaining <= 0:
                     break
-                coverage = min(remaining, Decimal(allowance.remaining) / Decimal(charge["rate"].unit))
+                pool_remaining = Decimal(allowance.remaining) - Decimal(allowance_consumed.get(allowance.pk, 0))
+                if pool_remaining <= 0:
+                    continue
+                coverage = min(remaining, pool_remaining / Decimal(charge["rate"].unit))
                 if coverage > 0:
                     native = coverage * Decimal(charge["rate"].unit)
+                    allowance_consumed[allowance.pk] = allowance_consumed.get(allowance.pk, 0) + int(native)
                     free_lines.append(
                         {
                             "source": allowance,

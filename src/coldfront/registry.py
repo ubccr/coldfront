@@ -112,9 +112,11 @@ def register_billing_source(scope, model, *, get_billable=None, get_rate_scope=N
             user; a source without it raises ImproperlyConfigured.
         get_rate_scope: Required callable ``(source)`` returning the rate scope
             object instance for a source. Must return an instance of ``scope``.
-        get_quantity: Required callable ``(source)`` returning the native units
-            to bill for a source (e.g. ``hard_limit_bytes``, ``service_units``,
-            or ``1`` for a per-item fixed fee).
+        get_quantity: Required callable ``(source, invoice)`` returning the
+            native units to bill for a source (e.g. ``hard_limit_bytes``,
+            ``service_units``, or ``1`` for a per-item fixed fee). The
+            ``invoice`` supplies the billing period so usage-based sources can
+            sum consumed usage within it; grant-based sources may ignore it.
 
     Raises:
         ValueError: If ``scope`` or ``model`` is not a model class, or a

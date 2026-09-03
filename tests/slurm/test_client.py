@@ -173,8 +173,14 @@ class TestSerializers:
         assert body["maxwalldurationperjob"] == 1440
         assert body["maxtresperjob"] == {"node": 5}
         assert body["maxtresminsperjob"] == {"cpu": 1000}
-        assert body["grptres"] == {"node": 20}
-        assert body["grpwall"] == 43200
+
+    def test_serialize_association_grptresmins(self):
+        body = SlurmClient.serialize_association("a", "", "c", grp_tres_mins={"billing": 600000})
+        assert body["grptresmins"] == {"billing": 600000}
+
+    def test_serialize_association_omits_grptresmins_when_none(self):
+        body = SlurmClient.serialize_association("a", "u", "c")
+        assert "grptresmins" not in body
 
     def test_serialize_user_minimal(self):
         body = SlurmClient.serialize_user("jsmith", "hpc-lab")

@@ -76,6 +76,12 @@ class SlurmClusterSerializer(AllocatableResourceModelSerializer, PrimaryModelSer
             "fairshare",
             "features",
             "classification",
+            "default_tres_billing_weights",
+            "priority_flags",
+            "priority_type",
+            "priority_decay_half_life",
+            "priority_usage_reset_period",
+            "enforce_su_limits",
         ]
         brief_fields = ("id", "url", "display", "name", "description", "locked")
 
@@ -118,6 +124,7 @@ class SlurmPartitionSerializer(AllocatableResourceModelSerializer, PrimaryModelS
             "max_tres_mins_per_job",
             "max_wall_duration_per_job",
             "fairshare",
+            "tres_billing_weights",
             "allow_qos",
             "qos",
             "allow_groups",

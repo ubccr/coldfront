@@ -2,16 +2,23 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from datetime import timedelta
+from datetime import date, timedelta
 
+from django.db.models import Sum
+from django.test import TestCase
+from django.urls import reverse
+
+from coldfront.slurm.filtersets import SlurmAccountUsageFilterSet
 from coldfront.slurm.models import (
     SlurmAccount,
+    SlurmAccountUsage,
     SlurmAssociation,
     SlurmCluster,
     SlurmPartition,
     SlurmQOS,
     SlurmUser,
 )
+from coldfront.slurm.tables import SlurmAccountTable, SlurmAccountUsageTable
 from coldfront.users.models import User
 from coldfront.utils.testing import ViewTestCases, create_tags
 
@@ -366,3 +373,43 @@ class SlurmUserTestCase(ViewTestCases.PrimaryObjectViewTestCase):
             f"{slurm_users[1].pk},User5,Test Cluster,0",
             f"{slurm_users[2].pk},User6,Test Cluster,0",
         )
+
+
+class TestSlurmUsageReporting(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.cluster = SlurmCluster.objects.create(name="hpc01")
+        cls.acct = SlurmAccount.objects.create(
+            name="acct-a",
+            cluster=cls.cluster,
+            service_units=1000,
+        )
+        SlurmAccountUsage.objects.create(
+            cluster=cls.cluster,
+            account=cls.acct,
+            period_start=date(2024, 1, 1),
+            period_end=date(2024, 1, 1),
+            billing_units_consumed=250.0,
+        )
+
+    def test_reporting_wiring(self):
+        # URLs
+        assert reverse("slurm:slurmaccount_usage", kwargs={"pk": self.acct.pk}).startswith("/slurm/accounts/")
+        assert reverse("slurm:slurmaccountusage_list") == "/slurm/usage/"
+
+        # Consumed annotation + remaining
+        qs = SlurmAccount.objects.all().annotate(consumed=Sum("usages__billing_units_consumed"))
+        acct = qs.get(pk=self.acct.pk)
+        assert acct.consumed == 250.0
+        table = SlurmAccountTable(qs)
+        assert table.render_remaining(acct, None) == 750.0
+
+        # No grant -> remaining renders as an em dash
+        no_grant = SlurmAccount.objects.create(name="acct-b", cluster=self.cluster)
+        assert table.render_remaining(no_grant, None) == "—"
+
+        # Filterset + report table construct
+        assert (
+            SlurmAccountUsageFilterSet({"account": [self.acct.name]}, SlurmAccountUsage.objects.all()).qs.count() == 1
+        )
+        SlurmAccountUsageTable(SlurmAccountUsage.objects.all())

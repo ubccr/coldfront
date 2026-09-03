@@ -74,6 +74,7 @@ RESOURCES_MENU = Menu(
                 get_model_item("slurm", "slurmuser", _("Slurm Users")),
                 get_model_item("slurm", "slurmassociation", _("Associations")),
                 get_model_item("slurm", "slurmqos", _("QOS")),
+                get_model_item("slurm", "slurmaccountusage", _("Usage"), actions=()),
             ),
         ),
         MenuGroup(

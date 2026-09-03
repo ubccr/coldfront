@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 from typing import Any
 
 from django.conf import settings
@@ -38,24 +38,30 @@ from coldfront.ras.models import Allocation, ProjectUser
 from coldfront.slurm.choices import (
     SlurmPartitionStateChoices,
     SlurmPreemptModeChoices,
+    SlurmPriorityFlagsChoices,
+    SlurmPriorityTypeChoices,
+    SlurmPriorityUsageResetPeriodChoices,
 )
 from coldfront.slurm.client import SlurmClient
 from coldfront.slurm.client.exceptions import (
     SlurmAlreadyExistsException,
 )
-from coldfront.slurm.dump import parse_slurm_conf
 from coldfront.slurm.models import (
     SlurmAccount,
+    SlurmAccountUsage,
     SlurmAssociation,
     SlurmCluster,
     SlurmPartition,
     SlurmQOS,
     SlurmUser,
 )
+from coldfront.slurm.parser import ParsedSlurmConfig, parse_slurm_conf, parse_tres_weights
 
 __all__ = (
     "SyncReport",
+    "UsageSyncReport",
     "run_sync",
+    "_run_usage_sync",
     "enqueue_activate_allocation",
     "enqueue_deactivate_allocation",
     "enqueue_remove_project_user",
@@ -85,6 +91,20 @@ class SyncReport:
     users_created: int = 0
     users_updated: int = 0
     users_deleted: int = 0
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    duration_ms: int = 0
+
+
+@dataclass
+class UsageSyncReport:
+    """Detailed report returned by :func:`_run_usage_sync`."""
+
+    cluster: str
+    success: bool = False
+    days_synced: int = 0
+    accounts_updated: int = 0
+    jobs_ingested: int = 0
     errors: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     duration_ms: int = 0
@@ -323,7 +343,6 @@ def _run_activate_allocation(*, allocation_id: int) -> SyncReport:
                 {
                     "name": slurm_account.name,
                     "description": slurm_account.description or "",
-                    "organization": slurm_account.organization or "",
                 }
             ]
         )
@@ -333,6 +352,16 @@ def _run_activate_allocation(*, allocation_id: int) -> SyncReport:
         report.accounts_created += 1  # idempotent — desired state achieved
     except Exception as exc:
         report.errors.append(f"Failed to create account '{slurm_account.name}': {exc}")
+
+    # SU enforcement — push GrpTresMins on the account-level association
+    account_assoc_payload = _build_account_assoc_payload(slurm_account, cluster)
+    if account_assoc_payload:
+        try:
+            client.create_associations([account_assoc_payload])
+        except SlurmAlreadyExistsException:
+            pass  # idempotent upsert — desired state achieved
+        except Exception as exc:
+            report.errors.append(f"Failed to set GrpTresMins for account '{slurm_account.name}': {exc}")
 
     # Create associations and users for each ProjectUser
     project = allocation.project
@@ -669,6 +698,227 @@ def _sync_cluster(client: SlurmClient, cluster: SlurmCluster) -> SyncReport:
 
 
 # ---------------------------------------------------------------------------
+# SU usage sync
+# ---------------------------------------------------------------------------
+
+# Hard cap on how many past days a single usage sync pass may catch up.
+# Bounded by slurmdbd live-DB retention (Purge/Archive); a large catch-up
+# costs up to one REST query per day per cluster.
+USAGE_SYNC_MAX_CATCHUP_DAYS = 60
+
+
+# TRES ids used in ``tres.allocated`` (Slurm internal TRES_ARRAY indices).
+_TRES_NODE = 4
+_TRES_BILLING = 5
+
+
+def _utc_day_bounds(day: datetime.date) -> tuple[int, int]:
+    """Return (start, end) UNIX timestamps for the UTC midnight window of a day."""
+    start = timezone.make_aware(datetime.combine(day, time.min)).timestamp()
+    end = start + 86400
+    return int(start), int(end)
+
+
+def _tres_count(tres_allocated: list[dict[str, Any]] | None, tres_id: int) -> int:
+    """Return the integer count for a TRES entry in ``tres.allocated``."""
+    if not tres_allocated:
+        return 0
+    for entry in tres_allocated:
+        if entry.get("id") == tres_id:
+            try:
+                return int(float(entry.get("count", 0)))
+            except (TypeError, ValueError):
+                return 0
+    return 0
+
+
+@dataclass
+class _DayAggregates:
+    """Accumulated per-account aggregates for one day."""
+
+    billing_units_consumed: float = 0.0
+    walltime_sec_consumed: int = 0
+    node_hours_consumed: float = 0.0
+    job_count_consumed: int = 0
+    billing_units_completed: float = 0.0
+    walltime_sec_completed: int = 0
+    job_count_completed: int = 0
+    node_hours_by_partition: dict[str, float] = field(default_factory=dict)
+    billing_by_qos: dict[str, float] = field(default_factory=dict)
+
+
+def _roll_up_job_usage(
+    jobs: list[dict[str, Any]],
+    day_start: int,
+    day_end: int,
+) -> dict[str, _DayAggregates]:
+    """Aggregate job records into per-account daily usage.
+
+    Uses a single overlap query result for both attribution models:
+
+    * ``*_consumed`` — ``billing_count x overlap_sec / 3600`` per day
+      (pro-rated; matches sreport's accounting report).
+    * ``*_completed`` — ``billing_count x full_elapsed / 3600`` charged on
+      the day the job completed (matches sreport's job report; informational).
+
+    Jobs with no start time (pending) and zero-overlap jobs are skipped.
+
+    Args:
+        jobs: Job dicts from :meth:`SlurmClient.get_job_usage`.
+        day_start: UNIX start of the day window (inclusive).
+        day_end: UNIX end of the day window (exclusive).
+
+    Returns:
+        Dict mapping account name to :class:`_DayAggregates`.
+    """
+    agg: dict[str, _DayAggregates] = {}
+
+    for job in jobs:
+        start_ts = int(job.get("time", {}).get("start", 0) or 0)
+        end_ts = int(job.get("time", {}).get("end", 0) or 0)
+        elapsed = int(job.get("time", {}).get("elapsed", 0) or 0)
+        if start_ts == 0:
+            # Pending / never-started — no usage to attribute.
+            continue
+
+        # Still-running jobs are clipped at the window end.
+        effective_end = end_ts if end_ts != 0 else day_end
+        overlap = max(0, min(effective_end, day_end) - max(start_ts, day_start))
+        if overlap <= 0:
+            continue
+
+        account = job.get("account", "")
+        partition = job.get("partition", "") or ""
+        qos = job.get("qos", "") or ""
+
+        billing_count = _tres_count(job.get("tres", {}).get("allocated"), _TRES_BILLING)
+        node_count = _tres_count(job.get("tres", {}).get("allocated"), _TRES_NODE)
+
+        a = agg.setdefault(account, _DayAggregates())
+
+        # Consumed (pro-rated) attribution
+        a.billing_units_consumed += billing_count * overlap / 3600.0
+        a.walltime_sec_consumed += overlap
+        a.node_hours_consumed += node_count * overlap / 3600.0
+        a.job_count_consumed += 1
+        if partition:
+            a.node_hours_by_partition[partition] = (
+                a.node_hours_by_partition.get(partition, 0.0) + node_count * overlap / 3600.0
+            )
+        if qos:
+            a.billing_by_qos[qos] = a.billing_by_qos.get(qos, 0.0) + billing_count * overlap / 3600.0
+
+        # Completed (completion-day) attribution — only when the job
+        # finished inside this window.
+        if end_ts != 0 and day_start <= end_ts < day_end:
+            a.billing_units_completed += billing_count * elapsed / 3600.0
+            a.walltime_sec_completed += elapsed
+            a.job_count_completed += 1
+
+    return agg
+
+
+def _resolve_catchup_range(cluster: SlurmCluster) -> tuple[datetime.date, datetime.date] | None:
+    """Return the (start, end) day range the daily sync should ingest.
+
+    Resumes from ``cluster.last_usage_sync + 1`` up to yesterday, capped at
+    ``USAGE_SYNC_MAX_CATCHUP_DAYS`` days (most recent days win). Returns
+    ``None`` when there are no days to sync.
+    """
+    today = timezone.localdate()
+    yesterday = today - timedelta(days=1)
+
+    if cluster.last_usage_sync is None:
+        start = yesterday - timedelta(days=USAGE_SYNC_MAX_CATCHUP_DAYS - 1)
+    else:
+        start = cluster.last_usage_sync + timedelta(days=1)
+        floor = yesterday - timedelta(days=USAGE_SYNC_MAX_CATCHUP_DAYS - 1)
+        if start < floor:
+            start = floor
+
+    if start > yesterday:
+        return None
+    return start, yesterday
+
+
+def _run_usage_sync(
+    cluster: SlurmCluster,
+    start_day: datetime.date,
+    end_day: datetime.date,
+) -> UsageSyncReport:
+    """Ingest per-day job usage for a cluster into :class:`SlurmAccountUsage`.
+
+    Range-based and idempotent (``update_or_create`` per account/day); the
+    caller decides the day range. On success, advances
+    ``cluster.last_usage_sync`` to ``end_day``.
+
+    Args:
+        cluster: Cluster to sync.
+        start_day: First day to ingest (inclusive).
+        end_day: Last day to ingest (inclusive).
+
+    Returns:
+        :class:`UsageSyncReport`.
+    """
+    start = timezone.now()
+    report = UsageSyncReport(cluster=cluster.name, success=False)
+    client = _build_client(cluster)
+    if client is None:
+        report.errors.append("slurmrestd not configured (SLURMRESTD_URL is empty)")
+        return report
+
+    # Cache known accounts for name -> PK lookups.
+    accounts = {}
+    for acct in SlurmAccount.objects.filter(cluster=cluster).select_related("cluster"):
+        accounts.setdefault(acct.name, acct)
+
+    day = start_day
+    while day <= end_day:
+        day_start, day_end = _utc_day_bounds(day)
+        try:
+            jobs = client.get_job_usage(day_start, day_end, cluster.name)
+        except Exception as exc:
+            report.errors.append(f"Failed to query jobs for {day}: {exc}")
+            report.duration_ms = int((timezone.now() - start).total_seconds() * 1000)
+            return report
+        report.jobs_ingested += len(jobs)
+        report.days_synced += 1
+
+        for account_name, a in _roll_up_job_usage(jobs, day_start, day_end).items():
+            acct = accounts.get(account_name)
+            if acct is None:
+                # Account not managed by ColdFront (e.g. root) — skip.
+                continue
+            SlurmAccountUsage.objects.update_or_create(
+                cluster=cluster,
+                account=acct,
+                period_start=day,
+                defaults={
+                    "period_end": day,
+                    "billing_units_consumed": a.billing_units_consumed,
+                    "walltime_sec_consumed": a.walltime_sec_consumed,
+                    "node_hours_consumed": a.node_hours_consumed,
+                    "job_count_consumed": a.job_count_consumed,
+                    "billing_units_completed": a.billing_units_completed,
+                    "walltime_sec_completed": a.walltime_sec_completed,
+                    "job_count_completed": a.job_count_completed,
+                    "node_hours_by_partition": a.node_hours_by_partition,
+                    "billing_by_qos": a.billing_by_qos,
+                },
+            )
+            report.accounts_updated += 1
+
+        day += timedelta(days=1)
+
+    cluster.last_usage_sync = end_day
+    cluster.save(update_fields=["last_usage_sync"])
+
+    report.duration_ms = int((timezone.now() - start).total_seconds() * 1000)
+    report.success = True
+    return report
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
@@ -726,10 +976,15 @@ def _build_config_payload(cluster: SlurmCluster) -> dict[str, Any] | None:
         {
             "name": acct.name,
             "description": acct.description or "",
-            "organization": acct.organization or "",
         }
         for acct in accounts
     ]
+
+    # SU enforcement — account-level associations carrying GrpTresMins
+    for acct in accounts:
+        account_assoc_payload = _build_account_assoc_payload(acct, cluster)
+        if account_assoc_payload:
+            assoc_payloads.append(account_assoc_payload)
 
     # Build user payloads
     user_payloads = []
@@ -828,6 +1083,29 @@ def _build_assoc_payload(
         payload["qoslevel"] = qoslevel
 
     return payload
+
+
+def _build_account_assoc_payload(
+    account: SlurmAccount,
+    cluster: SlurmCluster,
+) -> dict[str, Any] | None:
+    """Build the account-level association payload carrying GrpTresMins.
+
+    GrpTresMins is an association-level field; an account's grant is stored
+    on the account-level association (``user=""``). Only emitted when the
+    cluster enforces SU limits and the account has a service_units grant.
+
+    Returns None when enforcement is off or the grant is unset.
+    """
+    if not cluster.enforce_su_limits or not account.service_units:
+        return None
+    return {
+        "account": account.name,
+        "user": "",
+        "cluster": cluster.name,
+        "partition": "",
+        "grptresmins": {"billing": account.service_units * 60},
+    }
 
 
 def _sync_association_qos(
@@ -1025,6 +1303,29 @@ class ImportReport:
     warnings: list[str] = field(default_factory=list)
 
 
+def _cluster_billing_kwargs(parsed: ParsedSlurmConfig) -> dict[str, Any]:
+    """Build SlurmCluster kwargs for the SU billing TRES config.
+
+    Only includes keys present in the parsed slurm.conf. Never sets
+    enforce_su_limits (a ColdFront-only decision, not in slurm.conf).
+    """
+    kwargs: dict[str, Any] = {}
+    if parsed.default_tres_billing_weights:
+        kwargs["default_tres_billing_weights"] = parse_tres_weights(parsed.default_tres_billing_weights)
+    if parsed.priority_flags:
+        flags = [f.strip() for f in parsed.priority_flags.split(",") if f.strip()]
+        kwargs["priority_flags"] = [f for f in flags if f in SlurmPriorityFlagsChoices.values()]
+    if parsed.priority_type:
+        if parsed.priority_type in SlurmPriorityTypeChoices.values():
+            kwargs["priority_type"] = parsed.priority_type
+    if parsed.priority_decay_half_life:
+        kwargs["priority_decay_half_life"] = parsed.priority_decay_half_life
+    if parsed.priority_usage_reset_period:
+        if parsed.priority_usage_reset_period in SlurmPriorityUsageResetPeriodChoices.values():
+            kwargs["priority_usage_reset_period"] = parsed.priority_usage_reset_period
+    return kwargs
+
+
 def import_cluster_from_conf(
     conf_path: str,
     noop: bool = False,
@@ -1065,12 +1366,15 @@ def import_cluster_from_conf(
             report.qos_created += 1
 
     # --- Cluster ---
+    cluster_billing = _cluster_billing_kwargs(parsed)
     if noop:
         report.cluster_created = True  # Would create
     else:
         try:
             cluster = SlurmCluster.objects.get(name=parsed.cluster_name)
             if update:
+                for k, v in cluster_billing.items():
+                    setattr(cluster, k, v)
                 cluster.save()
                 report.cluster_updated = True
             else:
@@ -1078,6 +1382,7 @@ def import_cluster_from_conf(
         except SlurmCluster.DoesNotExist:
             cluster = SlurmCluster.objects.create(
                 name=parsed.cluster_name,
+                **cluster_billing,
             )
             report.cluster_created = True
 
@@ -1124,6 +1429,8 @@ def import_cluster_from_conf(
                 kwargs["preempt_mode"] = pp.preempt_mode
         if pp.def_mem_per_cpu is not None:
             kwargs["def_mem_per_cpu"] = pp.def_mem_per_cpu
+        if pp.tres_billing_weights:
+            kwargs["tres_billing_weights"] = parse_tres_weights(pp.tres_billing_weights)
 
         try:
             partition = SlurmPartition.objects.get(cluster=cluster, name=pp.name)

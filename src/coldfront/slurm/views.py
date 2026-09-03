@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from django.db.models import Sum
 from django.http import HttpResponse
 from django.utils.translation import gettext_lazy as _
 
@@ -12,6 +13,7 @@ from coldfront.slurm import filtersets, forms, tables
 from coldfront.slurm.dump import generate_cluster_dump
 from coldfront.slurm.models import (
     SlurmAccount,
+    SlurmAccountUsage,
     SlurmAssociation,
     SlurmCluster,
     SlurmPartition,
@@ -21,7 +23,7 @@ from coldfront.slurm.models import (
 from coldfront.utils.query import count_related
 from coldfront.views import generic
 from coldfront.views.mixins import GetRelatedModelsMixin
-from coldfront.views.object_actions import EditObject
+from coldfront.views.object_actions import BulkExport, EditObject
 from coldfront.views.utils import ViewTab, get_action_url
 
 #
@@ -243,6 +245,10 @@ class SlurmAccountListView(generic.ObjectListView):
     filterset_form = forms.SlurmAccountFilterSetForm
     table = tables.SlurmAccountTable
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.annotate(consumed=Sum("usages__billing_units_consumed"))
+
 
 @register_model_view(SlurmAccount)
 class SlurmAccountView(GetRelatedModelsMixin, generic.ObjectView):
@@ -252,6 +258,43 @@ class SlurmAccountView(GetRelatedModelsMixin, generic.ObjectView):
         return {
             "related_models": self.get_related_models(request, instance),
         }
+
+
+@register_model_view(SlurmAccount, "usage")
+class SlurmAccountUsageView(generic.ObjectChildrenView):
+    queryset = SlurmAccount.objects.all()
+    child_model = SlurmAccountUsage
+    table = tables.SlurmAccountUsageTable
+    filterset = filtersets.SlurmAccountUsageFilterSet
+    filterset_form = forms.SlurmAccountUsageFilterSetForm
+    actions = (BulkExport,)
+    template_name = "slurm/account/usage.html"
+    tab = ViewTab(
+        label=_("Usage"),
+        badge=lambda obj: obj.usages.count(),
+        visible=lambda obj: obj.usages.exists(),
+        permission="slurm.view_slurmaccountusage",
+        weight=400,
+    )
+
+    def get_children(self, request, parent):
+        return parent.usages.restrict(request.user, "view")
+
+    def get_extra_context(self, request, instance):
+        consumed = instance.usages.aggregate(total=Sum("billing_units_consumed"))["total"] or 0.0
+        return {
+            "consumed": consumed,
+            "remaining": instance.remaining_sus(),
+        }
+
+
+@register_model_view(SlurmAccountUsage, "list", path="", detail=False)
+class SlurmAccountUsageListView(generic.ObjectListView):
+    queryset = SlurmAccountUsage.objects.all()
+    filterset = filtersets.SlurmAccountUsageFilterSet
+    filterset_form = forms.SlurmAccountUsageFilterSetForm
+    table = tables.SlurmAccountUsageTable
+    actions = (BulkExport,)
 
 
 @register_model_view(SlurmAccount, "add", detail=False)

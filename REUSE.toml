@@ -49,6 +49,7 @@ path = [
     "src/coldfront/static/.prettierrc",
     "src/coldfront/**.png",
     "src/coldfront/**.jpg",
+    "tests/slurm/conf/*.conf",
 ]
 SPDX-FileCopyrightText = "NONE"
 SPDX-License-Identifier = "CC0-1.0"

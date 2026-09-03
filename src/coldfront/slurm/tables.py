@@ -7,6 +7,7 @@ from django.utils.translation import gettext_lazy as _
 
 from coldfront.slurm.models import (
     SlurmAccount,
+    SlurmAccountUsage,
     SlurmAssociation,
     SlurmCluster,
     SlurmPartition,
@@ -64,6 +65,12 @@ class SlurmClusterTable(TenancyColumnsMixin, PrimaryModelTable):
             "tenant",
             "locked",
             "partition_count",
+            "default_tres_billing_weights",
+            "priority_flags",
+            "priority_type",
+            "priority_decay_half_life",
+            "priority_usage_reset_period",
+            "enforce_su_limits",
             "tags",
             "created",
             "last_updated",
@@ -101,6 +108,7 @@ class SlurmPartitionTable(PrimaryModelTable):
             "state",
             "preempt_mode",
             "def_mem_per_cpu",
+            "tres_billing_weights",
             "tags",
             "created",
             "last_updated",
@@ -116,9 +124,32 @@ class SlurmAccountTable(PrimaryModelTable):
     cluster = columns.ColoredLabelColumn(
         verbose_name=_("Cluster"),
     )
+    service_units = tables.Column(
+        verbose_name=_("Service Units"),
+    )
+    consumed = tables.Column(
+        verbose_name=_("Consumed"),
+    )
+    remaining = tables.Column(
+        verbose_name=_("Remaining"),
+        orderable=False,
+        empty_values=(),
+    )
     tags = columns.TagColumn(
         url_name="slurm:slurmaccount_list",
     )
+
+    def render_consumed(self, record, value):
+        """Return the annotated consumed total (None on unannotated querysets)."""
+        return value
+
+    def render_remaining(self, record, value):
+        """Grant minus consumed; ``—`` when no grant is set."""
+        grant = record.service_units
+        if grant is None:
+            return "—"
+        consumed = getattr(record, "consumed", None) or 0
+        return grant - consumed
 
     class Meta(PrimaryModelTable.Meta):
         model = SlurmAccount
@@ -128,11 +159,58 @@ class SlurmAccountTable(PrimaryModelTable):
             "cluster",
             "name",
             "description",
+            "service_units",
+            "consumed",
+            "remaining",
             "tags",
             "created",
             "last_updated",
         )
         default_columns = ("pk", "name", "cluster", "description")
+
+
+class SlurmAccountUsageTable(PrimaryModelTable):
+    actions = columns.ActionsColumn(actions=())
+    cluster = tables.Column(
+        verbose_name=_("Cluster"),
+        linkify=True,
+    )
+    account = tables.Column(
+        verbose_name=_("Account"),
+        linkify=True,
+    )
+    period_start = columns.DateColumn(
+        verbose_name=_("Day"),
+    )
+
+    class Meta(PrimaryModelTable.Meta):
+        model = SlurmAccountUsage
+        fields = (
+            "pk",
+            "cluster",
+            "account",
+            "period_start",
+            "period_end",
+            "billing_units_consumed",
+            "billing_units_completed",
+            "walltime_sec_consumed",
+            "walltime_sec_completed",
+            "node_hours_consumed",
+            "job_count_consumed",
+            "job_count_completed",
+            "node_hours_by_partition",
+            "billing_by_qos",
+        )
+        default_columns = (
+            "pk",
+            "cluster",
+            "account",
+            "period_start",
+            "billing_units_consumed",
+            "billing_units_completed",
+            "node_hours_consumed",
+            "job_count_consumed",
+        )
 
 
 class SlurmAssociationTable(PrimaryModelTable):

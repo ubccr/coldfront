@@ -18,7 +18,9 @@ def _storage_quota_rate_scope(source):
     return source.storage
 
 
-def _storage_quota_quantity(source):
+def _storage_quota_quantity(source, invoice):
+    # Grant-based (additive): bill the hard limit regardless of the invoice
+    # period. The invoice arg is accepted for the shared get_quantity contract.
     return source.hard_limit_bytes
 
 

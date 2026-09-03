@@ -7,7 +7,18 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from coldfront.forms import PrimaryModelForm, PrimaryModelImportForm, TenancyForm, TenancyImportForm
-from coldfront.forms.fields import CSVModelChoiceField, CSVModelMultipleChoiceField, JSONField
+from coldfront.forms.fields import (
+    CSVChoiceField,
+    CSVModelChoiceField,
+    CSVModelMultipleChoiceField,
+    CSVMultipleChoiceField,
+    JSONField,
+)
+from coldfront.slurm.choices import (
+    SlurmPriorityFlagsChoices,
+    SlurmPriorityTypeChoices,
+    SlurmPriorityUsageResetPeriodChoices,
+)
 from coldfront.slurm.models import SlurmAccount, SlurmAssociation, SlurmCluster, SlurmPartition, SlurmQOS, SlurmUser
 from coldfront.users.models.users import Group
 
@@ -99,6 +110,13 @@ class SlurmClusterForm(TenancyForm, PrimaryModelForm):
         label=_("QOS List"),
     )
 
+    priority_flags = forms.MultipleChoiceField(
+        choices=SlurmPriorityFlagsChoices,
+        required=False,
+        label=_("Priority Flags"),
+        help_text=_("Raw PriorityFlags from slurm.conf. Used to derive billing_mode (MAX_TRES / MAX_TRES_GRES)."),
+    )
+
     class Meta:
         model = SlurmCluster
         fields = [
@@ -113,6 +131,12 @@ class SlurmClusterForm(TenancyForm, PrimaryModelForm):
             "fairshare",
             "features",
             "classification",
+            "default_tres_billing_weights",
+            "priority_flags",
+            "priority_type",
+            "priority_decay_half_life",
+            "priority_usage_reset_period",
+            "enforce_su_limits",
             "tags",
         ]
 
@@ -134,6 +158,15 @@ class SlurmClusterForm(TenancyForm, PrimaryModelForm):
                 "features",
                 "classification",
             ),
+            Fieldset(
+                _("Billing & Enforcement"),
+                "default_tres_billing_weights",
+                "priority_flags",
+                "priority_type",
+                "priority_decay_half_life",
+                "priority_usage_reset_period",
+                "enforce_su_limits",
+            ),
         ]
 
 
@@ -143,6 +176,34 @@ class SlurmClusterImportForm(TenancyImportForm, PrimaryModelImportForm):
         to_field_name="name",
         required=False,
         label=_("Default QOS"),
+    )
+
+    default_tres_billing_weights = JSONField(
+        label=_("Default TRES Billing Weights"),
+        required=False,
+    )
+
+    priority_flags = CSVMultipleChoiceField(
+        choices=SlurmPriorityFlagsChoices,
+        required=False,
+        label=_("Priority Flags"),
+    )
+
+    priority_type = CSVChoiceField(
+        choices=SlurmPriorityTypeChoices,
+        required=False,
+        label=_("Priority Type"),
+    )
+
+    priority_decay_half_life = forms.CharField(
+        required=False,
+        label=_("Priority Decay Half Life"),
+    )
+
+    priority_usage_reset_period = CSVChoiceField(
+        choices=SlurmPriorityUsageResetPeriodChoices,
+        required=False,
+        label=_("Priority Usage Reset Period"),
     )
 
     class Meta:
@@ -157,6 +218,11 @@ class SlurmClusterImportForm(TenancyImportForm, PrimaryModelImportForm):
             "fairshare",
             "features",
             "classification",
+            "default_tres_billing_weights",
+            "priority_flags",
+            "priority_type",
+            "priority_decay_half_life",
+            "priority_usage_reset_period",
             "tags",
         ]
 
@@ -257,6 +323,7 @@ class SlurmPartitionForm(PrimaryModelForm):
             "max_tres_mins_per_job",
             "max_wall_duration_per_job",
             "fairshare",
+            "tres_billing_weights",
             "allow_qos",
             "qos",
             "allow_groups",
@@ -292,6 +359,7 @@ class SlurmPartitionForm(PrimaryModelForm):
                 "max_tres_mins_per_job",
                 "max_wall_duration_per_job",
                 "fairshare",
+                "tres_billing_weights",
             ),
             Fieldset(
                 _("Access Control"),
@@ -337,6 +405,7 @@ class SlurmPartitionImportForm(PrimaryModelImportForm):
             "max_tres_mins_per_job",
             "max_wall_duration_per_job",
             "fairshare",
+            "tres_billing_weights",
             "tags",
         ]
 

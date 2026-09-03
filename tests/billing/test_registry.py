@@ -2,13 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from datetime import date
+
 import pytest
 from django.core.exceptions import ImproperlyConfigured
 
+from coldfront.billing.models import Invoice
 from coldfront.ras.choices import AllocationStatusChoices
 from coldfront.ras.models import Allocation, Project
 from coldfront.registry import get_billing_source, register_billing_source, registry
-from coldfront.slurm.models import SlurmAccount, SlurmAssociation, SlurmCluster, SlurmQOS
+from coldfront.slurm.models import SlurmAccount, SlurmAccountUsage, SlurmAssociation, SlurmCluster, SlurmQOS
 from coldfront.storage.models import StorageCluster, StorageQuota, StorageResource
 from coldfront.users.models import User
 
@@ -55,18 +58,18 @@ def test_register_billing_source_last_wins():
             SlurmAccount,
             get_billable=lambda user: SlurmAccount.objects.all(),
             get_rate_scope=lambda source: source.cluster,
-            get_quantity=lambda source: 7,
+            get_quantity=lambda source, invoice: 7,
         )
         register_billing_source(
             SlurmCluster,
             SlurmAccount,
             get_billable=lambda user: SlurmAccount.objects.all(),
             get_rate_scope=lambda source: source.cluster,
-            get_quantity=lambda source: 9,
+            get_quantity=lambda source, invoice: 9,
         )
         entry = get_billing_source(SlurmAccount)
         assert entry["scope"] is SlurmCluster
-        assert entry["get_quantity"](None) == 9
+        assert entry["get_quantity"](None, None) == 9
     finally:
         if original is None:
             registry["billing_sources"].pop(key, None)
@@ -114,18 +117,29 @@ def test_builtin_rate_scope_and_quantity():
 
     entry = get_billing_source("storage.storagequota")
     assert entry["get_rate_scope"](quota) is resource
-    assert entry["get_quantity"](quota) == quota.hard_limit_bytes
+    assert entry["get_quantity"](quota, None) == quota.hard_limit_bytes
 
     slurm = SlurmCluster.objects.create(name="Cluster")
-    account = SlurmAccount.objects.create(name="acct", cluster=slurm)
+    account = SlurmAccount.objects.create(name="acct", cluster=slurm, service_units=10000)
+    SlurmAccountUsage.objects.create(
+        cluster=slurm,
+        account=account,
+        period_start=date(2024, 1, 1),
+        period_end=date(2024, 1, 1),
+        billing_units_consumed=10.0,
+        billing_units_completed=10.0,
+    )
+    invoice = Invoice.objects.create(owner=owner, status="draft")
     account_entry = get_billing_source("slurm.slurmaccount")
     assert account_entry["get_rate_scope"](account) is slurm
-    assert account_entry["get_quantity"](account) == account.service_units
+    # usage-based: bills consumed usage in the invoice period, not the grant
+    assert account_entry["get_quantity"](account, invoice) == 10.0
+    assert account.remaining_sus() == 9990.0
 
     qos = SlurmQOS.objects.create(name="QOS A")
     qos_entry = get_billing_source("slurm.slurmqos")
     assert qos_entry["get_rate_scope"](qos) is qos
-    assert qos_entry["get_quantity"](qos) == 1
+    assert qos_entry["get_quantity"](qos, None) == 1
 
 
 @pytest.mark.django_db

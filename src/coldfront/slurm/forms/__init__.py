@@ -12,6 +12,7 @@ from .bulk_edit import (
 )
 from .filterset_forms import (
     SlurmAccountFilterSetForm,
+    SlurmAccountUsageFilterSetForm,
     SlurmAssociationFilterSetForm,
     SlurmClusterFilterSetForm,
     SlurmPartitionFilterSetForm,
@@ -56,6 +57,7 @@ __all__ = (
     "SlurmClusterFilterSetForm",
     "SlurmPartitionFilterSetForm",
     "SlurmAccountFilterSetForm",
+    "SlurmAccountUsageFilterSetForm",
     "SlurmAssociationFilterSetForm",
     "SlurmUserFilterSetForm",
 )

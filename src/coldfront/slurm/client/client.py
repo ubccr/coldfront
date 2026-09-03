@@ -277,6 +277,7 @@ class SlurmClient:
         max_tres_mins_per_job: dict[str, int] | None = None,
         max_wall_duration_per_job: int | None = None,
         grp_tres: dict[str, int] | None = None,
+        grp_tres_mins: dict[str, int] | None = None,
         grp_wall: int | None = None,
         qoslevel: list[str] | None = None,
     ) -> dict[str, Any]:
@@ -299,6 +300,8 @@ class SlurmClient:
             max_tres_mins_per_job: Per-job TRES minutes limits dict.
             max_wall_duration_per_job: Max wall duration in minutes.
             grp_tres: Group TRES limits dict.
+            grp_tres_mins: Group TRES minutes limits dict (e.g., {"billing": N}).
+                Maps to ``assoc_rec_set.grptresmins`` in the REST API.
             grp_wall: Group wall duration limit in minutes.
             qoslevel: List of QOS names for this association.
                 Maps to ``assoc_rec_set.qoslevel`` in the REST API.
@@ -330,6 +333,8 @@ class SlurmClient:
             body["maxwalldurationperjob"] = max_wall_duration_per_job
         if grp_tres is not None:
             body["grptres"] = grp_tres
+        if grp_tres_mins is not None:
+            body["grptresmins"] = grp_tres_mins
         if grp_wall is not None:
             body["grpwall"] = grp_wall
         if qoslevel is not None:
@@ -1428,3 +1433,51 @@ class SlurmClient:
 
         logger.info("Killing job %s with signal %s", job_id, signal)
         return self._request("DELETE", url, params=params)
+
+    # ------------------------------------------------------------------
+    # Job usage endpoints
+    # ------------------------------------------------------------------
+
+    def get_job_usage(
+        self,
+        start_time: int,
+        end_time: int,
+        cluster: str,
+    ) -> list[dict[str, Any]]:
+        """Query job records overlapping a usage window.
+
+        Corresponds to ``GET /slurmdb/{version}/jobs/``.
+
+        Uses the generic eligible-time overlap filter (``time_eligible``
+        before ``end_time`` and ``time_end`` after ``start_time`` or still
+        running), which works for any past day without needing job state
+        filters. ``disable_truncate_usage_time`` is set so still-running
+        jobs report full elapsed rather than truncating at the query time.
+
+        Args:
+            start_time: UNIX timestamp of the window start (inclusive).
+            end_time: UNIX timestamp of the window end (exclusive).
+            cluster: Cluster name to scope the query.
+
+        Returns:
+            List of job dicts (``v0.0.44_job`` records) overlapping the
+            window. Pending jobs are filtered client-side by the caller.
+
+        Raises:
+            SlurmException subclass on failure.
+        """
+        url = self._slurmdb_path("jobs/")
+        params: dict[str, Any] = {
+            "start_time": str(start_time),
+            "end_time": str(end_time),
+            "cluster": cluster,
+            "disable_truncate_usage_time": "true",
+        }
+        logger.info(
+            "Querying jobs for cluster %s window [%d, %d)",
+            cluster,
+            start_time,
+            end_time,
+        )
+        body = self._request("GET", url, params=params)
+        return body.get("jobs", [])

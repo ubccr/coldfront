@@ -18,6 +18,7 @@ urlpatterns = [
     path("partitions/<int:pk>/", include(get_model_urls("slurm", "slurmpartition"))),
     path("accounts/", include(get_model_urls("slurm", "slurmaccount", detail=False))),
     path("accounts/<int:pk>/", include(get_model_urls("slurm", "slurmaccount"))),
+    path("usage/", include(get_model_urls("slurm", "slurmaccountusage", detail=False))),
     path("associations/", include(get_model_urls("slurm", "slurmassociation", detail=False))),
     path("associations/<int:pk>/", include(get_model_urls("slurm", "slurmassociation"))),
     path("users/", include(get_model_urls("slurm", "slurmuser", detail=False))),
