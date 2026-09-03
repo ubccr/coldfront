@@ -18,7 +18,7 @@ license-files = ["LICENSES/*.txt"]
 keywords = ["high-performance-computing", "resource-allocation"]
 classifiers = [
     'Programming Language :: Python :: 3',
-    'Framework :: Django :: 4.2',
+    'Framework :: Django :: 5.2',
     'Topic :: Scientific/Engineering',
     'Topic :: System :: Systems Administration',
     'Topic :: Internet :: WWW/HTTP :: WSGI :: Application',
