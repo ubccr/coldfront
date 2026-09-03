@@ -16,6 +16,8 @@ ColdFront defines system jobs that run automatically. These include:
 - **SlurmSyncJob** — Periodically syncs Slurm accounting associations
 - **StorageSyncJob** — Periodically syncs storage quotas
 - **StorageSyncNowJob** — An on-demand job triggered by admin action
+- **SlurmUsageSyncJob** — Daily usage aggregation (consumed service units)
+- **SlurmUsageSyncNowJob** — On-demand usage re-ingest triggered by admin action
 
 ## On-Demand Jobs
 

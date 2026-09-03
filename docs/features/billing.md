@@ -36,10 +36,11 @@ Each transition requires a permission: `generate_invoice`, `finalize_invoice`,
 
 Invoices are generated from registered **billing sources**, for example:
 
-- **Storage** — `StorageQuota` allocations are billed per terabyte against
-  the storage resource's rate.
+- **Storage** — `StorageQuota` allocations are billed per terabyte of allocated
+  space (`hard_limit`) against the storage resource's rate.
 - **Slurm** — `SlurmAccount` compute usage is billed per service unit against
-  the cluster's rate.
+  the cluster's rate. Usage-based billing is the default: invoices charge
+  **consumed** service units overlapping the invoice period.
 
 Free allowances are stacked (per owner, resource, and unit format) before a
 single discount is applied to each resource's net total. Discounts are never

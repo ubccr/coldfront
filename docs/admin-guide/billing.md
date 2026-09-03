@@ -9,8 +9,9 @@ running the invoice workflow.
 ## How Billing Works (Background)
 
 Billing is **allocation-based**. For each billing period, ColdFront looks at
-every billable allocation a project holds, prices it against a **rate**, and
-collects the result into an **invoice**:
+every billable source on an allocation, prices it against a **rate**, and
+collects the result into an **invoice**, for example here's some default
+billable sources in ColdFront:
 
 - **Storage** — A `StorageQuota` is billed per terabyte (TB) of capacity at
   the storage resource's rate.
@@ -33,8 +34,22 @@ are selected, every billable source is billed.
 
 ## Setting Up Billing
 
-Billing needs three things before an invoice can be generated: rates, free
-allowances, and discounts.
+Billing needs two things before an invoice can be generated: billable sources
+and rates. Optionally free allowances and discounts can also be configured.
+
+### Billable Sources
+
+ColdFront's billing app prices allocations from **billing sources**. A billing
+source is a model whose instances represent something billable — for example a
+`StorageQuota` (billed per TB) or a `SlurmAccount` (billed per SU). Billable
+sources are registered using the `register_billing_source` method from the
+ColdFront registry. ColdFront comes with the following built-in sources:
+
+- `StorageQuota`, scoped to `StorageResource`, billing `hard_limit_bytes`.
+- `SlurmAccount` (scoped to `SlurmCluster`), billing `service_units`.
+- `SlurmQOS` (allows you to bill for access to a QOS).
+
+Plugins can also override these built-ins or register [custom billing sources](../plugins/billing.md).
 
 ### Rates
 
@@ -215,5 +230,4 @@ producing a silent wrong bill. Correct the registration and generate again.
 ## Extending Billing
 
 The built-in sources bill `StorageQuota` per TB and `SlurmAccount` per SU.
-HPC centers with different metering can register their own billing sources
-through plugins. See [Billing Plugins](../plugins/billing.md).
+HPC centers can register their own billing sources through plugins. See [Billing Plugins](../plugins/billing.md).

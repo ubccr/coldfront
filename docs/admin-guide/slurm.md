@@ -2,8 +2,10 @@
 
 ColdFront integrates with the [Slurm](https://slurm.schedmd.com/) workload
 manager to map allocations to Slurm accounting entities. The integration
-includes clusters, partitions, accounts, users, associations, and QOS —
-matching Slurm's data model and allows for automated provisioning and deprovisioning.
+includes clusters, partitions, accounts, users, associations, and QOS — matching
+Slurm's data model and allows for automated provisioning and deprovisioning.
+ColdFront can also optionally intergrate with Slurm's [Trackable RESources (TRES)](https://slurm.schedmd.com/tres.html)
+for usage tracking and billing.
 
 ---
 
@@ -69,7 +71,9 @@ of the hierarchy.
 Represents a Slurm compute cluster. Allocatable as a resource — allocations
 can target a cluster directly (granting access to all partitions) or a
 specific partition. Captures the cluster name, tenant, default QOS, QOS
-options, fairshare, features, and classification.
+options, fairshare, features, classification, and Trackable RESources (TRES)
+configuration (`default_tres_billing_weights`, the `Priority*` settings, and
+the `enforce_su_limits` toggle). See [Service Units Billing](#service-units-billing).
 
 ### SlurmPartition
 
@@ -89,7 +93,9 @@ Referenced by partitions and accounts.
 
 A named Slurm accounting account matching Slurm's `acct_table`. Accounts are
 lean containers — just name, cluster, fairshare, and QOS add/remove. All
-per-association limits live on `SlurmAssociation` instead.
+per-association limits live on `SlurmAssociation` instead. Slurm accounts also carry
+`service_units` — the **grant** (enforcement limit + reporting baseline)
+for the account. See [Service Units Billing](#service-units-billing).
 
 **Important:** In Slurm, QOS is NOT stored on the account record
 (`acct_table` has no `qos` column). QOS lives on the **association**
@@ -125,6 +131,14 @@ user's default account, default wckey, default QOS, and admin level.
 determines which `Account -` hierarchy the user line appears under, but
 `DefaultAccount` always comes from `SlurmUser`. This allows a user to have
 associations under multiple accounts while maintaining a single default.
+
+### SlurmAccountUsage
+
+A daily per-account SU usage aggregate. One row per account per day
+(zero-usage days are skipped), storing consumed (billed) and completed
+(informational) service units, walltime, node hours, job count, and
+billing-by-QOS / node-hours-by-partition breakdowns. Populated by the SU
+usage sync. See [Service Units Billing](#service-units-billing).
 
 ---
 
@@ -187,6 +201,14 @@ Disabled by default per-cluster via `auto_sync_enabled` in
 job skips that cluster. A CLI command (`coldfront slurm_sync`) is always
 available for manual syncs regardless of the setting.
 
+### Usage Sync
+
+A separate scheduled job (`SlurmUsageSyncJob`) aggregates consumed service
+units daily from Slurm's job accounting into `SlurmAccountUsage` rows. An
+on-demand job (`SlurmUsageSyncNowJob`) and a `coldfront slurm_usage_sync`
+command let admins re-ingest immediately. On a failed sync, admins are
+notified. See [Service Units Billing](#service-units-billing).
+
 ---
 
 ## Dump Generation
@@ -194,6 +216,11 @@ available for manual syncs regardless of the setting.
 ColdFront can generate Slurm association dump files compatible with
 `sacctmgr dump`. The dump maps ColdFront models to Slurm's association
 hierarchy format.
+
+When `SlurmCluster.enforce_su_limits` is enabled, the account-level association
+also emits `GrpTresMins=billing=<service_units*60>` which sets the total number
+of TRES minutes, mapping ColdFront's service units grant into Slurm's 
+[resource limit enforcement](https://slurm.schedmd.com/resource_limits.html).
 
 ### Dump format rules
 
@@ -303,12 +330,198 @@ for any given resource wins.
 
 ---
 
+## Service Units Billing
+
+Service units (SU) are the compute-time billing dimension for a cluster — a
+normalized measure of compute consumed, so jobs on different hardware (CPUs
+vs GPUs, node counts) can be priced uniformly. ColdFront treats
+`SlurmAccount.service_units` as the **grant** (enforcement limit + reporting
+baseline), and Slurm's `billing` TRES count is the **meter** — ColdFront reads
+it, never recomputes it.
+
+### How to calculate service unit (SU) charges
+
+Suppose an HPC center would like to deploy the following formula for charging time used on it's systems:
+
+> `service units charged = walltime hours × number of nodes × charge factor (weight)`
+
+This can be encoded into Slurm using [Trackable RESources (TRES)](https://slurm.schedmd.com/tres.html).
+A TRES is a combination of a Type and a Name and Slurm has a "billing" type
+which is configured via the `TRESBillingWeights` setting. This is were the above
+formula can be encoded, setting weights for one or more tracked TRES types that
+will be used in calculating the usage of a job in each partition.
+
+Here's a simple example of how it works:
+
+- A job runs 4 hours on 2 nodes → `4 × 2 = 8` node-hours.
+- With `TRESBillingWeights="node=1.0"`, that bills **8 SUs**.
+- With `TRESBillingWeights="CPU=1.0"` (the default when weights are empty), a
+  4-hour, 2-node, 64-CPU job bills `4 × 64 = 256` SUs (CPUs, not nodes).
+- With GPU weights, e.g. `gres/gpu=2.0`, a GPU job is weighted up 2×.
+
+Weights choose the *resource dimension* being multiplied by walltime. **1 SU
+= 1 hour of one weighted resource unit** — 1 node-hour, 1 CPU-hour, or (for a
+GPU weighted 2.0) a 2-SU GPU-hour.
+
+### Allocating Service Units
+
+Service units can be set per allocation (they get set on
+`SlurmAccount.service_units`) which provide the SU **grant** — the budget, in
+SUs, you want the account to be allowed (and billed against) per billing period.
+Since 1 SU = 1 hour, the grant is *"how many weighted-hours may this account
+consume."*
+
+Set it by answering your own formula: **"How many hours × how many nodes (or
+CPUs) do I want this account to burn?"**
+
+- Billing by node (`node=1.0`): grant in node-hours. Want 1000 node-hours a
+  month? `service_units = 1000`.
+- Billing by CPU (`CPU=1.0`): grant in CPU-hours. 500 CPUs × 50 hours →
+  `service_units = 25000`.
+- GPUs weighted `gres/gpu=2.0`: each GPU-hour counts 2 SUs, so "50 GPU-hours"
+  → `service_units = 100`.
+
+**Enforcement conversion.** When `enforce_su_limits` is on, ColdFront emits
+`GrpTresMins=billing=<service_units × 60>` — the ×60 converts your
+hour-denominated grant into Slurm's **minutes**-denominated limit (Slurm
+tracks usage in minutes). Same budget: `service_units = 1000` node-hours →
+`GrpTresMins=billing=60000` node-minutes. You set the grant in SUs (hours);
+ColdFront does the conversion.
+
+### Slurm Configuration Settings
+
+These are a few of the settings in slurm.conf that relate to billing:
+
+- `PartitionName=DEFAULT TRESBillingWeights="..."` → the cluster-wide default
+- Per-partition `PartitionName=<name> TRESBillingWeights="..."` overrides
+- `PriorityFlags=MAX_TRES` / `MAX_TRES_GRES` → billing mode (sum vs. max)
+- `PriorityType=priority/multifactor` + `PriorityDecayHalfLife` +
+  `PriorityUsageResetPeriod` → enforcement mode (decay vs. hard)
+
+These settings are automatically imported into ColdFront using the CLI command:
+
+```
+$ uv run coldfront import_slurm_conf <path>
+```
+
+The above settings get imported into `SlurmCluster.default_tres_billing_weights`,
+`SlurmPartition.tres_billing_weights`, and the `SlurmCluster.Priority*` fields.
+
+### How Slurm calculates usage
+
+**How the "service unit" meter works.** At job completion Slurm multiplies each
+TRES count by its billing weight and stores the result as a weighted **billing**
+TRES on the job's `tres.allocated`. ColdFront reads that count (and the node
+count, for the node-hours columns) straight from the jobs API to ensure the
+billing matches what Slurm's [sreport](https://slurm.schedmd.com/sreport.html) command reports.
+
+**ColdFront ports the functionality of [sreport](https://slurm.schedmd.com/sreport.html).** We replicate `sreport`'s
+two attribution reports: `accounting report` and `job report` using the REST API. For example, here's how some of the fields
+on the `SlurmAccountUsage` model are populated:
+
+- `billing_units_consumed` matches `sreport`'s **accounting report** — rolls up
+  `billing count × overlap` for every job overlapping the period, regardless
+  of state.
+- `billing_units_completed` matches `sreport`'s **job report** — full elapsed
+  charged on the day the job finished.
+
+Where we match `sreport`, and where we may differ (and why):
+
+- We match both reports' shapes but **bill only the accounting-report style**
+  (consumed), because that's the "usage you actually used" view.
+- We ingest via the REST jobs endpoint rather than `sreport`/`sacct` shell
+  output — same underlying slurmdbd data, different transport.
+- **No per-hour rollup**: the REST API exposes per-job totals but not per-hour
+  TRES (like `sreport` uses), so per-day figures use the job's final `billing` count × the day's
+  overlap. Over a full period totals match `sreport`; only rare mid-run-resize
+  cases diverge, and only in consumed (billed) figures.
+- Pending jobs are skipped and zero-usage days are omitted.
+
+### How ColdFront bills usage
+
+**How service unit billing works.** The quantity for a `SlurmAccount` is the sum of its
+`billing_units_consumed` (consumed SU, pro-rated to the days jobs ran)
+overlapping the invoice period; an open invoice sums all consumption. Zero
+gives no charge. Cluster-scoped free allowances draw across **all** of the
+user's accounts on that cluster.
+
+**When do we bill — running or completed?**
+
+- We bill for the time a job uses **while it runs**, not only when it finishes.
+  The daily sync reads `tres.allocated` for every job overlapping a day —
+  still running or completed — and charges `billing count × the walltime it
+  ran that day` (overlap hours).
+- A 4-hour job spanning midnight bills 2 hours on day 1 and 2 hours on day 2.
+- **Completion is not required to bill.** `billing_units_completed` is
+  informational only — full elapsed charged on the finish day (job-report
+  style). We keep it for parity but never bill it.
+
+**Billing for completed jobs only.** By default we bill the consumed
+(accounting-report) figure. A center that wants the job-report style — charge
+only when a job completes — can override the billing source in a plugin:
+re-register `SlurmAccount` with a `get_quantity` that sums
+`billing_units_completed` instead of `billing_units_consumed`. (There's no
+`attribution_mode` config field — the source override is the supported way.)
+
+### Enforcing limits or just bill for usage
+
+Enforcing service unit limits on SlurmAccounts can be configured per cluster by setting the `SlurmCluster.enforce_su_limits` field.
+
+- **Bill-only (default)**: `enforce_su_limits=False` (default). The SlurmAccount's service units is
+  the reporting baseline; invoices charge consumed SUs; Slurm never enforces.
+- **Enforce**: `enforce_su_limits=True` pushes
+  `GrpTresMins=billing=<service_units × 60>` on the account-level association;
+  requires `priority/multifactor`. `GrpTresMins` is the total number of TRES
+  minutes that can possibly be used by past, present and future jobs running
+  from an association and its children. If any limit is reached, all running
+  jobs with that TRES in this group will be killed, and no new jobs will be
+  allowed to run. For details, [see slurms resource limits](https://slurm.schedmd.com/resource_limits.html).
+
+It's worth nothing: **Enforcement is Slurm-side ONLY.** Slurm compares usage against
+the limit on its own; ColdFront's reported `remaining = grant − consumed` is
+always from raw aggregates and does not do any enforcement of the service unit limit.
+
+### Daily usage aggregation
+
+`SlurmUsageSyncJob` (daily) queries the jobs endpoint over an overlap window
+and rolls each job up per account per day storing records in `SlurmAccountUsage` model:
+
+- `billing_units_consumed` — pro-rated to the days the job ran (the **billed**
+  number): `billing count × overlap / 3600`
+- `billing_units_completed` — charged the day the job completed (informational)
+- `node_hours_*`, `walltime_sec_*`, `job_count_*`, `billing_by_qos`,
+  `node_hours_by_partition` — one overlap query feeds both attributions
+- Zero-usage days are skipped; `last_usage_sync` advances only on success;
+  automatic capped catch-up after downtime; on-demand `slurm_usage_sync`;
+  admins notified on failure
+
+### Sending Invoices
+
+Admins set a Rate scoped to the cluster (unit `service_units`), and invoice
+generation prices each `SlurmAccount` at `sum(billing_units_consumed)`
+overlapping the invoice period (open invoice = all). Cluster-scoped free
+allowances draw across all of the user's accounts on that cluster. See
+[Billing & Invoicing](billing.md) for the invoice workflow.
+
+### Reporting
+
+Read-only **SU Usage** report at `/slurm/usage/` (daily rows, cluster/account/
+date filters) and a per-account **Usage** tab; Grant/Consumed/Remaining shown
+on the account.
+
+---
+
 ## REST API Integration
 
 ColdFront includes a custom slurm client which communicates with `slurmrestd`
 over HTTP using JWT authentication. The client supports API versions v0.0.41
 through v0.0.45 with a single set of serializers — all entity schemas are stable
 across these versions.
+
+SU usage is fetched from `GET /slurmdb/{version}/jobs/` — the job `tres.allocated`
+billing TRES is read with a half-open `[start, end)` overlap query, so any past
+day can be re-ingested (catch-up) without a job-state filter. See
+[Service Units Billing](#service-units-billing).
 
 ### Connection Configuration
 
@@ -370,6 +583,10 @@ and creates matching records in ColdFront. It handles:
 - `PartitionName` → `SlurmPartition` (with nodes, priority, state, QOS refs)
 - `QOSName` → `SlurmQOS`
 - Default partition templates (`PartitionName=DEFAULT ...`)
+- `TRESBillingWeights` (DEFAULT + per-partition) and the global
+  `PriorityFlags` / `PriorityType` / `PriorityDecayHalfLife` /
+  `PriorityUsageResetPeriod` → the cluster's SU billing config fields
+  (only keys present are written; `enforce_su_limits` is never set)
 
 Supports `--noop` (dry-run) and `--update` (update existing records) modes.
 

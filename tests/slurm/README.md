@@ -4,36 +4,6 @@ This directory contains the unit and integration tests for the ColdFront Slurm
 integration, covering the REST API client, the dump file generator, the Django
 ORM models, and the REST API views.
 
-## Test Files
-
-| File | Tests | Scope |
-|---|---|---|
-| `test_client.py` | 113 | `SlurmClient` REST API client — serializers, error mapping, version discovery, retry logic, CRUD endpoints, cross-version compatibility, OpenAPI schema validation |
-| `test_api.py` | 108 | REST API viewsets for Slurm models (SlurmCluster, SlurmAccount, SlurmAssociation, SlurmUser, SlurmPartition, SlurmQOS) |
-| `test_views.py` | 156 | Django views / UI pages for Slurm models |
-| `test_dump.py` | 42 | Dump file generation (`generate_cluster_dump`) — line format, fairshare, admin levels, excluded associations |
-| `test_associations.py` | 39 | Model-level validation (unique constraints, partition/account/Cluster cross-checks) |
-| **Total** | **458** | |
-
-## `test_client.py` — Detailed Breakdown
-
-### Test Classes and Mocking Strategies
-
-| Class | Tests | Mocking Strategy |
-|---|---|---|
-| `TestSerializers` | 16 | Pure Python — no HTTP. Validates serializer output structure, field types, and edge cases. |
-| `TestErrorMapping` | 20 | Pure Python — mocked `requests.Response` objects. Exercises `_raise_for_error` against all 30+ mapped Slurm error codes plus HTTP status fallbacks. |
-| `TestVersionDiscovery` | 6 | `pytest-httpserver` (real TCP). Probes `/slurmdb/v{ver}/ping/` and `/ping/` to verify discovery logic. |
-| `TestRetryLogic` | 5 | `responses` with sequences of 503/200 responses. Validates exponential backoff timing and retry exhaustion. |
-| `TestAccountEndpoints` | 6 | `responses`. Tests `create_account`, `update_account`, `delete_account` with correct URL, method, headers, and error propagation. |
-| `TestAssociationEndpoints` | 6 | `responses`. Tests `create_association`, `update_association`, `delete_association`. |
-| `TestUserEndpoints` | 5 | `responses`. Tests `create_user`, `update_user`, `delete_user`. |
-| `TestUserAssociationEndpoints` | 2 | `responses`. Tests `create_user_association`, `delete_user_association`. |
-| `TestConfigEndpoints` | 2 | `responses`. Tests `update_qos`, `update_partition`. |
-| `TestKillJobsEndpoints` | 4 | `responses`. Tests `kill_jobs` (DELETE `/jobs/`) and `kill_job` (DELETE `/job/{job_id}`). |
-| `TestVersionCompatibility` | 6 | `spec_version` fixture + `pytest-httpserver`. Verifies that the same serializers and endpoints work identically across v0.0.41–v0.0.45. |
-| `TestSpecValidation` | 8 | OpenAPI spec files as schema oracle. Validates serializer output against `assoc_rec_set`, `kill_jobs_msg`, `users_add_cond`, `accounts_add_cond`, and `account`/`user` schemas. |
-
 ### Key Design Choices
 
 1. **`responses` for most HTTP tests** — intercepts at `requests.Session` level, no server needed, fast (~2.4s for 113 tests). Used for all CRUD endpoint tests.

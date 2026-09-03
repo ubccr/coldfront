@@ -30,7 +30,7 @@ register_billing_source(scope, model, *, get_billable, get_rate_scope, get_quant
 | `model` | The Django model class of the billing source (e.g. `StorageQuota`, `SlurmAccount`) |
 | `get_billable` | Required callable `(user)` returning a queryset of billable source instances for a user |
 | `get_rate_scope` | Required callable `(source)` returning the rate scope object instance for a source; must return an instance of `scope` |
-| `get_quantity` | Required callable `(source)` returning the native units to bill (e.g. `hard_limit_bytes`, `service_units`, or `1` for a per-item fixed fee) |
+| `get_quantity` | Required callable `(source, invoice)` returning the native units to bill (e.g. `hard_limit_bytes`, `service_units`, or `1` for a per-item fixed fee) |
 
 The `unit`/`unit_format` of a source are **not** registered — the `Rate` is
 authoritative for the billing dimension. A rate scoped to the source's `scope`
@@ -49,8 +49,11 @@ billing nothing.
 - `get_rate_scope(source)` — return the resource instance a rate is looked up
   against. If it is not an instance of the declared `scope`, generation raises
   a configuration error rather than billing incorrectly.
-- `get_quantity(source)` — return the native units to bill. `None` means the
+- `get_quantity(source, invoice)` — return the native units to bill. `None` means the
   quantity is not yet set and produces a flagged invalid line; `0` is skipped.
+  The `invoice` argument lets time-based sources bill only the period's
+  consumption: For example, Slurm sums `billing_units_consumed` overlapping the invoice
+  window (an open invoice sums all).
 
 ### Last-wins override
 
@@ -99,7 +102,7 @@ def _storage_quota_rate_scope(source):
     return source.storage
 
 
-def _storage_quota_quantity(source):
+def _storage_quota_quantity(source, invoice):
     return source.hard_limit_bytes
 
 
@@ -119,8 +122,8 @@ Walking through the contract against the storage models:
   (`allocation__project__owner`).
 - `get_rate_scope(source)` returns `source.storage`, the `StorageResource` the
   quota belongs to. A `Rate` scoped to that resource prices the quota.
-- `get_quantity(source)` returns `source.hard_limit_bytes` — the native units
-  billed at the rate's per-TB unit.
+- `get_quantity(source, invoice)` returns `source.hard_limit_bytes` — the native units
+  billed at the rate's per-TB unit. The `invoice` argument is currently ignored.
 
 A plugin that needs different storage metering re-registers `StorageQuota`
 with its own callables (registration is last-wins), typically from the
