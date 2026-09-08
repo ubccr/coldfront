@@ -278,3 +278,7 @@ SASL:
 ### Future considerations
 
 Some sites may want per-institution project OUs (which then contain the relevant project group OUs). Currently this is out-of-scope. The single projects OU is currently provided/favoured for simplicity.
+
+## Testing
+
+PLUGIN_PROJECT_OPENLDAP=true PROJECT_OPENLDAP_GID_START=-1 manage.py test coldfront.plugins.project_openldap
