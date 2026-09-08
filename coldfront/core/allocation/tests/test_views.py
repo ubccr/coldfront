@@ -168,6 +168,9 @@ class AllocationChangeDetailViewTest(AllocationViewBaseTest):
         AllocationAttributeChangeRequest.objects.create(
             allocation_change_request=req4, allocation_attribute=self.quota_attribute, new_value=200
         )
+        AllocationChangeRequestFactory(
+            id=6, allocation=self.allocation, end_date_extension=ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS[0]
+        )  # deny and then update notes
 
     def test_allocationchangedetailview_access_granted(self):
         response = self.client.get(reverse("allocation-change-detail", kwargs={"pk": 2}))
@@ -248,6 +251,31 @@ class AllocationChangeDetailViewTest(AllocationViewBaseTest):
         alloc_change_req.refresh_from_db()
         self.assertEqual(alloc_change_req.status.name, "Pending")
         self.assertEqual(alloc_change_req.end_date_extension, ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS[1])
+
+    def test_allocationchangedetailview_post_update_deny_and_then_update_notes(self):
+        """Test that posting to an AllocationChangeDetailView with action=update
+        changes the notes of AllocationChangeRequest(pk=6), after it has been denied already."""
+        note_value_before = "before"
+        note_value_after = "after"
+        # deny
+        response = self.client.post(
+            reverse("allocation-change-detail", kwargs={"pk": 6}),
+            {"action": "deny", "notes": note_value_before},
+            follow=True,
+        )
+        utils.assert_response_success(self, response)
+        alloc_change_req = AllocationChangeRequest.objects.get(pk=6)
+        self.assertEqual(alloc_change_req.status.name, "Denied")
+        self.assertEqual(alloc_change_req.notes, note_value_before)
+        # update notes
+        response = self.client.post(
+            reverse("allocation-change-detail", kwargs={"pk": 6}),
+            {"action": "update", "notes": note_value_after},
+            follow=True,
+        )
+        utils.assert_response_success(self, response)
+        alloc_change_req.refresh_from_db()
+        self.assertEqual(alloc_change_req.notes, note_value_after)
 
 
 class AllocationChangeViewTest(AllocationViewBaseTest):
