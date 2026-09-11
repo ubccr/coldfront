@@ -38,7 +38,7 @@ __all__ = (
 logger = logging.getLogger(__name__)
 
 
-@system_job(interval=settings.SLURM_SYNC_INTERVAL)
+@system_job(cron_schedule=settings.SLURM_SYNC_CRON)
 class SlurmSyncJob(JobRunner):
     """
     Periodic batch sync of Slurm accounting.
@@ -139,7 +139,7 @@ class SlurmSyncNowJob(JobRunner):
         return True
 
 
-@system_job(interval=settings.SLURM_USAGE_SYNC_INTERVAL)
+@system_job(cron_schedule=settings.SLURM_USAGE_SYNC_CRON)
 class SlurmUsageSyncJob(JobRunner):
     """
     Periodic daily SU usage ingest for all configured clusters.

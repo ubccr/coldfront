@@ -36,7 +36,7 @@ from coldfront.ras.models import Allocation, Project, ProjectUser
 from coldfront.slurm.models import SlurmAccount, SlurmAssociation, SlurmCluster, SlurmQOS
 from coldfront.slurm.sync import sync_slurm_clusters
 
-# Cluster name defined in the vendored slurm.conf (ClusterName=linux).
+# Cluster name defined in the slurm.conf (ClusterName=linux).
 CLUSTER = "linux"
 
 User = get_user_model()

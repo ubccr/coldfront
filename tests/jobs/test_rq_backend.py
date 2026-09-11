@@ -8,10 +8,10 @@ from datetime import timezone as tz
 from unittest.mock import MagicMock, patch
 
 from django.core.exceptions import SuspiciousOperation
+from django.tasks import TaskResult, TaskResultStatus
+from django.tasks.base import Task
 from django.test import TestCase, override_settings
 from django.utils import timezone
-from django_tasks import TaskResult, TaskResultStatus
-from django_tasks.base import Task
 
 from coldfront.core.choices import JobStatusChoices
 from coldfront.core.models import Job, ObjectType
@@ -24,7 +24,7 @@ def sample_task():
 
 def _task_path():
     """A Task instance for use as task_path in Job records."""
-    from django_tasks import task as task_decorator
+    from django.tasks import task as task_decorator
 
     return task_decorator()(sample_task)
 
@@ -39,7 +39,7 @@ class ColdFrontBackendDBTestCase(TestCase):
     """Tests for the DB path (no inner backend)."""
 
     def setUp(self):
-        self.backend = ColdFrontBackend("default", {"QUEUE": []})
+        self.backend = ColdFrontBackend("default", {"QUEUES": []})
 
     def test_backend_supports_defer(self):
         self.assertTrue(self.backend.supports_defer)
@@ -63,6 +63,7 @@ class ColdFrontBackendDBTestCase(TestCase):
             priority=0,
             backend="default",
             queue_name="default",
+            run_after=None,
         )
         result = self.backend.enqueue(task, (), {"answer": 42})
 
@@ -101,6 +102,7 @@ class ColdFrontBackendDBTestCase(TestCase):
             priority=0,
             backend="default",
             queue_name="default",
+            run_after=None,
         )
         result = self.backend.enqueue(
             task,
@@ -125,6 +127,7 @@ class ColdFrontBackendDBTestCase(TestCase):
             priority=0,
             backend="default",
             queue_name="default",
+            run_after=None,
         )
         result = self.backend.enqueue(task, (), {"_coldfront_job_meta": {}})
 
@@ -139,6 +142,7 @@ class ColdFrontBackendDBTestCase(TestCase):
             priority=5,
             backend="default",
             queue_name="default",
+            run_after=None,
         )
         job = Job.objects.create(
             name="Pre-created Job",
@@ -170,6 +174,7 @@ class ColdFrontBackendDBTestCase(TestCase):
             priority=0,
             backend="default",
             queue_name="default",
+            run_after=None,
         )
 
         user = User.objects.create(username="test_job_user")
@@ -196,6 +201,7 @@ class ColdFrontBackendDBTestCase(TestCase):
             priority=0,
             backend="default",
             queue_name="default",
+            run_after=None,
         )
         result = self.backend.enqueue(task, (), {})
 
@@ -206,7 +212,7 @@ class ColdFrontBackendDBTestCase(TestCase):
 
     def test_get_result_raises_for_missing_id(self):
         """get_result() raises TaskResultDoesNotExist for unknown IDs."""
-        from django_tasks.exceptions import TaskResultDoesNotExist
+        from django.tasks.exceptions import TaskResultDoesNotExist
 
         with self.assertRaises(TaskResultDoesNotExist):
             self.backend.get_result("00000000-0000-0000-0000-000000000000")
@@ -222,6 +228,7 @@ class ColdFrontBackendDBTestCase(TestCase):
             priority=0,
             backend="default",
             queue_name="default",
+            run_after=None,
         )
         result = self.backend.enqueue(task, (), {})
 
@@ -376,17 +383,16 @@ class ColdFrontBackendDBTestCase(TestCase):
 
 
 # ────────────────────────────────────────────────────────────────
-# RQ backend tests (ColdFrontBackend delegates to
-# django-tasks-rq.RQBackend)
+# RQ backend tests (ColdFrontBackend delegates to RQ backend)
 # ────────────────────────────────────────────────────────────────
 
 
-@override_settings(COLDFRONT_TASKS_BACKEND="django_tasks_rq.backend.RQBackend")
+@override_settings(COLDFRONT_TASKS_BACKEND="rq")
 class ColdFrontBackendRQTestCase(TestCase):
     """Tests for the RQ path (with inner backend)."""
 
     def setUp(self):
-        self.backend = ColdFrontBackend("default", {"QUEUE": []})
+        self.backend = ColdFrontBackend("default", {"QUEUES": []})
 
     def test_backend_uses_rq_path(self):
         self.assertTrue(self.backend._use_rq)
@@ -399,6 +405,7 @@ class ColdFrontBackendRQTestCase(TestCase):
             priority=0,
             backend="default",
             queue_name="default",
+            run_after=None,
         )
         with patch.object(self.backend.inner_backend, "enqueue") as mock_inner:
             mock_result = MagicMock(spec=TaskResult)
@@ -417,6 +424,7 @@ class ColdFrontBackendRQTestCase(TestCase):
             priority=0,
             backend="default",
             queue_name="default",
+            run_after=None,
         )
         inner_id = str(uuid.uuid4())
         with patch.object(self.backend.inner_backend, "enqueue") as mock_inner:
@@ -439,6 +447,7 @@ class ColdFrontBackendRQTestCase(TestCase):
             priority=0,
             backend="default",
             queue_name="default",
+            run_after=None,
         )
         temp_job_id = uuid.uuid4()
         job = Job.objects.create(name="Test Job", job_id=temp_job_id)

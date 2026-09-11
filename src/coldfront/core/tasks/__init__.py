@@ -2,10 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from .system import NotificationDigestJob, PruneChangeLogJob, PruneJob
+"""Task framework internals for ColdFront.
 
-__all__ = (
-    "PruneChangeLogJob",
-    "NotificationDigestJob",
-    "PruneJob",
-)
+This package deliberately keeps its ``__init__`` free of imports: submodules
+here (``system``, ``backends``, ``rq``, ``utils``) import ``coldfront.core.models``,
+which in turn imports this package — eager imports here would create a
+circular import. The system jobs are registered by ``CoreConfig.ready()``
+importing ``coldfront.core.tasks.system`` explicitly.
+"""

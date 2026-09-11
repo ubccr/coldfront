@@ -274,6 +274,9 @@ class JobTable(ColdFrontTable):
     interval = tables.Column(
         verbose_name=_("Interval"),
     )
+    cron_schedule = tables.Column(
+        verbose_name=_("Cron Schedule"),
+    )
     actions = columns.ActionsColumn(actions=())
 
     class Meta(ColdFrontTable.Meta):
@@ -288,6 +291,7 @@ class JobTable(ColdFrontTable):
             "completed",
             "user",
             "interval",
+            "cron_schedule",
             "error",
             "queue_name",
             "actions",

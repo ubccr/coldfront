@@ -5,7 +5,7 @@
 """
 Slurm Docker stack wrapper for the Slurm e2e suite.
 
-:class:`SlurmStack` drives the vendored ``slurm-docker-cluster`` compose stack
+:class:`SlurmStack` drives the ``slurm-docker-cluster`` compose stack
 through the generic :class:`BaseComposeStack` wrapper. It adds the Slurm-specific
 setup: version validation, the per-version REST API mapping, the slurm.conf
 variant bind-mount, a distinct host port per stack, and helpers to fetch the
@@ -17,8 +17,7 @@ Design notes
   (``ubccr/slurm-docker-cluster:<version>``); nothing is built locally.
 * The compose file is fully parameterized via a per-stack ``.env`` file —
   compose variables like ``SLURM_VERSION``, ``COMPOSE_PROJECT_NAME`` and
-  ``SLURM_CONF`` keep the single vendored file reusable across versions and
-  config variants without editing it.
+  ``SLURM_CONF`` keep the file reusable across versions and config variants without editing it.
 * ``COMPOSE_PROJECT_NAME`` is unique per stack, so multiple stacks (e.g. two
   Slurm versions in one pytest session) can run side by side without volume /
   container-name collisions.
@@ -113,7 +112,7 @@ class SlurmStack(BaseComposeStack):
     # ------------------------------------------------------------------
 
     def cluster_name(self) -> str:
-        """Cluster name defined in the vendored slurm.conf (``ClusterName=...``)."""
+        """Cluster name defined in the slurm.conf (``ClusterName=...``)."""
         for line in self.slurm_conf_path.read_text().splitlines():
             stripped = line.strip()
             if stripped.startswith("ClusterName="):

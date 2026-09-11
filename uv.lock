@@ -242,6 +242,7 @@ version = "2.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "crispy-bootstrap5" },
+    { name = "croniter" },
     { name = "django" },
     { name = "django-cotton" },
     { name = "django-crispy-forms" },
@@ -258,8 +259,6 @@ dependencies = [
     { name = "django-split-settings" },
     { name = "django-tables2" },
     { name = "django-taggit" },
-    { name = "django-tasks" },
-    { name = "django-tasks-rq" },
     { name = "django-viewflow" },
     { name = "django-vite" },
     { name = "djangorestframework" },
@@ -334,6 +333,7 @@ docs = [
 requires-dist = [
     { name = "coldfront-initializer", marker = "extra == 'initializer'", git = "https://github.com/coldfront/coldfront-initializer?branch=main" },
     { name = "crispy-bootstrap5", specifier = ">=2025.6" },
+    { name = "croniter", specifier = ">=6.2.0" },
     { name = "cryptography", marker = "extra == 'freeipa'", specifier = "==43.0.3" },
     { name = "dbus-python", marker = "extra == 'freeipa'", specifier = ">=1.4.0" },
     { name = "django", specifier = ">6,<6.1" },
@@ -353,8 +353,6 @@ requires-dist = [
     { name = "django-split-settings", specifier = ">=1.3.2" },
     { name = "django-tables2", specifier = ">=2.8.0" },
     { name = "django-taggit", specifier = ">=6.1.0" },
-    { name = "django-tasks", specifier = ">=0.12.0" },
-    { name = "django-tasks-rq", specifier = ">=0.12.0" },
     { name = "django-viewflow", specifier = ">=2.2.15" },
     { name = "django-vite", specifier = ">=3.1.0" },
     { name = "djangorestframework", specifier = ">=3.16.0" },
@@ -521,12 +519,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/37/57/2e2a65aee2a70483c
 wheels = [
     { url = "https://files.pythonhosted.org/packages/cd/ba/d678e5bd329646ca51d3c92addbc77804e86d21f4b6b6a027218e6abb010/croniter-6.2.4-py3-none-any.whl", hash = "sha256:8ef3d544107a5c05a150a2d78f8bf5a8eb9c5c4d93405a736b824109574e3f4d", size = 46677, upload-time = "2026-07-10T09:52:58.425Z" },
 ]
-
-[[package]]
-name = "crontab"
-version = "1.0.5"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/d6/36/a255b6f5a2e22df03fd2b2f3088974b44b8c9e9407e26b44742cb7cfbf5b/crontab-1.0.5.tar.gz", hash = "sha256:f80e01b4f07219763a9869f926dd17147278e7965a928089bca6d3dc80ae46d5", size = 21963, upload-time = "2025-07-09T17:09:38.264Z" }
 
 [[package]]
 name = "cryptography"
@@ -792,19 +784,6 @@ wheels = [
 ]
 
 [[package]]
-name = "django-stubs-ext"
-version = "6.0.7"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "django" },
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/36/50/917f7224ea470e89cdcdc93d3dfe75b8391adf976cf12f2ecdb5f5d122be/django_stubs_ext-6.0.7.tar.gz", hash = "sha256:c3172c5126614fd2a44d0196b313b44c21f717cb09477ba52b447d41f4ce613e", size = 6665, upload-time = "2026-07-14T10:07:56.933Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/83/65/4d73fce956b5ebf26449259664360e539fbe95f0e86be396c28b636ba72a/django_stubs_ext-6.0.7-py3-none-any.whl", hash = "sha256:53a9c7c5a7c7e718cc6308cfce1e7470f2cac0b9d38dbcd60fbfa82704f1d592", size = 10362, upload-time = "2026-07-14T10:07:55.653Z" },
-]
-
-[[package]]
 name = "django-tables2"
 version = "3.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -826,38 +805,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/34/a6/f1beaf8f552fe90c153cc039316ebab942c23dfbc88588dde081fefca816/django_taggit-6.1.0.tar.gz", hash = "sha256:c4d1199e6df34125dd36db5eb0efe545b254dec3980ce5dd80e6bab3e78757c3", size = 38151, upload-time = "2024-09-29T08:07:39.477Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/6b/34/4185c345530b91d05cb82e05d07148f481a5eb5dc2ac44e092b3daa6f206/django_taggit-6.1.0-py3-none-any.whl", hash = "sha256:ab776264bbc76cb3d7e49e1bf9054962457831bd21c3a42db9138b41956e4cf0", size = 75749, upload-time = "2024-09-29T08:07:14.612Z" },
-]
-
-[[package]]
-name = "django-tasks"
-version = "0.12.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "django" },
-    { name = "django-stubs-ext" },
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/1d/6e/34d4e77bb7951e5a5acbd846f43240f062c68bb04d9c246cb446a55d4cbc/django_tasks-0.12.0.tar.gz", hash = "sha256:58be66c1e487da32a3ce7320bd1949d0d1dc381b9004819f92591eb37fb2c1b8", size = 15445, upload-time = "2026-02-06T16:15:33.593Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/07/e7/40c45768e84efd77e3ae6ffdcd2b5540011036cbb00c6df6ef2a2ad69551/django_tasks-0.12.0-py3-none-any.whl", hash = "sha256:ffcc1d7bdfad3bc5ef9c2d498596c6546484c9ec6b182fb9709c691eb66a8709", size = 15758, upload-time = "2026-02-06T16:15:32.168Z" },
-]
-
-[[package]]
-name = "django-tasks-rq"
-version = "0.12.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "django" },
-    { name = "django-rq" },
-    { name = "django-stubs-ext" },
-    { name = "django-tasks" },
-    { name = "rq" },
-    { name = "rq-scheduler" },
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/30/d3/c964bd32d2fc5df173c49eaab418784034baaf66cfa84ce9be44e7073e2b/django_tasks_rq-0.12.0.tar.gz", hash = "sha256:84020a65d7b92d867f28d3002b4a6b07514eeda99b880ad91bb041d63e2191e0", size = 10570, upload-time = "2026-02-06T16:49:27.546Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/33/dd/7cdc12b0ce24be13ecd6088c8baa2da4fa7e5b70c6f763570f0b0b750cbe/django_tasks_rq-0.12.0-py3-none-any.whl", hash = "sha256:ece4131fb31bd0410a958504c4491e81a4987eddd654b9b26311af96a743ba0d", size = 7316, upload-time = "2026-02-06T16:49:26.002Z" },
 ]
 
 [[package]]
@@ -1090,18 +1037,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/1e/bc/8fd4321aed40cadadddc8f311c65b6082346b252bca048f7b476d8f35d72/fpdf2-2.8.8.tar.gz", hash = "sha256:9e94e155e85e8053329a9a1fce8b566fd7a7c5bb79e98a1a3952d379b947c5b9", size = 374689, upload-time = "2026-08-09T23:32:45.334Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f5/be/af012eda9507494f28b99b077423806c43a11573eb6225dd46f19ae2d263/fpdf2-2.8.8-py3-none-any.whl", hash = "sha256:3557a478fc577a929c94aace9666aed4dcc432b5ab6764232e6a59f1ccd75f17", size = 337000, upload-time = "2026-08-09T23:32:43.728Z" },
-]
-
-[[package]]
-name = "freezegun"
-version = "1.5.5"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "python-dateutil" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/95/dd/23e2f4e357f8fd3bdff613c1fe4466d21bfb00a6177f238079b17f7b1c84/freezegun-1.5.5.tar.gz", hash = "sha256:ac7742a6cc6c25a2c35e9292dfd554b897b517d2dec26891a2e8debf205cb94a", size = 35914, upload-time = "2025-08-09T10:39:08.338Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/5e/2e/b41d8a1a917d6581fc27a35d05561037b048e47df50f27f8ac9c7e27a710/freezegun-1.5.5-py3-none-any.whl", hash = "sha256:cd557f4a75cf074e84bc374249b9dd491eaeacd61376b9eb3c423282211619d2", size = 19266, upload-time = "2025-08-09T10:39:06.636Z" },
 ]
 
 [[package]]
@@ -2328,21 +2263,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/cc/a8/7bf65cda593feb5888214a4d1e64aae6fc5eb0bbbb74df922c916099a3e5/rq-2.10.0.tar.gz", hash = "sha256:2d8c533dd27500fedabec06295f18db595966e4f22744e6988fe31155b8f7a21", size = 754610, upload-time = "2026-06-20T03:11:45.919Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c5/d3/f8c59750a1c98f99d225954eb2c3dd89f2d66b666c448b4b0dff79ab29ed/rq-2.10.0-py3-none-any.whl", hash = "sha256:1f072e0ff79771f3d3a810170df4c4836dca9ce9f31330a9fc25e25277620ec8", size = 124665, upload-time = "2026-06-20T03:11:47.524Z" },
-]
-
-[[package]]
-name = "rq-scheduler"
-version = "0.14.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "crontab" },
-    { name = "freezegun" },
-    { name = "python-dateutil" },
-    { name = "rq" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/a0/4e/977bbcc1f3b25ed9ea60ec968b13f7147661defe5b2f9272b44fdb1c5549/rq-scheduler-0.14.0.tar.gz", hash = "sha256:2d5a14a1ab217f8693184ebaa1fe03838edcbc70b4f76572721c0b33058cd023", size = 16582, upload-time = "2024-10-29T13:30:32.641Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/bb/d0/28cedca9f3b321f30e69d644c2dcd7097ec21570ec9606fde56750621300/rq_scheduler-0.14.0-py2.py3-none-any.whl", hash = "sha256:d4ec221a3d8c11b3ff55e041f09d9af1e17f3253db737b6b97e86ab20fc3dc0d", size = 13874, upload-time = "2024-10-29T13:30:30.449Z" },
 ]
 
 [[package]]

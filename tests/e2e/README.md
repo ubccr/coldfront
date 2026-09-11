@@ -43,7 +43,7 @@ session end.
   round-trips to APIs
 - **Unit tests mirror live responses.** These tests should replay the same
   response shapes as the live e2e tests so pure logic (serializer/spec
-  conformance against the vendored OpenAPI specs, retry/transient logic, parser
+  conformance against any vendored OpenAPI specs, retry/transient logic, parser
   edge cases like empty/non-JSON bodies) can run fast without a container.
 
 ## Per-service suites

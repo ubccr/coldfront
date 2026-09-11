@@ -193,8 +193,8 @@ Slurm has that ColdFront no longer expects. The deletion logic only touches
 entities ColdFront can plausibly claim to own. Anything with no ColdFront DB
 row behind it is treated as externally managed and left alone.
 
-A scheduled job (`SlurmSyncJob`, every `SLURM_SYNC_INTERVAL` minutes)
-reconciles each cluster. The on-demand `SlurmSyncNowJob` and a
+A scheduled job (`SlurmSyncJob`, cron schedule `SLURM_SYNC_CRON`, nightly at
+04:00 by default) reconciles each cluster. The on-demand `SlurmSyncNowJob` and a
 `coldfront slurm_sync` CLI command run the same pass immediately. Unconfigured
 clusters are skipped by the job and reported as errors by the CLI.
 

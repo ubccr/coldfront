@@ -35,8 +35,12 @@
                     {{ object.user|placeholder }}
                 </c-card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Interval' %}">
-                    {% if object.interval %}
+                <c-card.fields.item label="{% trans 'Schedule' %}">
+                    {% if object.cron_schedule %}
+                        {% blocktrans trimmed with cron=object.cron_schedule %}
+                            Cron schedule: {{ cron }}
+                        {% endblocktrans %}
+                    {% elif object.interval %}
                         {% blocktrans trimmed with interval=object.interval %}
                             Every {{ interval }} minutes
                         {% endblocktrans %}

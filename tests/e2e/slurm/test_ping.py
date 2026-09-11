@@ -7,7 +7,7 @@ Smoke test: ColdFront's Slurm REST client against a live slurmrestd.
 
 This is the first e2e test — it proves the whole chain works end to end:
 
-1. the vendored compose stack brings up a real slurmdbd/slurmctld/slurmrestd,
+1. the docker compose stack brings up a real slurmdbd/slurmctld/slurmrestd,
 2. ``scontrol token`` yields an admin JWT,
 3. :meth:`SlurmClient.discover_version` negotiates the correct API version
    against the live ``/slurmdb/{version}/ping/`` endpoints,

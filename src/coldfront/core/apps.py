@@ -18,5 +18,9 @@ class CoreConfig(AppConfig):
             tasks,  # noqa: F401
         )
 
+        # Register the system jobs (kept out of the tasks package __init__ to
+        # avoid a circular import with coldfront.core.models).
+        from .tasks import system  # noqa: F401
+
         # Register models
         register_models(*self.get_models())

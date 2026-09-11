@@ -135,19 +135,21 @@ AUTHENTICATION_BACKENDS = []
 # ------------------------------------------------------------------------------
 # Django Tasks (background job framework)
 # ------------------------------------------------------------------------------
-# ColdFrontBackend handles queueing either directly via the Job model (DB
-# backend, default) or by delegating to django-tasks-rq (RQ backend).
+# ColdFront's task machinery is built on Django's built-in ``django.tasks``
+# module. ColdFrontBackend handles queueing either directly via the DB backend
+# (default) or by delegating to the RQ backend.
 #
 # COLDFRONT_TASKS_BACKEND selects which path to use:
-#   "django_tasks_db.backend.DatabaseBackend"  — ORM-based (default, no Redis)
-#   "django_tasks_rq.backend.RQBackend"        — Redis-based via django-rq
+#   "db" — ORM-based queueing backend
+#   "rq" — Redis-based queueing backend
 #
 # For the DB path, ColdFrontBackend uses the Job model as the queue record.
 # No separate DBTaskResult is created — the Job IS the queue entry.
 
 COLDFRONT_TASKS_BACKEND = ENV.str(
     "COLDFRONT_TASKS_BACKEND",
-    default="django_tasks_db.backend.DatabaseBackend",
+    default="db",
+    choices=("db", "rq"),
 )
 
 TASKS = {
@@ -156,10 +158,10 @@ TASKS = {
         "QUEUES": [],
     },
     "immediate": {
-        "BACKEND": "django_tasks.backends.immediate.ImmediateBackend",
+        "BACKEND": "django.tasks.backends.immediate.ImmediateBackend",
     },
     "dummy": {
-        "BACKEND": "django_tasks.backends.dummy.DummyBackend",
+        "BACKEND": "django.tasks.backends.dummy.DummyBackend",
     },
 }
 

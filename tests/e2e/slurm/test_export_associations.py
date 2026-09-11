@@ -27,7 +27,7 @@ from tests.e2e.slurm.test_project_allocation import (
     _seed_project_with_allocation,
 )
 
-# Cluster name defined in the vendored slurm.conf (ClusterName=linux).
+# Cluster name defined in the slurm.conf (ClusterName=linux).
 CLUSTER = "linux"
 
 

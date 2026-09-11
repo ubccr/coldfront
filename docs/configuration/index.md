@@ -48,7 +48,7 @@ These settings are defined in `src/coldfront/config/base.py`.
 | `STATIC_ROOT` | `static_root` | Directory for collected static files |
 | `DJANGO_VITE_DEV_MODE` | `False` | Enable Vite dev server mode |
 | `DJANGO_VITE_SERVER_PORT` | `5173` | Vite dev server port |
-| `COLDFRONT_TASKS_BACKEND` | `django_tasks_db.backend.DatabaseBackend` | Background task backend. Use `django_tasks_rq.backend.RQBackend` for Redis |
+| `COLDFRONT_TASKS_BACKEND` | `db` | Background task queue backend. `db` queues via the Job model (ORM). `rq` queues via Redis |
 
 ## Database Settings
 
@@ -175,8 +175,8 @@ These settings are defined in `src/coldfront/config/slurm.py`.
 | Variable | Default | Description |
 |---|---|---|
 | `COLDFRONT_SLURMRD_CLUSTERS` | See below | Per-cluster slurmrestd connection settings |
-| `COLDFRONT_SLURM_SYNC_INTERVAL` | `1440` | Batch association-sync interval in minutes (SlurmSyncJob) |
-| `COLDFRONT_SLURM_USAGE_SYNC_INTERVAL` | `1440` | Usage-sync interval in minutes (SlurmUsageSyncJob) |
+| `COLDFRONT_SLURM_SYNC_CRON` | `"0 4 * * *"` | Cron schedule for the batch association sync (SlurmSyncJob); evaluated in the default timezone |
+| `COLDFRONT_SLURM_USAGE_SYNC_CRON` | `"0 5 * * *"` | Cron schedule for the SU usage ingest (SlurmUsageSyncJob); evaluated in the default timezone |
 
 Per-cluster connection settings use a dictionary format. Each cluster can
 have its own settings or use the `"default"` entry:

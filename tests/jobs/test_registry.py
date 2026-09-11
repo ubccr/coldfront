@@ -11,6 +11,16 @@ from coldfront.core.jobs.runner import JobRunner
 
 
 class SystemJobDecoratorTestCase(TestCase):
+    def setUp(self):
+        # Snapshot the registry so test-local registrations cannot leak into
+        # other tests; restore it afterwards. Mutate in place — the dict is
+        # shared by reference across modules.
+        self._original_jobs = dict(system_jobs)
+
+    def tearDown(self):
+        system_jobs.clear()
+        system_jobs.update(self._original_jobs)
+
     def test_decorator_registers_runner(self):
         @system_job(interval=15)
         class MySyncJob(JobRunner):
@@ -55,7 +65,26 @@ class SystemJobDecoratorTestCase(TestCase):
     def test_system_jobs_registry_is_dict(self):
         self.assertIsInstance(system_jobs, dict)
 
-    def test_system_jobs_starts_empty(self):
-        # The registry may have entries from decorators called during
-        # test setup, but the store itself should be a mutable dict.
-        self.assertIsInstance(system_jobs, dict)
+    def test_system_jobs_baseline(self):
+        """Only ColdFront's own system jobs are registered (no test pollution).
+
+        The baseline is fixed at startup: core system jobs via
+        ``coldfront.core.apps``, Slurm jobs via ``coldfront.slurm.apps``, and
+        the RAS prune job via ``coldfront.ras.apps``.
+        """
+        from coldfront.core.tasks.system import NotificationDigestJob, PruneChangeLogJob, PruneJob
+        from coldfront.ras.jobs import PruneProjectInviteJob
+        from coldfront.slurm.jobs import SlurmSyncJob, SlurmUsageSyncJob
+
+        expected = {
+            PruneChangeLogJob,
+            PruneJob,
+            NotificationDigestJob,
+            PruneProjectInviteJob,
+            SlurmSyncJob,
+            SlurmUsageSyncJob,
+        }
+        self.assertEqual(set(system_jobs), expected)
+        for config in system_jobs.values():
+            self.assertTrue(config)
+            self.assertFalse(set(config) - {"interval", "cron_schedule"})

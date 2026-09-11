@@ -24,7 +24,7 @@ from coldfront.slurm.client.exceptions import (
     SlurmUserNotCreatedError,
 )
 
-# Cluster name defined in the vendored slurm.conf (ClusterName=linux).
+# Cluster name defined in the slurm.conf (ClusterName=linux).
 CLUSTER = "linux"
 
 

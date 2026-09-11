@@ -50,12 +50,14 @@ SLURMRESTD_CLUSTERS = ENV.dict(
 # Sync scheduling (global defaults)
 # ------------------------------------------------------------------------------
 
-# Interval (in minutes) for the periodic batch access-control sync job.
-# Defaults to 1440 (daily).  Can be set lower for more frequent convergence,
-# at the cost of increased slurmrestd load.
-SLURM_SYNC_INTERVAL = ENV.int("COLDFRONT_SLURM_SYNC_INTERVAL", default=1440)
+# Cron schedule for the periodic batch access-control sync job.  Evaluated in
+# the default timezone (Django's TIME_ZONE); missed occurrences are skipped.
+# Defaults to nightly at 04:00.  Can be set more frequently for faster
+# convergence, at the cost of increased slurmrestd load.
+SLURM_SYNC_CRON = ENV.str("COLDFRONT_SLURM_SYNC_CRON", default="0 4 * * *")
 
-# Interval (in minutes) for the periodic SU usage ingest job.  Defaults to
-# 1440 (daily).  Independent of SLURM_SYNC_INTERVAL so the two syncs can run
-# on different cadences.
-SLURM_USAGE_SYNC_INTERVAL = ENV.int("COLDFRONT_SLURM_USAGE_SYNC_INTERVAL", default=1440)
+# Cron schedule for the periodic SU usage ingest job.  Defaults to 05:00
+# nightly (staggered an hour after SLURM_SYNC_CRON), after the previous day
+# has completed.  Independent of SLURM_SYNC_CRON so the two syncs can run on
+# different cadences.
+SLURM_USAGE_SYNC_CRON = ENV.str("COLDFRONT_SLURM_USAGE_SYNC_CRON", default="0 5 * * *")

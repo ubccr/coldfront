@@ -15,14 +15,14 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import close_old_connections
 from django.db.utils import OperationalError
+from django.tasks import DEFAULT_TASK_QUEUE_NAME, task_backends
+from django.tasks.base import TaskContext
+from django.tasks.signals import task_finished, task_started
 from django.utils.autoreload import DJANGO_AUTORELOAD_ENV, run_with_reloader
-from django_tasks import DEFAULT_TASK_QUEUE_NAME, task_backends
-from django_tasks.base import TaskContext
-from django_tasks.signals import task_finished, task_started
-from django_tasks.utils import get_random_id
 
 from coldfront.core.models import Job
 from coldfront.core.tasks.backends.coldfront import ColdFrontBackend
+from coldfront.core.tasks.utils import get_random_id
 
 logger = logging.getLogger("coldfront.db_worker")
 

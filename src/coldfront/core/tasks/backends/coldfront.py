@@ -6,13 +6,13 @@ import uuid
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
+from django.tasks.backends.base import BaseTaskBackend
+from django.tasks.base import TaskResult as TaskResultBase
+from django.tasks.base import TaskResultStatus
+from django.tasks.signals import task_enqueued
 from django.utils import timezone
+from django.utils.json import normalize_json
 from django.utils.module_loading import import_string
-from django_tasks.backends.base import BaseTaskBackend
-from django_tasks.base import TaskResult as TaskResultBase
-from django_tasks.base import TaskResultStatus
-from django_tasks.signals import task_enqueued
-from django_tasks.utils import normalize_json
 
 from coldfront.core.choices import JobNotificationChoices, JobStatusChoices
 from coldfront.core.models import Job
@@ -21,19 +21,15 @@ __all__ = ("ColdFrontBackend",)
 
 
 def _is_rq_backend():
-    """Return True if COLDFRONT_TASKS_BACKEND points to the RQ backend."""
-    backend_path = getattr(
-        settings,
-        "COLDFRONT_TASKS_BACKEND",
-        "django_tasks_db.backend.DatabaseBackend",
-    )
-    return "django_tasks_rq" in backend_path
+    """Return True if COLDFRONT_TASKS_BACKEND selects the RQ (Redis) backend."""
+    backend = getattr(settings, "COLDFRONT_TASKS_BACKEND", "db")
+    return backend == "rq"
 
 
 def _get_rq_backend():
-    """Return a django-tasks-rq RQBackend instance."""
-    backend_cls = import_string("django_tasks_rq.backend.RQBackend")
-    inner_params = {"QUEUE": []}
+    """Return the RQ backend bound to Django's built-in ``django.tasks``."""
+    backend_cls = import_string("coldfront.core.tasks.rq.RQBackend")
+    inner_params = {"QUEUES": ["default"]}
     return backend_cls(alias="default", params=inner_params)
 
 
@@ -41,9 +37,9 @@ class ColdFrontBackend(BaseTaskBackend):
     """
     ColdFront task backend.
 
-    This backend wraps an inner backend (``django-tasks-rq``) when
-    ``COLDFRONT_TASKS_BACKEND`` points to the RQ backend, and handles
-    queueing directly via the ``Job`` model (ORM) when using the DB backend.
+    This backend wraps the RQ backend (``coldfront.core.tasks.rq``)
+    when ``COLDFRONT_TASKS_BACKEND`` is "rq", and handles
+    queueing directly via the ``Job`` model (ORM) when using the DB backend ("db").
 
     In both cases, a persistent ``Job`` record is created for every enqueued
     task, giving full UI visibility (status, logs, duration) without any
@@ -98,7 +94,7 @@ class ColdFrontBackend(BaseTaskBackend):
         return await self._aget_result_db(result_id)
 
     # ------------------------------------------------------------------
-    # RQ path — delegate to django-tasks-rq
+    # RQ path — delegate to the RQ backend
     # ------------------------------------------------------------------
 
     def _enqueue_rq(self, task, args, kwargs):
@@ -233,7 +229,7 @@ class ColdFrontBackend(BaseTaskBackend):
         return self._enqueue_db(task, args, kwargs)
 
     def _get_result_db(self, result_id):
-        from django_tasks.exceptions import TaskResultDoesNotExist
+        from django.tasks.exceptions import TaskResultDoesNotExist
 
         try:
             job = Job.objects.get(job_id=uuid.UUID(result_id))
@@ -242,7 +238,7 @@ class ColdFrontBackend(BaseTaskBackend):
             raise TaskResultDoesNotExist(result_id) from e
 
     async def _aget_result_db(self, result_id):
-        from django_tasks.exceptions import TaskResultDoesNotExist
+        from django.tasks.exceptions import TaskResultDoesNotExist
 
         try:
             job = await Job.objects.aget(job_id=uuid.UUID(result_id))

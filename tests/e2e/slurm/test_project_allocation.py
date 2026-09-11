@@ -33,7 +33,7 @@ from coldfront.slurm.models import SlurmAccount, SlurmAssociation, SlurmCluster,
 from coldfront.slurm.sync import sync_slurm_clusters
 from tests.e2e.slurm.conftest import submit_sleep_job, wait_for_job_completion
 
-# Cluster name defined in the vendored slurm.conf (ClusterName=linux).
+# Cluster name defined in the slurm.conf (ClusterName=linux).
 CLUSTER = "linux"
 
 User = get_user_model()

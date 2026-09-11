@@ -18,6 +18,7 @@ class SlurmConfig(AppConfig):
 
         from . import (
             billing,  # noqa: F401
+            jobs,  # noqa: F401
             listeners,  # noqa: F401
             views,  # noqa: F401
         )

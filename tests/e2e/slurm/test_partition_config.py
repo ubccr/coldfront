@@ -10,8 +10,8 @@ live stack:
 * ``fetch_partition_config`` reads the running config from
   ``GET /partitions/`` (version-agnostic — both supported versions expose GET).
 * ``generate_partition_config`` merges ColdFront DB records over the running
-  baseline, so the rendered ``PartitionName`` sections match the vendored
-  slurm.conf partition lines, and DB edits show up as a structured diff.
+  baseline, so the rendered ``PartitionName`` sections match the slurm.conf
+  partition lines, and DB edits show up as a structured diff.
 
 The merge rule is exercised live: ColdFront's ``Nodes=cpu_nodes`` (the
 conf-style NodeSet reference) wins over the running API's expanded node list
@@ -46,8 +46,8 @@ def _split_line(line: str) -> tuple[str, dict[str, str]]:
 
 @pytest.mark.django_db
 @pytest.mark.e2e
-def test_partition_config_render_matches_vendored_conf(slurm_stack, slurm_client):
-    """Merged render reproduces the vendored conf partition lines."""
+def test_partition_config_render_matches_slurm_conf(slurm_stack, slurm_client):
+    """Merged render reproduces the slurm conf partition lines."""
     report = ingest_cluster_from_conf(str(CONF_DIR / "slurm.conf"))
     assert report.errors == [], f"import errors: {report.errors}"
     cluster = SlurmCluster.objects.get(name="linux")

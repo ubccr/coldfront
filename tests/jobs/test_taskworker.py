@@ -59,7 +59,7 @@ class TaskWorkerCommandTestCase(TestCase):
                     interval=1.0,
                 )
 
-    @override_settings(COLDFRONT_TASKS_BACKEND="django_tasks_rq.backend.RQBackend")
+    @override_settings(COLDFRONT_TASKS_BACKEND="rq")
     def test_command_with_rq_backend_delegates_to_rqworker(self):
         with patch("coldfront.core.management.commands.taskworker.system_jobs") as mock_jobs:
             mock_jobs.items.return_value = []

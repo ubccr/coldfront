@@ -8,6 +8,7 @@ import uuid
 from dataclasses import asdict, dataclass
 from datetime import datetime
 
+import croniter
 import django_rq
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -18,24 +19,24 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q
 from django.tasks import Task
-from django.urls import reverse
-from django.utils import timezone
-from django.utils.module_loading import import_string
-from django.utils.translation import gettext_lazy as _
-from django_tasks.base import (
+from django.tasks.base import (
     DEFAULT_TASK_PRIORITY,
     TaskError,
     TaskResultStatus,
 )
-from django_tasks.base import (
+from django.tasks.base import (
     TaskResult as TaskResultBase,
 )
-from django_tasks.utils import get_exception_traceback, get_module_path
+from django.urls import reverse
+from django.utils import timezone
+from django.utils.module_loading import import_string
+from django.utils.translation import gettext_lazy as _
 from rq.exceptions import InvalidJobOperation
 
 from coldfront.core.choices import JobNotificationChoices, JobStatusChoices
 from coldfront.core.events import JOB_COMPLETED, JOB_ERRORED, JOB_FAILED
 from coldfront.core.models.object_types import ObjectType
+from coldfront.core.tasks.utils import get_exception_traceback, get_module_path
 from coldfront.core.utils import JobLogDecoder
 from coldfront.users.querysets import RestrictedQuerySet
 
@@ -53,14 +54,6 @@ JOB_TO_TASK_RESULT_STATUS = {
     JobStatusChoices.STATUS_FAILED: TaskResultStatus.FAILED,
     JobStatusChoices.STATUS_ERRORED: TaskResultStatus.FAILED,
 }
-
-# Classes that are accepted as a valid task reference
-try:
-    from django.tasks.base import Task as DjangoTask
-except ImportError:
-    DjangoTask = None
-
-TASK_CLASSES = (Task, DjangoTask) if DjangoTask is not None else (Task,)
 
 
 @dataclass
@@ -159,6 +152,13 @@ class Job(models.Model):
         null=True,
         validators=(MinValueValidator(1),),
         help_text=_("Recurrence interval (in minutes)"),
+    )
+    cron_schedule = models.CharField(
+        verbose_name=_("cron schedule"),
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text=_('Cron schedule (e.g. "0 9 * * *")'),
     )
     started = models.DateTimeField(
         verbose_name=_("started"),
@@ -279,6 +279,19 @@ class Job(models.Model):
                 _("Jobs cannot be assigned to this object type ({type}).").format(type=self.object_type)
             )
 
+        # Cron schedules and intervals are mutually exclusive
+        if self.cron_schedule and self.interval:
+            raise ValidationError(_("A job cannot have both a cron schedule and an interval."))
+
+        # Validate the cron expression
+        if self.cron_schedule:
+            try:
+                croniter.croniter(self.cron_schedule)
+            except (ValueError, KeyError) as e:
+                raise ValidationError(
+                    _("Invalid cron schedule ({schedule}): {error}").format(schedule=self.cron_schedule, error=e)
+                ) from e
+
     @property
     def duration(self):
         if not self.completed:
@@ -312,7 +325,7 @@ class Job(models.Model):
         obj = import_string(self.task_path)
 
         # If the path points to a Task instance, use it directly.
-        if isinstance(obj, TASK_CLASSES):
+        if isinstance(obj, Task):
             return obj.using(
                 priority=self.priority,
                 queue_name=self.queue_name or "default",
@@ -508,6 +521,7 @@ class Job(models.Model):
         user=None,
         schedule_at=None,
         interval=None,
+        cron_schedule=None,
         immediate=False,
         queue_name=None,
         notifications=None,
@@ -527,6 +541,7 @@ class Job(models.Model):
             user: The user responsible for running the job.
             schedule_at: Schedule the job to be executed at the passed date and time.
             interval: Recurrence interval (in minutes).
+            cron_schedule: Cron schedule (e.g. "0 9 * * *") evaluated in the default timezone.
             immediate: Run the job immediately without scheduling it in the background.
             queue_name: Name of the queue to use. Defaults to the queue for the object type.
             notifications: Notification behavior on job completion.
@@ -549,6 +564,7 @@ class Job(models.Model):
             status=status,
             scheduled=schedule_at,
             interval=interval,
+            cron_schedule=cron_schedule,
             user=user,
             job_id=uuid.uuid4(),
             queue_name=queue_name or "default",

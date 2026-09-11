@@ -7,7 +7,7 @@ Generic container wrappers for ColdFront e2e tests.
 
 This module holds setup code that can be reused across all e2e test apps. The
 generic :class:`BaseComposeStack` wraps ``testcontainers.compose.DockerCompose`` to
-drive a vendored compose stack: it writes a per-stack env file (project name),
+drive a docker compose stack: it writes a per-stack env file (project name),
 starts the stack and waits for healthchecks, exposes helpers to exec into
 containers, and tears everything down (volumes included) on stop.
 
@@ -19,9 +19,8 @@ Design notes
 * The stack uses **pre-built images** from Docker Hub; nothing is built
   locally.
 * The compose file is fully parameterized via a per-stack ``.env`` file passed
-  to ``DockerCompose(env_file=...)`` — compose variables keep the single
-  vendored file reusable across versions and config variants without editing
-  it.
+  to ``DockerCompose(env_file=...)`` — compose variables keep the file reusable
+  across versions and config variants without editing it.
 * ``COMPOSE_PROJECT_NAME`` is unique per stack, so multiple stacks can run
   side by side without volume / container-name collisions.
 """
@@ -37,13 +36,13 @@ from testcontainers.compose import DockerCompose
 class BaseComposeStack:
     """Thin wrapper over ``testcontainers.compose.DockerCompose`` shared by e2e stacks.
 
-    Subclasses set the vendored compose file location (``_COMPOSE_DIR`` and
+    Subclasses set the docker compose file location (``_COMPOSE_DIR`` and
     ``_COMPOSE_FILE``) and extend ``_env_content`` with their compose
     variables. This base writes the env file, starts the stack and waits for
     healthchecks, exposes exec helpers, and tears everything down on stop.
     """
 
-    # Vendored compose file location — subclass sets these.
+    # Docker compose file location — subclass sets these.
     _COMPOSE_DIR: Path
     _COMPOSE_FILE: str
 

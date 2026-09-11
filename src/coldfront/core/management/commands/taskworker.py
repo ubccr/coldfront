@@ -7,19 +7,17 @@ import os
 from django.conf import settings
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
+from django.utils import timezone
 from django.utils.autoreload import DJANGO_AUTORELOAD_ENV
 
 from coldfront.core.jobs.registry import system_jobs
+from coldfront.core.jobs.runner import next_cron_occurrence
 
 
 def _is_db_backend():
-    """Return True if COLDFRONT_TASKS_BACKEND points to the DB backend."""
-    backend_path = getattr(
-        settings,
-        "COLDFRONT_TASKS_BACKEND",
-        "django_tasks_db.backend.DatabaseBackend",
-    )
-    return "django_tasks_rq" not in backend_path
+    """Return True if COLDFRONT_TASKS_BACKEND selects the DB backend."""
+    backend = getattr(settings, "COLDFRONT_TASKS_BACKEND", "db")
+    return backend != "rq"
 
 
 class Command(BaseCommand):
@@ -47,7 +45,16 @@ class Command(BaseCommand):
         # idempotent, calling it on every worker startup is safe even
         # if another worker already registered the schedules.
         for runner_cls, config in system_jobs.items():
-            runner_cls.enqueue_once(interval=config["interval"])
+            if "cron_schedule" in config:
+                # Cron jobs are seeded with the first occurrence after the
+                # current time; missed occurrences are skipped.
+                schedule_at = next_cron_occurrence(config["cron_schedule"], timezone.now())
+                runner_cls.enqueue_once(
+                    schedule_at=schedule_at,
+                    cron_schedule=config["cron_schedule"],
+                )
+            else:
+                runner_cls.enqueue_once(interval=config["interval"])
 
         # Skip the startup message when the reloader has already launched
         # the worker — otherwise it appears twice (parent + child process).

@@ -346,6 +346,12 @@ class JobFilterSet(ChangeLoggedModelFilterSet):
         label=_("Status"),
     )
 
+    cron_schedule = django_filters.CharFilter(
+        lookup_expr="icontains",
+        label=_("Cron Schedule"),
+        help_text=_('Cron schedule (e.g. "0 9 * * *")'),
+    )
+
     class Meta:
         model = Job
         fields = (
@@ -353,6 +359,7 @@ class JobFilterSet(ChangeLoggedModelFilterSet):
             "name",
             "status",
             "interval",
+            "cron_schedule",
             "queue_name",
         )
 

@@ -44,7 +44,7 @@ from tests.e2e.slurm.conftest import (
     wait_for_job_completion,
 )
 
-# Cluster name defined in the vendored slurm.conf (ClusterName=linux).
+# Cluster name defined in the slurm.conf (ClusterName=linux).
 CLUSTER = "linux"
 
 # TRES ids in tres.allocated (Slurm internal TRES_ARRAY indices) — verified

@@ -33,7 +33,7 @@ end, so each run starts from a fresh database.
   the generic cleanup (`reset_slurm_stack` + autouse `slurm_cleanup`).
 - `compose/docker-compose.slurm.yml` — trimmed, parameterized port of
   `slurm-docker-cluster` (no build blocks; pre-built images).
-- `config/slurm.conf` — vendored base config (single per version). Tests that
+- `config/slurm.conf` — base config (single per version). Tests that
   need non-stock config (e.g. `TRESBillingWeights`, `AllowQOS`) push it at
   runtime via the REST API (`POST /partitions/`) instead of shipping conf
   variants.
@@ -199,7 +199,7 @@ REST delete, so the restore-then-recreate path is what keeps re-runs clean.
 
 ## `AccountingStorageEnforce`
 
-The vendored `slurm.conf` sets
+The `slurm.conf` sets
 `AccountingStorageEnforce=associations,limits,qos` so slurmdbd actually
 enforces associations/limits — otherwise creates silently no-op and the sync
 tests would not exercise real enforcement.
