@@ -13,12 +13,8 @@ Usage::
     coldfront slurm_sync --dry-run                # show what would change
     coldfront slurm_sync --cluster hpc01 --dry-run
 
-This command always runs synchronously and is unaffected by the
-per-cluster ``auto_sync_enabled`` setting — it bypasses the auto-sync
-gate entirely.
-"""
-
-from __future__ import annotations
+This command always runs synchronously. It skips clusters without slurmrestd
+configured — unconfigured clusters are reported as failures."""
 
 import logging
 from datetime import timedelta
@@ -49,34 +45,39 @@ class Command(BaseCommand):
         cluster_arg = options.get("cluster")
         dry_run = options.get("dry_run", False)
 
-        # Resolve cluster
-        cluster_id: int | None = None
+        # Resolve cluster to a name
+        cluster_names: list[str] | None = None
         if cluster_arg is not None:
             try:
                 cluster_id = int(cluster_arg)
+                cluster = SlurmCluster.objects.get(pk=cluster_id)
             except ValueError:
-                # Look up by name
                 try:
                     cluster = SlurmCluster.objects.get(name=cluster_arg)
-                    cluster_id = cluster.pk
                 except SlurmCluster.DoesNotExist:
                     self.stderr.write(self.style.ERROR(f"Cluster '{cluster_arg}' not found"))
                     return
+            except SlurmCluster.DoesNotExist:
+                self.stderr.write(self.style.ERROR(f"Cluster '{cluster_arg}' not found"))
+                return
+            cluster_names = [cluster.name]
 
         if dry_run:
-            self._dry_run(cluster_id)
+            self._dry_run(cluster_names)
         else:
-            self._run_sync(cluster_id)
+            self._run_sync(cluster_names)
 
-    def _run_sync(self, cluster_id: int | None) -> None:
-        from coldfront.slurm.sync import run_sync
+    def _run_sync(self, cluster_names: list[str] | None) -> None:
+        from coldfront.slurm.sync import sync_slurm_clusters
 
         start = timezone.now()
         self.stdout.write(
-            self.style.NOTICE("Starting Slurm sync%s", "" if cluster_id is None else f" (cluster={cluster_id})")
+            self.style.NOTICE(
+                "Starting Slurm sync" + ("" if cluster_names is None else f" (cluster={cluster_names[0]})")
+            )
         )
 
-        reports = run_sync(cluster_id=cluster_id)
+        reports = sync_slurm_clusters(cluster_names)
 
         duration = timedelta(seconds=(timezone.now() - start).total_seconds())
         for r in reports:
@@ -87,7 +88,11 @@ class Command(BaseCommand):
                         f"{r.accounts_created} accounts, "
                         f"{r.associations_created} assocs, "
                         f"{r.users_created} users created; "
-                        f"{r.associations_deleted} assocs deleted "
+                        f"{r.associations_deleted} assocs, "
+                        f"{r.users_deleted} users, "
+                        f"{r.accounts_deleted} accounts, "
+                        f"{r.qos_deleted} QOS deleted; "
+                        f"{r.jobs_killed} jobs killed "
                         f"({r.duration_ms} ms)"
                     )
                 )
@@ -100,22 +105,20 @@ class Command(BaseCommand):
         total = len(reports)
         self.stdout.write(self.style.SUCCESS(f"Sync finished: {ok}/{total} clusters OK ({duration})"))
 
-    def _dry_run(self, cluster_id: int | None) -> None:
+    def _dry_run(self, cluster_names: list[str] | None) -> None:
         """Show what would change without making API calls."""
         self.stdout.write(self.style.NOTICE("Dry-run mode — no API calls will be made"))
 
         clusters = SlurmCluster.objects.all()
-        if cluster_id is not None:
-            clusters = clusters.filter(pk=cluster_id)
+        if cluster_names is not None:
+            clusters = clusters.filter(name__in=cluster_names)
 
-        from coldfront.slurm.dump import (
-            _get_accounts_for_assocs,
-            _get_active_associations,
-        )
+        from coldfront.slurm.export.associations import _get_accounts_for_assocs
+        from coldfront.slurm.utils import get_active_associations
 
         for cluster in clusters:
             self.stdout.write(f"\nCluster: {cluster.name}")
-            active = _get_active_associations(cluster)
+            active = get_active_associations(cluster)
             self.stdout.write(f"  Active associations: {len(active)}")
 
             accounts = _get_accounts_for_assocs(active)

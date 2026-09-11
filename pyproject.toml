@@ -53,6 +53,7 @@ dependencies = [
     "habanero>=2.9.2",
     "django-money>=3.6.1",
     "fpdf2>=2.8.8",
+    "semver>=3.0.4",
 ]
 
 [project.urls]
@@ -99,6 +100,7 @@ dev = [
     "responses>=0.26.1",
     "reuse>=5.0.2",
     "ruff>=0.11.4",
+    "testcontainers>=4.15.0",
 ]
 docs = [
     "mkdocs>=1.6.1",
@@ -140,6 +142,10 @@ minversion = "9.0"
 DJANGO_SETTINGS_MODULE = "coldfront.config.settings"
 testpaths = ["tests"]
 python_files = ["tests.py", "test_*.py", "*_tests.py"]
+addopts = ["-m", "not e2e"]
+markers = [
+    "e2e: end-to-end tests that spin up real containers (docker); disabled unless COLDFRONT_E2E=1",
+]
 filterwarnings = [
     'ignore::DeprecationWarning',
 ]

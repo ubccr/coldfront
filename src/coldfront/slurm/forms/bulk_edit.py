@@ -195,10 +195,10 @@ class SlurmPartitionBulkEditForm(AllocatableResourceBulkEditForm, PrimaryModelBu
         widget=BulkEditNullBooleanSelect,
         required=False,
     )
-    default_time = forms.IntegerField(
+    default_time = forms.CharField(
         required=False,
-        label=_("Default Time (minutes)"),
-        help_text=_("Duration in minutes"),
+        label=_("Default Time"),
+        help_text=_("Slurm time duration (e.g., 72:00:00, 30-12:00:00, or UNLIMITED)."),
     )
     state = forms.ChoiceField(
         required=False,
@@ -214,37 +214,10 @@ class SlurmPartitionBulkEditForm(AllocatableResourceBulkEditForm, PrimaryModelBu
         required=False,
         label=_("Default Memory per CPU"),
     )
-    max_jobs = forms.IntegerField(
+    max_time = forms.CharField(
         required=False,
-        label=_("Max Jobs"),
-    )
-    max_submit_jobs = forms.IntegerField(
-        required=False,
-        label=_("Max Submit Jobs"),
-    )
-    max_tres_per_job = JSONField(
-        label=_("Max TRES per Job"),
-        required=False,
-        help_text=_('JSON dict of TRES limits per job (e.g., {"node":5,"cpu":20}).'),
-    )
-    max_tres_per_node = JSONField(
-        label=_("Max TRES per Node"),
-        required=False,
-        help_text=_('JSON dict of TRES limits per node (e.g., {"gpu":8}).'),
-    )
-    max_tres_mins_per_job = JSONField(
-        label=_("Max TRES Minutes per Job"),
-        required=False,
-        help_text=_('JSON dict of TRES minute limits per job (e.g., {"cpu":360}).'),
-    )
-    max_wall_duration_per_job = forms.IntegerField(
-        required=False,
-        label=_("Max Wall Duration per Job (minutes)"),
-        help_text=_("Duration in minutes"),
-    )
-    fairshare = forms.IntegerField(
-        required=False,
-        label=_("Fairshare"),
+        label=_("Max Time"),
+        help_text=_("Slurm time duration (e.g., 72:00:00, 30-12:00:00, or UNLIMITED)."),
     )
     allow_qos = forms.ModelMultipleChoiceField(
         queryset=SlurmQOS.objects.all(),
@@ -299,13 +272,7 @@ class SlurmPartitionBulkEditForm(AllocatableResourceBulkEditForm, PrimaryModelBu
         "state",
         "preempt_mode",
         "def_mem_per_cpu",
-        "max_jobs",
-        "max_submit_jobs",
-        "max_tres_per_job",
-        "max_tres_per_node",
-        "max_tres_mins_per_job",
-        "max_wall_duration_per_job",
-        "fairshare",
+        "max_time",
         "allow_qos",
         "qos",
         "allow_groups",
@@ -331,13 +298,7 @@ class SlurmPartitionBulkEditForm(AllocatableResourceBulkEditForm, PrimaryModelBu
             ),
             Fieldset(
                 _("Limits"),
-                "max_jobs",
-                "max_submit_jobs",
-                "max_tres_per_job",
-                "max_tres_per_node",
-                "max_tres_mins_per_job",
-                "max_wall_duration_per_job",
-                "fairshare",
+                "max_time",
             ),
             Fieldset(
                 _("Access Control"),

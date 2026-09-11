@@ -2,11 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-
-from __future__ import annotations
-
 import re
 from dataclasses import dataclass, field
+from datetime import timedelta
 
 from coldfront.slurm.choices import SlurmPartitionStateChoices, SlurmPreemptModeChoices
 
@@ -28,7 +26,12 @@ class ParsedPartition:
     state: str = "UP"
     preempt_mode: str = ""
     def_mem_per_cpu: int | None = None
+    def_mem_per_node: int | None = None
+    priority_tier: int | None = None
+    max_nodes: int | None = None
+    max_cpus_per_node: int | None = None
     allow_qos: str = ""
+    deny_qos: str = ""
     qos: str = ""
     allow_accounts: str = ""
     allow_groups: str = ""
@@ -63,7 +66,6 @@ class ParsedSlurmConfig:
     priority_type: str = ""
     priority_decay_half_life: str = ""
     priority_usage_reset_period: str = ""
-    default_tres_billing_weights: str = ""
 
 
 # Regex for slurm.conf key=value lines
@@ -106,6 +108,112 @@ def parse_tres_weights(raw: str) -> dict[str, float]:
         except ValueError:
             continue
     return weights
+
+
+@dataclass(frozen=True)
+class SlurmTime:
+    """A Slurm time duration, finite or UNLIMITED.
+
+    ``duration`` is ``None`` when the time is UNLIMITED/INFINITE; otherwise it
+    is a ``timedelta`` carrying the finite value.
+    """
+
+    duration: timedelta | None = None
+
+    def is_unlimited(self) -> bool:
+        return self.duration is None
+
+    def to_minutes(self) -> int | None:
+        """Whole minutes, or ``None`` when UNLIMITED."""
+        if self.duration is None:
+            return None
+        return int(self.duration.total_seconds() // 60)
+
+    def to_seconds(self) -> int | None:
+        """Whole seconds, or ``None`` when UNLIMITED."""
+        if self.duration is None:
+            return None
+        return int(self.duration.total_seconds())
+
+    def __str__(self) -> str:
+        """Render as the canonical Slurm string (e.g. ``72:00:00``,
+        ``UNLIMITED``) so templates display the value correctly."""
+        return format_slurm_time(self)
+
+
+def parse_slurm_time(raw: str) -> SlurmTime:
+    """Parse a Slurm time duration string into a ``SlurmTime``.
+
+    Accepts every format from the slurm.conf man page: ``minutes``,
+    ``minutes:seconds``, ``hours:minutes:seconds``, ``days-hours``,
+    ``days-hours:minutes``, ``days-hours:minutes:seconds``, or
+    ``UNLIMITED``. ``INFINITE`` is also accepted as a synonym for
+    UNLIMITED (Slurm historically uses it in slurm.conf).
+
+    Raises ``ValueError`` on an unrecognized format.
+    """
+    if not raw:
+        return SlurmTime(duration=timedelta(0))
+    s = raw.strip().upper()
+    if s in ("UNLIMITED", "INFINITE"):
+        return SlurmTime()
+    if "-" in s:
+        days_part, _, rest = s.partition("-")
+        days = int(days_part)
+        seconds = _parse_days_rest(rest) if rest else 0
+        return SlurmTime(duration=timedelta(days=days, seconds=seconds))
+    return SlurmTime(duration=timedelta(seconds=_parse_hms(s)))
+
+
+def format_slurm_time(time: SlurmTime) -> str:
+    """Render a ``SlurmTime`` as its canonical Slurm string.
+
+    UNLIMITED -> ``"UNLIMITED"``; finite values -> ``HH:MM:SS`` or
+    ``D-HH:MM:SS`` (days when >= 24 hours).
+    """
+    if time.is_unlimited():
+        return "UNLIMITED"
+    total = int(time.duration.total_seconds())
+    days, rem = divmod(total, 86400)
+    hours, rem = divmod(rem, 3600)
+    minutes, seconds = divmod(rem, 60)
+    if days:
+        return f"{days}-{hours:02d}:{minutes:02d}:{seconds:02d}"
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+
+def _parse_hms(s: str) -> int:
+    """Parse a colon-separated time into total seconds.
+
+    ``N`` -> N minutes; ``M:S`` -> M minutes S seconds; ``H:M:S`` ->
+    H hours M minutes S seconds.
+    """
+    if ":" in s:
+        parts = [int(p) for p in s.split(":")]
+        if len(parts) == 1:
+            return parts[0] * 60
+        if len(parts) == 2:
+            return parts[0] * 60 + parts[1]
+        if len(parts) == 3:
+            return parts[0] * 3600 + parts[1] * 60 + parts[2]
+        raise ValueError(f"Invalid Slurm time: {s!r}")
+    return int(s) * 60
+
+
+def _parse_days_rest(s: str) -> int:
+    """Parse the hours:minutes[:seconds] remainder of a days-hours time.
+
+    Per the man page, ``days-hours:minutes`` means hours and minutes (a
+    two-part remainder is hours:minutes, not minutes:seconds).
+    """
+    parts = [int(p) for p in s.split(":")]
+    if len(parts) == 1:
+        return parts[0] * 3600
+    if len(parts) == 2:
+        return parts[0] * 3600 + parts[1] * 60
+    if len(parts) == 3:
+        return parts[0] * 3600 + parts[1] * 60 + parts[2]
+    raise ValueError(f"Invalid Slurm time: {s!r}")
 
 
 def _parse_conf_key_value(line: str) -> tuple[str, str] | None:
@@ -307,8 +415,41 @@ def _flush_partition_buffer(
         except ValueError:
             pass
 
+    # DefMemPerNode
+    def_mem_node_str = merged_defaults.get("DefMemPerNode", "")
+    if def_mem_node_str:
+        try:
+            pp.def_mem_per_node = int(def_mem_node_str)
+        except ValueError:
+            pass
+
+    # PriorityTier
+    tier_str = merged_defaults.get("PriorityTier", "")
+    if tier_str:
+        try:
+            pp.priority_tier = int(tier_str)
+        except ValueError:
+            pass
+
+    # MaxNodes
+    max_nodes_str = merged_defaults.get("MaxNodes", "")
+    if max_nodes_str:
+        try:
+            pp.max_nodes = int(max_nodes_str)
+        except ValueError:
+            pass
+
+    # MaxCPUsPerNode
+    max_cpus_str = merged_defaults.get("MaxCPUsPerNode", "")
+    if max_cpus_str:
+        try:
+            pp.max_cpus_per_node = int(max_cpus_str)
+        except ValueError:
+            pass
+
     # QOS references
     pp.allow_qos = merged_defaults.get("AllowQOS", "")
+    pp.deny_qos = merged_defaults.get("DenyQOS", "")
     pp.qos = merged_defaults.get("QOS", "")
 
     # Account/Groups references
@@ -318,12 +459,15 @@ def _flush_partition_buffer(
     # TRES billing weights
     pp.tres_billing_weights = merged_defaults.get("TRESBillingWeights", "")
 
-    # Capture the DEFAULT template's TRESBillingWeights as the cluster default
-    if name.upper() == "DEFAULT" and pp.tres_billing_weights:
-        result.default_tres_billing_weights = pp.tres_billing_weights
+    # DEFAULT partition is a template: fold its subparams into the defaults
+    # dict applied to every subsequent real partition (matching Slurm's
+    # _flush_partition_buffer). Its record is skipped by import.
+    if name.upper() == "DEFAULT":
+        for k, v in params.items():
+            defaults[k] = v
 
     # Collect QOS names referenced by this partition
-    for qos_field in (pp.allow_qos, pp.qos):
+    for qos_field in (pp.allow_qos, pp.deny_qos, pp.qos):
         if qos_field and qos_field.upper() != "ALL":
             for qname in qos_field.split(","):
                 qname = qname.strip()
@@ -404,6 +548,9 @@ __all__ = (
     "ParsedPartition",
     "ParsedNode",
     "ParsedSlurmConfig",
+    "SlurmTime",
     "parse_slurm_conf",
+    "parse_slurm_time",
     "parse_tres_weights",
+    "format_slurm_time",
 )

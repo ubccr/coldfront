@@ -19,8 +19,6 @@ per-cluster ``auto_sync_enabled`` setting — it bypasses the auto-sync
 gate entirely.
 """
 
-from __future__ import annotations
-
 import logging
 import sys
 from datetime import timedelta

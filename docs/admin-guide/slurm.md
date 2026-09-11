@@ -71,9 +71,8 @@ of the hierarchy.
 Represents a Slurm compute cluster. Allocatable as a resource — allocations
 can target a cluster directly (granting access to all partitions) or a
 specific partition. Captures the cluster name, tenant, default QOS, QOS
-options, fairshare, features, classification, and Trackable RESources (TRES)
-configuration (`default_tres_billing_weights`, the `Priority*` settings, and
-the `enforce_su_limits` toggle). See [Service Units Billing](#service-units-billing).
+options, fairshare, features, classification, cluster-level slurm.conf
+settings, and an `enforce_su_limits` toggle ( see [Service Units Billing](#service-units-billing)).
 
 ### SlurmPartition
 
@@ -82,6 +81,14 @@ allocatable as a resource. Captures resource limits (max jobs, TRES, wall
 duration), scheduling policies (priority, state, preempt mode, default time),
 QOS references (`allow_qos` for admission control, `qos` for limit enforcement),
 access restrictions (`allow_groups`, `allow_accounts`), and node configuration.
+
+Time-limit fields (`SlurmPartition.max_time`/`default_time`, plus
+`SlurmQOS.max_wall_duration_per_job` and `SlurmAssociation.max_wall_duration_per_job`)
+use a custom `SlurmTimeField`: they store a Slurm duration string
+(e.g. `72:00:00`, `30-12:00:00`, or `UNLIMITED`) and are parsed/rendered with
+`parse_slurm_time`/`format_slurm_time` (man-page formats; `INFINITE` is accepted
+as an `UNLIMITED` synonym). `MaxTime`/`DefaultTime` are captured from both the
+slurm.conf import and the REST `maximums/time`/`defaults/time` NO_VAL structs.
 
 ### SlurmQOS
 
@@ -153,53 +160,64 @@ When an allocation transitions to `active`:
 
 1. **SlurmUser creation** — For each project user, if no `SlurmUser` exists
    for `(user, cluster)`, one is created with `default_account` set to the
-   allocation's `slurm_account`. Existing records are never modified.
-2. **REST API sync** — A targeted handler creates the account, associations,
-   and users in Slurm, then triggers a `slurmctld` cache refresh.
-3. **Permission callback** — Blocks activation if the `SlurmAssociation`
+   allocation's `slurm_account`. The listener reconciles the default account
+   on change (first-account-wins).
+2. **Permission callback** — Blocks activation if the `SlurmAssociation`
    has no `slurm_account` set. An admin must assign the account first.
 
 ### Expiration and Revocation
 
-When an allocation transitions to `expired` or `revoked`:
+When an allocation transitions to `expired`, `revoked`, or `denied`:
 
-1. **Job termination** — Running jobs for each project user on that
-   account+partition are killed via the Slurm REST API.
-2. **Association deletion** — User associations are removed from Slurm.
-3. **SlurmUser reconciliation** — If the removed account was the user's
-   default, another active allocation's account is used. If none remain,
-   the `SlurmUser` is deleted.
+1. **SlurmUser reconciliation** — For each project user, if the removed
+   account was the user's default, another active allocation's account is
+   used. If none remain, the `SlurmUser` is deleted.
 
 ### ProjectUser Changes
 
 - **User added** — `SlurmUser` records are created or updated.
-- **User removed** — Jobs killed, associations deleted, `SlurmUser`
-   reconciled, and a targeted handler enqueued for the REST API sync.
-
----
+- **User removed** — `SlurmUser` records are reconciled/removed. The user's
+  associations are removed by the next batch sync (they are no longer
+  expected).
 
 ## Sync Mechanism
 
-ColdFront uses targeted real-time handlers (fired on activate/expire/revoke/
-ProjectUser delete) plus a periodic batch sync as a safety net.
+ColdFront uses a **batch-only** sync model: a single reconciliation pass
+(`sync_slurm_clusters`) drives both the periodic job and the CLI.
 
-### Periodic Batch Sync (Safety Net)
+### Full Reconciliation (Batch Sync)
 
-A scheduled job runs full reconciliation for each cluster using
-`POST /slurmdb/{version}/config` to upsert the complete accounting state
-in a single HTTP call. After the upsert, ColdFront queries Slurm for all
-associations, compares against its active associations, and deletes any
-orphaned associations that exist in Slurm but have no matching allocation.
+ColdFront's syncs data to Slurm using a desired-state reconciliation algorithm
+which ensures ColdFront's active allocations are set in Slurm and removes anything
+Slurm has that ColdFront no longer expects. The deletion logic only touches
+entities ColdFront can plausibly claim to own. Anything with no ColdFront DB
+row behind it is treated as externally managed and left alone.
 
-This catches drift from manual admin edits and partially-failed targeted
-handlers.
+A scheduled job (`SlurmSyncJob`, every `SLURM_SYNC_INTERVAL` minutes)
+reconciles each cluster. The on-demand `SlurmSyncNowJob` and a
+`coldfront slurm_sync` CLI command run the same pass immediately. Unconfigured
+clusters are skipped by the job and reported as errors by the CLI.
 
-### Auto-Sync Gate
+#### What the Sync Will Remove
 
-Disabled by default per-cluster via `auto_sync_enabled` in
-`SLURMRESTD_CLUSTERS`. When disabled, targeted handlers no-op and the batch
-job skips that cluster. A CLI command (`coldfront slurm_sync`) is always
-available for manual syncs regardless of the setting.
+**Associations** — The sync will remove a user-level association if it is not
+in the expected set. It will kill the user's jobs first. Then it will delete
+the association.
+
+**Users** — The sync will remove a user only if both are true:
+- The user has no expected association.
+- The user has a row in the ColdFront `User` table.
+
+**Accounts** — The sync will remove an account only if both are true:
+- The account has no expected user-level association.
+- The account has a row in the ColdFront `SlurmAccount` table.
+- When the sync removes the account, Slurm will also remove its parent
+  association.
+
+**QOS** — The sync will remove a QOS only if all are true:
+- It has no row in the ColdFront `SlurmQOS` table.
+- No association uses it.
+- The earlier sweeps reported no errors.
 
 ### Usage Sync
 
@@ -304,7 +322,18 @@ present in ColdFront's `SlurmPartition` model.
 `AllowQOS` gates whether a job can submit to the partition based on the
 **job's QOS** (the QOS the user requests via `--qos=` or inherits from
 their association). If the job's QOS is not in the partition's `allow_qos`
-list, the job is rejected with an `ESLURM_INVALID_QOS` error.
+list, the job is rejected at submit — the live stack reports the
+"Invalid account or account/partition combination" error (Slurm's
+no-QOS-access message) rather than an `ESLURM_INVALID_QOS` code.
+
+**Enforcement requires `EnforcePartLimits=ANY` (or YES) in slurm.conf.**
+The submit-time AllowQOS check in `job_mgr.c` is gated by the
+`enforce_part_limits` parameter and is skipped entirely when it is unset
+(the default). Partition `AllowQOS`/`QOS=` can also be pushed at runtime
+via the REST API (`POST /slurm/{version}/partitions/` -> `qos/allowed`)
+— a v0.0.45 (26.05.x) capability; v0.0.44 (25.11.x) exposes only
+`GET /partitions/`. Runtime pushes are in-memory only and are lost on
+`scontrol reconfigure` (which re-reads slurm.conf).
 
 ### QOS (Limit Enforcement)
 
@@ -392,8 +421,8 @@ ColdFront does the conversion.
 
 These are a few of the settings in slurm.conf that relate to billing:
 
-- `PartitionName=DEFAULT TRESBillingWeights="..."` → the cluster-wide default
-- Per-partition `PartitionName=<name> TRESBillingWeights="..."` overrides
+- `PartitionName=DEFAULT TRESBillingWeights="..."` → deafult TRES billing weights for all partitions
+- `PartitionName=<name> TRESBillingWeights="..."` per-partition TRES billing weights
 - `PriorityFlags=MAX_TRES` / `MAX_TRES_GRES` → billing mode (sum vs. max)
 - `PriorityType=priority/multifactor` + `PriorityDecayHalfLife` +
   `PriorityUsageResetPeriod` → enforcement mode (decay vs. hard)
@@ -404,8 +433,10 @@ These settings are automatically imported into ColdFront using the CLI command:
 $ uv run coldfront import_slurm_conf <path>
 ```
 
-The above settings get imported into `SlurmCluster.default_tres_billing_weights`,
-`SlurmPartition.tres_billing_weights`, and the `SlurmCluster.Priority*` fields.
+The `TRESBillingWeights` setting gets imported into `SlurmPartition.tres_billing_weights` 
+(each partition carrying its effective value, DEFAULT respected), and the other settings 
+imported into `SlurmCluster.Priority*` fields. There is no cluster-wide billing default field
+— billing is always per-partition.
 
 ### How Slurm calculates usage
 
@@ -514,9 +545,11 @@ on the account.
 ## REST API Integration
 
 ColdFront includes a custom slurm client which communicates with `slurmrestd`
-over HTTP using JWT authentication. The client supports API versions v0.0.41
-through v0.0.45 with a single set of serializers — all entity schemas are stable
-across these versions.
+over HTTP using JWT authentication. The client supports API versions v0.0.44
+(Slurm 25.11.x) and v0.0.45 (Slurm 26.05.x) with a single set of serializers —
+all entity schemas are stable across these versions. Older API versions
+(v0.0.41–v0.0.43 — Slurm 24.05/24.11/25.05) are not supported; discovery
+refuses them.
 
 SU usage is fetched from `GET /slurmdb/{version}/jobs/` — the job `tres.allocated`
 billing TRES is read with a half-open `[start, end)` overlap query, so any past
@@ -533,22 +566,20 @@ SLURMRED_CLUSTERS = {
     "default": {
         "url": "http://slurmrestd:8080",
         "jwt_token": "...",
-        "api_version": "v0.0.44",
+        "version": "",
         "auth_type": "jwt",
         "timeout": 30,
         "retries": 3,
         "retry_backoff": 1.5,
-        "auto_sync_enabled": False,
     },
     "hpc01": {
         "url": "http://hpc01-restd:8080",
         "jwt_token": "...",
-        "api_version": "v0.0.44",
+        "version": "",
         "auth_type": "jwt",
         "timeout": 30,
         "retries": 3,
         "retry_backoff": 1.5,
-        "auto_sync_enabled": True,
     },
 }
 ```

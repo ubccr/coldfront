@@ -23,8 +23,6 @@ delegate to the task queue.  The actual backend logic is done by the
 so the CLI command can call them directly without going through the queue.
 """
 
-from __future__ import annotations
-
 import logging
 from dataclasses import dataclass, field
 
@@ -90,7 +88,7 @@ def enqueue_activate_allocation(allocation_id: int, cluster_id: int, share_type:
     from coldfront.core.models import Job
 
     Job.enqueue(
-        "coldfront.storage.sync._run_activate_allocation",
+        _run_activate_allocation,
         name=f"StorageActivate:allocation-{allocation_id}:cluster-{cluster_id}",
         args=(),
         kwargs={
@@ -129,7 +127,7 @@ def enqueue_deactivate_allocation(allocation_id: int, cluster_id: int) -> None:
     from coldfront.core.models import Job
 
     Job.enqueue(
-        "coldfront.storage.sync._run_deactivate_allocation",
+        _run_deactivate_allocation,
         name=f"StorageDeactivate:allocation-{allocation_id}:cluster-{cluster_id}",
         args=(),
         kwargs={

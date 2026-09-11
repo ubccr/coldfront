@@ -127,6 +127,8 @@ class SlurmPartitionAPITestCase(APIViewTestCases.APIViewTestCase):
                 "state": "UP",
                 "preempt_mode": "OFF",
                 "def_mem_per_cpu": 2800,
+                "max_time": "3-00:00:00",
+                "default_time": "UNLIMITED",
                 "tags": [t.pk for t in tags],
             },
         ]

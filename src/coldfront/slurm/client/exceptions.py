@@ -5,19 +5,27 @@
 """
 Slurm REST API exception hierarchy.
 
-All Slurm REST API errors inherit from :class:`SlurmException`.
+All Slurm REST API errors inherit from :class:`SlurmError`.
 Callers can catch the base exception to handle any Slurm API failure,
 or catch specific subclasses to react to particular error conditions.
 
-Error codes from the Slurm source (``slurmdb_defs.h``, ``http.c``)
-are mapped to HTTP status categories and raised as typed exceptions
-by :class:`SlurmClient`.
+The hierarchy maps only error codes that the **supported slurmrestd
+versions actually emit** (verified live against the e2e stack). Error
+codes that never occur on the supported versions are deliberately not
+mapped — e.g. the REST layer surfaces auth failures (403) and missing
+entities (404) as 502/503 unavailability and silent success on this
+stack, so ``SlurmAuthError``/``SlurmNotFoundError``/conflict classes
+do not exist.
+
+Mapped live behaviors:
+- 422 / 400 malformed payload -> :class:`SlurmBadRequestError`
+- 502 / 503 / 504 transient or unreachable -> :class:`SlurmUnavailableError`
+- HTTP 200 with a silent no-op (nothing stored) -> the
+  :class:`SlurmNotCreatedError` verification classes
 """
 
-from __future__ import annotations
 
-
-class SlurmException(Exception):
+class SlurmError(Exception):
     """Base exception for all Slurm REST API failures.
 
     Every exception raised by :class:`SlurmClient` inherits from this
@@ -53,30 +61,12 @@ class SlurmException(Exception):
         return " | ".join(parts)
 
 
-class SlurmAuthException(SlurmException):
-    """Authentication or authorization failure.
-
-    Raised when the JWT token is invalid, expired, or lacks the
-    required Slurm admin privileges (403 Unauthorized/Forbidden).
-
-    Maps to ``ESLURM_AUTH_CRED_INVALID``, ``ESLURM_AUTH_EXPIRED``,
-    ``ESLURM_REST_AUTH_FAIL``.
-    """
-
-    def __init__(
-        self,
-        message: str = "Slurm authentication failed",
-        errors: list[str] | None = None,
-        warnings: list[str] | None = None,
-        status_code: int | None = 403,
-    ) -> None:
-        super().__init__(message, errors, warnings, status_code)
-
-
-class SlurmBadRequestException(SlurmException):
+class SlurmBadRequestError(SlurmError):
     """Malformed request body or invalid query parameters.
 
-    Raised when the API rejects the payload as invalid (400 Bad Request).
+    Raised when the API rejects the payload as invalid (400 Bad Request
+    / 422 Unprocessable Entity). Live-verified: an account missing
+    ``description``/``organization`` returns 422 and raises this type.
 
     Maps to ``ESLURM_REST_INVALID_QUERY``, ``ESLURM_REST_FAIL_PARSING``,
     ``ESLURM_REST_INVALID_JOBS_DESC``, ``ESLURM_HTTP_INVALID_CONTENT_LENGTH``.
@@ -92,50 +82,7 @@ class SlurmBadRequestException(SlurmException):
         super().__init__(message, errors, warnings, status_code)
 
 
-class SlurmNotFoundException(SlurmException):
-    """Entity not found in Slurm accounting.
-
-    Raised when a user, account, cluster, or other entity is not found
-    (404 Not Found).
-
-    Maps to ``ESLURM_INVALID_JOB_ID``, ``ESLURM_REST_UNKNOWN_URL``,
-    ``ESLURM_USER_ID_MISSING``.
-    """
-
-    def __init__(
-        self,
-        message: str = "Slurm entity not found",
-        errors: list[str] | None = None,
-        warnings: list[str] | None = None,
-        status_code: int | None = 404,
-    ) -> None:
-        super().__init__(message, errors, warnings, status_code)
-
-
-class SlurmConflictException(SlurmException):
-    """Constraint violation or resource conflict.
-
-    Raised when the API rejects an operation due to a duplicate entity,
-    a default-account protection, or other data integrity conflict
-    (409 Conflict).
-
-    Subclasses provide more granular error handling.
-
-    Maps to ``ESLURM_ALREADY_DB_ENTRY``, ``ESLURM_NO_REMOVE_DEFAULT_ACCOUNT``,
-    ``ESLURM_NO_REMOVE_DEFAULT_QOS``.
-    """
-
-    def __init__(
-        self,
-        message: str = "Slurm resource conflict",
-        errors: list[str] | None = None,
-        warnings: list[str] | None = None,
-        status_code: int | None = 409,
-    ) -> None:
-        super().__init__(message, errors, warnings, status_code)
-
-
-class SlurmUnavailableException(SlurmException):
+class SlurmUnavailableError(SlurmError):
     """Service unavailable or transient failure.
 
     Raised when ``slurmrestd`` cannot reach ``slurmdbd`` or the
@@ -144,6 +91,9 @@ class SlurmUnavailableException(SlurmException):
 
     These are typically transient and should be retried with
     exponential backoff.
+
+    Live-verified: an invalid JWT surfaces as 502/503 (unavailability),
+    not an auth error, so this is the only type raised on bad credentials.
 
     Maps to ``ESLURM_DB_CONNECTION``, ``SLURM_COMMUNICATIONS_CONNECTION_ERROR``,
     ``SLURMCTLD_COMMUNICATIONS_BACKOFF``.
@@ -159,79 +109,91 @@ class SlurmUnavailableException(SlurmException):
         super().__init__(message, errors, warnings, status_code)
 
 
-class SlurmInvalidQueryException(SlurmConflictException):
-    """Ambiguous query matched multiple records.
+class SlurmNotCreatedError(SlurmError):
+    """An entity was requested but did not materialize in Slurm accounting.
 
-    Raised when a query parameter matches more than one entity and
-    the operation requires a single match.
+    Raised when a create operation returns success (HTTP 200, no errors) but
+    the entity does not appear in a follow-up read-back. This catches
+    slurmdbd's **silent no-ops** — e.g. a user with no uid in /etc/passwd, an
+    association whose parent account association does not exist, or a user
+    whose default account is missing — where the REST layer returns a clean
+    response but stores nothing.
 
-    Maps to ``ESLURM_DATA_AMBIGUOUS_QUERY``.
+    Subclasses carry ``missing`` (the entities that failed to materialize) so
+    callers can report precisely which writes were dropped. Unlike the HTTP-
+    mapped exceptions, this is not an HTTP error: the request itself returned
+    200, so ``status_code`` is ``None``.
+
+    Attributes:
+        missing: List of the requested entities that were not stored.
     """
 
     def __init__(
         self,
-        message: str = "Ambiguous Slurm query matched multiple records",
+        message: str = "Slurm entity was not created",
+        missing: list[object] | None = None,
         errors: list[str] | None = None,
         warnings: list[str] | None = None,
-        status_code: int | None = 409,
+        status_code: int | None = None,
     ) -> None:
+        self.missing = missing or []
         super().__init__(message, errors, warnings, status_code)
 
 
-class SlurmUserIdMissingException(SlurmNotFoundException):
-    """User not found in Slurm accounting.
+class SlurmUserNotCreatedError(SlurmNotCreatedError):
+    """One or more users were requested but not recorded in Slurm accounting.
 
-    Raised when attempting to operate on a user that does not exist
-    in the Slurm database.
-
-    Maps to ``ESLURM_USER_ID_MISSING``.
+    The most common cause is a missing OS account: slurmdbd resolves the
+    user's uid against /etc/passwd and silently drops the write when the user
+    does not exist on the cluster. Verify the OS account exists (e.g.
+    ``useradd`` on the cluster nodes), then re-run.
     """
 
     def __init__(
         self,
-        message: str = "Slurm user not found",
+        message: str = "Slurm user(s) were not recorded",
+        missing: list[str] | None = None,
         errors: list[str] | None = None,
         warnings: list[str] | None = None,
-        status_code: int | None = 404,
+        status_code: int | None = None,
     ) -> None:
-        super().__init__(message, errors, warnings, status_code)
+        super().__init__(message, missing, errors, warnings, status_code)
 
 
-class SlurmNoRemoveDefaultAccountException(SlurmConflictException):
-    """Cannot delete an account that is still a user's default.
+class SlurmAccountNotCreatedError(SlurmNotCreatedError):
+    """One or more accounts were requested but not recorded in Slurm accounting.
 
-    Raised when trying to delete an account that is set as the default
-    account for one or more users. The caller must update those users'
-    defaults first before retrying the delete.
-
-    Maps to ``ESLURM_NO_REMOVE_DEFAULT_ACCOUNT``.
+    Usually indicates the cluster rejected the account create (e.g. missing
+    parent account in the hierarchy). Verify the account can be created on
+    the cluster, then re-run.
     """
 
     def __init__(
         self,
-        message: str = "Account is still a user's default account",
+        message: str = "Slurm account(s) were not recorded",
+        missing: list[str] | None = None,
         errors: list[str] | None = None,
         warnings: list[str] | None = None,
-        status_code: int | None = 409,
+        status_code: int | None = None,
     ) -> None:
-        super().__init__(message, errors, warnings, status_code)
+        super().__init__(message, missing, errors, warnings, status_code)
 
 
-class SlurmAlreadyExistsException(SlurmConflictException):
-    """Entity already exists in Slurm accounting.
+class SlurmAssociationNotCreatedError(SlurmNotCreatedError):
+    """One or more associations were requested but not recorded.
 
-    Raised when trying to create an entity that already exists.
-    This can be treated as success — the desired state is already
-    present.
-
-    Maps to ``ESLURM_ALREADY_DB_ENTRY``.
+    Associations are hierarchical: a user-level association requires the
+    parent account-level association to exist first, and slurmdbd resolves
+    the user's uid from /etc/passwd. Either can cause a silent drop. Verify
+    the parent association and the OS account exist, then re-run.
     """
 
     def __init__(
         self,
-        message: str = "Slurm entity already exists",
+        message: str = "Slurm association(s) were not recorded",
+        missing: list[tuple[str, str, str]] | None = None,
         errors: list[str] | None = None,
         warnings: list[str] | None = None,
-        status_code: int | None = 409,
+        status_code: int | None = None,
     ) -> None:
-        super().__init__(message, errors, warnings, status_code)
+        super().__init__(message, missing, errors, warnings, status_code)

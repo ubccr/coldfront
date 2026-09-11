@@ -7,12 +7,11 @@ Pytest fixtures for Slurm REST API client tests.
 
 Provides:
 - ``spec_loader`` — loads OpenAPI spec files and extracts schemas
-- ``spec_version`` — parametrized fixture iterating over v0.0.41–v0.0.45
+- ``spec_version`` — parametrized fixture iterating over the supported
+  versions v0.0.44–v0.0.45 (Slurm 25.11.x / 26.05.x)
 - ``mock_response`` — builds realistic response bodies from spec schemas
 - ``mock_client`` — constructs a :class:`SlurmClient` with a fake version
 """
-
-from __future__ import annotations
 
 import json
 from pathlib import Path
@@ -21,13 +20,13 @@ from typing import Any
 import pytest
 
 from coldfront.slurm.client import SlurmClient
+from coldfront.slurm.client.versions import supported_api_versions, supported_slurm_versions
 
 # ---------------------------------------------------------------------------
 # Path to the checked-in OpenAPI spec files
 # ---------------------------------------------------------------------------
 _SPEC_DIR = Path(__file__).resolve().parent / "specs"
-_SUPPORTED_VERSIONS = ["v0.0.41", "v0.0.42", "v0.0.43", "v0.0.44", "v0.0.45"]
-
+_SUPPORTED_VERSIONS = list(supported_api_versions())
 
 # ---------------------------------------------------------------------------
 # Spec loader fixture
@@ -143,7 +142,7 @@ def spec_loader():
                 return self.components.get(schema_name, {})
             return schema
 
-    def factory(version: str = "v0.0.44"):
+    def factory(version: str = supported_api_versions()[1]):
         return SpecHelper(version)
 
     return factory
@@ -183,7 +182,7 @@ def mock_client():
     def factory(
         base_url: str = "http://mock.slurm.test",
         jwt_token: str = "test-token",
-        version: str = "v0.0.44",
+        version: str = supported_slurm_versions()[0],
         **kwargs,
     ) -> SlurmClient:
         return SlurmClient(

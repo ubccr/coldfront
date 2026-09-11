@@ -1,0 +1,13 @@
+{% extends 'slurm/base.html' %}
+{% load i18n %}
+{% load buttons %}
+
+{% block extra_controls %}
+    <c-button css_class="btn-info" url="?download=true" icon="fa-solid fa-download" type="link" label="Export" />
+{% endblock extra_controls %}
+
+{% block content %}
+    <c-card.code header="{% trans 'Partition Config' %}">
+        {{ section }}
+    </c-card.code>
+{% endblock %}

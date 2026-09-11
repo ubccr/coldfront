@@ -114,6 +114,12 @@ class SlurmPartitionFilterSet(PrimaryModelFilterSet):
         queryset=SlurmQOS.objects.all(),
         label=_("QOS"),
     )
+    deny_qos = django_filters.ModelMultipleChoiceFilter(
+        field_name="deny_qos",
+        queryset=SlurmQOS.objects.all(),
+        distinct=False,
+        label=_("Deny QOS"),
+    )
     locked = django_filters.BooleanFilter(
         label=_("Locked"),
     )
@@ -128,10 +134,15 @@ class SlurmPartitionFilterSet(PrimaryModelFilterSet):
             "description",
             "nodes",
             "priority",
+            "priority_tier",
+            "max_nodes",
+            "max_cpus_per_node",
+            "def_mem_per_node",
             "is_default",
             "state",
             "preempt_mode",
             "qos_id",
+            "deny_qos",
             "locked",
         )
 

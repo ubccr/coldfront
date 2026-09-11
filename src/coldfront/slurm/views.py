@@ -10,7 +10,7 @@ from django.utils.translation import gettext_lazy as _
 from coldfront.ras.models import Allocation
 from coldfront.registry import register_model_view
 from coldfront.slurm import filtersets, forms, tables
-from coldfront.slurm.dump import generate_cluster_dump
+from coldfront.slurm.export import generate_association_dump, generate_partition_config
 from coldfront.slurm.models import (
     SlurmAccount,
     SlurmAccountUsage,
@@ -141,19 +141,19 @@ class SlurmClusterBulkDeleteView(generic.BulkDeleteView):
 
 
 @register_model_view(SlurmCluster, "dump", path="dump")
-class SlurmClusterDumpView(generic.ObjectView):
+class SlurmClusterAssocationExportView(generic.ObjectView):
     queryset = SlurmCluster.objects.all()
     template_name = "slurm/slurmcluster/dump.html"
     actions = ()
     tab = ViewTab(
-        label=_("Export Dump"),
+        label=_("Export Associations"),
         #        badge=lambda obj: _count_active_assocs(obj),
         permission="slurm.view_slurmcluster",
         weight=500,
     )
 
     def get_extra_context(self, request, instance):
-        dump_content = generate_cluster_dump(instance)
+        dump_content = generate_association_dump(instance)
         return {
             "dump_content": dump_content,
         }
@@ -162,7 +162,7 @@ class SlurmClusterDumpView(generic.ObjectView):
         # If the Export button was clicked (download=True), return a file
         if request.GET.get("download"):
             instance = self.get_object(**kwargs)
-            dump_content = generate_cluster_dump(instance)
+            dump_content = generate_association_dump(instance)
             response = HttpResponse(dump_content, content_type="text/plain")
             filename = f"slurm_dump_{instance.name}.txt"
             response["Content-Disposition"] = f"attachment; filename={filename}"
@@ -172,9 +172,38 @@ class SlurmClusterDumpView(generic.ObjectView):
 
 def _count_active_assocs(cluster):
     """Count active associations for a cluster (for the tab badge)."""
-    from coldfront.slurm.dump import _get_active_associations
+    from coldfront.slurm.utils import get_active_associations
 
-    return len(_get_active_associations(cluster))
+    return len(get_active_associations(cluster))
+
+
+@register_model_view(SlurmCluster, "config", path="config")
+class SlurmClusterConfigView(generic.ObjectView):
+    queryset = SlurmCluster.objects.all()
+    template_name = "slurm/slurmcluster/config.html"
+    actions = ()
+    tab = ViewTab(
+        label=_("Export Config"),
+        permission="slurm.view_slurmcluster",
+        weight=500,
+    )
+
+    def get_extra_context(self, request, instance):
+        result = generate_partition_config(instance, client=None)
+        return {
+            "config_content": "\n".join(result["sections"]),
+        }
+
+    def get(self, request, *args, **kwargs):
+        # If the Export button was clicked (download=True), return a file
+        if request.GET.get("download"):
+            instance = self.get_object(**kwargs)
+            result = generate_partition_config(instance, client=None)
+            response = HttpResponse("\n".join(result["sections"]), content_type="text/plain")
+            filename = f"slurm_config_{instance.name}.conf"
+            response["Content-Disposition"] = f"attachment; filename={filename}"
+            return response
+        return super().get(request, *args, **kwargs)
 
 
 #
@@ -198,6 +227,40 @@ class SlurmPartitionView(GetRelatedModelsMixin, generic.ObjectView):
         return {
             "related_models": self.get_related_models(request, instance),
         }
+
+
+@register_model_view(SlurmPartition, "config", path="config")
+class SlurmPartitionExportConfigView(generic.ObjectView):
+    queryset = SlurmPartition.objects.all()
+    template_name = "slurm/slurmpartition/config.html"
+    actions = ()
+    tab = ViewTab(
+        label=_("Export Config"),
+        permission="slurm.view_slurmpartition",
+        weight=500,
+    )
+
+    def _partition_section(self, instance) -> str:
+        result = generate_partition_config(instance.cluster, client=None)
+        for line in result["sections"]:
+            if line.startswith(f"PartitionName={instance.name} "):
+                return line
+        return f"PartitionName={instance.name}"
+
+    def get_extra_context(self, request, instance):
+        return {
+            "section": self._partition_section(instance),
+        }
+
+    def get(self, request, *args, **kwargs):
+        # If the Export button was clicked (download=True), return a file
+        if request.GET.get("download"):
+            instance = self.get_object(**kwargs)
+            response = HttpResponse(self._partition_section(instance), content_type="text/plain")
+            filename = f"slurm_config_{instance.cluster.name}_{instance.name}.conf"
+            response["Content-Disposition"] = f"attachment; filename={filename}"
+            return response
+        return super().get(request, *args, **kwargs)
 
 
 @register_model_view(SlurmPartition, "add", detail=False)

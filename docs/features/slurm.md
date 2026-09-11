@@ -4,7 +4,7 @@ ColdFront has a Slurm app (`coldfront.slurm`) that integrates with the
 [Slurm](https://slurm.schedmd.com/) workload manager. The integration maps
 ColdFront allocations to Slurm accounting entities for access control and
 synchronizes them using the Slurm REST API. ColdFront can also optionally
-intergrate with Slurm's [Trackable RESources (TRES)](https://slurm.schedmd.com/tres.html) for usage tracking and billing.
+integrate with Slurm's [Trackable RESources (TRES)](https://slurm.schedmd.com/tres.html) for usage tracking and billing.
 
 ## Slurm Entities
 
@@ -37,11 +37,20 @@ The Slurm integration uses a hybrid approach:
 1. **Targeted handlers** — When an allocation is activated, the system
    creates associations for all project users on that allocation's
    account and partition. When an allocation expires or is revoked,
-   the system removes those associations and kills running jobs.
+   the system removes those associations and kills running jobs. When a
+   QOS record is created, edited, or removed, the system pushes the QOS
+   definition (or its deletion) to Slurm immediately.
 
 2. **Periodic batch sync** — A scheduled job runs a full reconciliation
-   using `POST /slurmdb/{version}/config` to upsert the complete
-   accounting state. This catches any drift or manual changes that targeted handlers missed.
+   to upsert the complete accounting state, including the QOS
+   definitions. This catches any drift or manual changes that targeted
+   handlers missed.
+
+QOS definitions are stored in Slurm's accounting database, not in the
+slurm.conf configuration file. They are pushed to Slurm like the other
+accounting entities. When a QOS is removed, Slurm removes the QOS from
+any referencing associations and deletes it; fresh records are hard
+deleted, older ones are soft deleted.
 
 3. **Usage sync** — A separate scheduled job (`SlurmUsageSyncJob`)
    aggregates consumed service units daily from Slurm's job accounting
@@ -53,8 +62,8 @@ The Slurm integration uses a hybrid approach:
 ## REST API
 
 The integration communicates with `slurmrestd` over HTTP using JWT
-authentication. The client supports API versions v0.0.41 through v0.0.45 with a
-single set of serializers.
+authentication. The client supports Slurm versions: `25.11.x` and
+`26.05.x`. 
 
 ## Service Units Billing
 

@@ -175,8 +175,8 @@ These settings are defined in `src/coldfront/config/slurm.py`.
 | Variable | Default | Description |
 |---|---|---|
 | `COLDFRONT_SLURMRD_CLUSTERS` | See below | Per-cluster slurmrestd connection settings |
-| `COLDFRONT_SLURM_AUTO_SYNC_ENABLED` | `False` | Enable automatic Slurm sync |
-| `COLDFRONT_SLURM_SYNC_INTERVAL` | `1440` | Sync interval in minutes (default: daily) |
+| `COLDFRONT_SLURM_SYNC_INTERVAL` | `1440` | Batch association-sync interval in minutes (SlurmSyncJob) |
+| `COLDFRONT_SLURM_USAGE_SYNC_INTERVAL` | `1440` | Usage-sync interval in minutes (SlurmUsageSyncJob) |
 
 Per-cluster connection settings use a dictionary format. Each cluster can
 have its own settings or use the `"default"` entry:
@@ -186,12 +186,11 @@ COLDFRONT_SLURMRESTD_CLUSTERS = {
     "default": {
         "url": "http://slurmrestd:8080",
         "jwt_token": "",
-        "api_version": "",
+        "version": "",
         "auth_type": "jwt",
         "timeout": 30,
         "retries": 3,
         "retry_backoff": 1.5,
-        "auto_sync_enabled": False,
     },
 }
 ```
@@ -245,7 +244,6 @@ COLDFRONT_SLURMRESTD_CLUSTERS = {
     "default": {
         "url": "http://slurmrestd:8080",
         "jwt_token": "eyJhbGci...",
-        "auto_sync_enabled": True,
     },
 }
 ```

@@ -131,7 +131,6 @@ class SlurmClusterForm(TenancyForm, PrimaryModelForm):
             "fairshare",
             "features",
             "classification",
-            "default_tres_billing_weights",
             "priority_flags",
             "priority_type",
             "priority_decay_half_life",
@@ -160,7 +159,6 @@ class SlurmClusterForm(TenancyForm, PrimaryModelForm):
             ),
             Fieldset(
                 _("Billing & Enforcement"),
-                "default_tres_billing_weights",
                 "priority_flags",
                 "priority_type",
                 "priority_decay_half_life",
@@ -176,11 +174,6 @@ class SlurmClusterImportForm(TenancyImportForm, PrimaryModelImportForm):
         to_field_name="name",
         required=False,
         label=_("Default QOS"),
-    )
-
-    default_tres_billing_weights = JSONField(
-        label=_("Default TRES Billing Weights"),
-        required=False,
     )
 
     priority_flags = CSVMultipleChoiceField(
@@ -218,7 +211,6 @@ class SlurmClusterImportForm(TenancyImportForm, PrimaryModelImportForm):
             "fairshare",
             "features",
             "classification",
-            "default_tres_billing_weights",
             "priority_flags",
             "priority_type",
             "priority_decay_half_life",
@@ -237,24 +229,6 @@ class SlurmPartitionForm(PrimaryModelForm):
         label=_("Schema"),
         required=False,
         help_text=_("Enter a valid JSON schema to define supported allocation attributes."),
-    )
-
-    max_tres_per_job = JSONField(
-        label=_("Max TRES per Job"),
-        required=False,
-        help_text=_('JSON dict of TRES limits per job (e.g., {"node":5,"cpu":20}).'),
-    )
-
-    max_tres_per_node = JSONField(
-        label=_("Max TRES per node"),
-        required=False,
-        help_text=_('JSON dict of TRES limits per node (e.g., {"gpu":8}).'),
-    )
-
-    max_tres_mins_per_job = JSONField(
-        label=_("Max TRES minutes per job"),
-        required=False,
-        help_text=_('JSON dict of TRES minute limits per job (e.g., {"cpu":360}).'),
     )
 
     allow_qos = forms.ModelMultipleChoiceField(
@@ -311,20 +285,19 @@ class SlurmPartitionForm(PrimaryModelForm):
             "schema",
             "nodes",
             "priority",
+            "priority_tier",
+            "max_nodes",
+            "max_cpus_per_node",
             "is_default",
             "default_time",
             "state",
             "preempt_mode",
             "def_mem_per_cpu",
-            "max_jobs",
-            "max_submit_jobs",
-            "max_tres_per_job",
-            "max_tres_per_node",
-            "max_tres_mins_per_job",
-            "max_wall_duration_per_job",
-            "fairshare",
+            "def_mem_per_node",
+            "max_time",
             "tres_billing_weights",
             "allow_qos",
+            "deny_qos",
             "qos",
             "allow_groups",
             "allow_accounts",
@@ -344,26 +317,25 @@ class SlurmPartitionForm(PrimaryModelForm):
                 "schema",
                 "nodes",
                 "priority",
+                "priority_tier",
+                "max_nodes",
+                "max_cpus_per_node",
                 "is_default",
                 "default_time",
                 "state",
                 "preempt_mode",
                 "def_mem_per_cpu",
+                "def_mem_per_node",
             ),
             Fieldset(
                 _("Limits"),
-                "max_jobs",
-                "max_submit_jobs",
-                "max_tres_per_job",
-                "max_tres_per_node",
-                "max_tres_mins_per_job",
-                "max_wall_duration_per_job",
-                "fairshare",
+                "max_time",
                 "tres_billing_weights",
             ),
             Fieldset(
                 _("Access Control"),
                 "allow_qos",
+                "deny_qos",
                 "qos",
                 "allow_groups",
                 "allow_accounts",
@@ -393,18 +365,16 @@ class SlurmPartitionImportForm(PrimaryModelImportForm):
             "schema",
             "nodes",
             "priority",
+            "priority_tier",
+            "max_nodes",
+            "max_cpus_per_node",
             "is_default",
             "default_time",
             "state",
             "preempt_mode",
             "def_mem_per_cpu",
-            "max_jobs",
-            "max_submit_jobs",
-            "max_tres_per_job",
-            "max_tres_per_node",
-            "max_tres_mins_per_job",
-            "max_wall_duration_per_job",
-            "fairshare",
+            "def_mem_per_node",
+            "max_time",
             "tres_billing_weights",
             "tags",
         ]

@@ -10,9 +10,9 @@ ORM models, and the REST API views.
 
 2. **`pytest-httpserver` for version discovery only** — version probing needs real TCP handshake because `responses` cannot intercept the dynamic URL probing logic that tries multiple version prefixes.
 
-3. **OpenAPI spec files as test oracle** — the 5 spec files (`openapi_spec_v41.json` through `openapi_spec_v45.json`) are copied from the Slurm source tree. Spec-validation tests extract JSON schemas from the spec and verify that `SlurmClient` serializer output conforms. This catches mismatches when upgrading the client.
+3. **OpenAPI spec files as test oracle** — the spec files (`openapi_spec_v44.json`, `openapi_spec_v45.json`) are copied from the Slurm source tree. Spec-validation tests extract JSON schemas from the spec and verify that `SlurmClient` serializer output conforms. This catches mismatches when upgrading the client.
 
-4. **Cross-version parametrization** — `spec_version` fixture iterates over `["v0.0.41", "v0.0.42", "v0.0.43", "v0.0.44", "v0.0.45"]`. Version-compatibility tests confirm that entity schemas (`assoc_rec_set`, `kill_jobs_msg`, etc.) are identical across all versions, justifying the version-agnostic client design.
+4. **Cross-version parametrization** — `spec_version` fixture iterates over the supported versions `["v0.0.44", "v0.0.45"]` (Slurm 25.11.x / 26.05.x). Version-compatibility tests confirm that entity schemas (`assoc_rec_set`, `kill_jobs_msg`, etc.) are identical across these versions, justifying the version-agnostic client design.
 
 5. **`spec_loader` fixture** — lazy-loads spec JSON on demand. The `SpecHelper` class provides `.schema(name)` with automatic version-prefix resolution (e.g., `"assoc_rec_set"` → `"v0.0.44_assoc_rec_set"`), hiding the version-prefixed key convention used in the OpenAPI spec files.
 
@@ -42,17 +42,16 @@ When Slurm releases a new API version (e.g., `v0.0.46`):
       tests/slurm/specs/openapi_spec_v46.json
    ```
 
-2. **Register the version** — add `"v0.0.46"` to `_SUPPORTED_VERSIONS` in
-   `src/coldfront/slurm/client/client.py`:
+2. **Register the version** — add a release -> API mapping entry to
+   `SUPPORTED_SLURM_VERSIONS` in `src/coldfront/slurm/client/versions.py`
+   (the single source of truth; the client's discovery list, the mock suite,
+   and the e2e matrix all derive from it):
    ```python
-   _SUPPORTED_VERSIONS = [
-       "v0.0.41",
-       "v0.0.42",
-       "v0.0.43",
-       "v0.0.44",
-       "v0.0.45",
-       "v0.0.46",  # <-- add here
-   ]
+   SUPPORTED_SLURM_VERSIONS = {
+       "26.05.4": "v0.0.45",
+       "25.11.8": "v0.0.44",
+       "26.11.1": "v0.0.46",  # <-- add here
+   }
    ```
 
 3. **Run the spec-validation tests** — these will automatically pick up the

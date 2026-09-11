@@ -4,28 +4,22 @@
 
 from .client import SlurmClient
 from .exceptions import (
-    SlurmAlreadyExistsException,
-    SlurmAuthException,
-    SlurmBadRequestException,
-    SlurmConflictException,
-    SlurmException,
-    SlurmInvalidQueryException,
-    SlurmNoRemoveDefaultAccountException,
-    SlurmNotFoundException,
-    SlurmUnavailableException,
-    SlurmUserIdMissingException,
+    SlurmAccountNotCreatedError,
+    SlurmAssociationNotCreatedError,
+    SlurmBadRequestError,
+    SlurmError,
+    SlurmNotCreatedError,
+    SlurmUnavailableError,
+    SlurmUserNotCreatedError,
 )
 
 __all__ = [
     "SlurmClient",
-    "SlurmException",
-    "SlurmAuthException",
-    "SlurmBadRequestException",
-    "SlurmNotFoundException",
-    "SlurmConflictException",
-    "SlurmUnavailableException",
-    "SlurmInvalidQueryException",
-    "SlurmUserIdMissingException",
-    "SlurmNoRemoveDefaultAccountException",
-    "SlurmAlreadyExistsException",
+    "SlurmError",
+    "SlurmBadRequestError",
+    "SlurmUnavailableError",
+    "SlurmNotCreatedError",
+    "SlurmUserNotCreatedError",
+    "SlurmAccountNotCreatedError",
+    "SlurmAssociationNotCreatedError",
 ]

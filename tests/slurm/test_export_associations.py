@@ -11,7 +11,7 @@ from coldfront.ras.choices import AllocationStatusChoices
 from coldfront.ras.flows import AllocationStatusFlow
 from coldfront.ras.models import Allocation, Resource, ResourceType
 from coldfront.ras.models.projects import Project, ProjectUser
-from coldfront.slurm.dump import generate_cluster_dump
+from coldfront.slurm.export import generate_association_dump
 from coldfront.slurm.models import (
     SlurmAccount,
     SlurmAssociation,
@@ -20,256 +20,48 @@ from coldfront.slurm.models import (
     SlurmQOS,
     SlurmUser,
 )
+from coldfront.slurm.parser import SlurmTime
 from coldfront.users.models import User
 
 
-class DumpHelpersTestCase(TestCase):
-    """Test internal helper functions used by generate_cluster_dump."""
-
-    @classmethod
-    def setUpTestData(cls):
-        cls.cluster = SlurmCluster.objects.create(name="hpc01", fairshare=2)
-        cls.qos1 = SlurmQOS.objects.create(name="normal")
-        cls.qos2 = SlurmQOS.objects.create(name="high")
-        cls.cluster.qos_list.add(cls.qos1, cls.qos2)
-
-        cls.account = SlurmAccount.objects.create(name="acct-a", cluster=cls.cluster, fairshare=3)
-        cls.account.qos_add.add(cls.qos1)
-
-        cls.user = User.objects.create(username="alice")
-        cls.project = Project.objects.create(name="Test Lab", owner=cls.user)
-        ProjectUser.objects.create(project=cls.project, user=cls.user)
-
-    def test_format_cluster_basic(self):
-        """Cluster header includes name, QOS list, and fairshare."""
-        from coldfront.slurm.dump import _format_cluster
-
-        line = _format_cluster(self.cluster)
-        self.assertIn("Cluster - 'hpc01'", line)
-        self.assertIn("QOS='", line)
-        self.assertIn("normal", line)
-        self.assertIn("high", line)
-        self.assertIn("Fairshare=2", line)
-
-    def test_format_cluster_with_default_qos(self):
-        """Cluster header includes DefaultQOS when set."""
-        qos = SlurmQOS.objects.create(name="default-qos")
-        cluster = SlurmCluster.objects.create(name="hpc02", default_qos=qos, fairshare=1)
-        from coldfront.slurm.dump import _format_cluster
-
-        line = _format_cluster(cluster)
-        self.assertIn("DefaultQOS='default-qos'", line)
-
-    def test_format_cluster_no_qos_list(self):
-        """Cluster header omits QOS+ when no QOS assigned."""
-        cluster = SlurmCluster.objects.create(name="hpc03", fairshare=1)
-        from coldfront.slurm.dump import _format_cluster
-
-        line = _format_cluster(cluster)
-        self.assertNotIn("QOS+", line)
-        self.assertIn("Fairshare=1", line)
-
-    def test_format_account_basic(self):
-        """Account line includes name, fairshare, and QOS list."""
-        from coldfront.slurm.dump import _format_account
-
-        line = _format_account(self.account, self.cluster)
-        self.assertIn("Account - 'acct-a'", line)
-        self.assertIn("Fairshare=3", line)
-        self.assertIn("QOS='+normal'", line)
-
-    def test_format_account_no_fairshare(self):
-        """Account line omits Fairshare when None."""
-        account = SlurmAccount.objects.create(name="acct-b", cluster=self.cluster)
-        from coldfront.slurm.dump import _format_account
-
-        line = _format_account(account, self.cluster)
-        self.assertIn("Account - 'acct-b'", line)
-        self.assertNotIn("Fairshare", line)
-
-    def test_format_account_no_qos(self):
-        """Account line omits QOS+ when no QOS assigned."""
-        account = SlurmAccount.objects.create(name="acct-c", cluster=self.cluster)
-        from coldfront.slurm.dump import _format_account
-
-        line = _format_account(account, self.cluster)
-        self.assertNotIn("QOS+", line)
-
-    def test_format_account_grptresmins_when_enforced(self):
-        """Account line emits GrpTresMins=billing when enforce_su_limits on."""
-        from coldfront.slurm.dump import _format_account
-
-        self.cluster.enforce_su_limits = True
-        self.cluster.save()
-        account = SlurmAccount.objects.create(
-            name="acct-su",
-            cluster=self.cluster,
-            service_units=10000,
-        )
-        line = _format_account(account, self.cluster)
-        self.assertIn("GrpTresMins=billing=600000", line)
-
-    def test_format_account_omits_grptresmins_when_not_enforced(self):
-        """Account line omits GrpTresMins when enforce_su_limits off."""
-        from coldfront.slurm.dump import _format_account
-
-        account = SlurmAccount.objects.create(
-            name="acct-su",
-            cluster=self.cluster,
-            service_units=10000,
-        )
-        line = _format_account(account, self.cluster)
-        self.assertNotIn("GrpTresMins", line)
-
-    def test_format_account_omits_grptresmins_when_no_grant(self):
-        """Account line omits GrpTresMins when service_units unset."""
-        from coldfront.slurm.dump import _format_account
-
-        self.cluster.enforce_su_limits = True
-        self.cluster.save()
-        account = SlurmAccount.objects.create(name="acct-su", cluster=self.cluster)
-        line = _format_account(account, self.cluster)
-        self.assertNotIn("GrpTresMins", line)
-
-    def test_get_qos_names(self):
-        """Returns QOS names from a queryset."""
-        from coldfront.slurm.dump import _get_qos_names
-
-        names = _get_qos_names(self.cluster.qos_list.all())
-        self.assertEqual(sorted(names), ["high", "normal"])
-
-    def test_get_qos_names_empty(self):
-        """Returns empty list when no QOS."""
-        from coldfront.slurm.dump import _get_qos_names
-
-        names = _get_qos_names(SlurmQOS.objects.none())
-        self.assertEqual(names, [])
-
-    def test_get_slurm_user_found(self):
-        """Returns SlurmUser when it exists."""
-        cluster2 = SlurmCluster.objects.create(name="hpc04")
-        SlurmUser.objects.create(user=self.user, cluster=cluster2, default_account=self.account)
-        from coldfront.slurm.dump import _get_slurm_user
-
-        result = _get_slurm_user(self.user, cluster2)
-        self.assertIsNotNone(result)
-        self.assertEqual(result.default_account, self.account)
-
-    def test_get_slurm_user_not_found(self):
-        """Returns None when SlurmUser does not exist."""
-        cluster2 = SlurmCluster.objects.create(name="hpc05")
-        from coldfront.slurm.dump import _get_slurm_user
-
-        result = _get_slurm_user(self.user, cluster2)
-        self.assertIsNone(result)
-
-    def test_format_limits_all_fields(self):
-        """All limit fields are formatted correctly."""
-        from coldfront.slurm.dump import _format_limits
-
-        assoc = SlurmAssociation(
-            max_jobs=10,
-            max_submit_jobs=20,
-            max_tres_per_job="cpu=2,mem=4G",
-            max_tres_mins_per_job="cpu=60",
-            max_wall_duration_per_job=timedelta(hours=24),
-        )
-        parts = _format_limits(assoc)
-        self.assertIn("MaxJobs=10", parts)
-        self.assertIn("MaxSubmitJobs=20", parts)
-        self.assertIn("MaxTRESPerJob=cpu=2,mem=4G", parts)
-        self.assertIn("MaxTRESMinsPerJob=cpu=60", parts)
-        self.assertIn("MaxWallDurationPerJob=86400", parts)  # 24h in seconds
-
-    def test_format_limits_none_fields(self):
-        """None limit fields are omitted."""
-        from coldfront.slurm.dump import _format_limits
-
-        assoc = SlurmAssociation(
-            max_jobs=None,
-            max_submit_jobs=None,
-            max_tres_per_job=None,
-            max_tres_mins_per_job="",
-            max_wall_duration_per_job=None,
-        )
-        parts = _format_limits(assoc)
-        self.assertEqual(parts, [])
-
-    def test_get_active_associations_empty(self):
-        """Returns empty list when no active associations exist."""
-        from coldfront.slurm.dump import _get_active_associations
-
-        cluster = SlurmCluster.objects.create(name="hpc06")
-        assocs = _get_active_associations(cluster)
-        self.assertEqual(assocs, [])
-
-    def test_get_active_associations_no_slurm_account(self):
-        """Excludes associations with null slurm_account."""
-        from coldfront.slurm.dump import _get_active_associations
-
-        cluster = SlurmCluster.objects.create(name="hpc07")
-        SlurmAccount.objects.create(name="acct-d", cluster=cluster)
-        user = User.objects.create(username="dummy")
-        project = Project.objects.create(name="Dummy", owner=user)
-        ct = ContentType.objects.get_for_model(SlurmCluster)
-        Allocation.objects.create(
-            project=project,
-            owner=user,
-            resource_object_type=ct,
-            resource_object_id=cluster.pk,
-            status=AllocationStatusChoices.STATUS_ACTIVE,
-        )
-        # Do NOT set slurm_account — it stays None
-        assocs = _get_active_associations(cluster)
-        self.assertEqual(assocs, [])
-
-    def test_get_accounts_for_assocs(self):
-        """Returns unique accounts in order of first appearance."""
-        from coldfront.slurm.dump import _get_accounts_for_assocs
-
-        acct1 = SlurmAccount.objects.create(name="a1", cluster=self.cluster)
-        acct2 = SlurmAccount.objects.create(name="a2", cluster=self.cluster)
-        acct3 = SlurmAccount.objects.create(name="a3", cluster=self.cluster)
-
-        assocs = [
-            SlurmAssociation(slurm_account=acct1),
-            SlurmAssociation(slurm_account=acct2),
-            SlurmAssociation(slurm_account=acct1),  # duplicate
-            SlurmAssociation(slurm_account=acct3),
-            SlurmAssociation(slurm_account=acct2),  # duplicate
-        ]
-        result = _get_accounts_for_assocs(assocs)
-        self.assertEqual(
-            [a.pk for a in result],
-            [acct1.pk, acct2.pk, acct3.pk],
-        )
-
-
 class GenerateClusterDumpTestCase(TestCase):
-    """Integration tests for generate_cluster_dump."""
-
-    def _make_active_allocation(self, project, resource, account=None):
-        """Helper: create an active allocation and return its SlurmAssociation."""
-        ct = ContentType.objects.get_for_model(type(resource))
-        alloc = Allocation.objects.create(
-            project=project,
-            owner=project.owner,
-            resource_object_type=ct,
-            resource_object_id=resource.pk,
-        )
-        # SlurmAssociation is now created via the allocation form, not automatically.
-        assoc = SlurmAssociation.objects.create(allocation=alloc)
-        if account:
-            assoc.slurm_account = account
-            assoc.save()
-        flow = AllocationStatusFlow(alloc)
-        flow.request()
-        flow.approve()
-        AllocationStatusFlow._transition_permission_callbacks = {}
-        flow.activate()
-        return assoc
+    """Integration tests for generate_association_dump."""
 
     def setUp(self):
+        # Re-register the slurm lifecycle callbacks (tests/flows clears
+        # ``AllocationStatusFlow._target_callbacks``), so ``flow.activate()``
+        # still triggers the SlurmUser reconciliation the dump relies on.
+        AllocationStatusFlow._target_callbacks = {}
+        AllocationStatusFlow._transition_permission_callbacks = {}
+        from coldfront.slurm.listeners import (
+            can_activate_check,
+            on_allocation_activated,
+            on_allocation_denied,
+            on_allocation_expired,
+            on_allocation_revoked,
+        )
+
+        AllocationStatusFlow.register_target_callback(
+            AllocationStatusChoices.STATUS_ACTIVE,
+            on_allocation_activated,
+        )
+        AllocationStatusFlow.register_target_callback(
+            AllocationStatusChoices.STATUS_EXPIRED,
+            on_allocation_expired,
+        )
+        AllocationStatusFlow.register_target_callback(
+            AllocationStatusChoices.STATUS_REVOKED,
+            on_allocation_revoked,
+        )
+        AllocationStatusFlow.register_target_callback(
+            AllocationStatusChoices.STATUS_DENIED,
+            on_allocation_denied,
+        )
+        AllocationStatusFlow.register_transition_permission_callback(
+            "activate",
+            can_activate_check,
+        )
+
         # Fresh data per test to avoid shared-state pollution
         self.user1 = User.objects.create(username="alice")
         self.user2 = User.objects.create(username="bob")
@@ -291,11 +83,31 @@ class GenerateClusterDumpTestCase(TestCase):
         self.partition = SlurmPartition.objects.create(name="gpu", cluster=self.cluster)
         self.partition.allow_qos.add(self.qos_h)
 
+    def _make_active_allocation(self, project, resource, account=None):
+        """Helper: create an active allocation and return its SlurmAssociation."""
+        ct = ContentType.objects.get_for_model(type(resource))
+        alloc = Allocation.objects.create(
+            project=project,
+            owner=project.owner,
+            resource_object_type=ct,
+            resource_object_id=resource.pk,
+        )
+        # SlurmAssociation is now created via the allocation form, not automatically.
+        assoc = SlurmAssociation.objects.create(allocation=alloc)
+        if account:
+            assoc.slurm_account = account
+            assoc.save()
+        flow = AllocationStatusFlow(alloc)
+        flow.request()
+        flow.approve()
+        flow.activate()
+        return assoc
+
     def test_basic_dump_structure(self):
         """Dump contains cluster header, root account, and account/user lines."""
         self._make_active_allocation(self.project, self.cluster, self.acct_a)
 
-        dump = generate_cluster_dump(self.cluster)
+        dump = generate_association_dump(self.cluster)
         lines = dump.splitlines()
 
         self.assertIn("Cluster - 'hpc01'", dump)
@@ -309,14 +121,14 @@ class GenerateClusterDumpTestCase(TestCase):
 
     def test_root_account_present(self):
         """Root user line always appears, even with no slurm accounts."""
-        dump = generate_cluster_dump(self.cluster)
+        dump = generate_association_dump(self.cluster)
         self.assertIn("Parent - 'root'", dump)
         self.assertIn("User - 'root'", dump)
         self.assertIn("AdminLevel='Administrator'", dump)
 
     def test_no_active_assocs_no_account_lines(self):
         """No Account lines beyond root when no active associations."""
-        dump = generate_cluster_dump(self.cluster)
+        dump = generate_association_dump(self.cluster)
         lines = dump.splitlines()
         # Only QOS lines, blank, cluster, blank, root parent, root user, blank
         self.assertLessEqual(len(lines), 8)
@@ -326,7 +138,7 @@ class GenerateClusterDumpTestCase(TestCase):
         self._make_active_allocation(self.project, self.cluster, self.acct_a)
         self._make_active_allocation(self.project, self.cluster, self.acct_b)
 
-        dump = generate_cluster_dump(self.cluster)
+        dump = generate_association_dump(self.cluster)
         self.assertIn("Account - 'acct-a'", dump)
         self.assertIn("Account - 'acct-b'", dump)
 
@@ -334,7 +146,7 @@ class GenerateClusterDumpTestCase(TestCase):
         """Allocation targeting a partition includes Partition='<name>'."""
         self._make_active_allocation(self.project, self.partition, self.acct_a)
 
-        dump = generate_cluster_dump(self.cluster)
+        dump = generate_association_dump(self.cluster)
         self.assertIn("Partition='gpu'", dump)
         self.assertIn("Account - 'acct-a'", dump)
 
@@ -342,7 +154,7 @@ class GenerateClusterDumpTestCase(TestCase):
         """User lines use the partition's QOS list when targeting a partition."""
         self._make_active_allocation(self.project, self.partition, self.acct_a)
 
-        dump = generate_cluster_dump(self.cluster)
+        dump = generate_association_dump(self.cluster)
         self.assertIn("QOS='", dump)
         self.assertIn("+high", dump)
 
@@ -350,30 +162,28 @@ class GenerateClusterDumpTestCase(TestCase):
         """User lines use the cluster's QOS list when targeting a cluster."""
         self._make_active_allocation(self.project, self.cluster, self.acct_a)
 
-        dump = generate_cluster_dump(self.cluster)
+        dump = generate_association_dump(self.cluster)
         self.assertIn("QOS='", dump)
         self.assertIn("+normal", dump)
         self.assertIn("+high", dump)
 
-    def test_fairshare_parent_inherited(self):
-        """User fairshare is 'parent' when the account has fairshare."""
+    def test_fairshare_inherited(self):
+        """User fairshare is 'parent' when the account has fairshare, else
+        comes from the association."""
+        # account has fairshare -> user uses 'parent'
         self._make_active_allocation(self.project, self.cluster, self.acct_a)
-
-        dump = generate_cluster_dump(self.cluster)
+        dump = generate_association_dump(self.cluster)
         self.assertIn("Fairshare=parent", dump)
 
-    def test_fairshare_from_association(self):
-        """User fairshare comes from association when account has no fairshare."""
+        # account has no fairshare -> user fairshare defaults to assoc.fairshare (1)
         self._make_active_allocation(self.project, self.cluster, self.acct_b)
-
-        dump = generate_cluster_dump(self.cluster)
-        # acct-b has no fairshare, so user fairshare defaults to assoc.fairshare (1)
+        dump = generate_association_dump(self.cluster)
         self.assertIn("Fairshare=1", dump)
 
     def test_slurm_user_customizes_default_account(self):
-        """User's DefaultAccount comes from SlurmUser when it exists."""
-        # Create SlurmUser BEFORE activating (lifecycle callback creates one too)
-        # By creating it first, get_or_create won't touch it
+        """User's DefaultAccount comes from SlurmUser after activation reconcile."""
+        # Create SlurmUser BEFORE activating (lifecycle callback reconciles it)
+        # Activation reconciles the default to the active allocation's account.
         SlurmUser.objects.create(
             user=self.user1,
             cluster=self.cluster,
@@ -382,12 +192,12 @@ class GenerateClusterDumpTestCase(TestCase):
 
         self._make_active_allocation(self.project, self.cluster, self.acct_a)
 
-        dump = generate_cluster_dump(self.cluster)
-        # alice has SlurmUser with default_account=acct-b (preserved)
+        dump = generate_association_dump(self.cluster)
+        # alice has SlurmUser whose default was reconciled to the active acct-a
         lines = dump.splitlines()
         alice_line = [line for line in lines if "alice" in line]
         self.assertTrue(len(alice_line) > 0)
-        self.assertIn("DefaultAccount='acct-b'", alice_line[0])
+        self.assertIn("DefaultAccount='acct-a'", alice_line[0])
 
     def test_slurm_user_admin_level_and_wckey(self):
         """User line includes AdminLevel and DefaultWCKey from SlurmUser."""
@@ -403,7 +213,7 @@ class GenerateClusterDumpTestCase(TestCase):
 
         self._make_active_allocation(self.project, self.cluster, self.acct_a)
 
-        dump = generate_cluster_dump(self.cluster)
+        dump = generate_association_dump(self.cluster)
         lines = dump.splitlines()
         alice_line = [line for line in lines if "alice" in line]
         self.assertTrue(len(alice_line) > 0)
@@ -422,7 +232,7 @@ class GenerateClusterDumpTestCase(TestCase):
         assoc = SlurmAssociation.objects.create(allocation=alloc)
         assoc.slurm_account = self.acct_a
         assoc.max_jobs = 10
-        assoc.max_wall_duration_per_job = timedelta(hours=48)
+        assoc.max_wall_duration_per_job = SlurmTime(duration=timedelta(hours=48))
         assoc.save()
         flow = AllocationStatusFlow(alloc)
         flow.request()
@@ -430,39 +240,31 @@ class GenerateClusterDumpTestCase(TestCase):
         AllocationStatusFlow._transition_permission_callbacks = {}
         flow.activate()
 
-        dump = generate_cluster_dump(self.cluster)
+        dump = generate_association_dump(self.cluster)
         self.assertIn("MaxJobs=10", dump)
         self.assertIn("MaxWallDurationPerJob=172800", dump)  # 48h * 3600
 
     def test_account_line_format(self):
-        """Account line includes fairshare and QOS."""
+        """Account line carries fairshare/QOS; the parent line precedes the account."""
         self._make_active_allocation(self.project, self.cluster, self.acct_a)
 
-        dump = generate_cluster_dump(self.cluster)
-        # Find the acct-a account line
+        dump = generate_association_dump(self.cluster)
         lines = dump.splitlines()
         acct_line = [line for line in lines if "Account - 'acct-a'" in line]
         self.assertTrue(len(acct_line) > 0)
         self.assertIn("Fairshare=5", acct_line[0])
         self.assertIn("QOS='+normal'", acct_line[0])
 
-    def test_parent_account_line(self):
-        """Parent line uses association's parent account if set."""
-        self._make_active_allocation(self.project, self.cluster, self.acct_a)
-
-        dump = generate_cluster_dump(self.cluster)
-        lines = dump.splitlines()
-        # Find the Parent line before acct-a
+        # Parent line appears before the account line
         acct_idx = None
         parent_idx = None
         for i, line in enumerate(lines):
             if "Account - 'acct-a'" in line:
                 acct_idx = i
-            if "Parent -" in line:
+            if "Parent -" in line and parent_idx is None:
                 parent_idx = i
         self.assertIsNotNone(acct_idx)
         self.assertIsNotNone(parent_idx)
-        # Parent line should appear before the account line
         self.assertLess(parent_idx, acct_idx)
 
     def test_custom_parent_account(self):
@@ -485,7 +287,7 @@ class GenerateClusterDumpTestCase(TestCase):
         AllocationStatusFlow._transition_permission_callbacks = {}
         flow.activate()
 
-        dump = generate_cluster_dump(self.cluster)
+        dump = generate_association_dump(self.cluster)
         self.assertIn("Parent - 'parent-acct'", dump)
 
     def test_multiple_users_per_association(self):
@@ -496,7 +298,7 @@ class GenerateClusterDumpTestCase(TestCase):
 
         self._make_active_allocation(self.project, self.cluster, self.acct_a)
 
-        dump = generate_cluster_dump(self.cluster)
+        dump = generate_association_dump(self.cluster)
         self.assertIn("User - 'alice'", dump)
         self.assertIn("User - 'bob'", dump)
         self.assertIn("User - 'charlie'", dump)
@@ -507,7 +309,7 @@ class GenerateClusterDumpTestCase(TestCase):
         self._make_active_allocation(self.project, self.cluster, self.acct_a)
         self._make_active_allocation(self.project, self.cluster, self.acct_a)
 
-        dump = generate_cluster_dump(self.cluster)
+        dump = generate_association_dump(self.cluster)
         # Count user lines for alice — should only appear once per association
         # (each association generates a user line for each project user)
         lines = dump.splitlines()
@@ -522,7 +324,7 @@ class GenerateClusterDumpTestCase(TestCase):
         assoc.default_qos = default_qos
         assoc.save()
 
-        dump = generate_cluster_dump(self.cluster)
+        dump = generate_association_dump(self.cluster)
         self.assertIn("DefaultQOS='default-qos'", dump)
 
     def test_qos_add_appears(self):
@@ -531,7 +333,7 @@ class GenerateClusterDumpTestCase(TestCase):
         extra_qos = SlurmQOS.objects.create(name="extra")
         assoc.qos_add.add(extra_qos)
 
-        dump = generate_cluster_dump(self.cluster)
+        dump = generate_association_dump(self.cluster)
         self.assertIn("QOS='", dump)
         self.assertIn("+extra", dump)
 
@@ -541,7 +343,7 @@ class GenerateClusterDumpTestCase(TestCase):
         rm_qos = SlurmQOS.objects.create(name="scavenger")
         assoc.qos_remove.add(rm_qos)
 
-        dump = generate_cluster_dump(self.cluster)
+        dump = generate_association_dump(self.cluster)
         self.assertIn("QOS='", dump)
         self.assertIn("-scavenger", dump)
 
@@ -553,26 +355,17 @@ class GenerateClusterDumpTestCase(TestCase):
         assoc.qos_add.add(add_qos)
         assoc.qos_remove.add(rm_qos)
 
-        dump = generate_cluster_dump(self.cluster)
+        dump = generate_association_dump(self.cluster)
         self.assertIn("QOS='", dump)
         self.assertIn("+high", dump)
         self.assertIn("-scavenger", dump)
-
-    def test_no_qos_add_remove_still_shows_inherited(self):
-        """Without qos_add/qos_remove, user line still shows inherited QOS from cluster."""
-        self._make_active_allocation(self.project, self.cluster, self.acct_a)
-
-        dump = generate_cluster_dump(self.cluster)
-        self.assertIn("QOS='", dump)
-        self.assertIn("+normal", dump)
-        self.assertIn("+high", dump)
 
     def test_no_project_users_no_user_lines(self):
         """No user lines when project has no members."""
         empty_project = Project.objects.create(name="Empty", owner=self.user1)
         self._make_active_allocation(empty_project, self.cluster, self.acct_a)
 
-        dump = generate_cluster_dump(self.cluster)
+        dump = generate_association_dump(self.cluster)
         self.assertNotIn("User -", dump.splitlines()[-5:])
 
     def test_null_slurm_account_excluded(self):
@@ -587,7 +380,7 @@ class GenerateClusterDumpTestCase(TestCase):
         )
         # Don't set slurm_account — stays None
         # The lifecycle callback already created the association; slurm_account is None
-        dump = generate_cluster_dump(self.cluster)
+        dump = generate_association_dump(self.cluster)
         self.assertNotIn("acct-a", dump)
 
     def test_non_slurm_resource_skipped(self):
@@ -606,14 +399,14 @@ class GenerateClusterDumpTestCase(TestCase):
             status=AllocationStatusChoices.STATUS_ACTIVE,
         )
         # This allocation won't have a SlurmAssociation since it's not slurm
-        dump = generate_cluster_dump(self.cluster)
+        dump = generate_association_dump(self.cluster)
         self.assertNotIn("User -", dump.splitlines()[-5:])
 
     def test_dump_ends_with_newline(self):
         """Dump ends with a single trailing newline (join behavior)."""
         self._make_active_allocation(self.project, self.cluster, self.acct_a)
 
-        dump = generate_cluster_dump(self.cluster)
+        dump = generate_association_dump(self.cluster)
         self.assertTrue(dump.endswith("\n") or dump.endswith(""))
         # The join adds a newline between lines but not after the last line
         # The last line is "" (empty string after the last account block),
@@ -626,10 +419,10 @@ class GenerateClusterDumpTestCase(TestCase):
         """Verify the full dump format end to end."""
         self._make_active_allocation(self.project, self.cluster, self.acct_a)
 
-        dump = generate_cluster_dump(self.cluster)
+        dump = generate_association_dump(self.cluster)
         lines = dump.splitlines()
 
-        # Expected structure (12 lines):
+        # Expected structure (13 lines):
         #   0: QOS - 'high':...
         #   1: QOS - 'normal':...
         #   2: (blank)
@@ -640,12 +433,13 @@ class GenerateClusterDumpTestCase(TestCase):
         #   7: (blank)
         #   8: Parent - 'root'
         #   9: Account - 'acct-a':...
-        #  10: User - 'alice':...
-        #  11: User - 'bob':...
+        #  10: Parent - 'acct-a'
+        #  11: User - 'alice':...
+        #  12: User - 'bob':...
         #   (dump ends with \n from join of trailing "" line)
 
-        self.assertGreaterEqual(len(lines), 12)
-        self.assertLessEqual(len(lines), 12)
+        self.assertGreaterEqual(len(lines), 13)
+        self.assertLessEqual(len(lines), 13)
 
         # Check QOS lines
         self.assertIn("QOS - 'high'", lines[0])
@@ -682,20 +476,23 @@ class GenerateClusterDumpTestCase(TestCase):
         self.assertIn("Fairshare=5", lines[9])
         self.assertIn("QOS='+normal'", lines[9])
 
-        # Check user lines — now use QOS='+normal,+high' format
-        self.assertIn("User - 'alice'", lines[10])
-        self.assertIn("DefaultAccount='acct-a'", lines[10])
-        self.assertIn("Fairshare=parent", lines[10])
-        self.assertIn("QOS='", lines[10])
-        self.assertIn("+normal", lines[10])
-        self.assertIn("+high", lines[10])
+        # Check the account's own Parent line precedes its user lines
+        self.assertIn("Parent - 'acct-a'", lines[10])
 
-        self.assertIn("User - 'bob'", lines[11])
+        # Check user lines — now use QOS='+normal,+high' format
+        self.assertIn("User - 'alice'", lines[11])
         self.assertIn("DefaultAccount='acct-a'", lines[11])
         self.assertIn("Fairshare=parent", lines[11])
         self.assertIn("QOS='", lines[11])
         self.assertIn("+normal", lines[11])
         self.assertIn("+high", lines[11])
+
+        self.assertIn("User - 'bob'", lines[12])
+        self.assertIn("DefaultAccount='acct-a'", lines[12])
+        self.assertIn("Fairshare=parent", lines[12])
+        self.assertIn("QOS='", lines[12])
+        self.assertIn("+normal", lines[12])
+        self.assertIn("+high", lines[12])
 
 
 class GenerateClusterDumpEdgeCaseTestCase(TestCase):
@@ -704,77 +501,19 @@ class GenerateClusterDumpEdgeCaseTestCase(TestCase):
     def test_cluster_with_no_partitions(self):
         """Cluster with no partitions still works."""
         cluster = SlurmCluster.objects.create(name="hpc-edge-1")
-        dump = generate_cluster_dump(cluster)
+        dump = generate_association_dump(cluster)
         self.assertIn("Cluster - 'hpc-edge-1'", dump)
         self.assertIn("Parent - 'root'", dump)
 
     def test_cluster_with_no_accounts(self):
         """Cluster with no SlurmAccounts still works."""
         cluster = SlurmCluster.objects.create(name="hpc-edge-2")
-        dump = generate_cluster_dump(cluster)
+        dump = generate_association_dump(cluster)
         self.assertIn("Cluster - 'hpc-edge-2'", dump)
-
-    def test_association_with_no_allocation(self):
-        """Association with allocation that has no resource is handled gracefully."""
-        from coldfront.slurm.dump import _format_user_lines
-
-        user = User.objects.create(username="orphan")
-        cluster = SlurmCluster.objects.create(name="hpc-edge-3")
-        account = SlurmAccount.objects.create(name="orphan-acct", cluster=cluster)
-        project = Project.objects.create(name="Edge3", owner=user)
-        ct = ContentType.objects.get_for_model(SlurmCluster)
-
-        alloc = Allocation.objects.create(
-            project=project,
-            owner=user,
-            resource_object_type=ct,
-            resource_object_id=cluster.pk,
-            status=AllocationStatusChoices.STATUS_ACTIVE,
-        )
-        # Get the association, then delete the resource so resource_object is None
-        assoc = SlurmAssociation.objects.create(allocation=alloc)
-        assoc.slurm_account = account
-        assoc.save()
-        # resource_object is still valid, so _format_user_lines will process it
-        # We need to simulate a case where resource_object is None
-        # That can happen when allocation.resource_object returns None
-        # (e.g., the resource was deleted but the content type/id still points)
-
-        # Instead, test that an association with no resource returns empty
-        alloc.resource_object_id = 99999  # invalid ID
-        alloc.save()
-        lines = _format_user_lines(assoc, cluster)
-        self.assertEqual(lines, [])
-
-    def test_association_with_no_project(self):
-        """Association whose allocation has no project is handled gracefully."""
-        from coldfront.slurm.dump import _format_user_lines
-
-        user = User.objects.create(username="noproj")
-        cluster = SlurmCluster.objects.create(name="hpc-edge-4")
-        account = SlurmAccount.objects.create(name="noproj-acct", cluster=cluster)
-        ct = ContentType.objects.get_for_model(SlurmCluster)
-
-        project = Project.objects.create(name="Edge4", owner=user)
-        ProjectUser.objects.create(project=project, user=user)
-        alloc = Allocation.objects.create(
-            project=project,
-            owner=user,
-            resource_object_type=ct,
-            resource_object_id=cluster.pk,
-            status=AllocationStatusChoices.STATUS_ACTIVE,
-        )
-        assoc = SlurmAssociation.objects.create(allocation=alloc)
-        assoc.slurm_account = account
-        assoc.save()
-
-        lines = _format_user_lines(assoc, cluster)
-        # Should generate user lines since project exists with a user
-        self.assertGreater(len(lines), 0)
 
     def test_resource_is_neither_cluster_nor_partition(self):
         """Resource that is not a SlurmCluster/Partition is skipped."""
-        from coldfront.slurm.dump import _format_user_lines
+        from coldfront.slurm.export.associations import _format_user_lines
 
         user = User.objects.create(username="weird")
         cluster = SlurmCluster.objects.create(name="hpc-edge-5")

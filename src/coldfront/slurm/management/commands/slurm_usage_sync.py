@@ -12,11 +12,9 @@ Usage::
     coldfront slurm_usage_sync --start 2024-01-01 --end 2024-01-10
     coldfront slurm_usage_sync --cluster hpc01 --start 2024-01-01 --end 2024-01-10
 
-This command runs synchronously and bypasses the per-cluster ``auto_sync_enabled``
-gate — it is the admin re-ingest / repair path.
+This command runs synchronously. It skips clusters without slurmrestd
+configured — unconfigured clusters are reported as failures.
 """
-
-from __future__ import annotations
 
 import logging
 from datetime import date
@@ -63,7 +61,7 @@ class Command(BaseCommand):
                     self.stderr.write(self.style.ERROR(f"Cluster '{cluster_arg}' not found"))
                     return
 
-        from coldfront.slurm.sync import _resolve_catchup_range, _run_usage_sync
+        from coldfront.slurm.sync import resolve_catchup_range, run_usage_sync
 
         clusters = SlurmCluster.objects.all()
         if cluster_id is not None:
@@ -78,7 +76,7 @@ class Command(BaseCommand):
                     self.stderr.write(self.style.ERROR(f"Invalid date: {exc}"))
                     return
             else:
-                rng = _resolve_catchup_range(cluster)
+                rng = resolve_catchup_range(cluster)
                 if rng is None:
                     self.stdout.write(
                         self.style.NOTICE(f"[SKIP] {cluster.name}: no days to sync (last={cluster.last_usage_sync})")
@@ -87,7 +85,7 @@ class Command(BaseCommand):
                 start_day, end_day = rng
 
             self.stdout.write(self.style.NOTICE(f"Starting usage sync for {cluster.name}: [{start_day} .. {end_day}]"))
-            report = _run_usage_sync(cluster, start_day, end_day)
+            report = run_usage_sync(cluster, start_day, end_day)
             if report.success:
                 self.stdout.write(
                     self.style.SUCCESS(

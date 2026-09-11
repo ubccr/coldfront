@@ -7,19 +7,26 @@ Slurm system jobs.
 
 Periodic and on-demand jobs that drive the Slurm accounting sync:
 
-* ``SlurmSyncJob`` — periodic batch sync (default daily).
-* ``SlurmSyncNowJob`` — on-demand sync (triggered by admin via UI or CLI).
+* ``SlurmSyncJob`` — periodic batch access-control sync.
+* ``SlurmSyncNowJob`` — on-demand access-control sync (admin-triggered).
+* ``SlurmUsageSyncJob`` — periodic SU usage ingest.
+* ``SlurmUsageSyncNowJob`` — on-demand SU usage ingest.
+
+Both sync paths are batch-only: they call the single reconciliation code path
+(``sync_slurm_clusters`` for access-control, ``run_usage_sync`` for usage) and
+skip clusters that have no slurmrestd configured.
 """
 
-from __future__ import annotations
-
 import logging
+
+from django.conf import settings
 
 from coldfront.core.jobs.registry import system_job
 from coldfront.core.jobs.runner import JobRunner
 from coldfront.core.notifications import send_system_notification
 from coldfront.slurm.models import SlurmCluster
-from coldfront.slurm.sync import _auto_sync_enabled, _resolve_catchup_range, _run_usage_sync
+from coldfront.slurm.sync import resolve_catchup_range, run_usage_sync
+from coldfront.slurm.utils import slurmrestd_configured
 
 __all__ = (
     "SlurmSyncJob",
@@ -31,43 +38,49 @@ __all__ = (
 logger = logging.getLogger(__name__)
 
 
-@system_job(interval=1440)  # daily by default
+@system_job(interval=settings.SLURM_SYNC_INTERVAL)
 class SlurmSyncJob(JobRunner):
     """
     Periodic batch sync of Slurm accounting.
 
-    Runs a full reconciliation sync via :func:`run_sync` for all clusters.
-    Respects the per-cluster ``auto_sync_enabled`` setting — when disabled
-    for all clusters the job logs a message and returns without rescheduling.
+    Runs a full reconciliation sync via :func:`sync_slurm_clusters` for all
+    clusters that have slurmrestd configured. Clusters without slurmrestd are
+    skipped; when none are configured the job logs a message and returns
+    without rescheduling.
     """
 
     class Meta:
         name = "coldfront.slurm.jobs.SlurmSyncJob"
 
     def run(self, *_args, **_kwargs):
-        from coldfront.slurm.sync import run_sync
+        from coldfront.slurm.sync import sync_slurm_clusters
 
-        # Check if any cluster has auto_sync enabled
         clusters = SlurmCluster.objects.all()
-        enabled_clusters = [c for c in clusters if _auto_sync_enabled(c)]
-        if not enabled_clusters:
-            self.logger.info("Slurm auto sync disabled for all clusters — skipping scheduled batch")
+        configured = [c for c in clusters if slurmrestd_configured(c)]
+        if not configured:
+            self.logger.info("No Slurm clusters have slurmrestd configured — skipping scheduled batch")
             return None  # prevents rescheduling
 
         self.logger.info(
             "Starting Slurm batch sync for %d cluster(s)",
-            len(enabled_clusters),
+            len(configured),
         )
-        reports = run_sync()
+        reports = sync_slurm_clusters([c.name for c in configured])
         for r in reports:
             if r.success:
                 self.logger.info(
-                    "Cluster '%s' synced: %d accounts, %d associations, %d users created; %d associations deleted",
+                    "Cluster '%s' synced: %d accounts, %d associations, %d users created, %d QOS synced; "
+                    "%d assocs / %d users / %d accounts / %d QOS deleted, %d jobs killed",
                     r.cluster,
                     r.accounts_created,
                     r.associations_created,
                     r.users_created,
+                    r.qos_synced,
                     r.associations_deleted,
+                    r.users_deleted,
+                    r.accounts_deleted,
+                    r.qos_deleted,
+                    r.jobs_killed,
                 )
             else:
                 self.logger.warning(
@@ -96,10 +109,15 @@ class SlurmSyncNowJob(JobRunner):
         name = "coldfront.slurm.jobs.SlurmSyncNowJob"
 
     def run(self, *_args, cluster_id=None, **_kwargs):
-        from coldfront.slurm.sync import run_sync
+        from coldfront.slurm.sync import sync_slurm_clusters
+
+        names = None
+        if cluster_id is not None:
+            cluster = SlurmCluster.objects.get(pk=cluster_id)
+            names = [cluster.name]
 
         self.logger.info("Starting on-demand Slurm sync (cluster_id=%s)", cluster_id)
-        reports = run_sync(cluster_id=cluster_id)
+        reports = sync_slurm_clusters(names)
         for r in reports:
             if r.success:
                 self.logger.info(
@@ -121,27 +139,27 @@ class SlurmSyncNowJob(JobRunner):
         return True
 
 
-@system_job(interval=1440)  # daily by default
+@system_job(interval=settings.SLURM_USAGE_SYNC_INTERVAL)
 class SlurmUsageSyncJob(JobRunner):
     """
-    Periodic daily SU usage ingest for all clusters.
+    Periodic daily SU usage ingest for all configured clusters.
 
     Computes a capped catch-up range from ``SlurmCluster.last_usage_sync``
-    and ingests per-account daily usage via :func:`_run_usage_sync`.
+    and ingests per-account daily usage via :func:`run_usage_sync`.
     """
 
     class Meta:
         name = "coldfront.slurm.jobs.SlurmUsageSyncJob"
 
     def run(self, *_args, **_kwargs):
-        clusters = SlurmCluster.objects.all()
+        clusters = [c for c in SlurmCluster.objects.all() if slurmrestd_configured(c)]
         if not clusters:
-            self.logger.info("No Slurm clusters configured — skipping usage sync")
+            self.logger.info("No Slurm clusters have slurmrestd configured — skipping usage sync")
             return None  # prevents rescheduling
 
         ok = 0
         for cluster in clusters:
-            rng = _resolve_catchup_range(cluster)
+            rng = resolve_catchup_range(cluster)
             if rng is None:
                 self.logger.info(
                     "Cluster '%s': no days to sync (last=%s)",
@@ -150,7 +168,7 @@ class SlurmUsageSyncJob(JobRunner):
                 )
                 continue
             start_day, end_day = rng
-            report = _run_usage_sync(cluster, start_day, end_day)
+            report = run_usage_sync(cluster, start_day, end_day)
             if report.success:
                 ok += 1
                 self.logger.info(
@@ -189,7 +207,7 @@ class SlurmUsageSyncNowJob(JobRunner):
 
     If ``start``/``end`` (YYYY-MM-DD) are given, ingests exactly that range.
     Otherwise runs the normal capped catch-up range via
-    :func:`_resolve_catchup_range`.  Not registered as a periodic system
+    :func:`resolve_catchup_range`.  Not registered as a periodic system
     job — enqueued as a single fire-and-forget task.
     """
 
@@ -199,11 +217,11 @@ class SlurmUsageSyncNowJob(JobRunner):
     def run(self, *_args, cluster_id=None, start=None, end=None, **_kwargs):
         from datetime import date
 
-        clusters = SlurmCluster.objects.all()
+        clusters = [c for c in SlurmCluster.objects.all() if slurmrestd_configured(c)]
         if cluster_id is not None:
-            clusters = clusters.filter(pk=cluster_id)
+            clusters = [c for c in clusters if c.pk == cluster_id]
         if not clusters:
-            self.logger.info("No Slurm clusters configured — skipping usage sync")
+            self.logger.info("No Slurm clusters have slurmrestd configured — skipping usage sync")
             return None
 
         for cluster in clusters:
@@ -211,7 +229,7 @@ class SlurmUsageSyncNowJob(JobRunner):
                 start_day = date.fromisoformat(start)
                 end_day = date.fromisoformat(end)
             else:
-                rng = _resolve_catchup_range(cluster)
+                rng = resolve_catchup_range(cluster)
                 if rng is None:
                     self.logger.info(
                         "Cluster '%s': no days to sync (last=%s)",
@@ -220,7 +238,7 @@ class SlurmUsageSyncNowJob(JobRunner):
                     )
                     continue
                 start_day, end_day = rng
-            report = _run_usage_sync(cluster, start_day, end_day)
+            report = run_usage_sync(cluster, start_day, end_day)
             if report.success:
                 self.logger.info(
                     "Cluster '%s' usage synced: %d days, %d accounts, %d jobs",

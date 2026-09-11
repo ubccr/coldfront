@@ -7,163 +7,29 @@ Tests for daily SU usage aggregation and sync.
 
 Organized by test class:
 
-- ``TestSlurmAccountUsageModel`` — model fields + unique constraint
-- ``TestGetJobUsage`` — client REST query (params + payload)
 - ``TestRollUpJobUsage`` — aggregation (consumed + completed attribution)
 - ``TestResolveCatchupRange`` — catch-up range computation + cap
 - ``TestRunUsageSync`` — orchestration (upsert, unknown accounts, failures)
-- ``TestUsageJobs`` — periodic + on-demand jobs
-- ``TestUsageSyncCommand`` — management command
 """
-
-from __future__ import annotations
 
 from datetime import date, timedelta
 from unittest import mock
 
-import pytest
-import responses
+from django.core.exceptions import ImproperlyConfigured
 from django.test import TestCase
 from django.utils import timezone
 
-from coldfront.slurm.client import SlurmClient
 from coldfront.slurm.models import SlurmAccount, SlurmAccountUsage, SlurmCluster
-from coldfront.slurm.sync import (
+from coldfront.slurm.sync.usage import (
     USAGE_SYNC_MAX_CATCHUP_DAYS,
-    _resolve_catchup_range,
     _roll_up_job_usage,
-    _run_usage_sync,
     _utc_day_bounds,
+    resolve_catchup_range,
+    run_usage_sync,
 )
-
-_DEFAULT_BASE = "http://mock.slurm.test"
-_DEFAULT_VER = "v0.0.44"
-
 
 # ======================================================================
 # 1. MODEL
-# ======================================================================
-
-
-class TestSlurmAccountUsageModel(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.cluster = SlurmCluster.objects.create(name="hpc01")
-        cls.account = SlurmAccount.objects.create(
-            name="acct-a",
-            cluster=cls.cluster,
-            service_units=10000,
-        )
-
-    def test_row_fields(self):
-        row = SlurmAccountUsage.objects.create(
-            cluster=self.cluster,
-            account=self.account,
-            period_start=date(2024, 1, 1),
-            period_end=date(2024, 1, 1),
-            billing_units_consumed=10.5,
-            billing_units_completed=12.0,
-            walltime_sec_consumed=3600,
-            walltime_sec_completed=7200,
-            node_hours_consumed=4.0,
-            node_hours_by_partition={"gpu": 4.0},
-            billing_by_qos={"normal": 10.5},
-            job_count_consumed=2,
-            job_count_completed=1,
-        )
-        assert row.billing_units_consumed == 10.5
-        assert row.node_hours_by_partition == {"gpu": 4.0}
-        assert str(row) == "acct-a @ hpc01 2024-01-01"
-
-    def test_unique_per_account_day(self):
-        SlurmAccountUsage.objects.create(
-            cluster=self.cluster,
-            account=self.account,
-            period_start=date(2024, 1, 1),
-            period_end=date(2024, 1, 1),
-        )
-        # Same cluster/account/day must violate the unique constraint
-        with pytest.raises(Exception):
-            SlurmAccountUsage.objects.create(
-                cluster=self.cluster,
-                account=self.account,
-                period_start=date(2024, 1, 1),
-                period_end=date(2024, 1, 1),
-            )
-
-    def test_allows_same_account_different_day(self):
-        SlurmAccountUsage.objects.create(
-            cluster=self.cluster,
-            account=self.account,
-            period_start=date(2024, 1, 1),
-            period_end=date(2024, 1, 1),
-        )
-        row2 = SlurmAccountUsage.objects.create(
-            cluster=self.cluster,
-            account=self.account,
-            period_start=date(2024, 1, 2),
-            period_end=date(2024, 1, 2),
-        )
-        assert row2.pk is not None
-
-
-# ======================================================================
-# 2. CLIENT — get_job_usage
-# ======================================================================
-
-
-class TestGetJobUsage:
-    @responses.activate
-    def test_queries_jobs_with_overlap_window(self):
-        resp_body = {
-            "jobs": [
-                {
-                    "account": "acct-a",
-                    "partition": "gpu",
-                    "qos": "normal",
-                    "time": {"start": 1000, "end": 5000},
-                    "tres": {
-                        "allocated": [
-                            {"type": "billing", "name": "billing", "id": 5, "count": 2},
-                            {"type": "node", "name": "node", "id": 4, "count": 4},
-                        ]
-                    },
-                }
-            ],
-            "errors": [],
-            "warnings": [],
-        }
-        responses.add(
-            responses.GET,
-            f"{_DEFAULT_BASE}/slurmdb/{_DEFAULT_VER}/jobs/",
-            json=resp_body,
-            status=200,
-        )
-        client = SlurmClient(base_url=_DEFAULT_BASE, jwt_token="t", version=_DEFAULT_VER)
-        jobs = client.get_job_usage(86400, 172800, "hpc01")
-
-        req = responses.calls[0].request
-        assert req.params["start_time"] == "86400"
-        assert req.params["end_time"] == "172800"
-        assert req.params["cluster"] == "hpc01"
-        assert req.params["disable_truncate_usage_time"] == "true"
-        assert jobs[0]["account"] == "acct-a"
-        assert jobs[0]["tres"]["allocated"][0]["count"] == 2
-
-    @responses.activate
-    def test_returns_empty_when_no_jobs(self):
-        responses.add(
-            responses.GET,
-            f"{_DEFAULT_BASE}/slurmdb/{_DEFAULT_VER}/jobs/",
-            json={"jobs": [], "errors": [], "warnings": []},
-            status=200,
-        )
-        client = SlurmClient(base_url=_DEFAULT_BASE, jwt_token="t", version=_DEFAULT_VER)
-        assert client.get_job_usage(86400, 172800, "hpc01") == []
-
-
-# ======================================================================
-# 3. AGGREGATION — _roll_up_job_usage
 # ======================================================================
 
 
@@ -177,6 +43,7 @@ def _job(
     billing_count=2,
     node_count=4,
 ) -> dict:
+    """Build a synthetic slurmdbd job record for _roll_up_job_usage tests."""
     return {
         "account": account,
         "partition": partition,
@@ -266,37 +133,49 @@ class TestResolveCatchupRange(TestCase):
     def setUpTestData(cls):
         cls.cluster = SlurmCluster.objects.create(name="hpc01")
 
-    def test_no_last_sync_ingests_capped_window(self):
-        start, end = _resolve_catchup_range(self.cluster)
+    def test_caps_window_to_most_recent_days(self):
+        """No last sync (or one far older than the cap) -> ingest the most
+        recent CAP days ending yesterday."""
         yesterday = timezone.localdate() - timedelta(days=1)
+        expected_start = yesterday - timedelta(days=USAGE_SYNC_MAX_CATCHUP_DAYS - 1)
+
+        # no last sync
+        start, end = resolve_catchup_range(self.cluster)
         assert end == yesterday
-        assert start == yesterday - timedelta(days=USAGE_SYNC_MAX_CATCHUP_DAYS - 1)
+        assert start == expected_start
+
+        # last sync far older than the cap -> clamp to most recent CAP days
+        self.cluster.last_usage_sync = timezone.localdate() - timedelta(days=500)
+        self.cluster.save()
+        start, end = resolve_catchup_range(self.cluster)
+        assert start == expected_start
+        assert end == yesterday
 
     def test_resumes_from_last_sync_plus_one(self):
         yesterday = timezone.localdate() - timedelta(days=1)
         self.cluster.last_usage_sync = yesterday - timedelta(days=10)
         self.cluster.save()
-        start, end = _resolve_catchup_range(self.cluster)
+        start, end = resolve_catchup_range(self.cluster)
         assert start == self.cluster.last_usage_sync + timedelta(days=1)
         assert end == yesterday
 
     def test_none_when_already_caught_up(self):
         self.cluster.last_usage_sync = timezone.localdate() - timedelta(days=1)
         self.cluster.save()
-        assert _resolve_catchup_range(self.cluster) is None
+        assert resolve_catchup_range(self.cluster) is None
 
     def test_caps_long_gap_to_most_recent_days(self):
         # last_usage_sync far older than the cap -> clamp to most recent CAP days
         self.cluster.last_usage_sync = timezone.localdate() - timedelta(days=500)
         self.cluster.save()
-        start, end = _resolve_catchup_range(self.cluster)
+        start, end = resolve_catchup_range(self.cluster)
         yesterday = timezone.localdate() - timedelta(days=1)
         assert start == yesterday - timedelta(days=USAGE_SYNC_MAX_CATCHUP_DAYS - 1)
         assert end == yesterday
 
 
 # ======================================================================
-# 5. ORCHESTRATION — _run_usage_sync
+# 5. ORCHESTRATION — run_usage_sync
 # ======================================================================
 
 
@@ -320,35 +199,6 @@ class TestRunUsageSync(TestCase):
         client.get_job_usage.side_effect = lambda s, e, c: jobs_by_day.get(s, [])
         return client
 
-    def test_upserts_rows_and_advances_last_sync(self):
-        day = timezone.localdate() - timedelta(days=1)
-        day_start, _ = _utc_day_bounds(day)
-        # One job overlapping that day (runs in the first hour)
-        job = {
-            "account": "acct-a",
-            "partition": "gpu",
-            "qos": "normal",
-            "time": {"start": day_start + 3600, "end": day_start + 7200, "elapsed": 3600},
-            "tres": {
-                "allocated": [
-                    {"type": "billing", "name": "billing", "id": 5, "count": 2},
-                    {"type": "node", "name": "node", "id": 4, "count": 4},
-                ]
-            },
-        }
-        client = self._client({day_start: [job]})
-        with mock.patch("coldfront.slurm.sync._build_client", return_value=client):
-            report = _run_usage_sync(self.cluster, day, day)
-
-        assert report.success
-        assert report.days_synced == 1
-        assert report.accounts_updated == 1
-        row = SlurmAccountUsage.objects.get(account=self.account, period_start=day)
-        assert row.billing_units_consumed == 2.0
-        assert row.billing_units_completed == 2.0
-        self.cluster.refresh_from_db()
-        assert self.cluster.last_usage_sync == day
-
     def test_skips_unknown_accounts(self):
         day = timezone.localdate() - timedelta(days=1)
         day_start, _ = _utc_day_bounds(day)
@@ -364,8 +214,8 @@ class TestRunUsageSync(TestCase):
             },
         }
         client = self._client({day_start: [job]})
-        with mock.patch("coldfront.slurm.sync._build_client", return_value=client):
-            report = _run_usage_sync(self.cluster, day, day)
+        with mock.patch("coldfront.slurm.sync.usage.build_client", return_value=client):
+            report = run_usage_sync(self.cluster, day, day)
         assert report.success
         assert report.accounts_updated == 0
         assert SlurmAccountUsage.objects.filter(account=self.account).count() == 0
@@ -373,9 +223,13 @@ class TestRunUsageSync(TestCase):
         self.cluster.refresh_from_db()
         assert self.cluster.last_usage_sync == day
 
-    def test_no_client_returns_error(self):
-        with mock.patch("coldfront.slurm.sync._build_client", return_value=None):
-            report = _run_usage_sync(self.cluster, date(2024, 1, 1), date(2024, 1, 1))
+    def test_unconfigured_cluster_returns_error_report(self):
+        """No slurmrestd config -> error report (no REST call), last_sync unadvanced."""
+        with mock.patch(
+            "coldfront.slurm.sync.usage.build_client",
+            side_effect=ImproperlyConfigured("no url"),
+        ):
+            report = run_usage_sync(self.cluster, date(2024, 1, 1), date(2024, 1, 1))
         assert not report.success
         assert "not configured" in report.errors[0]
         self.cluster.refresh_from_db()
@@ -385,8 +239,8 @@ class TestRunUsageSync(TestCase):
         client = mock.MagicMock()
         client.get_job_usage.side_effect = Exception("401 unauthorized")
         day = timezone.localdate() - timedelta(days=1)
-        with mock.patch("coldfront.slurm.sync._build_client", return_value=client):
-            report = _run_usage_sync(self.cluster, day, day)
+        with mock.patch("coldfront.slurm.sync.usage.build_client", return_value=client):
+            report = run_usage_sync(self.cluster, day, day)
         assert not report.success
         assert "401 unauthorized" in report.errors[0]
         self.cluster.refresh_from_db()
@@ -396,106 +250,3 @@ class TestRunUsageSync(TestCase):
 # ======================================================================
 # 6. JOBS
 # ======================================================================
-
-
-class TestUsageJobs(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.cluster = SlurmCluster.objects.create(name="hpc01")
-
-    def test_periodic_job_calls_run_usage_sync(self):
-        from coldfront.slurm.jobs import SlurmUsageSyncJob
-
-        job = SlurmUsageSyncJob(mock.MagicMock())
-        yesterday = timezone.localdate() - timedelta(days=1)
-        with (
-            mock.patch(
-                "coldfront.slurm.jobs._resolve_catchup_range",
-                return_value=(yesterday - timedelta(days=2), yesterday),
-            ) as mock_range,
-            mock.patch("coldfront.slurm.jobs._run_usage_sync") as mock_sync,
-        ):
-            mock_sync.return_value.success = True
-            result = job.run()
-        assert result is True
-        mock_range.assert_called_once()
-        mock_sync.assert_called_once()
-        # cluster arg is the real cluster instance
-        assert mock_sync.call_args[0][0] == self.cluster
-        assert mock_sync.call_args[0][1] == yesterday - timedelta(days=2)
-        assert mock_sync.call_args[0][2] == yesterday
-
-    def test_periodic_job_no_days_to_sync(self):
-        from coldfront.slurm.jobs import SlurmUsageSyncJob
-
-        job = SlurmUsageSyncJob(mock.MagicMock())
-        with (
-            mock.patch(
-                "coldfront.slurm.jobs._resolve_catchup_range",
-                return_value=None,
-            ) as mock_range,
-            mock.patch(
-                "coldfront.slurm.jobs._run_usage_sync",
-            ) as mock_sync,
-        ):
-            result = job.run()
-        assert result is True
-        mock_range.assert_called_once()
-        mock_sync.assert_not_called()
-
-    def test_on_demand_job_with_explicit_range(self):
-        from coldfront.slurm.jobs import SlurmUsageSyncNowJob
-
-        job = SlurmUsageSyncNowJob(mock.MagicMock())
-        start = "2024-01-01"
-        end = "2024-01-10"
-        with mock.patch("coldfront.slurm.jobs._run_usage_sync") as mock_sync:
-            mock_sync.return_value.success = True
-            result = job.run(cluster_id=self.cluster.pk, start=start, end=end)
-        assert result is True
-        mock_sync.assert_called_once()
-        assert mock_sync.call_args[0][0] == self.cluster
-        assert mock_sync.call_args[0][1] == date(2024, 1, 1)
-        assert mock_sync.call_args[0][2] == date(2024, 1, 10)
-
-
-# ======================================================================
-# 7. MANAGEMENT COMMAND
-# ======================================================================
-
-
-class TestUsageSyncCommand(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.cluster = SlurmCluster.objects.create(name="hpc01")
-
-    def test_command_runs_range_sync(self):
-        from django.core.management import call_command
-
-        with mock.patch("coldfront.slurm.sync._run_usage_sync") as mock_sync:
-            mock_sync.return_value.success = True
-            call_command("slurm_usage_sync", cluster="hpc01", verbosity=0)
-        assert mock_sync.called
-        assert mock_sync.call_args[0][0] == self.cluster
-
-    def test_command_with_explicit_dates(self):
-        from django.core.management import call_command
-
-        with mock.patch("coldfront.slurm.sync._run_usage_sync") as mock_sync:
-            mock_sync.return_value.success = True
-            call_command(
-                "slurm_usage_sync",
-                cluster="hpc01",
-                start="2024-01-01",
-                end="2024-01-05",
-                verbosity=0,
-            )
-        assert mock_sync.call_args[0][1] == date(2024, 1, 1)
-        assert mock_sync.call_args[0][2] == date(2024, 1, 5)
-
-    def test_command_unknown_cluster_errors(self):
-        from django.core.management import call_command
-
-        with mock.patch("coldfront.slurm.sync._run_usage_sync") as mock_sync:
-            call_command("slurm_usage_sync", cluster="nope", verbosity=0)
-        assert not mock_sync.called

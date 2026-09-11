@@ -9,8 +9,6 @@ Tests for usage-based Slurm billing helpers.
 - ``TestRemainingSus`` — ``SlurmAccount.remaining_sus()`` grant minus consumed
 """
 
-from __future__ import annotations
-
 from datetime import date
 
 from django.test import TestCase

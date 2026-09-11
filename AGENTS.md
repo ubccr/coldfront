@@ -129,6 +129,9 @@ COLDFRONT_ENV=.env.testing uv run -m pytest tests/<app>/test_views.py
 
 # With coverage
 COLDFRONT_ENV=.env.testing uv run -m coverage run -m pytest
+
+# Full e2e test suite (requires docker, not run by default)
+COLDFRONT_E2E=1 COLDFRONT_ENV=.env.testing uv run -m pytest tests/e2e -m e2e
 ```
 
 ### Development Setup

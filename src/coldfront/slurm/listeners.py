@@ -2,7 +2,22 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from django.db.models.signals import m2m_changed, post_delete, post_save
+"""
+Slurm listeners: DB-only consistency for active allocations.
+
+All handlers are DB-only — they keep ColdFront's ``SlurmUser`` records in
+sync with active allocations, keyed on ``STATUS_ACTIVE``. The REST side is
+handled exclusively by the batch reconciliation sync (``sync_slurm_clusters``),
+which the CLI and system jobs call. There are no targeted/real-time enqueues.
+
+The single shared helper :func:`_sync_slurm_users_for_user` reconciles a
+user's ``SlurmUser`` records against active allocations across all projects
+they belong to — creating on gain of access, updating ``default_account`` on
+change, deleting on loss of access. Every handler just calls it for the
+affected users.
+"""
+
+from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
 from coldfront.flows import register_target_callback, register_transition_permission_callback
@@ -10,17 +25,10 @@ from coldfront.ras.choices import AllocationStatusChoices
 from coldfront.ras.flows import AllocationStatusFlow
 from coldfront.ras.models import Allocation, ProjectUser
 from coldfront.slurm.models import (
-    SlurmAccount,
     SlurmAssociation,
     SlurmCluster,
     SlurmPartition,
     SlurmUser,
-)
-from coldfront.slurm.sync import (
-    _sync_association_qos,
-    enqueue_activate_allocation,
-    enqueue_deactivate_allocation,
-    enqueue_remove_project_user,
 )
 
 
@@ -122,228 +130,78 @@ def on_project_user_saved(instance, created, **kwargs):
 def on_project_user_deleted(instance, **kwargs):
     """
     When a ProjectUser is deleted, reconcile SlurmUser records for the user
-    against all remaining projects they belong to, and enqueue a targeted
-    handler to remove the user's associations from Slurm.
+    against all remaining projects they belong to. The REST removal of the
+    user's associations is handled by the next batch reconciliation sync.
     """
     _sync_slurm_users_for_user(instance.user)
 
-    # Determine clusters involved in this project's active allocations
-    project_cluster_ids: list[int] = []
-    allocations = Allocation.objects.filter(
-        project_id=instance.project_id,
-        status=AllocationStatusChoices.STATUS_ACTIVE,
-    ).select_related(
-        "resource_object_type",
-    )
-    for allocation in allocations:
-        resource = allocation.resource_object
-        if resource is None:
-            continue
-        if isinstance(resource, SlurmPartition):
-            if resource.cluster_id not in project_cluster_ids:
-                project_cluster_ids.append(resource.cluster_id)
-        elif isinstance(resource, SlurmCluster):
-            if resource.pk not in project_cluster_ids:
-                project_cluster_ids.append(resource.pk)
 
-    enqueue_remove_project_user(
-        instance.project_id,
-        instance.user_id,
-        cluster_ids=project_cluster_ids or None,
-    )
+def _sync_project_users(project):
+    """Reconcile SlurmUser records for every member of a project."""
+    for pu in project.users.all():
+        if pu.user:
+            _sync_slurm_users_for_user(pu.user)
 
 
-@receiver(post_save, sender=SlurmAssociation)
-def on_slurm_association_saved(instance, **kwargs):
-    """
-    When a SlurmAssociation is saved, sync SlurmUser records for all project
-    members if the linked allocation is active.
-
-    This handles the case where an admin edits a SlurmAssociation and
-    changes the slurm_account on an active allocation.  The underlying
-    _sync_slurm_users_for_user already handles no-ops efficiently.
-    """
-    allocation = instance.allocation
-    if allocation.status != AllocationStatusChoices.STATUS_ACTIVE:
-        return  # only sync for active allocations
-
+def _allocation_cluster(allocation):
+    """Return the SlurmCluster for an allocation's resource, or None."""
     resource = allocation.resource_object
     if resource is None:
-        return
-    if not isinstance(resource, (SlurmCluster, SlurmPartition)):
-        return
-
-    # Sync SlurmUser for each project member
-    for project_user in allocation.project.users.all():
-        _sync_slurm_users_for_user(project_user.user)
-
-    # Sync QOS changes for this association
-    cluster = resource if isinstance(resource, SlurmCluster) else resource.cluster
-    _sync_association_qos(instance, cluster)
-
-
-# ------------------------------------------------------------------
-# M2M change handlers for QOS fields
-# ------------------------------------------------------------------
-
-
-def _sync_associations_for_account(account: SlurmAccount) -> None:
-    """
-    Sync QOS for all active associations linked to an account.
-
-    Called when ``qos_add`` or ``qos_remove`` changes on the account.
-    Finds all SlurmAssociation records that reference this account
-    and triggers a targeted QOS sync for each.
-    """
-    from coldfront.slurm.models import SlurmCluster
-
-    # Collect unique (association, cluster) pairs
-    assocs = SlurmAssociation.objects.filter(slurm_account=account).select_related(
-        "allocation__resource_object_type",
-    )
-    for assoc in assocs:
-        allocation = assoc.allocation
-        if not allocation:
-            continue
-        if allocation.status != AllocationStatusChoices.STATUS_ACTIVE:
-            continue
-        resource = allocation.resource_object
-        if resource is None:
-            continue
-        if isinstance(resource, SlurmCluster):
-            cluster = resource
-        elif isinstance(resource, SlurmPartition):
-            cluster = resource.cluster
-        else:
-            continue
-
-        _sync_association_qos(assoc, cluster)
-
-
-@receiver(m2m_changed, sender=SlurmAccount.qos_add.through)
-@receiver(m2m_changed, sender=SlurmAccount.qos_remove.through)
-def on_account_qos_changed(action, instance, pk_set, **kwargs):
-    """
-    When ``qos_add`` or ``qos_remove`` changes on a ``SlurmAccount``,
-    sync all active associations linked to that account.
-    """
-    if action not in ("post_add", "post_remove", "post_clear"):
-        return
-    _sync_associations_for_account(instance)
-
-
-@receiver(m2m_changed, sender=SlurmAssociation.qos_add.through)
-@receiver(m2m_changed, sender=SlurmAssociation.qos_remove.through)
-def on_association_qos_changed(action, instance, pk_set, **kwargs):
-    """
-    When ``qos_add`` or ``qos_remove`` changes on a ``SlurmAssociation``,
-    sync the association's QOS with Slurm.
-    """
-    if action not in ("post_add", "post_remove", "post_clear"):
-        return
-
-    allocation = instance.allocation
-    if not allocation:
-        return
-    if allocation.status != AllocationStatusChoices.STATUS_ACTIVE:
-        return
-    resource = allocation.resource_object
-    if resource is None:
-        return
+        return None
     if isinstance(resource, SlurmCluster):
-        cluster = resource
-    elif isinstance(resource, SlurmPartition):
-        cluster = resource.cluster
-    else:
-        return
-
-    _sync_association_qos(instance, cluster)
+        return resource
+    if isinstance(resource, SlurmPartition):
+        return resource.cluster
+    return None
 
 
 @register_target_callback(AllocationStatusFlow, AllocationStatusChoices.STATUS_ACTIVE)
 def on_allocation_activated(allocation, *, source, target):
     """
-    On allocation activate: for each ProjectUser (allocation.project.users),
-    if no SlurmUser exists for (user, cluster), create one with default_account
-    set to the active allocation's slurm_account.
-
-    Existing records are never modified by subsequent allocation activations,
-    preserving the original default.
+    On allocation activate: reconcile SlurmUser records for each project
+    member. The allocation is now ACTIVE, so members gain access — SlurmUser
+    records are created (or their default_account updated) on the cluster.
     """
-    resource = allocation.resource_object
-    if resource is None:
+    if _allocation_cluster(allocation) is None:
         return
-    if not isinstance(resource, (SlurmCluster, SlurmPartition)):
-        return
-
-    # Determine the cluster
-    if isinstance(resource, SlurmCluster):
-        cluster = resource
-    else:
-        cluster = resource.cluster
-
-    # Get the slurm_account from the allocation's SlurmAssociation
-    try:
-        association = SlurmAssociation.objects.get(allocation=allocation)
-    except SlurmAssociation.DoesNotExist:
-        return
-
-    slurm_account = association.slurm_account
-    if slurm_account is None:
-        return  # no account set yet, nothing to do
-
-    # For each ProjectUser, create SlurmUser if not exists
-    for project_user in allocation.project.users.all():
-        user = project_user.user
-        # get_or_create: existing records are never modified
-        SlurmUser.objects.get_or_create(
-            user=user,
-            cluster=cluster,
-            defaults={"default_account": slurm_account},
-        )
-
-    # Enqueue REST API sync for this allocation
-    enqueue_activate_allocation(allocation.pk, cluster_id=cluster.pk)
+    _sync_project_users(allocation.project)
 
 
 @register_target_callback(AllocationStatusFlow, AllocationStatusChoices.STATUS_EXPIRED)
 def on_allocation_expired(allocation, *, source, target):
     """
-    On allocation expired: enqueue deactivation to kill jobs and remove
-    associations from Slurm.
+    On allocation expired: reconcile SlurmUser records for each project
+    member. The allocation is no longer ACTIVE, so members lose this access —
+    SlurmUser records are removed unless the user has another active
+    allocation on the cluster. The REST removal is handled by the batch sync.
     """
-    resource = allocation.resource_object
-    if resource is None:
+    if _allocation_cluster(allocation) is None:
         return
-    if not isinstance(resource, (SlurmCluster, SlurmPartition)):
-        return
-    cluster = resource if isinstance(resource, SlurmCluster) else resource.cluster
-    enqueue_deactivate_allocation(allocation.pk, cluster_id=cluster.pk)
+    _sync_project_users(allocation.project)
 
 
 @register_target_callback(AllocationStatusFlow, AllocationStatusChoices.STATUS_REVOKED)
 def on_allocation_revoked(allocation, *, source, target):
     """
-    On allocation revoked: enqueue deactivation to kill jobs and remove
-    associations from Slurm.
+    On allocation revoked: reconcile SlurmUser records for each project
+    member. Same semantics as expiry — members lose this access unless they
+    have another active allocation. REST removal is handled by the batch sync.
     """
-    resource = allocation.resource_object
-    if resource is None:
+    if _allocation_cluster(allocation) is None:
         return
-    if not isinstance(resource, (SlurmCluster, SlurmPartition)):
-        return
-    cluster = resource if isinstance(resource, SlurmCluster) else resource.cluster
-    enqueue_deactivate_allocation(allocation.pk, cluster_id=cluster.pk)
+    _sync_project_users(allocation.project)
 
 
-@register_target_callback(AllocationStatusFlow, AllocationStatusChoices.STATUS_RENEW)
-def on_allocation_renewed(allocation, *, source, target):
+@register_target_callback(AllocationStatusFlow, AllocationStatusChoices.STATUS_DENIED)
+def on_allocation_denied(allocation, *, source, target):
     """
-    On allocation renewed: no Slurm action needed until the allocation is
-    re-activated.  The renewed allocation will trigger
-    ``on_allocation_activated`` when it transitions to ACTIVE again.
+    On allocation denied: reconcile SlurmUser records for each project member.
+    The allocation is not ACTIVE, so members lose this access unless they have
+    another active allocation. REST removal is handled by the batch sync.
     """
-    pass
+    if _allocation_cluster(allocation) is None:
+        return
+    _sync_project_users(allocation.project)
 
 
 @register_transition_permission_callback(AllocationStatusFlow, "activate")

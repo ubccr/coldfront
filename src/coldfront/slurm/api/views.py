@@ -8,7 +8,7 @@ from rest_framework.routers import APIRootView
 
 from coldfront.api.viewsets import ColdFrontModelViewSet
 from coldfront.slurm import filtersets
-from coldfront.slurm.dump import generate_cluster_dump
+from coldfront.slurm.export import generate_association_dump
 from coldfront.slurm.models import (
     SlurmAccount,
     SlurmAssociation,
@@ -47,7 +47,7 @@ class SlurmClusterViewSet(ColdFrontModelViewSet):
         Return the Slurm dump for this cluster as a text file.
         """
         cluster = self.get_object()
-        dump_content = generate_cluster_dump(cluster)
+        dump_content = generate_association_dump(cluster)
         response = HttpResponse(dump_content, content_type="text/plain")
         filename = f"slurm_dump_{cluster.name}.txt"
         response["Content-Disposition"] = f"attachment; filename={filename}"

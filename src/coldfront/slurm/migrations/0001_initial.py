@@ -9,6 +9,7 @@ from django.db import migrations, models
 
 import coldfront.core.utils
 import coldfront.models.deletion
+import coldfront.slurm.models
 import coldfront.utils.jsonschema
 
 
@@ -80,16 +81,6 @@ class Migration(migrations.Migration):
                         max_length=50,
                         null=True,
                         verbose_name="classification",
-                    ),
-                ),
-                (
-                    "default_tres_billing_weights",
-                    models.JSONField(
-                        blank=True,
-                        default=dict,
-                        help_text='TRES billing weights applied by default to partitions without their own. Maps to TRESBillingWeights on the PartitionName=DEFAULT line. An empty dict is treated as "{"CPU": 1.0}" (bill allocated CPUs).',
-                        null=True,
-                        verbose_name="default TRES billing weights",
                     ),
                 ),
                 (
@@ -309,9 +300,10 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "max_wall_duration_per_job",
-                    models.DurationField(
+                    coldfront.slurm.models.SlurmTimeField(
                         blank=True,
                         help_text="Maximum wall clock time per job using this QOS. Maps to MaxWallDurationPerJob in the dump format.",
+                        max_length=64,
                         null=True,
                         verbose_name="max wall duration per job",
                     ),
@@ -434,9 +426,10 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "max_wall_duration_per_job",
-                    models.DurationField(
+                    coldfront.slurm.models.SlurmTimeField(
                         blank=True,
                         help_text="Maximum wall clock duration per job.",
+                        max_length=64,
                         null=True,
                         verbose_name="max wall duration per job",
                     ),
@@ -782,66 +775,31 @@ class Migration(migrations.Migration):
                 ),
                 ("description", models.CharField(blank=True, max_length=200, verbose_name="description")),
                 (
-                    "max_jobs",
+                    "max_nodes",
                     models.PositiveIntegerField(
                         blank=True,
-                        help_text="Maximum number of jobs that can run simultaneously in this partition.",
+                        help_text="Maximum count of nodes which may be allocated to any single job. Maps to MaxNodes in slurm.conf.",
                         null=True,
-                        verbose_name="max jobs",
+                        verbose_name="max nodes",
                     ),
                 ),
                 (
-                    "max_submit_jobs",
+                    "max_cpus_per_node",
                     models.PositiveIntegerField(
                         blank=True,
-                        help_text="Maximum number of jobs that can be submitted by this association.",
+                        help_text="Maximum number of CPUs on any node available to all jobs from this partition. Maps to MaxCPUsPerNode in slurm.conf.",
                         null=True,
-                        verbose_name="max submit jobs",
+                        verbose_name="max CPUs per node",
                     ),
                 ),
                 (
-                    "max_tres_per_job",
-                    models.JSONField(
+                    "max_time",
+                    coldfront.slurm.models.SlurmTimeField(
                         blank=True,
-                        help_text='JSON dict of TRES limits per job (e.g., {"node":5,"cpu":20}).',
+                        help_text="Maximum wall clock time per job in this partition. Maps to MaxTime in slurm.conf.",
+                        max_length=64,
                         null=True,
-                        verbose_name="max TRES per job",
-                    ),
-                ),
-                (
-                    "max_tres_per_node",
-                    models.JSONField(
-                        blank=True,
-                        help_text='JSON dict of TRES limits per node (e.g., {"gpu":8}).',
-                        null=True,
-                        verbose_name="max TRES per node",
-                    ),
-                ),
-                (
-                    "max_tres_mins_per_job",
-                    models.JSONField(
-                        blank=True,
-                        help_text='JSON dict of TRES minute limits per job (e.g., {"cpu":360}).',
-                        null=True,
-                        verbose_name="max TRES minutes per job",
-                    ),
-                ),
-                (
-                    "max_wall_duration_per_job",
-                    models.DurationField(
-                        blank=True,
-                        help_text="Maximum wall clock duration per job.",
-                        null=True,
-                        verbose_name="max wall duration per job",
-                    ),
-                ),
-                (
-                    "fairshare",
-                    models.PositiveIntegerField(
-                        blank=True,
-                        default=1,
-                        help_text="Fairshare value for this partition's associations. Determines relative priority within the fairshare tree. Higher values allow more jobs before priority decays.",
-                        verbose_name="fairshare",
+                        verbose_name="max time",
                     ),
                 ),
                 (
@@ -857,9 +815,18 @@ class Migration(migrations.Migration):
                     "priority",
                     models.PositiveIntegerField(
                         blank=True,
-                        help_text="Priority tier for scheduling and preemption. Higher priority partitions are scheduled first.",
+                        help_text="Priority factor for scheduling and preemption. Higher priority partitions are scheduled first. Maps to Priority in slurm.conf.",
                         null=True,
                         verbose_name="priority",
+                    ),
+                ),
+                (
+                    "priority_tier",
+                    models.PositiveIntegerField(
+                        blank=True,
+                        help_text="Controls the order in which the scheduler evaluates jobs from different partitions. Maps to PriorityTier in slurm.conf.",
+                        null=True,
+                        verbose_name="priority tier",
                     ),
                 ),
                 (
@@ -873,9 +840,10 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "default_time",
-                    models.DurationField(
+                    coldfront.slurm.models.SlurmTimeField(
                         blank=True,
-                        help_text="Default job time limit for this partition.",
+                        help_text="Default job time limit for this partition. Maps to DefaultTime in slurm.conf.",
+                        max_length=64,
                         null=True,
                         verbose_name="default time",
                     ),
@@ -914,9 +882,18 @@ class Migration(migrations.Migration):
                     "def_mem_per_cpu",
                     models.PositiveIntegerField(
                         blank=True,
-                        help_text="Default memory per CPU in MB for jobs in this partition.",
+                        help_text="Default memory per CPU in MB for jobs in this partition. Maps to DefMemPerCPU in slurm.conf.",
                         null=True,
                         verbose_name="default memory per CPU",
+                    ),
+                ),
+                (
+                    "def_mem_per_node",
+                    models.PositiveIntegerField(
+                        blank=True,
+                        help_text="Default memory per node in MB for jobs in this partition. Maps to DefMemPerNode in slurm.conf.",
+                        null=True,
+                        verbose_name="default memory per node",
                     ),
                 ),
                 (
@@ -924,7 +901,7 @@ class Migration(migrations.Migration):
                     models.JSONField(
                         blank=True,
                         default=dict,
-                        help_text="TRES billing weights for this partition. Maps to TRESBillingWeights on the PartitionName=<name> line. An empty dict falls through to the cluster's default_tres_billing_weights.",
+                        help_text="TRES billing weights for this partition. Maps to TRESBillingWeights on the PartitionName=<name> line. An empty dict bills allocated CPUs at weight 1.0.",
                         null=True,
                         verbose_name="TRES billing weights",
                     ),
@@ -979,6 +956,17 @@ class Migration(migrations.Migration):
                         related_query_name="allowed_partition",
                         to="slurm.slurmqos",
                         verbose_name="allowed QOS",
+                    ),
+                ),
+                (
+                    "deny_qos",
+                    models.ManyToManyField(
+                        blank=True,
+                        help_text="QOS blocklist for admission control. Jobs requesting one of these QOSes are denied access to this partition. Maps to DenyQOS in slurm.conf.",
+                        related_name="denied_partitions",
+                        related_query_name="denied_partition",
+                        to="slurm.slurmqos",
+                        verbose_name="denied QOS",
                     ),
                 ),
                 (

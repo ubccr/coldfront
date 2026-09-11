@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from datetime import date, timedelta
+from datetime import date
 
 from django.db.models import Sum
 from django.test import TestCase
@@ -20,6 +20,7 @@ from coldfront.slurm.models import (
 )
 from coldfront.slurm.tables import SlurmAccountTable, SlurmAccountUsageTable
 from coldfront.users.models import User
+from coldfront.utils.testing import TestCase as ColdFrontTestCase
 from coldfront.utils.testing import ViewTestCases, create_tags
 
 
@@ -126,6 +127,8 @@ class SlurmPartitionTestCase(ViewTestCases.PrimaryObjectViewTestCase):
         for partition in partitions:
             partition.save()
 
+        deny_qos = SlurmQOS.objects.create(name="Deny QOS")
+
         tags = create_tags("Alpha", "Bravo", "Charlie")
 
         cls.form_data = {
@@ -135,11 +138,17 @@ class SlurmPartitionTestCase(ViewTestCases.PrimaryObjectViewTestCase):
             "locked": True,
             "nodes": "node[01-64]",
             "priority": 100,
+            "priority_tier": 3,
+            "max_nodes": 64,
+            "max_cpus_per_node": 32,
+            "def_mem_per_node": 4096,
             "is_default": True,
-            "default_time": timedelta(hours=1),
+            "default_time": "01:00:00",
+            "max_time": "3-00:00:00",
             "state": "UP",
             "preempt_mode": "OFF",
             "def_mem_per_cpu": 2800,
+            "deny_qos": [deny_qos.pk],
             "tags": [t.pk for t in tags],
         }
 
@@ -413,3 +422,50 @@ class TestSlurmUsageReporting(TestCase):
             SlurmAccountUsageFilterSet({"account": [self.acct.name]}, SlurmAccountUsage.objects.all()).qs.count() == 1
         )
         SlurmAccountUsageTable(SlurmAccountUsage.objects.all())
+
+
+class TestSlurmConfigViews(ColdFrontTestCase):
+    user_permissions = ("slurm.view_slurmcluster", "slurm.view_slurmpartition")
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cluster = SlurmCluster.objects.create(name="hpc01")
+        cls.partition = SlurmPartition.objects.create(
+            name="cpu",
+            cluster=cls.cluster,
+            nodes="c1",
+            priority=100,
+            is_default=True,
+            default_time="00:30:00",
+            max_time="3-00:00:00",
+        )
+
+    def test_cluster_config_renders_all_partitions(self):
+        response = self.client.get(reverse("slurm:slurmcluster_config", kwargs={"pk": self.cluster.pk}))
+        self.assertHttpStatus(response, 200)
+        self.assertContains(response, "PartitionName=cpu")
+
+    def test_cluster_config_download(self):
+        response = self.client.get(
+            reverse("slurm:slurmcluster_config", kwargs={"pk": self.cluster.pk}),
+            {"download": "true"},
+        )
+        self.assertHttpStatus(response, 200)
+        self.assertEqual(response["Content-Type"], "text/plain")
+        self.assertContains(response, "PartitionName=cpu")
+        self.assertIn("slurm_config_hpc01.conf", response["Content-Disposition"])
+
+    def test_partition_config_renders_single_partition(self):
+        response = self.client.get(reverse("slurm:slurmpartition_config", kwargs={"pk": self.partition.pk}))
+        self.assertHttpStatus(response, 200)
+        self.assertContains(response, "PartitionName=cpu")
+
+    def test_partition_config_download(self):
+        response = self.client.get(
+            reverse("slurm:slurmpartition_config", kwargs={"pk": self.partition.pk}),
+            {"download": "true"},
+        )
+        self.assertHttpStatus(response, 200)
+        self.assertEqual(response["Content-Type"], "text/plain")
+        self.assertContains(response, "PartitionName=cpu")
+        self.assertIn("slurm_config_hpc01_cpu.conf", response["Content-Disposition"])

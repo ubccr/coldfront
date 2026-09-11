@@ -54,6 +54,18 @@
                     <c-ui.checkmark :value="object.locked" />
                 </c-card.fields.item>
 
+                <c-card.fields.item label="{% trans 'TRES Billing Weights' %}">
+                    {{ object.tres_billing_weights|placeholder }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Default Time' %}">
+                    {{ object.default_time|placeholder }}
+                </c-card.fields.item>
+
+                <c-card.fields.item label="{% trans 'Max Time' %}">
+                    {{ object.max_time|placeholder }}
+                </c-card.fields.item>
+
                 <c-card.fields.item label="{% trans 'Max Jobs' %}">
                     {{ object.max_jobs|placeholder }}
                 </c-card.fields.item>
@@ -92,22 +104,6 @@
 
                 <c-card.fields.item label="{% trans 'QOS' %}">
                     {{ object.qos|placeholder }}
-                </c-card.fields.item>
-
-                <c-card.fields.item label="{% trans 'Max TRES per Job' %}">
-                    {{ object.max_tres_per_job|placeholder }}
-                </c-card.fields.item>
-
-                <c-card.fields.item label="{% trans 'Max TRES per Node' %}">
-                    {{ object.max_tres_per_node|placeholder }}
-                </c-card.fields.item>
-
-                <c-card.fields.item label="{% trans 'Max TRES Minutes per Job' %}">
-                    {{ object.max_tres_mins_per_job|placeholder }}
-                </c-card.fields.item>
-
-                <c-card.fields.item label="{% trans 'Max Wall Duration per Job' %}">
-                    {{ object.max_wall_duration_per_job|placeholder }}
                 </c-card.fields.item>
             </c-card.fields>
 

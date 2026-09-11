@@ -2,22 +2,26 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""Slurm association flat-file dump generation.
 
-from __future__ import annotations
+Renders the Slurm association dump format consumed by ``sacctmgr`` — the
+``Cluster`` / ``Account`` / ``User`` hierarchy lines — from ColdFront records.
+"""
 
 from coldfront.slurm.choices import SlurmAdminLevelChoices
 from coldfront.slurm.models import (
+    SlurmAccount,
     SlurmAssociation,
     SlurmCluster,
     SlurmPartition,
     SlurmQOS,
     SlurmUser,
 )
+from coldfront.slurm.utils import get_active_associations
 
 
-def generate_cluster_dump(cluster):
-    """
-    Generate Slurm dump content for a given cluster.
+def generate_association_dump(cluster: SlurmCluster) -> str:
+    """Generate the Slurm association dump content for a given cluster.
 
     The dump format follows the Slurm dump file format used by sacctmgr:
       - Cluster header line
@@ -26,12 +30,6 @@ def generate_cluster_dump(cluster):
 
     Only active allocations (STATUS_ACTIVE) contribute associations.
     Accounts with no active associations are excluded.
-
-    Args:
-        cluster: SlurmCluster instance
-
-    Returns:
-        str: The dump file content
     """
     lines = []
 
@@ -55,7 +53,7 @@ def generate_cluster_dump(cluster):
     lines.append("")
 
     # -- SlurmAccounts with active associations --
-    active_assocs = _get_active_associations(cluster)
+    active_assocs = get_active_associations(cluster)
     accounts_with_assocs = _get_accounts_for_assocs(active_assocs)
 
     for account in accounts_with_assocs:
@@ -76,6 +74,12 @@ def generate_cluster_dump(cluster):
         account_line = _format_account(account, cluster)
         lines.append(account_line)
 
+        # sacctmgr attaches a User line's association to the current Parent -
+        # line, not the preceding Account - line. Emit Parent - '<account>' so
+        # this account's user lines land under it (mirrors the real dump's
+        # recursive Parent/children structure).
+        lines.append(f"Parent - '{account.name}'")
+
         # User lines for associations under this account
         for assoc in account_assocs:
             user_lines = _format_user_lines(assoc, cluster)
@@ -86,7 +90,7 @@ def generate_cluster_dump(cluster):
     return "\n".join(lines)
 
 
-def _format_cluster(cluster):
+def _format_cluster(cluster: SlurmCluster) -> str:
     """Format the Cluster header line."""
     parts = [f"Cluster - '{cluster.name}'"]
 
@@ -105,7 +109,7 @@ def _format_cluster(cluster):
     return ":".join(parts)
 
 
-def _format_qos(qos: SlurmQOS):
+def _format_qos(qos: SlurmQOS) -> str:
     """Format a QOS definition line."""
     parts = [f"QOS - '{qos.name}'"]
 
@@ -135,8 +139,9 @@ def _format_qos(qos: SlurmQOS):
 
     # MaxWallDurationPerJob
     if qos.max_wall_duration_per_job is not None:
-        seconds = int(qos.max_wall_duration_per_job.total_seconds())
-        parts.append(f"MaxWallDurationPerJob={seconds}")
+        seconds = qos.max_wall_duration_per_job.to_seconds()
+        if seconds is not None:
+            parts.append(f"MaxWallDurationPerJob={seconds}")
 
     # LimitFactor
     if qos.limit_factor is not None:
@@ -149,7 +154,7 @@ def _format_qos(qos: SlurmQOS):
     return ":".join(parts)
 
 
-def _format_account(account, cluster):
+def _format_account(account: SlurmAccount, cluster: SlurmCluster) -> str:
     """Format an Account line.
 
     Args:
@@ -177,7 +182,7 @@ def _format_account(account, cluster):
     return ":".join(parts)
 
 
-def _format_user_lines(assoc, cluster):
+def _format_user_lines(assoc: SlurmAssociation, cluster: SlurmCluster) -> list[str]:
     """
     Format User lines for a given association.
 
@@ -291,7 +296,7 @@ def _format_user_lines(assoc, cluster):
     return lines
 
 
-def _get_slurm_user(user, cluster):
+def _get_slurm_user(user, cluster: SlurmCluster) -> SlurmUser | None:
     """Get SlurmUser for the given user and cluster, or None."""
     try:
         return SlurmUser.objects.get(user=user, cluster=cluster)
@@ -299,12 +304,12 @@ def _get_slurm_user(user, cluster):
         return None
 
 
-def _get_qos_names(qos_list):
+def _get_qos_names(qos_list) -> list[str]:
     """Return a list of QOS names from a queryset."""
     return [qos.name for qos in qos_list]
 
 
-def _format_limits(assoc):
+def _format_limits(assoc: SlurmAssociation) -> list[str]:
     """Format limit fields from a SlurmAssociation into key=value parts."""
     parts = []
 
@@ -321,62 +326,15 @@ def _format_limits(assoc):
         parts.append(f"MaxTRESMinsPerJob={assoc.max_tres_mins_per_job}")
 
     if assoc.max_wall_duration_per_job is not None:
-        # DurationField stores as timedelta; convert to seconds for Slurm
-        seconds = int(assoc.max_wall_duration_per_job.total_seconds())
-        parts.append(f"MaxWallDurationPerJob={seconds}")
+        # SlurmTime; convert to whole seconds for Slurm. UNLIMITED is skipped.
+        seconds = assoc.max_wall_duration_per_job.to_seconds()
+        if seconds is not None:
+            parts.append(f"MaxWallDurationPerJob={seconds}")
 
     return parts
 
 
-def _get_active_associations(cluster):
-    """
-    Get all SlurmAssociations whose allocations are active and whose
-    resource targets the given cluster.
-
-    Returns:
-        list of SlurmAssociation (with prefetched allocation, project)
-    """
-    # Find allocations on this cluster that are active
-    from django.contrib.contenttypes.models import ContentType
-
-    from coldfront.ras.choices import AllocationStatusChoices
-    from coldfront.ras.models.allocations import Allocation
-
-    cluster_ct = ContentType.objects.get_for_model(SlurmCluster)
-    partition_ct = ContentType.objects.get_for_model(SlurmPartition)
-
-    # Allocations targeting this cluster directly
-    cluster_allocations = Allocation.objects.filter(
-        resource_object_type=cluster_ct,
-        resource_object_id=cluster.pk,
-        status=AllocationStatusChoices.STATUS_ACTIVE,
-    )
-
-    # Allocations targeting partitions that belong to this cluster
-    partition_ids = cluster.partitions.values_list("pk", flat=True)
-    partition_allocations = Allocation.objects.filter(
-        resource_object_type=partition_ct,
-        resource_object_id__in=partition_ids,
-        status=AllocationStatusChoices.STATUS_ACTIVE,
-    )
-
-    # Collect all allocation IDs
-    allocation_ids = set(cluster_allocations.values_list("pk", flat=True))
-    allocation_ids.update(partition_allocations.values_list("pk", flat=True))
-
-    if not allocation_ids:
-        return []
-
-    # Get associations for these allocations
-    return list(
-        SlurmAssociation.objects.filter(
-            allocation_id__in=allocation_ids,
-            slurm_account__isnull=False,
-        ).select_related("allocation", "slurm_account")
-    )
-
-
-def _get_accounts_for_assocs(assocs):
+def _get_accounts_for_assocs(assocs) -> list[SlurmAccount]:
     """
     Get unique SlurmAccounts referenced by the given associations,
     preserving the order they first appear.

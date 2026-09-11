@@ -16,8 +16,6 @@ Usage::
 Either ``--slurm-conf`` or ``--cluster-name`` must be provided.
 """
 
-from __future__ import annotations
-
 import logging
 
 from django.core.management.base import BaseCommand, CommandError
@@ -64,11 +62,11 @@ class Command(BaseCommand):
             self._import_from_api(cluster_name, noop, update)
 
     def _import_from_conf(self, conf_path: str, noop: bool, update: bool) -> None:
-        from coldfront.slurm.sync import import_cluster_from_conf
+        from coldfront.slurm.ingest import ingest_cluster_from_conf
 
         self.stdout.write(self.style.NOTICE(f"Importing cluster from {conf_path}"))
 
-        report = import_cluster_from_conf(
+        report = ingest_cluster_from_conf(
             conf_path=conf_path,
             noop=noop,
             update=update,
@@ -77,11 +75,11 @@ class Command(BaseCommand):
         self._print_report(report)
 
     def _import_from_api(self, cluster_name: str, noop: bool, update: bool) -> None:
-        from coldfront.slurm.sync import import_cluster_from_api
+        from coldfront.slurm.ingest import ingest_cluster_from_api
 
         self.stdout.write(self.style.NOTICE(f"Importing cluster '{cluster_name}' from Slurm REST API"))
 
-        report = import_cluster_from_api(
+        report = ingest_cluster_from_api(
             cluster_name=cluster_name,
             noop=noop,
             update=update,

@@ -2,9 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from datetime import timedelta
+
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxLengthValidator
 from django.db import models
 from django.db.models import Sum
 from django.utils.text import slugify
@@ -24,6 +27,79 @@ from coldfront.slurm.choices import (
     SlurmPriorityUsageResetPeriodChoices,
     SlurmSuEnforcementModeChoices,
 )
+from coldfront.slurm.parser import SlurmTime, format_slurm_time, parse_slurm_time
+
+
+class SlurmTimeField(models.CharField):
+    """A Django field storing a Slurm time duration as its canonical string.
+
+    The Python-side value is a ``SlurmTime`` (finite ``timedelta`` or
+    UNLIMITED); the DB stores the parse-able canonical string (e.g.
+    ``"72:00:00"`` or ``"UNLIMITED"``).
+    """
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("max_length", 64)
+        super().__init__(*args, **kwargs)
+        # CharField adds a MaxLengthValidator that calls len() on the value;
+        # our Python-side value is a SlurmTime, not a str, so drop it. The
+        # DB column still respects max_length.
+        self.validators = [v for v in self.validators if not isinstance(v, MaxLengthValidator)]
+
+    def to_python(self, value):
+        if value is None:
+            return None
+        if isinstance(value, SlurmTime):
+            return value
+        if isinstance(value, timedelta):
+            return SlurmTime(duration=value)
+        return parse_slurm_time(str(value))
+
+    def from_db_value(self, value, expression, connection):
+        if value is None:
+            return None
+        return parse_slurm_time(value)
+
+    def get_prep_value(self, value):
+        if value is None:
+            return None
+        if isinstance(value, str):
+            return value
+        return format_slurm_time(self.to_python(value))
+
+    def value_from_object(self, obj):
+        """External representation (model_to_dict, form initials) is the
+        canonical string; attribute access still returns a SlurmTime."""
+        value = super().value_from_object(obj)
+        if value is None:
+            return ""
+        if isinstance(value, str):
+            return value
+        return format_slurm_time(self.to_python(value))
+
+    def value_to_string(self, obj):
+        """Django's value_to_string receives the model object."""
+        value = self.value_from_object(obj)
+        if value is None:
+            return ""
+        return format_slurm_time(self.to_python(value))
+
+    def formfield(self, **kwargs):
+        from django import forms
+
+        class SlurmTimeFormField(forms.CharField):
+            def clean(self, value):
+                value = super().clean(value)
+                if not value:
+                    return value
+                try:
+                    return parse_slurm_time(value)
+                except ValueError as exc:
+                    raise forms.ValidationError(str(exc))
+
+        defaults = {"form_class": SlurmTimeFormField}
+        defaults.update(kwargs)
+        return super().formfield(**defaults)
 
 
 class SlurmQOS(OrganizationalModel):
@@ -74,7 +150,7 @@ class SlurmQOS(OrganizationalModel):
             "Maximum number of running jobs an account can have with this QOS. Maps to MaxJobsPA in the dump format."
         ),
     )
-    max_wall_duration_per_job = models.DurationField(
+    max_wall_duration_per_job = SlurmTimeField(
         blank=True,
         null=True,
         verbose_name=_("max wall duration per job"),
@@ -186,21 +262,6 @@ class SlurmCluster(AllocatableResourceMixin, PrimaryModel):
         help_text=_("How this machine is classified."),
     )
 
-    # --- SU billing TRES configuration (1-1 mapping to slurm.conf) ---
-
-    default_tres_billing_weights = models.JSONField(
-        blank=True,
-        null=True,
-        default=dict,
-        verbose_name=_("default TRES billing weights"),
-        help_text=_(
-            "TRES billing weights applied by default to partitions without "
-            "their own. Maps to TRESBillingWeights on the "
-            "PartitionName=DEFAULT line. An empty dict is treated as "
-            '"{"CPU": 1.0}" (bill allocated CPUs).'
-        ),
-    )
-
     priority_flags = models.JSONField(
         blank=True,
         null=True,
@@ -276,7 +337,6 @@ class SlurmCluster(AllocatableResourceMixin, PrimaryModel):
         "fairshare",
         "features",
         "classification",
-        "default_tres_billing_weights",
         "priority_flags",
         "priority_type",
         "priority_decay_half_life",
@@ -347,57 +407,27 @@ class SlurmPartition(AllocatableResourceMixin, PrimaryModel):
         verbose_name=_("cluster"),
     )
 
-    max_jobs = models.PositiveIntegerField(
+    max_nodes = models.PositiveIntegerField(
         blank=True,
         null=True,
-        verbose_name=_("max jobs"),
-        help_text=_("Maximum number of jobs that can run simultaneously in this partition."),
+        verbose_name=_("max nodes"),
+        help_text=_("Maximum count of nodes which may be allocated to any single job. Maps to MaxNodes in slurm.conf."),
     )
 
-    max_submit_jobs = models.PositiveIntegerField(
+    max_cpus_per_node = models.PositiveIntegerField(
         blank=True,
         null=True,
-        verbose_name=_("max submit jobs"),
-        help_text=_("Maximum number of jobs that can be submitted by this association."),
-    )
-
-    max_tres_per_job = models.JSONField(
-        blank=True,
-        null=True,
-        verbose_name=_("max TRES per job"),
-        help_text=_('JSON dict of TRES limits per job (e.g., {"node":5,"cpu":20}).'),
-    )
-
-    max_tres_per_node = models.JSONField(
-        blank=True,
-        null=True,
-        verbose_name=_("max TRES per node"),
-        help_text=_('JSON dict of TRES limits per node (e.g., {"gpu":8}).'),
-    )
-
-    max_tres_mins_per_job = models.JSONField(
-        blank=True,
-        null=True,
-        verbose_name=_("max TRES minutes per job"),
-        help_text=_('JSON dict of TRES minute limits per job (e.g., {"cpu":360}).'),
-    )
-
-    max_wall_duration_per_job = models.DurationField(
-        blank=True,
-        null=True,
-        verbose_name=_("max wall duration per job"),
-        help_text=_("Maximum wall clock duration per job."),
-    )
-
-    fairshare = models.PositiveIntegerField(
-        blank=True,
-        default=1,
-        verbose_name=_("fairshare"),
+        verbose_name=_("max CPUs per node"),
         help_text=_(
-            "Fairshare value for this partition's associations. Determines "
-            "relative priority within the fairshare tree. Higher values "
-            "allow more jobs before priority decays."
+            "Maximum number of CPUs on any node available to all jobs from this partition. Maps to MaxCPUsPerNode in slurm.conf."
         ),
+    )
+
+    max_time = SlurmTimeField(
+        blank=True,
+        null=True,
+        verbose_name=_("max time"),
+        help_text=_("Maximum wall clock time per job in this partition. Maps to MaxTime in slurm.conf."),
     )
 
     allow_qos = models.ManyToManyField(
@@ -424,6 +454,19 @@ class SlurmPartition(AllocatableResourceMixin, PrimaryModel):
             "memory) apply to every job in this partition. The partition "
             "QOS and the job's QOS are both enforced — the stricter limit "
             "wins. Maps to QOS in slurm.conf."
+        ),
+    )
+
+    deny_qos = models.ManyToManyField(
+        to="slurm.SlurmQOS",
+        blank=True,
+        related_name="denied_partitions",
+        related_query_name="denied_partition",
+        verbose_name=_("denied QOS"),
+        help_text=_(
+            "QOS blocklist for admission control. Jobs requesting one of "
+            "these QOSes are denied access to this partition. Maps to "
+            "DenyQOS in slurm.conf."
         ),
     )
 
@@ -463,7 +506,18 @@ class SlurmPartition(AllocatableResourceMixin, PrimaryModel):
         blank=True,
         null=True,
         verbose_name=_("priority"),
-        help_text=_("Priority tier for scheduling and preemption. Higher priority partitions are scheduled first."),
+        help_text=_(
+            "Priority factor for scheduling and preemption. Higher priority partitions are scheduled first. Maps to Priority in slurm.conf."
+        ),
+    )
+
+    priority_tier = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        verbose_name=_("priority tier"),
+        help_text=_(
+            "Controls the order in which the scheduler evaluates jobs from different partitions. Maps to PriorityTier in slurm.conf."
+        ),
     )
 
     is_default = models.BooleanField(
@@ -473,11 +527,11 @@ class SlurmPartition(AllocatableResourceMixin, PrimaryModel):
         help_text=_("If set, this is the default partition for jobs that do not specify one."),
     )
 
-    default_time = models.DurationField(
+    default_time = SlurmTimeField(
         blank=True,
         null=True,
         verbose_name=_("default time"),
-        help_text=_("Default job time limit for this partition."),
+        help_text=_("Default job time limit for this partition. Maps to DefaultTime in slurm.conf."),
     )
 
     state = models.CharField(
@@ -502,7 +556,14 @@ class SlurmPartition(AllocatableResourceMixin, PrimaryModel):
         blank=True,
         null=True,
         verbose_name=_("default memory per CPU"),
-        help_text=_("Default memory per CPU in MB for jobs in this partition."),
+        help_text=_("Default memory per CPU in MB for jobs in this partition. Maps to DefMemPerCPU in slurm.conf."),
+    )
+
+    def_mem_per_node = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        verbose_name=_("default memory per node"),
+        help_text=_("Default memory per node in MB for jobs in this partition. Maps to DefMemPerNode in slurm.conf."),
     )
 
     tres_billing_weights = models.JSONField(
@@ -513,8 +574,7 @@ class SlurmPartition(AllocatableResourceMixin, PrimaryModel):
         help_text=_(
             "TRES billing weights for this partition. Maps to "
             "TRESBillingWeights on the PartitionName=<name> line. An empty "
-            "dict falls through to the cluster's "
-            "default_tres_billing_weights."
+            "dict bills allocated CPUs at weight 1.0."
         ),
     )
 
@@ -528,24 +588,23 @@ class SlurmPartition(AllocatableResourceMixin, PrimaryModel):
     clone_fields = (
         "cluster",
         "locked",
-        "max_jobs",
-        "max_submit_jobs",
-        "max_tres_per_job",
-        "max_tres_per_node",
-        "max_tres_mins_per_job",
-        "max_wall_duration_per_job",
-        "fairshare",
+        "max_nodes",
+        "max_cpus_per_node",
+        "max_time",
         "allow_qos",
+        "deny_qos",
         "qos",
         "allow_groups",
         "allow_accounts",
         "nodes",
         "priority",
+        "priority_tier",
         "is_default",
         "default_time",
         "state",
         "preempt_mode",
         "def_mem_per_cpu",
+        "def_mem_per_node",
         "tres_billing_weights",
         "slug",
     )
@@ -577,15 +636,10 @@ class SlurmPartition(AllocatableResourceMixin, PrimaryModel):
     def effective_tres_billing_weights(self):
         """Resolve the effective TRES billing weights for this partition.
 
-        Falls through partition -> cluster default -> {"CPU": 1.0}.
+        DEFAULT is absorbed into each partition at parse time, so a partition
+        either carries its own weights or falls back to {"CPU": 1.0}.
         """
-        weights = self.tres_billing_weights
-        if weights:
-            return weights
-        cluster_default = self.cluster.default_tres_billing_weights
-        if cluster_default:
-            return cluster_default
-        return {"CPU": 1.0}
+        return self.tres_billing_weights or {"CPU": 1.0}
 
 
 class SlurmAccount(PrimaryModel):
@@ -781,7 +835,7 @@ class SlurmAssociation(AllocationExtensionMixin, PrimaryModel):
         help_text=_('JSON dict of TRES minute limits per job (e.g., {"cpu":360}).'),
     )
 
-    max_wall_duration_per_job = models.DurationField(
+    max_wall_duration_per_job = SlurmTimeField(
         blank=True,
         null=True,
         verbose_name=_("max wall duration per job"),

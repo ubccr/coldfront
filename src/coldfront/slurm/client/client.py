@@ -5,17 +5,19 @@
 """
 Slurm REST API client (version-agnostic).
 
-Provides a single :class:`SlurmClient` that works with any Slurm REST API
-version from v0.0.41 through v0.0.45. The version is negotiated once at
-connect time via the ``/ping`` discovery endpoint; all subsequent calls
-use the same version prefix.
+Provides a single :class:`SlurmClient` that works across the supported
+Slurm REST API versions. The version is negotiated once at connect time
+via the ``/ping`` discovery endpoint; all subsequent calls use the same
+version prefix.
+
+Discovery is strict: it probes the supported API versions and refuses a
+slurmrestd that exposes only unsupported ones.
 
 Core entity schemas (``assoc_rec_set``, ``user``, ``account``,
-``users_add_cond``, ``accounts_add_cond``) are stable across all versions,
-so a single set of serializers handles every version without conditional
-logic. Only the URL path prefix and two minor response-parsing details
-change between versions — see :ref:`version-agnostic-rest-client` in the
-design document.
+``users_add_cond``, ``accounts_add_cond``) are stable across the supported
+versions, so a single set of serializers handles them all without
+conditional logic. Only the URL path prefix changes between versions — see
+:ref:`version-agnostic-rest-client` in the design document.
 
 Usage::
 
@@ -25,13 +27,13 @@ Usage::
     )
     client.discover_version()
 
-    # Create an association
+    # Create an association (nested assoc schema — see serialize_association)
     client.create_associations([{
         "account": "hpc-lab",
         "user": "jsmith",
         "cluster": "hpc01",
         "partition": "gpu",
-        "fairshare": 1,
+        "shares_raw": 1,
         ...
     }])
 
@@ -44,8 +46,6 @@ Usage::
     })
 """
 
-from __future__ import annotations
-
 import logging
 import time
 from typing import Any
@@ -53,17 +53,14 @@ from typing import Any
 import requests
 
 from .exceptions import (
-    SlurmAlreadyExistsException,
-    SlurmAuthException,
-    SlurmBadRequestException,
-    SlurmConflictException,
-    SlurmException,
-    SlurmInvalidQueryException,
-    SlurmNoRemoveDefaultAccountException,
-    SlurmNotFoundException,
-    SlurmUnavailableException,
-    SlurmUserIdMissingException,
+    SlurmAccountNotCreatedError,
+    SlurmAssociationNotCreatedError,
+    SlurmBadRequestError,
+    SlurmError,
+    SlurmUnavailableError,
+    SlurmUserNotCreatedError,
 )
+from .versions import api_version_for, slurm_version_for, supported_api_versions
 
 __all__ = [
     "SlurmClient",
@@ -76,58 +73,41 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 _HTTP_OK = 200
 _HTTP_BAD_REQUEST = 400
-_HTTP_UNAUTHORIZED = 401
-_HTTP_FORBIDDEN = 403
-_HTTP_NOT_FOUND = 404
-_HTTP_CONFLICT = 409
 _HTTP_UNPROCESSABLE = 422
 _HTTP_BAD_GATEWAY = 502
 _HTTP_SERVICE_UNAVAILABLE = 503
 _HTTP_GATEWAY_TIMEOUT = 504
 
-# Slurm error codes that map to specific exception types
-# These are extracted from the C source (http.c, slurmdb_defs.h).
-_ERROR_MAP: dict[str, type[SlurmException]] = {
-    "ESLURM_REST_INVALID_QUERY": SlurmBadRequestException,
-    "ESLURM_REST_FAIL_PARSING": SlurmBadRequestException,
-    "ESLURM_REST_INVALID_JOBS_DESC": SlurmBadRequestException,
-    "ESLURM_HTTP_INVALID_CONTENT_LENGTH": SlurmBadRequestException,
-    "ESLURM_HTTP_INVALID_CONTENT_ENCODING": SlurmBadRequestException,
-    "ESLURM_HTTP_UNEXPECTED_BODY": SlurmBadRequestException,
-    "ESLURM_DATA_PARSE_BAD_INPUT": SlurmBadRequestException,
-    "ESLURM_REST_BAD_REQUEST": SlurmBadRequestException,
-    "ESLURM_AUTH_CRED_INVALID": SlurmAuthException,
-    "ESLURM_AUTH_EXPIRED": SlurmAuthException,
-    "ESLURM_REST_AUTH_FAIL": SlurmAuthException,
-    "ESLURM_INVALID_JOB_ID": SlurmNotFoundException,
-    "ESLURM_REST_UNKNOWN_URL": SlurmNotFoundException,
-    "ESLURM_URL_INVALID_PATH": SlurmNotFoundException,
-    "ESLURM_USER_ID_MISSING": SlurmUserIdMissingException,
-    "ESLURM_NO_REMOVE_DEFAULT_ACCOUNT": SlurmNoRemoveDefaultAccountException,
-    "ESLURM_NO_REMOVE_DEFAULT_QOS": SlurmConflictException,
-    "ESLURM_ALREADY_DB_ENTRY": SlurmAlreadyExistsException,
-    "ESLURM_DATA_AMBIGUOUS_QUERY": SlurmInvalidQueryException,
-    "ESLURM_DATA_AMBIGUOUS_MODIFY": SlurmInvalidQueryException,
-    "ESLURM_DB_CONNECTION": SlurmUnavailableException,
-    "SLURM_COMMUNICATIONS_CONNECTION_ERROR": SlurmUnavailableException,
-    "SLURM_COMMUNICATIONS_SEND_ERROR": SlurmUnavailableException,
-    "SLURM_COMMUNICATIONS_RECEIVE_ERROR": SlurmUnavailableException,
-    "SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR": SlurmUnavailableException,
-    "SLURMCTLD_COMMUNICATIONS_BACKOFF": SlurmUnavailableException,
-    "SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT": SlurmUnavailableException,
-    "ESLURM_PROTOCOL_INCOMPLETE_PACKET": SlurmUnavailableException,
-    "SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT": SlurmUnavailableException,
-    "EPERM": SlurmAuthException,
+# Slurm error codes that map to specific exception types.
+#
+# Only codes the **supported slurmrestd versions actually emit** are mapped
+# (verified live against the e2e stack). Auth (403) and not-found (404) and
+# conflict (409) codes never occur on the supported versions — auth failures
+# surface as 502/503 unavailability and missing entities as silent success —
+# so they have no mapping and no exception class.
+_ERROR_MAP: dict[str, type[SlurmError]] = {
+    "ESLURM_REST_INVALID_QUERY": SlurmBadRequestError,
+    "ESLURM_REST_FAIL_PARSING": SlurmBadRequestError,
+    "ESLURM_REST_INVALID_JOBS_DESC": SlurmBadRequestError,
+    "ESLURM_HTTP_INVALID_CONTENT_LENGTH": SlurmBadRequestError,
+    "ESLURM_HTTP_INVALID_CONTENT_ENCODING": SlurmBadRequestError,
+    "ESLURM_HTTP_UNEXPECTED_BODY": SlurmBadRequestError,
+    "ESLURM_DATA_PARSE_BAD_INPUT": SlurmBadRequestError,
+    "ESLURM_REST_BAD_REQUEST": SlurmBadRequestError,
+    "ESLURM_DB_CONNECTION": SlurmUnavailableError,
+    "SLURM_COMMUNICATIONS_CONNECTION_ERROR": SlurmUnavailableError,
+    "SLURM_COMMUNICATIONS_SEND_ERROR": SlurmUnavailableError,
+    "SLURM_COMMUNICATIONS_RECEIVE_ERROR": SlurmUnavailableError,
+    "SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR": SlurmUnavailableError,
+    "SLURMCTLD_COMMUNICATIONS_BACKOFF": SlurmUnavailableError,
+    "SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT": SlurmUnavailableError,
+    "ESLURM_PROTOCOL_INCOMPLETE_PACKET": SlurmUnavailableError,
+    "SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT": SlurmUnavailableError,
 }
 
-# Supported API versions in descending preference order
-_SUPPORTED_VERSIONS = [
-    "v0.0.45",
-    "v0.0.44",
-    "v0.0.43",
-    "v0.0.42",
-    "v0.0.41",
-]
+# Supported API versions in descending preference order, derived from the
+# single source of truth in ``versions.py`` (release -> API mapping).
+SUPPORTED_API_VERSIONS = supported_api_versions()
 
 # Default config values
 _DEFAULT_TIMEOUT = 30
@@ -146,8 +126,10 @@ class SlurmClient:
         base_url: Base URL of the ``slurmrestd`` instance (e.g.,
             ``http://slurmrestd:8080``).
         jwt_token: JWT token for a Slurm admin user.
-        version: API version prefix to use. If ``None``, call
-            :meth:`discover_version` to negotiate the version.
+        version: Slurm release version (e.g. ``"25.11.8"``). If ``None``,
+            call :meth:`discover_version` to negotiate the version. The
+            REST API version is resolved internally and is not part of the
+            public contract.
         timeout: HTTP request timeout in seconds (default 30).
         retries: Number of retry attempts on transient failures (default 3).
         retry_backoff: Exponential backoff base in seconds (default 1.5).
@@ -163,7 +145,8 @@ class SlurmClient:
         retry_backoff: float = _DEFAULT_RETRY_BACKOFF,
     ) -> None:
         self.base_url = base_url.rstrip("/")
-        self.version = version
+        self.version = version  # Slurm release (public); None => discover
+        self._api_version = api_version_for(version) if version else None
         self.timeout = timeout
         self.retries = retries
         self.retry_backoff = retry_backoff
@@ -187,11 +170,15 @@ class SlurmClient:
 
     def _slurm_path(self, template: str) -> str:
         """Build a path to the ``slurm`` API (slurmctld endpoints)."""
-        return f"{self.base_url}/slurm/{self.version}/{template}"
+        if self._api_version is None:
+            self.discover_version()
+        return f"{self.base_url}/slurm/{self._api_version}/{template}"
 
     def _slurmdb_path(self, template: str) -> str:
         """Build a path to the ``slurmdb`` API (slurmdbd endpoints)."""
-        return f"{self.base_url}/slurmdb/{self.version}/{template}"
+        if self._api_version is None:
+            self.discover_version()
+        return f"{self.base_url}/slurmdb/{self._api_version}/{template}"
 
     # ------------------------------------------------------------------
     # Version discovery
@@ -200,23 +187,28 @@ class SlurmClient:
     def discover_version(self) -> str:
         """Discover the highest supported API version.
 
-        Probes each known version via ``GET /slurmdb/{version}/ping/``
-        and selects the highest version that responds successfully.
-        Stores the chosen version in ``self.version``.
+        Probes each known API version via ``GET /slurmdb/{version}/ping/``
+        and selects the highest version that responds successfully. Stores
+        the resolved REST API version in ``self._api_version`` and the
+        corresponding Slurm release in ``self.version``.
 
         Returns:
-            The chosen version string (e.g., ``"v0.0.44"``).
+            The chosen REST API version string (internal detail).
 
         Raises:
             RuntimeError: If no compatible version is found.
         """
-        for v in _SUPPORTED_VERSIONS:
+        for v in SUPPORTED_API_VERSIONS:
             url = f"{self.base_url}/slurmdb/{v}/ping/"
             logger.debug("Probing API version %s at %s", v, url)
             try:
                 resp = self.session.get(url, timeout=self.timeout)
-                if resp.status_code < 500:
-                    self.version = v
+                # Only a 2xx response means this API version actually exists.
+                # A 404 (unknown version path) or 5xx (transient) must be
+                # skipped so we fall back to a lower supported version.
+                if 200 <= resp.status_code < 300:
+                    self._api_version = v
+                    self.version = slurm_version_for(v)
                     logger.info(
                         "Negotiated API version %s (probed %s)",
                         v,
@@ -231,7 +223,7 @@ class SlurmClient:
                 )
                 continue
 
-        raise RuntimeError(f"No compatible Slurm REST API version found (tried {_SUPPORTED_VERSIONS})")
+        raise RuntimeError(f"No compatible Slurm REST API version found (tried {SUPPORTED_API_VERSIONS})")
 
     # ------------------------------------------------------------------
     # Serializers — single implementation for all versions
@@ -245,7 +237,7 @@ class SlurmClient:
     ) -> dict[str, Any]:
         """Serialize an account record for ``POST /accounts/``.
 
-        Works for v0.0.41 through v0.0.45. All fields stable.
+        All fields are stable across the supported API versions.
 
         Args:
             name: Slurm account name.
@@ -261,6 +253,31 @@ class SlurmClient:
         if organization is not None:
             body["organization"] = organization
         return body
+
+    @staticmethod
+    def _tres_to_list(tres: dict[str, int]) -> list[dict[str, Any]]:
+        """Convert a ``{type: count}`` TRES dict to the REST ``tres_list`` array format.
+
+        The Slurm REST API expects TRES limits (``grptresmins``, ``grptres``,
+        ``maxtresperjob``, ...) as an array of ``{type, count}`` objects, not a
+        ``{type: count}`` dict. Verified live: sending a dict yields
+        ``9208 Data parser expected a list``; the array form is accepted and
+        stored (e.g. ``GrpTRESMins=billing=600000``).
+        """
+        return [{"type": k, "count": v} for k, v in tres.items()]
+
+    @staticmethod
+    def _set_nested(body: dict[str, Any], keys: list[str], value: Any) -> None:
+        """Set ``value`` at a dotted path inside ``body``, creating dicts.
+
+        The plain ``POST /associations/`` endpoint parses the nested
+        ``assoc`` schema (e.g. ``max/tres/per/job``), so limit fields are
+        placed at nested paths instead of flat top-level keys.
+        """
+        node = body
+        for key in keys[:-1]:
+            node = node.setdefault(key, {})
+        node[keys[-1]] = value
 
     @staticmethod
     def serialize_association(
@@ -283,62 +300,79 @@ class SlurmClient:
     ) -> dict[str, Any]:
         """Serialize an association record for ``POST /associations/``.
 
-        Works for v0.0.41 through v0.0.45. All 22 ``assoc_rec_set``
-        properties stable across versions.
+        The ``associations`` endpoint parses the nested ``assoc`` schema
+        (not the flat ``assoc_rec_set`` used by ``accounts_association``).
+        Fields therefore live at nested paths: limits under ``max/``, the
+        default QOS under ``default/qos``, and the association's QOS list
+        under ``qos``. The flat ``assoc_rec_set`` names (``fairshare``,
+        ``qoslevel``, ``parent``) are ignored by this endpoint, so they map
+        to the nested equivalents (``shares_raw``, ``qos``,
+        ``parent_account``).
 
         Args:
             account: Slurm account name.
             user: Slurm username.
             cluster: Cluster name.
             partition: Partition name (empty string for generic assoc).
-            default_qos: Default QOS name.
-            parent: Parent account name in the hierarchy.
-            fairshare: Fairshare value (None = omit, uses Slurm default).
-            max_jobs: Maximum active jobs limit.
-            max_submit_jobs: Maximum submit jobs limit.
-            max_tres_per_job: Per-job TRES limits dict (e.g., {"node": 5}).
-            max_tres_mins_per_job: Per-job TRES minutes limits dict.
-            max_wall_duration_per_job: Max wall duration in minutes.
-            grp_tres: Group TRES limits dict.
-            grp_tres_mins: Group TRES minutes limits dict (e.g., {"billing": N}).
-                Maps to ``assoc_rec_set.grptresmins`` in the REST API.
-            grp_wall: Group wall duration limit in minutes.
-            qoslevel: List of QOS names for this association.
-                Maps to ``assoc_rec_set.qoslevel`` in the REST API.
+            default_qos: Default QOS name (nested ``default.qos``).
+            parent: Parent account name (``parent_account``).
+            fairshare: Fairshare value (``shares_raw``).
+            max_jobs: Maximum active jobs limit (``max.jobs.active``).
+            max_submit_jobs: Maximum submit jobs limit (``max.jobs.total``).
+            max_tres_per_job: Per-job TRES limits dict (e.g., {"node": 5});
+                serialized to the ``tres_list`` array format
+                (``max.tres.per.job``).
+            max_tres_mins_per_job: Per-job TRES minutes limits dict;
+                serialized to ``tres_list`` (``max.tres.minutes.per.job``).
+            max_wall_duration_per_job: Max wall duration in minutes
+                (``max.jobs.per.wall_clock``).
+            grp_tres: Group TRES limits dict; serialized to ``tres_list``
+                (``max.tres.total``).
+            grp_tres_mins: Group TRES minutes limits dict (e.g., {"billing": N});
+                serialized to ``tres_list`` (``max.tres.group.minutes``).
+            grp_wall: Group wall duration limit in minutes
+                (``max.per.account.wall_clock``).
+            qoslevel: List of QOS names for this association (``qos``).
 
         Returns:
-            A dict matching the ``assoc_rec_set`` schema.
+            A dict matching the nested ``assoc`` schema for ``POST /associations/``.
         """
         body: dict[str, Any] = {
             "account": account,
             "user": user,
             "cluster": cluster,
-            "partition": partition,
         }
+        if partition:
+            body["partition"] = partition
         if default_qos is not None:
-            body["defaultqos"] = default_qos
+            body["default"] = {"qos": default_qos}
         if parent is not None:
-            body["parent"] = parent
+            body["parent_account"] = parent
         if fairshare is not None:
-            body["fairshare"] = fairshare
+            body["shares_raw"] = fairshare
+        # Limits live under the nested ``max`` object.
         if max_jobs is not None:
-            body["maxjobs"] = max_jobs
+            SlurmClient._set_nested(body, ["max", "jobs", "active"], max_jobs)
         if max_submit_jobs is not None:
-            body["maxsubmitjobs"] = max_submit_jobs
+            SlurmClient._set_nested(body, ["max", "jobs", "total"], max_submit_jobs)
         if max_tres_per_job is not None:
-            body["maxtresperjob"] = max_tres_per_job
+            SlurmClient._set_nested(body, ["max", "tres", "per", "job"], SlurmClient._tres_to_list(max_tres_per_job))
         if max_tres_mins_per_job is not None:
-            body["maxtresminsperjob"] = max_tres_mins_per_job
+            SlurmClient._set_nested(
+                body,
+                ["max", "tres", "minutes", "per", "job"],
+                SlurmClient._tres_to_list(max_tres_mins_per_job),
+            )
         if max_wall_duration_per_job is not None:
-            body["maxwalldurationperjob"] = max_wall_duration_per_job
+            SlurmClient._set_nested(body, ["max", "jobs", "per", "wall_clock"], max_wall_duration_per_job)
         if grp_tres is not None:
-            body["grptres"] = grp_tres
+            SlurmClient._set_nested(body, ["max", "tres", "total"], SlurmClient._tres_to_list(grp_tres))
         if grp_tres_mins is not None:
-            body["grptresmins"] = grp_tres_mins
+            SlurmClient._set_nested(body, ["max", "tres", "group", "minutes"], SlurmClient._tres_to_list(grp_tres_mins))
         if grp_wall is not None:
-            body["grpwall"] = grp_wall
+            SlurmClient._set_nested(body, ["max", "per", "account", "wall_clock"], grp_wall)
         if qoslevel is not None:
-            body["qoslevel"] = qoslevel
+            body["qos"] = qoslevel
         return body
 
     @staticmethod
@@ -351,14 +385,13 @@ class SlurmClient:
     ) -> dict[str, Any]:
         """Serialize a user record for ``POST /users/``.
 
-        Works for v0.0.41 through v0.0.45. The ``default.qos`` field
-        is included for v44+ but silently ignored by older versions.
+        The ``default.qos`` field is included when provided.
 
         Args:
             name: Slurm username.
             default_account: User's default Slurm account name.
             default_wckey: Optional default wckey.
-            default_qos: Optional default QOS name (v44+).
+            default_qos: Optional default QOS name.
             admin_level: Slurm admin level (0=none, 1=operator, 2=admin).
 
         Returns:
@@ -394,8 +427,7 @@ class SlurmClient:
         """Serialize a kill-jobs message for ``DELETE /jobs/``.
 
         ``job_state`` and ``flags`` are sent as simple strings,
-        compatible with both the ref-object format (v41–v42) and
-        inline-enum format (v43–v45).
+        compatible with the supported versions.
 
         Args:
             user_name: Filter by username.
@@ -461,21 +493,36 @@ class SlurmClient:
             wckeys: List of wckey names.
 
         Returns:
-            A dict matching the ``users_add_cond`` schema.
+            A dict matching the ``openapi_users_add_cond_resp`` POST body:
+            ``{user, association_condition}`` where ``association_condition``
+            is the ``users_add_cond`` filter and ``user`` is the optional
+            ``user_short`` (default account/wckey).
         """
-        body: dict[str, Any] = {
+        cond: dict[str, Any] = {
             "users": users,
         }
         if accounts is not None:
-            body["accounts"] = accounts
+            cond["accounts"] = accounts
         if clusters is not None:
-            body["clusters"] = clusters
+            cond["clusters"] = clusters
         if partitions is not None:
-            body["partitions"] = partitions
+            cond["partitions"] = partitions
         if association is not None:
-            body["association"] = association
+            cond["association"] = association
         if wckeys is not None:
-            body["wckeys"] = wckeys
+            cond["wckeys"] = wckeys
+
+        body: dict[str, Any] = {
+            "association_condition": cond,
+        }
+        # user_short — the handler folds default account/wckey into the cond
+        user_short: dict[str, Any] = {}
+        if accounts:
+            user_short["defaultaccount"] = accounts[0]
+        if wckeys:
+            user_short["defaultwckey"] = wckeys[0]
+        if user_short:
+            body["user"] = user_short
         return body
 
     @staticmethod
@@ -483,6 +530,8 @@ class SlurmClient:
         accounts: list[str],
         clusters: list[str] | None = None,
         association: dict[str, Any] | None = None,
+        description: str | None = None,
+        organization: str | None = None,
     ) -> dict[str, Any]:
         """Serialize an ``accounts_add_cond`` for ``POST /accounts_association/``.
 
@@ -493,17 +542,34 @@ class SlurmClient:
             clusters: List of cluster names to scope.
             association: Optional ``assoc_rec_set`` dict for the
                 association parameters.
+            description: Optional account description.
+            organization: Optional account organization.
 
         Returns:
-            A dict matching the ``accounts_add_cond`` schema.
+            A dict matching the ``openapi_accounts_add_cond_resp`` POST body:
+            ``{account, association_condition}`` where ``association_condition``
+            is the ``accounts_add_cond`` filter and ``account`` is the optional
+            ``account_short`` (description/organization).
         """
-        body: dict[str, Any] = {
+        cond: dict[str, Any] = {
             "accounts": accounts,
         }
         if clusters is not None:
-            body["clusters"] = clusters
+            cond["clusters"] = clusters
         if association is not None:
-            body["association"] = association
+            cond["association"] = association
+
+        body: dict[str, Any] = {
+            "association_condition": cond,
+        }
+        # account_short — optional description/organization on the new account
+        account_short: dict[str, Any] = {}
+        if description is not None:
+            account_short["description"] = description
+        if organization is not None:
+            account_short["organization"] = organization
+        if account_short:
+            body["account"] = account_short
         return body
 
     @staticmethod
@@ -512,38 +578,31 @@ class SlurmClient:
         description: str | None = None,
         priority: int | None = None,
         limit_factor: float | None = None,
-        flags: list[str] | None = None,
-        preempt: str | None = None,
-        preempt_mode: str | None = None,
-        grt_tres: dict[str, int] | None = None,
-        grt_wall: int | None = None,
-        max_tres_per_job: dict[str, int] | None = None,
+        max_submit_jobs_per_user: int | None = None,
+        max_jobs_per_user: int | None = None,
+        max_submit_jobs_per_account: int | None = None,
+        max_jobs_per_account: int | None = None,
         max_wall_duration_per_job: int | None = None,
-        max_jobs: int | None = None,
-        max_submit_jobs: int | None = None,
-        max_tres_mins_per_job: dict[str, int] | None = None,
-        min_tres_per_job: dict[str, int] | None = None,
+        grace_time: int | None = None,
     ) -> dict[str, Any]:
         """Serialize a QOS record for ``POST /slurmdb/{version}/qos/``.
 
-        Works for v0.0.41 through v0.0.45.
+        The limits are nested under a ``limits`` object
+        (``limits/max/...``, ``limits/factor``, ``limits/grace_time``),
+        matching the ``qos_rec`` parser schema; flat names such as
+        ``maxwalldurationperjob`` are ignored.
 
         Args:
             name: QOS name.
             description: Optional QOS description.
-            priority: Priority value for the QOS.
-            limit_factor: Limit factor.
-            flags: List of QOS flags (e.g., "Denormal", "NoNormal").
-            preempt: Preempting QOS name.
-            preempt_mode: Preempt mode.
-            grt_tres: Group TRES limits dict.
-            grt_wall: Group wall limit in minutes.
-            max_tres_per_job: Max TRES per job dict.
-            max_wall_duration_per_job: Max wall duration in minutes.
-            max_jobs: Max active jobs.
-            max_submit_jobs: Max submit jobs.
-            max_tres_mins_per_job: Max TRES minutes per job.
-            min_tres_per_job: Min TRES per job dict.
+            priority: Priority factor for the QOS.
+            limit_factor: Factor applied to an association's group TRES limits.
+            max_submit_jobs_per_user: Maximum pending or running jobs per user.
+            max_jobs_per_user: Maximum running jobs per user.
+            max_submit_jobs_per_account: Maximum pending or running jobs per account.
+            max_jobs_per_account: Maximum running jobs per account.
+            max_wall_duration_per_job: Maximum wall clock time per job in minutes.
+            grace_time: Preemption grace time in seconds.
 
         Returns:
             A dict matching the ``qos_rec`` schema.
@@ -553,30 +612,75 @@ class SlurmClient:
             body["description"] = description
         if priority is not None:
             body["priority"] = priority
+
+        limits: dict[str, Any] = {}
+        if grace_time is not None:
+            limits["grace_time"] = grace_time
         if limit_factor is not None:
-            body["limit_factor"] = limit_factor
-        if flags is not None:
-            body["flags"] = flags
-        if preempt is not None:
-            body["preempt"] = preempt
-        if preempt_mode is not None:
-            body["preemptmode"] = preempt_mode
-        if grt_tres is not None:
-            body["grptres"] = grt_tres
-        if grt_wall is not None:
-            body["grpwall"] = grt_wall
-        if max_tres_per_job is not None:
-            body["maxtresperjob"] = max_tres_per_job
+            limits["factor"] = limit_factor
+
+        max_obj: dict[str, Any] = {}
+        if max_submit_jobs_per_user is not None:
+            SlurmClient._set_nested(max_obj, ["jobs", "per", "user"], max_submit_jobs_per_user)
+        if max_jobs_per_user is not None:
+            SlurmClient._set_nested(max_obj, ["jobs", "active_jobs", "per", "user"], max_jobs_per_user)
+        if max_submit_jobs_per_account is not None:
+            SlurmClient._set_nested(max_obj, ["jobs", "per", "account"], max_submit_jobs_per_account)
+        if max_jobs_per_account is not None:
+            SlurmClient._set_nested(max_obj, ["jobs", "active_jobs", "per", "account"], max_jobs_per_account)
         if max_wall_duration_per_job is not None:
-            body["maxwalldurationperjob"] = max_wall_duration_per_job
-        if max_jobs is not None:
-            body["maxjobs"] = max_jobs
-        if max_submit_jobs is not None:
-            body["maxsubmitjobs"] = max_submit_jobs
-        if max_tres_mins_per_job is not None:
-            body["maxtresminsperjob"] = max_tres_mins_per_job
-        if min_tres_per_job is not None:
-            body["mintresperjob"] = min_tres_per_job
+            SlurmClient._set_nested(max_obj, ["wall_clock", "per", "job"], max_wall_duration_per_job)
+        if max_obj:
+            limits["max"] = max_obj
+
+        if limits:
+            body["limits"] = limits
+        return body
+
+    @staticmethod
+    def serialize_partition(
+        name: str,
+        qos_allowed: str | None = None,
+        qos_deny: str | None = None,
+        qos_assigned: str | None = None,
+        nodes_configured: str | None = None,
+        tres_billing_weights: str | None = None,
+    ) -> dict[str, Any]:
+        """Serialize a partition record for ``POST /slurm/{version}/partitions/``.
+
+        The data parser maps the nested ``qos/allowed`` (AllowQOS),
+        ``qos/deny`` (DenyQOS) and ``qos/assigned`` (QOS) paths onto the
+        partition's ``allow_qos``, ``deny_qos`` and ``qos`` fields,
+        ``nodes/configured`` onto the partition's node list (``Nodes``), and
+        ``tres/billing_weights`` onto ``TRESBillingWeights``. ``nodes`` is an
+        object, not a plain string.
+
+        Args:
+            name: Partition name.
+            qos_allowed: AllowQOS whitelist (comma-separated QOS names).
+            qos_deny: DenyQOS blocklist (comma-separated QOS names).
+            qos_assigned: QOS name whose limits apply to all jobs in the partition.
+            nodes_configured: Comma-separated node names in the partition.
+            tres_billing_weights: TRESBillingWeights string (e.g.
+                ``"CPU=2.0,Node=3.0"``).
+
+        Returns:
+            A dict matching the ``partition_info`` schema for ``POST /partitions/``.
+        """
+        body: dict[str, Any] = {"name": name}
+        if qos_allowed is not None or qos_deny is not None or qos_assigned is not None:
+            qos: dict[str, Any] = {}
+            if qos_allowed is not None:
+                qos["allowed"] = qos_allowed
+            if qos_deny is not None:
+                qos["deny"] = qos_deny
+            if qos_assigned is not None:
+                qos["assigned"] = qos_assigned
+            body["qos"] = qos
+        if nodes_configured is not None:
+            body["nodes"] = {"configured": nodes_configured}
+        if tres_billing_weights is not None:
+            body["tres"] = {"billing_weights": tres_billing_weights}
         return body
 
     # ------------------------------------------------------------------
@@ -599,7 +703,7 @@ class SlurmClient:
             body: Parsed JSON body (may be empty).
 
         Raises:
-            SlurmException subclass corresponding to the error.
+            SlurmError subclass corresponding to the error.
         """
         status = resp.status_code
         errors = body.get("errors", [])
@@ -650,37 +754,19 @@ class SlurmClient:
                     description,
                 )
 
-        # Fall back to HTTP status-based mapping
+        # Fall back to HTTP status-based mapping. Only the statuses the
+        # supported versions emit are mapped: 400/422 (bad request) and
+        # 502/503/504 (unavailable). Auth (401/403), not-found (404) and
+        # conflict (409) never occur live on the supported stack.
         if status == _HTTP_BAD_REQUEST or status == _HTTP_UNPROCESSABLE:
-            raise SlurmBadRequestException(
+            raise SlurmBadRequestError(
                 message="Bad request to Slurm API",
                 errors=[str(e) for e in errors],
                 warnings=[str(w) for w in warnings],
                 status_code=status,
             )
-        elif status in (_HTTP_UNAUTHORIZED, _HTTP_FORBIDDEN):
-            raise SlurmAuthException(
-                message="Authentication/authorization failure",
-                errors=[str(e) for e in errors],
-                warnings=[str(w) for w in warnings],
-                status_code=status,
-            )
-        elif status == _HTTP_NOT_FOUND:
-            raise SlurmNotFoundException(
-                message="Entity not found in Slurm",
-                errors=[str(e) for e in errors],
-                warnings=[str(w) for w in warnings],
-                status_code=status,
-            )
-        elif status == _HTTP_CONFLICT:
-            raise SlurmConflictException(
-                message="Resource conflict",
-                errors=[str(e) for e in errors],
-                warnings=[str(w) for w in warnings],
-                status_code=status,
-            )
         elif status in (_HTTP_BAD_GATEWAY, _HTTP_SERVICE_UNAVAILABLE, _HTTP_GATEWAY_TIMEOUT):
-            raise SlurmUnavailableException(
+            raise SlurmUnavailableError(
                 message="Slurm service unavailable or timed out",
                 errors=[str(e) for e in errors],
                 warnings=[str(w) for w in warnings],
@@ -707,7 +793,7 @@ class SlurmClient:
             entity-specific fields (e.g., ``body["associations"]``).
 
         Raises:
-            SlurmException subclass if the API returned an error.
+            SlurmError subclass if the API returned an error.
         """
         body: dict[str, Any] = {}
         if resp.content:
@@ -746,7 +832,7 @@ class SlurmClient:
             Parsed response body dict.
 
         Raises:
-            SlurmException subclass on failure.
+            SlurmError subclass on failure.
         """
         last_exc: Exception | None = None
         last_body: dict[str, Any] = {}
@@ -770,7 +856,7 @@ class SlurmClient:
                 last_body = self._parse_response(resp)
                 return last_body
 
-            except SlurmUnavailableException as exc:
+            except SlurmUnavailableError as exc:
                 # Transient — retry with backoff
                 last_exc = exc
                 last_body = exc.errors or []
@@ -799,22 +885,122 @@ class SlurmClient:
                     backoff = self.retry_backoff * (2 ** (attempt - 1))
                     time.sleep(backoff)
                 else:
-                    raise SlurmUnavailableException(
+                    raise SlurmUnavailableError(
                         message=str(exc),
                         status_code=503,
                     ) from exc
 
-            except SlurmException:
+            except SlurmError:
                 # Non-transient error — re-raise immediately
                 raise
 
         # Should not reach here (retries exhausted), but guard anyway
-        if isinstance(last_exc, SlurmException):
+        if isinstance(last_exc, SlurmError):
             raise last_exc
-        raise SlurmUnavailableException(
+        raise SlurmUnavailableError(
             message=f"Request failed after {self.retries} retries",
             status_code=503,
         )
+
+    # ------------------------------------------------------------------
+    # Silent-failure verification helpers
+    # ------------------------------------------------------------------
+    #
+    # slurmdbd can silently no-op a create: HTTP 200, errors=[], but nothing
+    # stored. Known causes: a user with no uid in /etc/passwd, an association
+    # whose parent account association does not exist, or a user whose default
+    # account is missing. The plain create endpoints return no data field to
+    # inspect, so verification requires a read-back GET. The add_cond endpoints
+    # return ``added_users``/``added_accounts`` on success and a completely
+    # empty body on a silent no-op, so those can gate (skip the GET) on the
+    # happy path and verify only when the body is empty (ambiguous between a
+    # silent no-op and an already-present entity — the idempotent re-run case).
+
+    def _verify_accounts_created(self, names: list[str]) -> None:
+        """Confirm every requested account actually materialized.
+
+        Accounts already present (including ones that pre-existed) count as
+        success — this only flags accounts that never appeared.
+        """
+        got = self.get_accounts()
+        present = {a.get("name", "") for a in got.get("accounts", [])}
+        missing = [n for n in names if n not in present]
+        if missing:
+            raise SlurmAccountNotCreatedError(
+                message=(
+                    "Slurm account(s) were not recorded: "
+                    + ", ".join(missing)
+                    + ". Verify the cluster can create the account, then re-run."
+                ),
+                missing=missing,
+            )
+
+    def _verify_users_created(self, names: list[str]) -> None:
+        """Confirm every requested user record actually materialized."""
+        got = self.get_users()
+        present = {u.get("name", "") for u in got.get("users", [])}
+        missing = [n for n in names if n not in present]
+        if missing:
+            raise SlurmUserNotCreatedError(
+                message=(
+                    "Slurm user(s) were not recorded: "
+                    + ", ".join(missing)
+                    + ". Verify the OS account exists on the cluster "
+                    + "(e.g. useradd), then re-run."
+                ),
+                missing=missing,
+            )
+
+    def _verify_associations_created(self, associations: list[dict[str, Any]]) -> None:
+        """Confirm every requested association actually materialized.
+
+        Associations are hierarchical, so the usual silent drops are a missing
+        parent account-level association and a user with no uid. Each missing
+        association is reported as ``(account, user, cluster)``.
+        """
+        got = self.get_associations()
+        stored = [(a.get("account"), a.get("user", ""), a.get("cluster")) for a in got.get("associations", [])]
+        missing = []
+        for assoc in associations:
+            key = (
+                assoc.get("account"),
+                assoc.get("user", ""),
+                assoc.get("cluster"),
+            )
+            if key not in stored:
+                missing.append(key)
+        if missing:
+            raise SlurmAssociationNotCreatedError(
+                message=(
+                    "Slurm association(s) were not recorded: "
+                    + ", ".join(f"{a}/{u}/{c}" for a, u, c in missing)
+                    + ". Verify the parent account association and the OS "
+                    + "account exist, then re-run."
+                ),
+                missing=missing,
+            )
+
+    def _verify_users_have_associations(self, names: list[str]) -> None:
+        """Confirm every requested user gained an association (add_cond path).
+
+        ``users_association`` creates a user record *and* its user-level
+        association; on a silent no-op nothing is stored, so an empty read-back
+        of associations proves the failure. A user that already had any
+        association counts as success (idempotent).
+        """
+        got = self.get_associations()
+        present = {a.get("user", "") for a in got.get("associations", [])}
+        missing = [n for n in names if n not in present]
+        if missing:
+            raise SlurmUserNotCreatedError(
+                message=(
+                    "Slurm user(s) did not gain an association: "
+                    + ", ".join(missing)
+                    + ". Verify the parent account association and the OS "
+                    + "account exist, then re-run."
+                ),
+                missing=missing,
+            )
 
     # ------------------------------------------------------------------
     # Account endpoints
@@ -834,40 +1020,22 @@ class SlurmClient:
         Returns:
             Parsed response body.
 
-        Raises:
-            SlurmConflictException: If an account already exists
-                (use :meth:`create_accounts_with_conflict_ok` if desired).
+        Returns:
+            Parsed response body.
+
+        Note:
+            Re-running this for an existing account is **silent success** on
+            the live API (no already-exists error), and the verification
+            read-back counts an already-present account as success, so this
+            is naturally idempotent.
         """
         url = self._slurmdb_path("accounts/")
         logger.info("Creating %d Slurm accounts", len(accounts))
-        return self._request("POST", url, json_body=accounts)
-
-    def create_accounts_with_conflict_ok(
-        self,
-        accounts: list[dict[str, Any]],
-    ) -> dict[str, Any]:
-        """Create accounts, treating ``ESLURM_ALREADY_DB_ENTRY`` as success.
-
-        Wrapper around :meth:`create_accounts` that catches the
-        already-exists exception and returns the response body.
-
-        Args:
-            accounts: List of account dicts from :meth:`serialize_account`.
-
-        Returns:
-            Parsed response body (or a dict with ``errors`` if conflict).
-        """
-        try:
-            return self.create_accounts(accounts)
-        except SlurmAlreadyExistsException as exc:
-            logger.info(
-                "Accounts already exist (treated as success): %s",
-                exc,
-            )
-            return {
-                "errors": exc.errors,
-                "warnings": exc.warnings,
-            }
+        # slurmrestd expects the account list wrapped in an ``accounts`` key
+        body = self._request("POST", url, json_body={"accounts": accounts})
+        # No data field on the plain endpoint — verify via read-back
+        self._verify_accounts_created([a.get("name", "") for a in accounts])
+        return body
 
     def get_accounts(
         self,
@@ -915,9 +1083,11 @@ class SlurmClient:
         Returns:
             Parsed response body.
 
-        Raises:
-            SlurmNoRemoveDefaultAccountException: If the account is
-                still a user's default account.
+        Note:
+            Deleting a nonexistent account is **silent success** on the live
+            API, and the live stack does not enforce default-account
+            protection — it deletes an account even while it is a user's
+            default.
         """
         url = self._slurmdb_path(f"account/{account_name}")
         params = {"cluster": cluster}
@@ -970,7 +1140,26 @@ class SlurmClient:
         """
         url = self._slurmdb_path("qos/")
         logger.info("Upserting %d QOS definitions", len(qos_list))
-        return self._request("POST", url, json_body=qos_list)
+        # slurmrestd expects the QOS list wrapped in a ``qos`` key
+        return self._request("POST", url, json_body={"qos": qos_list})
+
+    def delete_qos(
+        self,
+        name: str,
+    ) -> dict[str, Any]:
+        """Delete a Slurm QOS definition.
+
+        Corresponds to ``DELETE /slurmdb/{version}/qos/{name}``.
+
+        Args:
+            name: Name of the QOS to delete.
+
+        Returns:
+            Parsed response body.
+        """
+        url = self._slurmdb_path(f"qos/{name}")
+        logger.info("Deleting QOS %s", name)
+        return self._request("DELETE", url)
 
     # ------------------------------------------------------------------
     # Partition endpoints (slurmctld)
@@ -997,6 +1186,68 @@ class SlurmClient:
             url = self._slurm_path(f"partition/{partition_name}")
         logger.debug("Querying partitions: %s", params)
         return self._request("GET", url, params=params or None)
+
+    def update_partitions(
+        self,
+        partitions: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """Create or update Slurm partitions via the REST API.
+
+        Corresponds to ``POST /slurm/{version}/partitions/``. Upserts
+        existing partitions (e.g. setting ``AllowQOS``) and creates new
+        partitions not present in slurm.conf. Changes are runtime-only:
+        they are lost on ``scontrol reconfigure`` (which re-reads
+        slurm.conf), so call :meth:`reconfigure` only *before* pushing, to
+        load the QOS cache, and never after.
+
+        Args:
+            partitions: List of partition dicts from
+                :meth:`serialize_partition`.
+
+        Returns:
+            Parsed response body (``errors``/``warnings``/``meta``).
+        """
+        url = self._slurm_path("partitions/")
+        logger.info("Updating %d Slurm partitions", len(partitions))
+        # slurmrestd expects the partition list wrapped in a ``partitions`` key
+        return self._request("POST", url, json_body={"partitions": partitions})
+
+    def delete_partition(
+        self,
+        name: str,
+    ) -> dict[str, Any]:
+        """Delete a Slurm partition.
+
+        Corresponds to ``DELETE /slurm/{version}/partition/{name}``.
+        Used to tear down a runtime-created partition (e.g. one pushed by
+        :meth:`update_partitions`) so the stack returns to its slurm.conf
+        partition set.
+
+        Args:
+            name: Name of the partition to delete.
+
+        Returns:
+            Parsed response body.
+        """
+        url = self._slurm_path(f"partition/{name}")
+        logger.info("Deleting partition %s", name)
+        return self._request("DELETE", url)
+
+    def reconfigure(self) -> dict[str, Any]:
+        """Reconfigure slurmctld (re-read slurm.conf and reload caches).
+
+        Corresponds to ``GET /slurm/{version}/reconfigure/``. Re-reading
+        slurm.conf reverts any runtime-only partition changes made via
+        :meth:`update_partitions` (AllowQOS, nodes, ...) back to the state
+        declared in slurm.conf, so this is the natural way to reset the
+        partition config to stock.
+
+        Returns:
+            Parsed response body (``errors``/``warnings``/``meta``).
+        """
+        url = self._slurm_path("reconfigure/")
+        logger.info("Reconfiguring slurmctld")
+        return self._request("GET", url)
 
     def get_nodes(
         self,
@@ -1039,40 +1290,19 @@ class SlurmClient:
         Returns:
             Parsed response body.
 
-        Raises:
-            SlurmAlreadyExistsException: If an association already exists
-                (use :meth:`create_associations_with_conflict_ok` if desired).
+        Note:
+            Re-running this for an existing association is **silent success**
+            on the live API (no already-exists error), and the verification
+            read-back counts an already-present association as success, so
+            this is naturally idempotent.
         """
         url = self._slurmdb_path("associations/")
         logger.info("Creating %d Slurm associations", len(associations))
-        return self._request("POST", url, json_body=associations)
-
-    def create_associations_with_conflict_ok(
-        self,
-        associations: list[dict[str, Any]],
-    ) -> dict[str, Any]:
-        """Create associations, treating ``ESLURM_ALREADY_DB_ENTRY`` as success.
-
-        Wrapper around :meth:`create_associations` that catches the
-        already-exists exception.
-
-        Args:
-            associations: List of association dicts.
-
-        Returns:
-            Parsed response body (or dict with ``errors`` if conflict).
-        """
-        try:
-            return self.create_associations(associations)
-        except SlurmAlreadyExistsException as exc:
-            logger.info(
-                "Associations already exist (treated as success): %s",
-                exc,
-            )
-            return {
-                "errors": exc.errors,
-                "warnings": exc.warnings,
-            }
+        # slurmrestd expects the association list wrapped in an ``associations`` key
+        body = self._request("POST", url, json_body={"associations": associations})
+        # No data field on the plain endpoint — verify via read-back
+        self._verify_associations_created(associations)
+        return body
 
     def get_associations(
         self,
@@ -1170,7 +1400,11 @@ class SlurmClient:
         """
         url = self._slurmdb_path("users/")
         logger.info("Creating %d Slurm users", len(users))
-        return self._request("POST", url, json_body=users)
+        # slurmrestd expects the user list wrapped in a ``users`` key
+        body = self._request("POST", url, json_body={"users": users})
+        # No data field on the plain endpoint — verify via read-back
+        self._verify_users_created([u.get("name", "") for u in users])
+        return body
 
     def get_users(
         self,
@@ -1243,7 +1477,14 @@ class SlurmClient:
         """
         url = self._slurmdb_path("users_association/")
         logger.info("Creating users with associations")
-        return self._request("POST", url, json_body=users_add_cond)
+        body = self._request("POST", url, json_body=users_add_cond)
+        if body.get("added_users"):
+            # Gate present — fresh adds confirmed by the response field (0 GETs)
+            return body
+        # Empty body is ambiguous (silent no-op vs already-exists): verify
+        names = users_add_cond.get("association_condition", {}).get("users", [])
+        self._verify_users_have_associations(names)
+        return body
 
     def create_accounts_with_associations(
         self,
@@ -1261,7 +1502,14 @@ class SlurmClient:
         """
         url = self._slurmdb_path("accounts_association/")
         logger.info("Creating accounts with associations")
-        return self._request("POST", url, json_body=accounts_add_cond)
+        body = self._request("POST", url, json_body=accounts_add_cond)
+        if body.get("added_accounts"):
+            # Gate present — fresh adds confirmed by the response field (0 GETs)
+            return body
+        # Empty body is ambiguous (silent no-op vs already-exists): verify
+        names = accounts_add_cond.get("association_condition", {}).get("accounts", [])
+        self._verify_accounts_created(names)
+        return body
 
     # ------------------------------------------------------------------
     # Config endpoints
@@ -1304,7 +1552,7 @@ class SlurmClient:
             Response body with ``errors``, ``warnings``, and ``meta``.
 
         Raises:
-            SlurmException subclass if the API returned an error.
+            SlurmError subclass if the API returned an error.
         """
         url = self._slurmdb_path("config")
         logger.info("Upserting SlurmDBD accounting config")
@@ -1421,10 +1669,9 @@ class SlurmClient:
             flags: Optional kill flags.
 
         Returns:
-            Response body. Note: v0.0.41 does not include a ``status``
-            field in the response; v0.0.42+ does. Callers should check
-            for ``"status"`` in the response and treat its absence as
-            success if ``errors`` is empty.
+            Response body. Callers should check for ``"status"`` in the
+            response and treat its absence as success if ``errors`` is
+            empty.
         """
         url = self._slurm_path(f"job/{job_id}")
         params: dict[str, Any] = {"signal": signal}
@@ -1460,11 +1707,11 @@ class SlurmClient:
             cluster: Cluster name to scope the query.
 
         Returns:
-            List of job dicts (``v0.0.44_job`` records) overlapping the
-            window. Pending jobs are filtered client-side by the caller.
+            List of job dicts overlapping the window. Pending jobs are
+            filtered client-side by the caller.
 
         Raises:
-            SlurmException subclass on failure.
+            SlurmError subclass on failure.
         """
         url = self._slurmdb_path("jobs/")
         params: dict[str, Any] = {
