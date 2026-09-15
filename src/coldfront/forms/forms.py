@@ -29,6 +29,9 @@ class ConfirmationForm(forms.Form):
     return_url = forms.CharField(required=False, widget=forms.HiddenInput())
     confirm = forms.BooleanField(required=True, widget=forms.HiddenInput(), initial=True)
 
+    def __init__(self, *args, instance=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
 
 class DeleteForm(ConfirmationForm):
     """

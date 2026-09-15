@@ -17,7 +17,7 @@ __all__ = (
 )
 
 
-def serialize_object(obj, resolve_tags=True, extra=None, exclude=None):
+def serialize_object(obj, resolve_tags=True, extra=None, exclude=None, include=None):
     """
     Return a generic JSON representation of an object using Django's built-in serializer. (This is used for things like
     change logging, not the REST API.) Optionally include a dictionary to supplement the object data. A list of keys
@@ -33,6 +33,7 @@ def serialize_object(obj, resolve_tags=True, extra=None, exclude=None):
     json_str = serializers.serialize("json", [obj])
     data = json.loads(json_str)[0]["fields"]
     exclude = exclude or []
+    include = include or []
 
     # Include custom_field_data as "custom_fields"
     if "custom_field_data" in data:
@@ -48,6 +49,12 @@ def serialize_object(obj, resolve_tags=True, extra=None, exclude=None):
     for key in list(data.keys()):
         if key in exclude:
             data.pop(key)
+
+    # Only include included attributes
+    if include:
+        for key in list(data.keys()):
+            if key not in include:
+                data.pop(key)
 
     # Append any extra data
     if extra is not None:

@@ -3,26 +3,40 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+import logging
+from dataclasses import asdict
+
+import humanize
+from django.contrib import messages
+from django.core.exceptions import PermissionDenied
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from coldfront.ras.models import Allocation
 from coldfront.registry import register_model_view
 from coldfront.storage import filtersets, forms, tables
+from coldfront.storage.backends.base import ErrNotFound
+from coldfront.storage.backends.registry import get_backend, get_backend_choices
 from coldfront.storage.models import (
     StorageCluster,
     StorageQuota,
     StorageResource,
     StorageSnapshotPolicy,
 )
+from coldfront.storage.object_actions import SyncQuotaAction
+from coldfront.storage.sync import sync_storage_quota
+from coldfront.utils.data import shallow_compare_dict
 from coldfront.utils.query import count_related
-from coldfront.views import generic
+from coldfront.utils.serialization import serialize_object
+from coldfront.views import ViewTab, generic, get_action_url
 from coldfront.views.mixins import GetRelatedModelsMixin
 from coldfront.views.object_actions import EditObject
-from coldfront.views.utils import ViewTab, get_action_url
 
 #
 # Storage Resources
 #
+
+logger = logging.getLogger(__name__)
 
 
 @register_model_view(StorageResource, "list", path="", detail=False)
@@ -134,6 +148,128 @@ class StorageClusterBulkDeleteView(generic.BulkDeleteView):
     queryset = StorageCluster.objects.all()
     filterset = filtersets.StorageClusterFilterSet
     table = tables.StorageClusterTable
+
+
+#
+# Storage Quota backend status
+#
+
+
+@register_model_view(StorageQuota, "status")
+class StorageQuotaStatusView(generic.ObjectView):
+    """Show live backend status for every cluster a quota belongs to."""
+
+    queryset = StorageQuota.objects.all()
+    actions = (SyncQuotaAction,)
+    template_name = "storage/storagequota/status.html"
+    tab = ViewTab(
+        label=_("Backend Status"),
+        visible=lambda quota: len(get_backend_choices()) > 1,
+        permission="storage.view_storagequota",
+        weight=100,
+    )
+
+    def get_extra_context(self, request, instance):
+        clusters = instance.get_clusters()
+        cluster_names = [c.name for c in clusters]
+        return {
+            "diffs": self._compute_diffs(clusters, instance),
+            "cluster_names": cluster_names,
+            "fetched_at": timezone.now(),
+        }
+
+    def _compute_diffs(self, clusters, instance):
+        diffs = []
+        for cluster in clusters:
+            backend_path = cluster.backend_path
+            if not backend_path:
+                continue
+
+            backend = get_backend(backend_path, cluster_name=cluster.name)
+            diff = {"name": cluster.name, "backend": backend.display_name()}
+            quota = None
+            path = None
+
+            try:
+                quota = backend.get_quota(instance.path)
+                diff["quota_exists"] = True
+            except ErrNotFound:
+                diff["quota_exists"] = False
+            except Exception as exc:
+                logger.error(
+                    f"Failed to fetch quota {instance} from cluster {cluster.name} using backend {backend.display_name()}: {exc}",
+                    exc_info=True,
+                )
+                diff["error"] = f"Failed to fetch quota from {cluster.name}"
+
+            try:
+                path = backend.stat_path(instance.path)
+                diff["path_exists"] = True
+            except ErrNotFound:
+                diff["path_exists"] = False
+            except Exception as exc:
+                logger.error(
+                    f"Failed to stat path for quota {instance} from cluster {cluster.name} using backend {backend.display_name()}: {exc}",
+                    exc_info=True,
+                )
+                diff["error"] = f"Failed to stat path from {cluster.name}"
+
+            instance_data = serialize_object(
+                instance,
+                include=["path_mode", "hard_limit_bytes", "hard_limit_files", "soft_limit_bytes", "soft_limit_files"],
+            )
+            instance_data["owning_user"] = instance.owning_user.username
+            instance_data["owning_group"] = instance.owning_group.name
+            quota_data = {}
+            if quota:
+                quota_data.update(asdict(quota))
+            if path:
+                quota_data.update(asdict(path))
+
+            diff_added = shallow_compare_dict(
+                quota_data,
+                instance_data,
+            )
+            diff_removed = {x: quota_data.get(x) for x in diff_added}
+            for f in [
+                "hard_limit_bytes",
+                "soft_limit_bytes",
+            ]:
+                if f in diff_added:
+                    diff_added[f] = humanize.naturalsize(diff_added[f]) if diff_added[f] else None
+                    diff_removed[f] = humanize.naturalsize(diff_removed[f]) if diff_removed[f] else None
+
+            diff["diff_added"] = diff_added
+            diff["diff_removed"] = diff_removed
+            diff["quota"] = quota
+            diff["path"] = path
+
+            diffs.append(diff)
+        return diffs
+
+
+@register_model_view(StorageQuota, "sync")
+class StorageQuotaSyncView(generic.ObjectConfirmationView):
+    """Sync storage quota to backend cluster."""
+
+    queryset = StorageQuota.objects.all()
+    action = "sync"
+    action_label = "Sync Storage Quota"
+
+    def get_return_url(self, request, obj):
+        return get_action_url(obj, action="status", kwargs={"pk": obj.pk})
+
+    def perform_action(self, request, obj, form):
+        """Run the per-quota sync, then refresh the status page."""
+        if not request.user.has_perm("storage.change_storagequota"):
+            raise PermissionDenied
+
+        reports = sync_storage_quota(obj)
+        for report in reports:
+            if report.errors:
+                messages.error(request, f"{report.cluster}: " + "; ".join(report.errors))
+            else:
+                messages.success(request, f"{report.cluster}: synced")
 
 
 #

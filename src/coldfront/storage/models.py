@@ -158,17 +158,6 @@ class StorageCluster(PrimaryModel):
         ),
     )
 
-    auto_sync_enabled = models.BooleanField(
-        verbose_name=_("auto sync enabled"),
-        default=False,
-    )
-
-    sync_interval = models.IntegerField(
-        verbose_name=_("sync interval"),
-        default=1440,
-        help_text=_("Minutes between automatic syncs."),
-    )
-
     capacity_bytes = models.PositiveBigIntegerField(
         blank=True,
         null=True,
@@ -194,8 +183,6 @@ class StorageCluster(PrimaryModel):
     clone_fields = (
         "description",
         "backend_path",
-        "auto_sync_enabled",
-        "sync_interval",
         "capacity_bytes",
     )
 
@@ -344,7 +331,7 @@ class StorageQuota(AllocationExtensionMixin, PrimaryModel):
         default=StorageShareTypeChoices.SHARE_TYPE_POSIX,
     )
 
-    used = models.PositiveBigIntegerField(
+    used_bytes = models.PositiveBigIntegerField(
         blank=True,
         null=True,
         verbose_name=_("used"),
@@ -427,6 +414,12 @@ class StorageQuota(AllocationExtensionMixin, PrimaryModel):
         instance.full_clean()
         instance.save()
         return instance
+
+    def get_clusters(self):
+        """Return the clusters associated with this quota (quota M2M, else resource's)."""
+        if self.clusters.exists():
+            return list(self.clusters.all())
+        return list(self.storage.clusters.all())
 
 
 class StorageSnapshotPolicy(PrimaryModel):

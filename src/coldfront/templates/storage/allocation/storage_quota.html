@@ -72,7 +72,7 @@
                     </c-card.fields.item>
 
                     <c-card.fields.item label="{% trans 'Used' %}">
-                        {{ storage_quota.used|naturalsize }}
+                        {{ storage_quota.used_bytes|naturalsize }}
                     </c-card.fields.item>
 
                     <c-card.fields.item label="{% trans 'Used Files' %}">

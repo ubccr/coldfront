@@ -20,6 +20,8 @@ class StorageResourceTable(TenancyColumnsMixin, PrimaryModelTable):
     )
 
     capacity_bytes = columns.BytesColumn()
+    allocated_bytes = columns.BytesColumn()
+    used_bytes = columns.BytesColumn()
 
     class Meta(PrimaryModelTable.Meta):
         model = StorageResource
@@ -50,6 +52,8 @@ class StorageClusterTable(PrimaryModelTable):
         url_name="storage:storagecluster_list",
     )
     capacity_bytes = columns.BytesColumn()
+    allocated_bytes = columns.BytesColumn()
+    used_bytes = columns.BytesColumn()
 
     class Meta(PrimaryModelTable.Meta):
         model = StorageCluster
@@ -59,8 +63,6 @@ class StorageClusterTable(PrimaryModelTable):
             "name",
             "description",
             "backend_path",
-            "auto_sync_enabled",
-            "sync_interval",
             "capacity_bytes",
             "allocated_bytes",
             "used_bytes",
@@ -81,6 +83,7 @@ class StorageQuotaTable(PrimaryModelTable):
     )
     hard_limit_bytes = columns.BytesColumn()
     soft_limit_bytes = columns.BytesColumn()
+    used_bytes = columns.BytesColumn()
 
     class Meta(PrimaryModelTable.Meta):
         model = StorageQuota
@@ -99,7 +102,7 @@ class StorageQuotaTable(PrimaryModelTable):
             "hard_limit_files",
             "soft_limit_files",
             "share_type",
-            "used",
+            "used_bytes",
             "used_files",
             "state",
             "snapshot_policy",
@@ -107,7 +110,7 @@ class StorageQuotaTable(PrimaryModelTable):
             "created",
             "last_updated",
         )
-        default_columns = ("pk", "path", "storage", "allocation", "hard_limit_bytes", "used", "state")
+        default_columns = ("pk", "path", "storage", "allocation", "hard_limit_bytes", "used_bytes", "state")
 
 
 class StorageSnapshotPolicyTable(PrimaryModelTable):

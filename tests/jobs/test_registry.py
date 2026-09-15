@@ -69,12 +69,14 @@ class SystemJobDecoratorTestCase(TestCase):
         """Only ColdFront's own system jobs are registered (no test pollution).
 
         The baseline is fixed at startup: core system jobs via
-        ``coldfront.core.apps``, Slurm jobs via ``coldfront.slurm.apps``, and
-        the RAS prune job via ``coldfront.ras.apps``.
+        ``coldfront.core.apps``, Slurm jobs via ``coldfront.slurm.apps``,
+        storage jobs via ``coldfront.storage.apps``, and the RAS prune job
+        via ``coldfront.ras.apps``.
         """
         from coldfront.core.tasks.system import NotificationDigestJob, PruneChangeLogJob, PruneJob
         from coldfront.ras.jobs import PruneProjectInviteJob
         from coldfront.slurm.jobs import SlurmSyncJob, SlurmUsageSyncJob
+        from coldfront.storage.jobs import StorageSyncJob, StorageUsageSyncJob
 
         expected = {
             PruneChangeLogJob,
@@ -83,6 +85,8 @@ class SystemJobDecoratorTestCase(TestCase):
             PruneProjectInviteJob,
             SlurmSyncJob,
             SlurmUsageSyncJob,
+            StorageSyncJob,
+            StorageUsageSyncJob,
         }
         self.assertEqual(set(system_jobs), expected)
         for config in system_jobs.values():

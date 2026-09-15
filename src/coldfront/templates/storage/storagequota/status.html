@@ -1,0 +1,92 @@
+{% extends 'storage/base.html' %}
+{% load i18n %}
+{% load buttons %}
+
+{% block content %}
+    {% for diff in diffs %}
+        <c-layout.row>
+            <c-layout.col>
+                <c-card.fields only>
+                    <c-slot name="header">
+                        {{ diff.name }}
+                        {% if diff.diff_added == diff.diff_removed %}
+                            <c-ui.checkmark :value="diff.quota_exists" />
+                        {% else %}
+                            <c-ui.checkmark :value="False" />
+                        {% endif %}
+                    </c-slot>
+
+                    <c-card.fields.item label="{% trans 'Path' %}">
+                        {{ object.path }}
+                    </c-card.fields.item>
+
+                    <c-card.fields.item label="{% trans 'State' %}">
+                        {{ diff.quota.state|placeholder }}
+                    </c-card.fields.item>
+
+                    <c-card.fields.item label="{% trans 'Used Bytes' %}">
+                        {{ diff.quota.used_bytes|naturalsize }}
+                    </c-card.fields.item>
+
+                    <c-card.fields.item label="{% trans 'Hard Limit' %}">
+                        {{ diff.quota.hard_limit_bytes|naturalsize }}
+                    </c-card.fields.item>
+
+                    <c-card.fields.item label="{% trans 'Soft Limit' %}">
+                        {{ diff.quota.soft_limit_bytes|naturalsize }}
+                    </c-card.fields.item>
+
+                    <c-card.fields.item label="{% trans 'Owning User' %}">
+                        {{ diff.path.owning_user|placeholder }}
+                    </c-card.fields.item>
+
+                    <c-card.fields.item label="{% trans 'Owning Group' %}">
+                        {{ diff.path.owning_group|placeholder }}
+                    </c-card.fields.item>
+
+                    <c-card.fields.item label="{% trans 'Path Mode' %}">
+                        {{ diff.path.path_mode|placeholder }}
+                    </c-card.fields.item>
+
+                    <c-card.fields.item label="{% trans 'Last Accessed' %}">
+                        {{ diff.path.atime|placeholder }}
+                    </c-card.fields.item>
+                </c-card.fields>
+            </c-layout.col>
+
+            <c-layout.col>
+                <c-card header="{% trans 'Pending Changes' %}" only>
+                    <div class="card-body">
+                        {% if not diff.quota_exists and not diff.path_exists %}
+                            <span class="text-muted" style="margin-left: 10px">
+                                <c-ui.checkmark :value="False" /> {% trans "Quota and Path not found" %}
+                            </span>
+                        {% elif diff.diff_added == diff.diff_removed %}
+                            <span class="text-muted" style="margin-left: 10px">
+                                {% trans "No changes" %}
+                            </span>
+                        {% else %}
+                            {% if not diff.quota_exists %}
+                                <p><c-ui.checkmark :value="False" /> {% trans "Quota not found" %}</p>
+                            {% elif not diff.path_exists %}
+                                <p><c-ui.checkmark :value="False" /> {% trans "Path not found" %}</p>
+                            {% endif %}
+                            <pre class="change-diff change-removed">{{ diff.diff_removed|json }}</pre>
+                            <pre class="change-diff change-added">{{ diff.diff_added|json }}</pre>
+                        {% endif %}
+                    </div>
+                </c-card>
+            </c-layout.col>
+        </c-layout.row>
+    {% empty %}
+        <c-layout.row>
+            <c-layout.col>
+                <span class="text-muted" style="margin-left: 10px">
+                    {% blocktrans with clusters=cluster_names|join:',' %}No backends configured for clusters:
+                        {{ clusters }}
+                    {% endblocktrans %}
+                </span>
+            </c-layout.col>
+        </c-layout.row>
+    {% endfor %}
+{% endblock %}

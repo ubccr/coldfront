@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from django.test import TestCase
+
 from coldfront.storage.forms import StorageResourceForm
 from coldfront.storage.models import (
     StorageCluster,
@@ -129,29 +131,26 @@ class StorageClusterTestCase(ViewTestCases.PrimaryObjectViewTestCase):
             "name": "Cluster X",
             "description": "A new storage cluster",
             "backend_path": "coldfront.storage.backends.dummy.DummyBackend",
-            "auto_sync_enabled": True,
-            "sync_interval": 1440,
             "capacity_bytes": None,
             "tags": [t.pk for t in tags],
         }
 
         cls.csv_data = (
-            "name,description,backend_path,sync_interval",
-            "Cluster 4,Fourth cluster,coldfront.storage.backends.dummy.DummyBackend,1440",
-            "Cluster 5,Fifth cluster,coldfront.storage.backends.dummy.DummyBackend,1440",
-            "Cluster 6,Sixth cluster,coldfront.storage.backends.dummy.DummyBackend,1440",
+            "name,description,backend_path",
+            "Cluster 4,Fourth cluster,coldfront.storage.backends.dummy.DummyBackend",
+            "Cluster 5,Fifth cluster,coldfront.storage.backends.dummy.DummyBackend",
+            "Cluster 6,Sixth cluster,coldfront.storage.backends.dummy.DummyBackend",
         )
 
         cls.csv_update_data = (
-            "id,name,description,backend_path,sync_interval",
-            f"{clusters[0].pk},Cluster 7,Seven cluster,coldfront.storage.backends.dummy.DummyBackend,1440",
-            f"{clusters[1].pk},Cluster 8,Eight cluster,coldfront.storage.backends.dummy.DummyBackend,1440",
-            f"{clusters[2].pk},Cluster 9,Nine cluster,coldfront.storage.backends.dummy.DummyBackend,1440",
+            "id,name,description,backend_path",
+            f"{clusters[0].pk},Cluster 7,Seven cluster,coldfront.storage.backends.dummy.DummyBackend",
+            f"{clusters[1].pk},Cluster 8,Eight cluster,coldfront.storage.backends.dummy.DummyBackend",
+            f"{clusters[2].pk},Cluster 9,Nine cluster,coldfront.storage.backends.dummy.DummyBackend",
         )
 
         cls.bulk_edit_form_data = {
             "description": "Updated cluster",
-            "auto_sync_enabled": True,
         }
 
 
@@ -305,3 +304,50 @@ class StorageQuotaTestCase(ViewTestCases.PrimaryObjectViewTestCase):
         super().test_bulk_update_objects_with_permission()
 
     validation_excluded_fields = ("clusters",)
+
+
+class StorageQuotaStatusViewTestCase(TestCase):
+    """The StorageQuota "Status" viewtab renders."""
+
+    @classmethod
+    def setUpTestData(cls):
+        from django.urls import reverse
+
+        from coldfront.core.models import ObjectType
+        from coldfront.ras.models import Allocation, Project
+        from coldfront.users.models import Group, ObjectPermission, User
+
+        cls.user = User.objects.create(username="status-view-user")
+
+        cluster = StorageCluster.objects.create(
+            name="Status Cluster",
+            backend_path="coldfront.storage.backends.dummy.DummyBackend",
+        )
+        resource = StorageResource.objects.create(name="Status Resource")
+        resource.clusters.add(cluster)
+        owner = User.objects.create(username="status-owner")
+        group = Group.objects.create(name="status-group")
+        project = Project.objects.create(name="Status Project", slug="status-project", owner=owner)
+        allocation = Allocation.objects.create(resource_object=resource, project=project, owner=owner)
+        cls.quota = StorageQuota.objects.create(
+            allocation=allocation,
+            storage=resource,
+            path="/status/1",
+            owning_user=owner,
+            owning_group=group,
+        )
+        cls.view_url = reverse("storage:storagequota_status", kwargs={"pk": cls.quota.pk})
+
+        obj_perm = ObjectPermission(name="View quota", actions=["view"])
+        obj_perm.save()
+        obj_perm.users.add(cls.user)
+        obj_perm.object_types.add(ObjectType.objects.get_for_model(StorageQuota))
+
+    def setUp(self):
+        self.client.force_login(self.user)
+
+    def test_status_tab_displays(self):
+        response = self.client.get(self.view_url)
+        assert response.status_code == 200
+        assert b"Status Cluster" in response.content
+        assert b"Backend" in response.content

@@ -12,7 +12,6 @@ from coldfront.forms import (
 )
 from coldfront.forms.fields import JSONField
 from coldfront.forms.fields.bytes import BytesField
-from coldfront.forms.widgets import BulkEditNullBooleanSelect
 from coldfront.storage.choices import StorageShareTypeChoices
 from coldfront.storage.models import StorageCluster, StorageQuota, StorageResource, StorageSnapshotPolicy
 from coldfront.users.models import Group, User
@@ -88,16 +87,6 @@ class StorageClusterBulkEditForm(PrimaryModelBulkEditForm):
         label=_("Backend"),
         help_text=_("Select the storage backend driver."),
     )
-    auto_sync_enabled = forms.NullBooleanField(
-        label=_("Auto Sync Enabled"),
-        widget=BulkEditNullBooleanSelect,
-        required=False,
-    )
-    sync_interval = forms.IntegerField(
-        required=False,
-        label=_("Sync Interval"),
-        help_text=_("Minutes between automatic syncs."),
-    )
     capacity_bytes = BytesField(
         label=_("Capacity"),
         required=False,
@@ -108,8 +97,6 @@ class StorageClusterBulkEditForm(PrimaryModelBulkEditForm):
     nullable_fields = (
         "description",
         "backend_path",
-        "auto_sync_enabled",
-        "sync_interval",
         "capacity_bytes",
     )
 
@@ -120,11 +107,6 @@ class StorageClusterBulkEditForm(PrimaryModelBulkEditForm):
                 _("Storage Cluster"),
                 "description",
                 "backend_path",
-            ),
-            Fieldset(
-                _("Sync"),
-                "auto_sync_enabled",
-                "sync_interval",
             ),
             Fieldset(
                 _("Capacity"),

@@ -20,7 +20,7 @@ from django.utils.translation import gettext_lazy as _
 from django_cotton import render_component
 
 from coldfront.exceptions import AbortRequest, PermissionsViolation
-from coldfront.forms import ColdFrontModelForm, DeleteForm
+from coldfront.forms import ColdFrontModelForm, ConfirmationForm, DeleteForm
 from coldfront.tables import get_table_configs
 from coldfront.users.permissions import get_permission_for_model
 from coldfront.utils.forms import restrict_form_fields
@@ -786,3 +786,107 @@ class ObjectFlowView(GetReturnURLMixin, BaseObjectView):
             return HttpResponse(render_component(request, "modal.transition", context))
 
         return render(request, self.template_name, context)
+
+
+class ObjectConfirmationView(GetReturnURLMixin, BaseObjectView):
+    """
+    Display a confirmation dialog before performing an action.
+    """
+
+    template_name = "generic/object_confirm.html"
+    form = ConfirmationForm
+    form_component_name = "form.confirm"
+    action = "edit"
+    action_label = "Modify"
+
+    def get_required_permission(self):
+        return get_permission_for_model(self.queryset.model, "change")
+
+    def get(self, request, *args, **kwargs):
+        obj = self.get_object(**kwargs)
+        form = self.form(instance=obj, initial=request.GET)
+
+        # If this is an HTMX request, return only the rendered form as modal content
+        if htmx_partial(request):
+            form_url = get_action_url(self.queryset.model, action=self.action, kwargs={"pk": obj.pk})
+            return HttpResponse(
+                render_component(
+                    request,
+                    self.form_component_name,
+                    object=obj,
+                    object_type=self.queryset.model._meta.verbose_name,
+                    form=form,
+                    form_url=form_url,
+                    action=self.action,
+                    action_label=self.action_label,
+                    **self.get_extra_context(request, obj),
+                )
+            )
+
+        return render(
+            request,
+            self.template_name,
+            {
+                "object": obj,
+                "object_type": self.queryset.model._meta.verbose_name,
+                "form": form,
+                "return_url": self.get_return_url(request, obj),
+                "action": self.action,
+                "action_label": self.action_label,
+                **self.get_extra_context(request, obj),
+            },
+        )
+
+    def post(self, request, *args, **kwargs):
+        """
+        POST request handler.
+
+        Args:
+            request: The current request
+        """
+        logger = logging.getLogger("coldfront.views.ObjectConfirmationView")
+        obj = self.get_object(**kwargs)
+        form = self.form(request.POST, instance=obj)
+
+        if form.is_valid():
+            logger.debug("Form validation was successful")
+
+            # Take a snapshot of change-logged models
+            if hasattr(obj, "snapshot"):
+                obj.snapshot()
+
+            # Perform the action
+            try:
+                self.perform_action(request, obj, self.form)
+            except AbortRequest as e:
+                logger.debug(e.message)
+                messages.error(request, mark_safe(e.message))
+                return redirect(obj.get_absolute_url())
+
+            return_url = form.cleaned_data.get("return_url")
+            if return_url and return_url.startswith("/"):
+                return redirect(return_url)
+            return redirect(self.get_return_url(request, obj))
+
+        else:
+            logger.debug("Form validation failed")
+
+        return render(
+            request,
+            self.template_name,
+            {
+                "object": obj,
+                "object_type": self.queryset.model._meta.verbose_name,
+                "form": form,
+                "return_url": self.get_return_url(request, obj),
+                "action": self.action,
+                "action_label": self.action_label,
+                **self.get_extra_context(request, obj),
+            },
+        )
+
+    def perform_action(self, request, obj, form):
+        """
+        Perform the action after successful confirmation
+        """
+        return {}

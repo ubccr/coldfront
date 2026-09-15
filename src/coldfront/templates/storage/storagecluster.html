@@ -17,18 +17,6 @@
                     {{ object.backend_path }}
                 </c-card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Auto Sync Enabled' %}">
-                    <c-ui.checkmark :value="object.auto_sync_enabled" />
-                </c-card.fields.item>
-
-                <c-card.fields.item label="{% trans 'Sync Interval' %}">
-                    {% if object.sync_interval %}
-                        {{ object.sync_interval }}{% blocktrans %} minutes{% endblocktrans %}
-                    {% else %}
-                        {{ ""|placeholder }}
-                    {% endif %}
-                </c-card.fields.item>
-
                 <c-card.fields.item label="{% trans 'Capacity' %}">
                     {% if object.capacity_bytes %}
                         {{ object.capacity_bytes|naturalsize }}

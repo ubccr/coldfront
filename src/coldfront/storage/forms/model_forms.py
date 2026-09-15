@@ -127,8 +127,6 @@ class StorageClusterForm(PrimaryModelForm):
             "name",
             "description",
             "backend_path",
-            "auto_sync_enabled",
-            "sync_interval",
             "capacity_bytes",
             "tags",
         ]
@@ -155,11 +153,6 @@ class StorageClusterForm(PrimaryModelForm):
                 "backend_path",
             ),
             Fieldset(
-                _("Sync"),
-                "auto_sync_enabled",
-                "sync_interval",
-            ),
-            Fieldset(
                 _("Capacity"),
                 "capacity_bytes",
             ),
@@ -182,8 +175,6 @@ class StorageClusterImportForm(PrimaryModelImportForm):
             "name",
             "description",
             "backend_path",
-            "auto_sync_enabled",
-            "sync_interval",
             "capacity_bytes",
             "tags",
         ]

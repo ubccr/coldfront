@@ -45,9 +45,6 @@ class StorageClusterFilterSet(PrimaryModelFilterSet):
         lookup_expr="icontains",
         label=_("Backend Path"),
     )
-    auto_sync_enabled = django_filters.BooleanFilter(
-        label=_("Auto Sync Enabled"),
-    )
 
     class Meta:
         model = StorageCluster
@@ -56,7 +53,6 @@ class StorageClusterFilterSet(PrimaryModelFilterSet):
             "name",
             "description",
             "backend_path",
-            "auto_sync_enabled",
         )
 
     def search(self, queryset, name, value):

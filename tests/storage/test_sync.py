@@ -9,24 +9,29 @@ ViewFlow callbacks (``coldfront.storage.listeners``).
 Organized by test class:
 
 - ``TestSyncReport`` — dataclass structure
-- ``TestEnqueueWrappers`` — auto-sync gate and task enqueue
-- ``TestActivateAllocation`` — ``_run_activate_allocation`` error paths
-- ``TestDeactivateAllocation`` — ``_run_deactivate_allocation`` error paths
-- ``TestFullSync`` — ``run_sync`` integration
+- ``TestFullSync`` — ``sync_storage_clusters`` integration
+- ``TestOrphanSweep`` — scoped orphan-quota sweep
+- ``TestDryRun`` — engine dry-run mode
+- ``TestUsageSync`` — ``sync_storage_usage`` (usage-only)
+- ``TestSnapshotPolicies`` — snapshot policy reconciliation
 - ``TestRecalculateUsedBytes`` — ``_recalculate_used_bytes``
-- ``TestCallbacks`` — ViewFlow callbacks (request, approve, activate, expire, revoke, deny)
+- ``TestCallbacks`` — ViewFlow callbacks (approve, activate, expire, revoke, deny)
 - ``TestSignal`` — post_save signal for hard_limit_bytes changes
+- ``TestAutoGeneratePath`` — path template resolution
+- ``TestManagedPrefixes`` — orphan-sweep scope derivation
+
+Tests drive the real engine against a stateful ``DummyBackend`` seeded via
+the ``backends`` test seam — no method-level monkeypatching.
 """
 
 from __future__ import annotations
-
-from unittest import mock
 
 from django.db.models import F
 from django.test import TestCase
 
 from coldfront.ras.choices import AllocationStatusChoices
 from coldfront.ras.models import Allocation, Project
+from coldfront.storage.backends.dummy import DummyBackend
 from coldfront.storage.listeners import (
     on_allocation_activated,
     on_allocation_approved,
@@ -34,17 +39,58 @@ from coldfront.storage.listeners import (
     on_allocation_expired,
     on_allocation_revoked,
 )
-from coldfront.storage.models import StorageCluster, StorageQuota, StorageResource
+from coldfront.storage.models import (
+    StorageCluster,
+    StorageQuota,
+    StorageResource,
+    StorageSnapshotPolicy,
+)
 from coldfront.storage.sync import (
     SyncReport,
+    _managed_prefixes,
     _recalculate_used_bytes,
-    _run_activate_allocation,
-    _run_deactivate_allocation,
-    enqueue_activate_allocation,
-    enqueue_deactivate_allocation,
-    run_sync,
+    sync_storage_clusters,
+    sync_storage_quota,
+    sync_storage_usage,
 )
 from coldfront.users.models import Group, User
+
+DEFAULT_LIMIT = 1073741824
+QUOTA_PATH = "/home/groups/sync-project/1"
+
+
+def _seed_quota(backend, path, *, hard=DEFAULT_LIMIT, soft=None, files=None, soft_files=None):
+    """Create a path + quota on a DummyBackend for ``path``."""
+    backend.create_path(path, "sync-owner", "sync-group", 2770)
+    backend.create_quota(
+        path,
+        "posix",
+        hard,
+        files,
+        None,
+        soft_limit_bytes=soft,
+        soft_limit_files=soft_files,
+    )
+
+
+def _make_active_quota(resource, project, owner, group, *, path=QUOTA_PATH, hard=DEFAULT_LIMIT, soft=None):
+    """Create an active StorageQuota row for the shared fixtures."""
+    allocation = Allocation.objects.create(
+        resource_object=resource,
+        project=project,
+        owner=owner,
+        status=AllocationStatusChoices.STATUS_ACTIVE,
+    )
+    return StorageQuota.objects.create(
+        allocation=allocation,
+        storage=resource,
+        path=path,
+        owning_user=owner,
+        owning_group=group,
+        hard_limit_bytes=hard,
+        soft_limit_bytes=soft,
+    )
+
 
 # ======================================================================
 # 1. SyncReport
@@ -59,10 +105,12 @@ class TestSyncReport(TestCase):
         assert r.cluster == "test"
         assert r.success is False
         assert r.paths_created == 0
-        assert r.paths_deleted == 0
+        assert r.paths_locked == 0
+        assert r.paths_unlocked == 0
         assert r.quotas_created == 0
         assert r.quotas_updated == 0
         assert r.quotas_deleted == 0
+        assert r.usage_updated == 0
         assert r.errors == []
         assert r.warnings == []
         assert r.duration_ms == 0
@@ -72,9 +120,12 @@ class TestSyncReport(TestCase):
             cluster="hpc01",
             success=True,
             paths_created=2,
+            paths_locked=1,
+            paths_unlocked=1,
             quotas_created=3,
             quotas_updated=1,
             quotas_deleted=1,
+            usage_updated=2,
             errors=["err1"],
             warnings=["warn1"],
             duration_ms=500,
@@ -82,200 +133,24 @@ class TestSyncReport(TestCase):
         assert r.cluster == "hpc01"
         assert r.success
         assert r.paths_created == 2
+        assert r.paths_locked == 1
+        assert r.paths_unlocked == 1
         assert r.quotas_created == 3
         assert r.quotas_updated == 1
         assert r.quotas_deleted == 1
+        assert r.usage_updated == 2
         assert r.errors == ["err1"]
         assert r.warnings == ["warn1"]
         assert r.duration_ms == 500
 
 
 # ======================================================================
-# 2. Enqueue wrappers
-# ======================================================================
-
-
-class TestEnqueueWrappers(TestCase):
-    """Test enqueue helpers respect the auto-sync gate."""
-
-    @classmethod
-    def setUpTestData(cls):
-        cls.cluster = StorageCluster.objects.create(
-            name="test-cluster",
-            backend_path="coldfront.storage.backends.dummy.DummyBackend",
-            auto_sync_enabled=False,
-        )
-        cls.cluster_on = StorageCluster.objects.create(
-            name="test-cluster-on",
-            backend_path="coldfront.storage.backends.dummy.DummyBackend",
-            auto_sync_enabled=True,
-        )
-
-    def test_enqueue_activate_skips_when_disabled(self):
-        with mock.patch("coldfront.storage.sync.logger") as mock_logger:
-            enqueue_activate_allocation(1, self.cluster.pk)
-            mock_logger.debug.assert_called_once()
-
-    def test_enqueue_activate_enqueues_when_enabled(self):
-        with mock.patch("coldfront.core.models.Job.enqueue") as mock_enqueue:
-            enqueue_activate_allocation(1, self.cluster_on.pk, share_type="posix")
-            mock_enqueue.assert_called_once()
-
-    def test_enqueue_deactivate_skips_when_disabled(self):
-        with mock.patch("coldfront.storage.sync.logger") as mock_logger:
-            enqueue_deactivate_allocation(1, self.cluster.pk)
-            mock_logger.debug.assert_called_once()
-
-    def test_enqueue_deactivate_enqueues_when_enabled(self):
-        with mock.patch("coldfront.core.models.Job.enqueue") as mock_enqueue:
-            enqueue_deactivate_allocation(1, self.cluster_on.pk)
-            mock_enqueue.assert_called_once()
-
-
-# ======================================================================
-# 3. Activate allocation
-# ======================================================================
-
-
-class TestActivateAllocation(TestCase):
-    """Test _run_activate_allocation error paths."""
-
-    @classmethod
-    def setUpTestData(cls):
-        cls.owner = User.objects.create(username="owner")
-        cls.group = Group.objects.create(name="test-group")
-        cls.cluster = StorageCluster.objects.create(
-            name="test-cluster",
-            backend_path="coldfront.storage.backends.dummy.DummyBackend",
-        )
-        cls.resource = StorageResource.objects.create(
-            name="Test Resource",
-            path_template="/home/groups/{project.slug}/{allocation.id}",
-        )
-        cls.resource.clusters.add(cls.cluster)
-        cls.project = Project.objects.create(name="Test Project", slug="test-project", owner=cls.owner)
-        cls.allocation = Allocation.objects.create(
-            resource_object=cls.resource,
-            project=cls.project,
-            owner=cls.owner,
-            status=AllocationStatusChoices.STATUS_ACTIVE,
-        )
-        cls.quota = StorageQuota.objects.create(
-            allocation=cls.allocation,
-            storage=cls.resource,
-            path="/home/groups/test-project/1",
-            owning_user=cls.owner,
-            owning_group=cls.group,
-            hard_limit_bytes=1073741824,
-        )
-
-    def test_missing_quota(self):
-        report = _run_activate_allocation(allocation_id=99999, cluster_id=self.cluster.pk)
-        assert not report.success
-        assert "StorageQuota not found" in report.errors[0]
-
-    def test_create_path_and_quota(self):
-        with mock.patch("coldfront.storage.backends.dummy.DummyBackend") as mock_backend:
-            mock_instance = mock_backend.return_value
-            report = _run_activate_allocation(
-                allocation_id=self.allocation.pk,
-                cluster_id=self.cluster.pk,
-                share_type="posix",
-            )
-            assert report.success
-            assert report.paths_created == 1
-            assert report.quotas_created == 1
-            mock_instance.create_path.assert_called_once()
-            mock_instance.create_quota.assert_called_once()
-
-    def test_backend_create_path_failure(self):
-        with mock.patch("coldfront.storage.backends.dummy.DummyBackend") as mock_backend:
-            mock_instance = mock_backend.return_value
-            mock_instance.create_path.side_effect = RuntimeError("API error")
-            report = _run_activate_allocation(
-                allocation_id=self.allocation.pk,
-                cluster_id=self.cluster.pk,
-                share_type="posix",
-            )
-            assert not report.success
-            assert "Failed to create path" in report.errors[0]
-            mock_instance.create_quota.assert_not_called()
-
-
-# ======================================================================
-# 4. Deactivate allocation
-# ======================================================================
-
-
-class TestDeactivateAllocation(TestCase):
-    """Test _run_deactivate_allocation error paths."""
-
-    @classmethod
-    def setUpTestData(cls):
-        cls.owner = User.objects.create(username="owner2")
-        cls.group = Group.objects.create(name="test-group2")
-        cls.cluster = StorageCluster.objects.create(
-            name="test-cluster-2",
-            backend_path="coldfront.storage.backends.dummy.DummyBackend",
-        )
-        cls.resource = StorageResource.objects.create(
-            name="Test Resource 2",
-            path_template="/home/groups/{project.slug}/{allocation.id}",
-        )
-        cls.resource.clusters.add(cls.cluster)
-        cls.project = Project.objects.create(name="Test Project 2", slug="test-project-2", owner=cls.owner)
-        cls.allocation = Allocation.objects.create(
-            resource_object=cls.resource,
-            project=cls.project,
-            owner=cls.owner,
-            status=AllocationStatusChoices.STATUS_EXPIRED,
-        )
-        cls.quota = StorageQuota.objects.create(
-            allocation=cls.allocation,
-            storage=cls.resource,
-            path="/home/groups/test-project-2/1",
-            owning_user=cls.owner,
-            owning_group=cls.group,
-            hard_limit_bytes=1073741824,
-        )
-
-    def test_missing_quota(self):
-        report = _run_deactivate_allocation(allocation_id=99999, cluster_id=self.cluster.pk)
-        assert not report.success
-        assert "StorageQuota not found" in report.errors[0]
-
-    def test_delete_quota_and_lock_path(self):
-        with mock.patch("coldfront.storage.backends.dummy.DummyBackend") as mock_backend:
-            mock_instance = mock_backend.return_value
-            report = _run_deactivate_allocation(
-                allocation_id=self.allocation.pk,
-                cluster_id=self.cluster.pk,
-            )
-            assert report.success
-            assert report.quotas_deleted == 1
-            assert report.paths_deleted == 1
-            mock_instance.delete_quota.assert_called_once()
-            mock_instance.lock_path.assert_called_once()
-
-    def test_backend_delete_quota_failure(self):
-        with mock.patch("coldfront.storage.backends.dummy.DummyBackend") as mock_backend:
-            mock_instance = mock_backend.return_value
-            mock_instance.delete_quota.side_effect = RuntimeError("API error")
-            report = _run_deactivate_allocation(
-                allocation_id=self.allocation.pk,
-                cluster_id=self.cluster.pk,
-            )
-            assert not report.success
-            assert "Failed to delete quota" in report.errors[0]
-
-
-# ======================================================================
-# 5. Full sync
+# 2. Full sync
 # ======================================================================
 
 
 class TestFullSync(TestCase):
-    """Test run_sync integration."""
+    """Test sync_storage_clusters integration."""
 
     @classmethod
     def setUpTestData(cls):
@@ -292,42 +167,476 @@ class TestFullSync(TestCase):
         cls.resource.clusters.add(cls.cluster)
         cls.project = Project.objects.create(name="Sync Project", slug="sync-project", owner=cls.owner)
 
-    def test_sync_with_active_quota(self):
-        allocation = Allocation.objects.create(
-            resource_object=self.resource,
-            project=self.project,
-            owner=self.owner,
-            status=AllocationStatusChoices.STATUS_ACTIVE,
-        )
-        StorageQuota.objects.create(
-            allocation=allocation,
-            storage=self.resource,
-            path="/home/groups/sync-project/1",
-            owning_user=self.owner,
-            owning_group=self.group,
-            hard_limit_bytes=1073741824,
-        )
-        reports = run_sync(cluster_id=self.cluster.pk)
+    def _sync(self, backend=None, dry_run=False):
+        kwargs = {}
+        if backend is not None:
+            kwargs["backends"] = {self.cluster.name: backend}
+        return sync_storage_clusters([self.cluster.name], dry_run=dry_run, **kwargs)
+
+    def test_creates_missing_path_and_quota(self):
+        _make_active_quota(self.resource, self.project, self.owner, self.group)
+        backend = DummyBackend(self.cluster.name)
+        reports = self._sync(backend)
+
         assert len(reports) == 1
         assert reports[0].success
         assert reports[0].paths_created == 1
         assert reports[0].quotas_created == 1
 
-    def test_sync_without_quotas(self):
-        reports = run_sync(cluster_id=self.cluster.pk)
+        stat = backend.stat_path(QUOTA_PATH)
+        assert stat.owning_user == "sync-owner"
+        assert stat.owning_group == "sync-group"
+        assert stat.path_mode == 2770
+
+        quota = backend.get_quota(QUOTA_PATH)
+        assert quota.name == QUOTA_PATH
+        assert quota.state == "OK"
+        assert quota.hard_limit_bytes == DEFAULT_LIMIT
+
+    def test_creates_via_registry_backend(self):
+        # No injection — the backend resolves through the registry.
+        _make_active_quota(self.resource, self.project, self.owner, self.group)
+        reports = self._sync()
+        assert len(reports) == 1
+        assert reports[0].success
+        assert reports[0].paths_created == 1
+        assert reports[0].quotas_created == 1
+
+    def test_updates_out_of_sync_limits(self):
+        quota = _make_active_quota(
+            self.resource,
+            self.project,
+            self.owner,
+            self.group,
+            soft=536870912,
+        )
+        backend = DummyBackend(self.cluster.name)
+        _seed_quota(backend, QUOTA_PATH, hard=1)  # wrong hard limit, no soft
+        reports = self._sync(backend)
+
+        assert reports[0].quotas_updated == 1
+        updated = backend.get_quota(QUOTA_PATH)
+        assert updated.hard_limit_bytes == quota.hard_limit_bytes
+        assert updated.soft_limit_bytes == quota.soft_limit_bytes
+
+    def test_limits_match_skips_update(self):
+        _make_active_quota(self.resource, self.project, self.owner, self.group)
+        backend = DummyBackend(self.cluster.name)
+        _seed_quota(backend, QUOTA_PATH)
+        reports = self._sync(backend)
+        assert reports[0].quotas_updated == 0
+
+    def test_pulls_usage(self):
+        quota = _make_active_quota(self.resource, self.project, self.owner, self.group)
+        backend = DummyBackend(self.cluster.name, random_usage=False)
+        _seed_quota(backend, QUOTA_PATH)
+        backend.get_quota(QUOTA_PATH).used_bytes = 1000
+        backend.get_quota(QUOTA_PATH).used_files = 10
+        backend.get_quota(QUOTA_PATH).state = "OK"
+
+        reports = self._sync(backend)
+        assert reports[0].usage_updated == 1
+
+        quota.refresh_from_db()
+        assert quota.used_bytes == 1000
+        assert quota.used_files == 10
+        assert quota.state == "OK"
+
+    def test_unlocks_reactivated_path(self):
+        _make_active_quota(self.resource, self.project, self.owner, self.group)
+        backend = DummyBackend(self.cluster.name)
+        _seed_quota(backend, QUOTA_PATH)
+        backend.lock_path(QUOTA_PATH)
+
+        reports = self._sync(backend)
+        assert reports[0].paths_unlocked == 1
+        assert backend.stat_path(QUOTA_PATH).locked is False
+
+    def test_no_backend_cluster_skipped(self):
+        StorageCluster.objects.create(name="no-backend")  # backend_path None
+        reports = sync_storage_clusters(["no-backend"])
         assert len(reports) == 1
         assert reports[0].success
         assert reports[0].paths_created == 0
         assert reports[0].quotas_created == 0
 
-    def test_sync_all_clusters(self):
-        reports = run_sync()
-        assert len(reports) == 1  # only the cluster we created
-        assert reports[0].success
+    def test_bad_backend_path_fails_report(self):
+        StorageCluster.objects.create(name="bad-cluster", backend_path="coldfront.storage.backends.missing.Backend")
+        reports = sync_storage_clusters(["bad-cluster"])
+        assert len(reports) == 1
+        assert not reports[0].success
+        assert "Failed to instantiate backend" in reports[0].errors[0]
+
+    def test_sync_all_clusters_and_filtering(self):
+        _make_active_quota(self.resource, self.project, self.owner, self.group)
+        other = StorageCluster.objects.create(name="other-cluster")
+        self.resource.clusters.add(other)
+
+        # All clusters
+        reports = sync_storage_clusters()
+        assert len(reports) == 2
+
+        # Filtered by name
+        reports = sync_storage_clusters(["other-cluster"])
+        assert len(reports) == 1
+        assert reports[0].cluster == "other-cluster"
 
 
 # ======================================================================
-# 6. Recalculate used bytes
+# 3. DummyBackend bootstrap (first-use seeding)
+# ======================================================================
+
+
+class TestBootstrap(TestCase):
+    """Test lazy first-use seeding of the DummyBackend shared cache."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.owner = User.objects.create(username="bootstrap-owner")
+        cls.group = Group.objects.create(name="bootstrap-group")
+        cls.cluster = StorageCluster.objects.create(
+            name="bootstrap-cluster",
+            backend_path="coldfront.storage.backends.dummy.DummyBackend",
+        )
+        cls.resource = StorageResource.objects.create(
+            name="Bootstrap Resource",
+            path_template="/home/groups/{project.slug}/{allocation.id}",
+        )
+        cls.resource.clusters.add(cls.cluster)
+        cls.project = Project.objects.create(
+            name="Bootstrap Project",
+            slug="bootstrap-project",
+            owner=cls.owner,
+        )
+
+    def test_first_use_seeds_cache(self):
+        _make_active_quota(self.resource, self.project, self.owner, self.group)
+        with self.settings(STORAGE_DUMMY_AUTO_SEED=True):
+            backend = DummyBackend(self.cluster.name)
+
+        quotas = backend.get_all_quotas()
+        assert len(quotas) == 1
+        assert quotas[0].path == QUOTA_PATH
+        assert backend.stat_path(QUOTA_PATH) is not None
+
+    def test_no_seed_when_disabled(self):
+        # .env.testing sets STORAGE_DUMMY_AUTO_SEED=False.
+        backend = DummyBackend(self.cluster.name)
+        assert backend.get_all_quotas() == []
+
+    def test_bootstraps_once_per_cluster(self):
+        _make_active_quota(self.resource, self.project, self.owner, self.group)
+        with self.settings(STORAGE_DUMMY_AUTO_SEED=True):
+            DummyBackend(self.cluster.name)
+            DummyBackend(self.cluster.name)
+        # A later construction shares the already-seeded cache.
+        assert len(DummyBackend(self.cluster.name).get_all_quotas()) == 1
+
+
+# ======================================================================
+# 4. Orphan sweep
+# ======================================================================
+
+
+class TestOrphanSweep(TestCase):
+    """Test the scoped orphan-quota sweep."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.owner = User.objects.create(username="sweep-owner")
+        cls.group = Group.objects.create(name="sweep-group")
+        cls.cluster = StorageCluster.objects.create(
+            name="sweep-cluster",
+            backend_path="coldfront.storage.backends.dummy.DummyBackend",
+        )
+        cls.resource = StorageResource.objects.create(
+            name="Sweep Resource",
+            path_template="/home/groups/{project.slug}/{allocation.id}",
+        )
+        cls.resource.clusters.add(cls.cluster)
+        cls.project = Project.objects.create(name="Sweep Project", slug="sweep-project", owner=cls.owner)
+
+    def _sync(self, backend):
+        return sync_storage_clusters([self.cluster.name], backends={self.cluster.name: backend})
+
+    def test_expired_allocation_sweeps_quota_and_locks_path(self):
+        quota = _make_active_quota(self.resource, self.project, self.owner, self.group)
+        backend = DummyBackend(self.cluster.name)
+        _seed_quota(backend, QUOTA_PATH)
+        self._sync(backend)  # reconcile as active
+
+        # Expire the allocation — next sync removes the quota and locks the path
+        quota.allocation.status = AllocationStatusChoices.STATUS_EXPIRED
+        quota.allocation.save()
+        reports = self._sync(backend)
+
+        assert reports[0].quotas_deleted == 1
+        assert reports[0].paths_locked == 1
+        with self.assertRaises(Exception):
+            backend.get_quota(QUOTA_PATH)
+        assert backend.stat_path(QUOTA_PATH).locked is True
+
+    def test_sweep_spares_foreign_quota(self):
+        # A quota outside every managed prefix (e.g. admin-created) is never touched
+        _make_active_quota(self.resource, self.project, self.owner, self.group)
+        backend = DummyBackend(self.cluster.name)
+        _seed_quota(backend, QUOTA_PATH)
+        backend.create_quota("/fs1/exists", "posix", 10000000000000, None, None)
+
+        reports = self._sync(backend)
+        assert reports[0].success
+        assert reports[0].quotas_deleted == 0
+        assert "/fs1/exists" in backend._quotas
+
+    def test_sweep_spares_restricted_path(self):
+        # A resource whose prefix overlaps a restricted path — quota preserved
+        restricted = StorageResource.objects.create(
+            name="Restricted Resource",
+            path_template="/tmp{project.slug}",
+        )
+        restricted.clusters.add(self.cluster)
+
+        backend = DummyBackend(self.cluster.name)
+        backend.create_quota("/tmp", "posix", 1000, None, None)
+
+        reports = self._sync(backend)
+        assert reports[0].quotas_deleted == 0
+        assert any("restricted" in w for w in reports[0].warnings)
+        assert "/tmp" in backend._quotas
+
+    def test_dynamic_template_out_of_scope(self):
+        # A resource with no static prefix contributes nothing to the scope
+        dynamic = StorageResource.objects.create(
+            name="Dynamic Resource",
+            path_template="{{ project.slug }}/{allocation.id}",
+        )
+        dynamic.clusters.add(self.cluster)
+
+        backend = DummyBackend(self.cluster.name)
+        backend.create_quota("/dynamic/1", "posix", 1000, None, None)
+
+        reports = self._sync(backend)
+        assert reports[0].quotas_deleted == 0
+        assert any("static prefix" in w for w in reports[0].warnings)
+        assert "/dynamic/1" in backend._quotas
+
+
+# ======================================================================
+# 4. Dry run
+# ======================================================================
+
+
+class TestDryRun(TestCase):
+    """Test engine dry-run mode: records actions, makes no calls."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.owner = User.objects.create(username="dry-owner")
+        cls.group = Group.objects.create(name="dry-group")
+        cls.cluster = StorageCluster.objects.create(
+            name="dry-cluster",
+            backend_path="coldfront.storage.backends.dummy.DummyBackend",
+        )
+        cls.resource = StorageResource.objects.create(
+            name="Dry Resource",
+            path_template="/home/groups/{project.slug}/{allocation.id}",
+        )
+        cls.resource.clusters.add(cls.cluster)
+        cls.project = Project.objects.create(name="Dry Project", slug="dry-project", owner=cls.owner)
+
+    def test_dry_run_records_actions_without_mutating(self):
+        # Active quota missing on backend
+        _make_active_quota(self.resource, self.project, self.owner, self.group)
+        # Active quota with differing limits
+        other = _make_active_quota(
+            self.resource,
+            self.project,
+            self.owner,
+            self.group,
+            path="/home/groups/dry-project/2",
+        )
+        # An orphan under the managed prefix
+        orphan_path = "/home/groups/dry-project/3"
+
+        backend = DummyBackend(self.cluster.name)
+        _seed_quota(backend, other.path, hard=1)
+        _seed_quota(backend, orphan_path)
+
+        reports = sync_storage_clusters([self.cluster.name], dry_run=True, backends={self.cluster.name: backend})
+
+        assert reports[0].success
+        assert reports[0].paths_created == 1  # QUOTA_PATH
+        assert reports[0].quotas_created == 1  # QUOTA_PATH
+        assert reports[0].quotas_updated == 1  # other.path
+        assert reports[0].quotas_deleted == 1  # orphan_path
+        # No locks counted in dry run
+        assert reports[0].paths_locked == 0
+
+        # Backend unchanged
+        with self.assertRaises(Exception):
+            backend.get_quota(QUOTA_PATH)
+        assert backend.get_quota(other.path).hard_limit_bytes == 1
+        assert orphan_path in backend._quotas
+
+        # A real run performs the recorded actions
+        reports = sync_storage_clusters([self.cluster.name], backends={self.cluster.name: backend})
+        assert reports[0].paths_created == 1
+        assert reports[0].quotas_created == 1
+        assert reports[0].quotas_updated == 1
+        assert reports[0].quotas_deleted == 1
+        assert reports[0].paths_locked == 1
+        assert backend.get_quota(QUOTA_PATH).hard_limit_bytes == DEFAULT_LIMIT
+        assert backend.get_quota(other.path).hard_limit_bytes == DEFAULT_LIMIT
+        with self.assertRaises(Exception):
+            backend.get_quota(orphan_path)
+
+
+# ======================================================================
+# 5. Usage-only sync
+# ======================================================================
+
+
+class TestUsageSync(TestCase):
+    """Test sync_storage_usage — usage-only, no backend mutations."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.owner = User.objects.create(username="usage-owner")
+        cls.group = Group.objects.create(name="usage-group")
+        cls.cluster = StorageCluster.objects.create(
+            name="usage-cluster",
+            backend_path="coldfront.storage.backends.dummy.DummyBackend",
+        )
+        cls.resource = StorageResource.objects.create(
+            name="Usage Resource",
+            path_template="/home/groups/{project.slug}/{allocation.id}",
+        )
+        cls.resource.clusters.add(cls.cluster)
+        cls.project = Project.objects.create(name="Usage Project", slug="usage-project", owner=cls.owner)
+
+    def test_updates_usage_only(self):
+        quota = _make_active_quota(self.resource, self.project, self.owner, self.group)
+        backend = DummyBackend(self.cluster.name, random_usage=False)
+        _seed_quota(backend, QUOTA_PATH, hard=1)  # deliberately out of sync
+        backend.get_quota(QUOTA_PATH).used_bytes = 999
+        backend.get_quota(QUOTA_PATH).used_files = 42
+
+        reports = sync_storage_usage([self.cluster.name], backends={self.cluster.name: backend})
+
+        assert reports[0].success
+        assert reports[0].usage_updated == 1
+        # Limits untouched — usage sync never mutates the backend
+        assert backend.get_quota(QUOTA_PATH).hard_limit_bytes == 1
+
+        quota.refresh_from_db()
+        assert quota.used_bytes == 999
+        assert quota.used_files == 42
+
+    def test_ignores_inactive_rows(self):
+        _make_active_quota(self.resource, self.project, self.owner, self.group, path="/home/groups/usage-project/1")
+        inactive = Allocation.objects.create(
+            resource_object=self.resource,
+            project=self.project,
+            owner=self.owner,
+            status=AllocationStatusChoices.STATUS_EXPIRED,
+        )
+        StorageQuota.objects.create(
+            allocation=inactive,
+            storage=self.resource,
+            path="/home/groups/usage-project/2",
+        )
+
+        backend = DummyBackend(self.cluster.name)
+        _seed_quota(backend, "/home/groups/usage-project/1")
+        _seed_quota(backend, "/home/groups/usage-project/2")
+
+        reports = sync_storage_usage([self.cluster.name], backends={self.cluster.name: backend})
+        assert reports[0].usage_updated == 1  # only the active row
+
+    def test_recalculates_used_bytes(self):
+        _make_active_quota(self.resource, self.project, self.owner, self.group)
+        backend = DummyBackend(self.cluster.name)
+        _seed_quota(backend, QUOTA_PATH)
+        backend.get_quota(QUOTA_PATH).used_bytes = 500 * 1024 * 1024
+
+        sync_storage_usage([self.cluster.name], backends={self.cluster.name: backend})
+        assert StorageCluster.objects.get(pk=self.cluster.pk).used_bytes == 500 * 1024 * 1024
+        assert StorageResource.objects.get(pk=self.resource.pk).used_bytes == 500 * 1024 * 1024
+
+    def test_no_backend_cluster_skipped(self):
+        StorageCluster.objects.create(name="usage-no-backend")
+        reports = sync_storage_usage(["usage-no-backend"])
+        assert len(reports) == 1
+        assert reports[0].success
+        assert reports[0].usage_updated == 0
+
+
+# ======================================================================
+# 6. Snapshot policies
+# ======================================================================
+
+
+class NoSnapshotBackend(DummyBackend):
+    """A backend that does not support snapshot policies."""
+
+    supports_snapshot_policies = False
+
+
+class TestSnapshotPolicies(TestCase):
+    """Test snapshot policy reconciliation in the full sync."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.owner = User.objects.create(username="snap-owner")
+        cls.group = Group.objects.create(name="snap-group")
+        cls.cluster = StorageCluster.objects.create(
+            name="snap-cluster",
+            backend_path="coldfront.storage.backends.dummy.DummyBackend",
+        )
+        cls.resource = StorageResource.objects.create(
+            name="Snap Resource",
+            path_template="/home/groups/{project.slug}/{allocation.id}",
+        )
+        cls.resource.clusters.add(cls.cluster)
+        cls.project = Project.objects.create(name="Snap Project", slug="snap-project", owner=cls.owner)
+        cls.policy = StorageSnapshotPolicy.objects.create(
+            cluster=cls.cluster,
+            name="daily-7d",
+            interval="daily",
+            retention_days=7,
+        )
+
+    def test_applied_on_create(self):
+        quota = _make_active_quota(self.resource, self.project, self.owner, self.group)
+        quota.snapshot_policy = self.policy
+        quota.save()
+
+        backend = DummyBackend(self.cluster.name)
+        reports = sync_storage_clusters([self.cluster.name], backends={self.cluster.name: backend})
+
+        assert reports[0].success
+        assert reports[0].quotas_created == 1
+        assert backend._snapshot_policies[QUOTA_PATH] == {
+            "interval": "daily",
+            "retention_days": 7,
+            "extra_config": {},
+        }
+
+    def test_unsupported_backend_warns(self):
+        quota = _make_active_quota(self.resource, self.project, self.owner, self.group)
+        quota.snapshot_policy = self.policy
+        quota.save()
+
+        backend = NoSnapshotBackend(self.cluster.name)
+        reports = sync_storage_clusters([self.cluster.name], backends={self.cluster.name: backend})
+
+        assert reports[0].success
+        assert reports[0].quotas_created == 1
+        assert any("does not support snapshot policies" in w for w in reports[0].warnings)
+
+
+# ======================================================================
+# 7. Recalculate used bytes
 # ======================================================================
 
 
@@ -360,8 +669,8 @@ class TestRecalculateUsedBytes(TestCase):
             path="/home/groups/used-project/1",
             owning_user=cls.owner,
             owning_group=cls.group,
-            hard_limit_bytes=1073741824,
-            used=500 * 1024 * 1024,  # 500 MB
+            hard_limit_bytes=DEFAULT_LIMIT,
+            used_bytes=500 * 1024 * 1024,  # 500 MB
         )
 
     def test_recalculate_resource(self):
@@ -385,12 +694,12 @@ class TestRecalculateUsedBytes(TestCase):
 
 
 # ======================================================================
-# 7. Callbacks
+# 8. Callbacks
 # ======================================================================
 
 
 class TestCallbacks(TestCase):
-    """Test ViewFlow callbacks for storage lifecycle."""
+    """Test DB-only ViewFlow callbacks for storage lifecycle."""
 
     @classmethod
     def setUpTestData(cls):
@@ -399,7 +708,6 @@ class TestCallbacks(TestCase):
         cls.cluster = StorageCluster.objects.create(
             name="cb-cluster",
             backend_path="coldfront.storage.backends.dummy.DummyBackend",
-            auto_sync_enabled=True,
         )
         cls.resource = StorageResource.objects.create(
             name="CB Resource",
@@ -422,137 +730,68 @@ class TestCallbacks(TestCase):
         self.quota = StorageQuota.objects.create(
             allocation=self.allocation,
             storage=self.resource,
-            path="/home/groups/sig-project/1",
+            path="/home/groups/cb-project/1",
             owning_user=self.owner,
             owning_group=self.group,
-            hard_limit_bytes=1073741824,
+            hard_limit_bytes=DEFAULT_LIMIT,
         )
 
         # Reset allocated_bytes for the resource and cluster
         StorageResource.objects.filter(pk=self.resource.pk).update(allocated_bytes=0)
         StorageCluster.objects.filter(pk=self.cluster.pk).update(allocated_bytes=0)
 
-    def test_on_allocation_activated_enqueues_per_cluster(self):
-        self.allocation.status = AllocationStatusChoices.STATUS_ACTIVE
-        self.allocation.save()
-
-        with mock.patch("coldfront.storage.listeners.enqueue_activate_allocation") as mock_enqueue:
-            on_allocation_activated(
-                self.allocation,
-                source=AllocationStatusChoices.STATUS_APPROVED,
-                target=AllocationStatusChoices.STATUS_ACTIVE,
-            )
-            mock_enqueue.assert_called_once()
-
     def test_on_allocation_activated_updates_allocated_bytes(self):
         self.allocation.status = AllocationStatusChoices.STATUS_ACTIVE
         self.allocation.save()
-        quota = StorageQuota.objects.get(allocation=self.allocation)
-        quota.hard_limit_bytes = 1073741824
-        quota.save()
 
-        with mock.patch("coldfront.storage.listeners.enqueue_activate_allocation"):
-            on_allocation_activated(
-                self.allocation,
-                source=AllocationStatusChoices.STATUS_APPROVED,
-                target=AllocationStatusChoices.STATUS_ACTIVE,
-            )
+        on_allocation_activated(
+            self.allocation,
+            source=AllocationStatusChoices.STATUS_APPROVED,
+            target=AllocationStatusChoices.STATUS_ACTIVE,
+        )
 
         resource = StorageResource.objects.get(pk=self.resource.pk)
-        assert resource.allocated_bytes == 1073741824
-
-    def test_on_allocation_expired_enqueues_deactivate(self):
-        self.allocation.status = AllocationStatusChoices.STATUS_ACTIVE
-        self.allocation.save()
-        quota = StorageQuota.objects.get(allocation=self.allocation)
-        quota.hard_limit_bytes = 1073741824
-        quota.save()
-
-        # Seed allocated_bytes so the F()-subtract doesn't violate CHECK
-        StorageResource.objects.filter(pk=self.resource.pk).update(
-            allocated_bytes=F("allocated_bytes") + quota.hard_limit_bytes,
-        )
-        StorageCluster.objects.filter(pk=self.cluster.pk).update(
-            allocated_bytes=F("allocated_bytes") + quota.hard_limit_bytes,
-        )
-
-        with mock.patch("coldfront.storage.listeners.enqueue_deactivate_allocation") as mock_enqueue:
-            on_allocation_expired(
-                self.allocation,
-                source=AllocationStatusChoices.STATUS_ACTIVE,
-                target=AllocationStatusChoices.STATUS_EXPIRED,
-            )
-            mock_enqueue.assert_called_once()
+        assert resource.allocated_bytes == DEFAULT_LIMIT
 
     def test_on_allocation_expired_updates_allocated_bytes(self):
         self.allocation.status = AllocationStatusChoices.STATUS_ACTIVE
         self.allocation.save()
-        quota = StorageQuota.objects.get(allocation=self.allocation)
-        quota.hard_limit_bytes = 1073741824
-        quota.save()
 
-        # First activate to add allocated_bytes
-        with mock.patch("coldfront.storage.listeners.enqueue_activate_allocation"):
-            on_allocation_activated(
-                self.allocation,
-                source=AllocationStatusChoices.STATUS_APPROVED,
-                target=AllocationStatusChoices.STATUS_ACTIVE,
-            )
+        on_allocation_activated(
+            self.allocation,
+            source=AllocationStatusChoices.STATUS_APPROVED,
+            target=AllocationStatusChoices.STATUS_ACTIVE,
+        )
+        # Seed allocated_bytes so the F()-subtract doesn't violate CHECK
+        StorageResource.objects.filter(pk=self.resource.pk).update(allocated_bytes=DEFAULT_LIMIT)
+        StorageCluster.objects.filter(pk=self.cluster.pk).update(allocated_bytes=DEFAULT_LIMIT)
 
-        # Then expire to subtract
-        with mock.patch("coldfront.storage.listeners.enqueue_deactivate_allocation"):
-            on_allocation_expired(
-                self.allocation,
-                source=AllocationStatusChoices.STATUS_ACTIVE,
-                target=AllocationStatusChoices.STATUS_EXPIRED,
-            )
+        on_allocation_expired(
+            self.allocation,
+            source=AllocationStatusChoices.STATUS_ACTIVE,
+            target=AllocationStatusChoices.STATUS_EXPIRED,
+        )
 
         resource = StorageResource.objects.get(pk=self.resource.pk)
         assert resource.allocated_bytes == 0
 
-    def test_on_allocation_revoked_enqueues_deactivate(self):
-        self.allocation.status = AllocationStatusChoices.STATUS_ACTIVE
-        self.allocation.save()
-        quota = StorageQuota.objects.get(allocation=self.allocation)
-        quota.hard_limit_bytes = 1073741824
-        quota.save()
-
-        # Seed allocated_bytes so the F()-subtract doesn't violate CHECK
-        StorageResource.objects.filter(pk=self.resource.pk).update(
-            allocated_bytes=F("allocated_bytes") + quota.hard_limit_bytes,
-        )
-        StorageCluster.objects.filter(pk=self.cluster.pk).update(
-            allocated_bytes=F("allocated_bytes") + quota.hard_limit_bytes,
-        )
-
-        with mock.patch("coldfront.storage.listeners.enqueue_deactivate_allocation") as mock_enqueue:
-            on_allocation_revoked(
-                self.allocation,
-                source=AllocationStatusChoices.STATUS_ACTIVE,
-                target=AllocationStatusChoices.STATUS_REVOKED,
-            )
-            mock_enqueue.assert_called_once()
-
     def test_on_allocation_revoked_updates_allocated_bytes(self):
         self.allocation.status = AllocationStatusChoices.STATUS_ACTIVE
         self.allocation.save()
-        quota = StorageQuota.objects.get(allocation=self.allocation)
-        quota.hard_limit_bytes = 1073741824
-        quota.save()
 
-        with mock.patch("coldfront.storage.listeners.enqueue_activate_allocation"):
-            on_allocation_activated(
-                self.allocation,
-                source=AllocationStatusChoices.STATUS_APPROVED,
-                target=AllocationStatusChoices.STATUS_ACTIVE,
-            )
+        on_allocation_activated(
+            self.allocation,
+            source=AllocationStatusChoices.STATUS_APPROVED,
+            target=AllocationStatusChoices.STATUS_ACTIVE,
+        )
+        StorageResource.objects.filter(pk=self.resource.pk).update(allocated_bytes=DEFAULT_LIMIT)
+        StorageCluster.objects.filter(pk=self.cluster.pk).update(allocated_bytes=DEFAULT_LIMIT)
 
-        with mock.patch("coldfront.storage.listeners.enqueue_deactivate_allocation"):
-            on_allocation_revoked(
-                self.allocation,
-                source=AllocationStatusChoices.STATUS_ACTIVE,
-                target=AllocationStatusChoices.STATUS_REVOKED,
-            )
+        on_allocation_revoked(
+            self.allocation,
+            source=AllocationStatusChoices.STATUS_ACTIVE,
+            target=AllocationStatusChoices.STATUS_REVOKED,
+        )
 
         resource = StorageResource.objects.get(pk=self.resource.pk)
         assert resource.allocated_bytes == 0
@@ -565,15 +804,6 @@ class TestCallbacks(TestCase):
             source=AllocationStatusChoices.STATUS_REQUESTED,
             target=AllocationStatusChoices.STATUS_DENIED,
         )
-        assert StorageQuota.objects.filter(allocation=self.allocation).count() == 0
-
-    def test_on_allocation_denied_non_storage_resource(self):
-        on_allocation_denied(
-            self.allocation,
-            source=AllocationStatusChoices.STATUS_REQUESTED,
-            target=AllocationStatusChoices.STATUS_DENIED,
-        )
-        # No StorageQuota should exist, no error
         assert StorageQuota.objects.filter(allocation=self.allocation).count() == 0
 
     def test_all_callbacks_skip_non_storage_resource(self):
@@ -605,7 +835,7 @@ class TestCallbacks(TestCase):
 
 
 # ======================================================================
-# 8. Signal
+# 9. Signal
 # ======================================================================
 
 
@@ -640,7 +870,7 @@ class TestSignal(TestCase):
             path="/home/groups/sig-project/1",
             owning_user=self.owner,
             owning_group=self.group,
-            hard_limit_bytes=1073741824,
+            hard_limit_bytes=DEFAULT_LIMIT,
         )
         # Simulate what on_allocation_activated does: add hard_limit_bytes to allocated_bytes
         StorageResource.objects.filter(pk=self.resource.pk).update(
@@ -658,10 +888,10 @@ class TestSignal(TestCase):
 
         # Verify initial state
         initial = StorageResource.objects.get(pk=self.resource.pk)
-        assert initial.allocated_bytes == 1073741824
+        assert initial.allocated_bytes == DEFAULT_LIMIT
 
         # Directly invoke the signal handler to test the logic
-        self.quota.hard_limit_bytes = 2 * 1073741824
+        self.quota.hard_limit_bytes = 2 * DEFAULT_LIMIT
         on_storagequota_hard_limit_changed(
             sender=StorageQuota,
             instance=self.quota,
@@ -669,10 +899,10 @@ class TestSignal(TestCase):
         )
 
         resource = StorageResource.objects.get(pk=self.resource.pk)
-        assert resource.allocated_bytes == 2 * 1073741824
+        assert resource.allocated_bytes == 2 * DEFAULT_LIMIT
 
         cluster = StorageCluster.objects.get(pk=self.cluster.pk)
-        assert cluster.allocated_bytes == 2 * 1073741824
+        assert cluster.allocated_bytes == 2 * DEFAULT_LIMIT
 
     def test_hard_limit_decrease_adjusts_allocated_bytes(self):
         from coldfront.storage.signals import on_storagequota_hard_limit_changed
@@ -699,7 +929,7 @@ class TestSignal(TestCase):
         )
         # Re-fetch to avoid cached values
         resource = StorageResource.objects.get(pk=self.resource.pk)
-        assert resource.allocated_bytes == 1073741824
+        assert resource.allocated_bytes == DEFAULT_LIMIT
 
     def test_signal_skips_when_allocation_not_active(self):
         from coldfront.storage.signals import on_storagequota_hard_limit_changed
@@ -707,7 +937,7 @@ class TestSignal(TestCase):
         self.allocation.status = AllocationStatusChoices.STATUS_EXPIRED
         self.allocation.save()
 
-        self.quota.hard_limit_bytes = 2 * 1073741824
+        self.quota.hard_limit_bytes = 2 * DEFAULT_LIMIT
         on_storagequota_hard_limit_changed(
             sender=StorageQuota,
             instance=self.quota,
@@ -716,11 +946,11 @@ class TestSignal(TestCase):
 
         # Allocated_bytes should remain unchanged because allocation is not ACTIVE
         resource = StorageResource.objects.get(pk=self.resource.pk)
-        assert resource.allocated_bytes == 1073741824  # original value, not doubled
+        assert resource.allocated_bytes == DEFAULT_LIMIT  # original value, not doubled
 
 
 # ======================================================================
-# 9. Helpers
+# 10. Helpers
 # ======================================================================
 
 
@@ -752,3 +982,81 @@ class TestAutoGeneratePath(TestCase):
         self.resource.save()
         path = self.resource.auto_generate_path(self.allocation)
         assert path == "Path Resource/path-project"
+
+
+class TestManagedPrefixes(TestCase):
+    """Test _managed_prefixes scope derivation."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cluster = StorageCluster.objects.create(name="prefix-cluster")
+        cls.owner = User.objects.create(username="prefix-owner")
+
+    def _prefixes(self):
+        report = SyncReport(cluster=self.cluster.name)
+        return _managed_prefixes(self.cluster, report), report.warnings
+
+    def test_derives_static_prefixes(self):
+        r1 = StorageResource.objects.create(
+            name="R1",
+            path_template="/home/groups/{project.slug}/{allocation.id}",
+        )
+        r1.clusters.add(self.cluster)
+        r2 = StorageResource.objects.create(
+            name="R2",
+            path_template="/fs1/scratch/{{ allocation.project.slug }}",
+        )
+        r2.clusters.add(self.cluster)
+
+        prefixes, _ = self._prefixes()
+        assert "/home/groups/" in prefixes
+        assert "/fs1/scratch/" in prefixes
+
+    def test_skips_dynamic_templates(self):
+        dynamic = StorageResource.objects.create(
+            name="Dynamic",
+            path_template="{{ project.slug }}/{allocation.id}",
+        )
+        dynamic.clusters.add(self.cluster)
+
+        prefixes, warnings = self._prefixes()
+        assert prefixes == []
+        assert any("static prefix" in w for w in warnings)
+
+    def test_unattached_resource_not_included(self):
+        StorageResource.objects.create(
+            name="Elsewhere",
+            path_template="/fs2/data/{project.slug}",
+        )  # no cluster link
+        prefixes, _ = self._prefixes()
+        assert prefixes == []
+
+
+class TestSingleQuotaSync(TestCase):
+    """Test the focused ``sync_storage_quota`` driver."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.owner = User.objects.create(username="single-owner")
+        cls.group = Group.objects.create(name="single-group")
+        cls.cluster = StorageCluster.objects.create(
+            name="single-cluster",
+            backend_path="coldfront.storage.backends.dummy.DummyBackend",
+        )
+        cls.resource = StorageResource.objects.create(
+            name="Single Resource",
+            path_template="/home/groups/{project.slug}/{allocation.id}",
+        )
+        cls.resource.clusters.add(cls.cluster)
+        cls.project = Project.objects.create(name="Single Project", slug="single-project", owner=cls.owner)
+
+    def test_sync_storage_quota_creates_on_backend(self):
+        quota = _make_active_quota(self.resource, self.project, self.owner, self.group)
+        backend = DummyBackend(self.cluster.name)
+        reports = sync_storage_quota(quota, backends={self.cluster.name: backend})
+
+        assert len(reports) == 1
+        assert reports[0].cluster == self.cluster.name
+        assert reports[0].paths_created == 1
+        assert reports[0].quotas_created == 1
+        assert backend.get_quota(QUOTA_PATH) is not None

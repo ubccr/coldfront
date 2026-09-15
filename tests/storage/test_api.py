@@ -76,8 +76,6 @@ class StorageClusterAPITestCase(APIViewTestCases.APIViewTestCase):
                 "name": "Cluster X",
                 "description": "A new storage cluster",
                 "backend_path": "coldfront.storage.backends.dummy.DummyBackend",
-                "auto_sync_enabled": False,
-                "sync_interval": 1440,
                 "capacity_bytes": None,
                 "tags": [t.pk for t in tags],
             },

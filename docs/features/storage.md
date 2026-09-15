@@ -49,15 +49,23 @@ the snapshot schedule.
 
 ## Sync Mechanism
 
-The storage integration uses the same hybrid approach as Slurm:
+The storage integration is batch-only, like Slurm — there are no
+targeted/real-time enqueues. Allocation activation and expiry are
+reflected on the backend exclusively by the reconciliation sync, which
+the CLI commands and system jobs call:
 
-1. **Targeted handlers** — When an allocation is activated, the system
-   creates the path and quota on each cluster. When an allocation expires
-   or is revoked, the system removes the quota and optionally locks the
-   path.
+1. **Full reconciliation sync** (`StorageSyncJob`, nightly; also
+   `coldfront storage_sync`) — fetches all quotas once per cluster and:
+   creates missing paths and quotas, updates out-of-sync limits, unlocks
+   re-activated paths, applies snapshot policies, sweeps orphaned quotas
+   under the static path prefixes of the cluster's storage resources
+   (foreign quotas elsewhere on the array are never touched), and pulls
+   usage back into the quota rows.
 
-2. **Periodic batch sync** — A scheduled job runs full reconciliation of
-   storage quotas against the backend state.
+2. **Usage-only sync** (`StorageUsageSyncJob`, hourly; also
+   `coldfront storage_usage_sync`) — fetches all quotas once per cluster
+   and updates used/used_files/state on the active quota rows. Never
+   mutates the backend, so it can run frequently.
 
 ## Capacity Tracking
 

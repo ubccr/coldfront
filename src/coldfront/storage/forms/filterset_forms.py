@@ -48,18 +48,12 @@ class StorageClusterFilterSetForm(PrimaryModelFilterSetForm):
         required=False,
         label=_("Backend Path"),
     )
-    auto_sync_enabled = forms.NullBooleanField(
-        label=_("Auto Sync Enabled"),
-        required=False,
-        widget=forms.Select(choices=BOOLEAN_WITH_BLANK_CHOICES),
-    )
     tag = TagFilterField(model)
 
     fieldsets = (
         Fieldset(
             _("Storage Cluster"),
             "backend_path",
-            "auto_sync_enabled",
             "tag",
         ),
     )

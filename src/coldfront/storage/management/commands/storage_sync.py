@@ -14,9 +14,9 @@ Usage::
     coldfront storage_sync --dry-run                # show what would change
     coldfront storage_sync --cluster hpc01 --dry-run
 
-This command always runs synchronously and is unaffected by the
-per-cluster ``auto_sync_enabled`` setting — it bypasses the auto-sync
-gate entirely.
+This command runs synchronously and calls the same reconciliation code
+path (``sync_storage_clusters``) as the system jobs.  Clusters without a
+backend are skipped and reported as OK.
 """
 
 import logging
@@ -89,35 +89,39 @@ class Command(BaseCommand):
 
         self._configure_storage_logging(verbosity)
 
-        # Resolve cluster
-        cluster_id: int | None = None
+        # Resolve cluster to a name
+        cluster_names: list[str] | None = None
         if cluster_arg is not None:
             try:
                 cluster_id = int(cluster_arg)
+                cluster = StorageCluster.objects.get(pk=cluster_id)
             except ValueError:
-                # Look up by name
                 try:
                     cluster = StorageCluster.objects.get(name=cluster_arg)
-                    cluster_id = cluster.pk
                 except StorageCluster.DoesNotExist:
                     self.stderr.write(self.style.ERROR(f"Cluster '{cluster_arg}' not found"))
                     return
-
-        if dry_run:
-            self._dry_run(cluster_id)
-        else:
-            self._run_sync(cluster_id)
-
-    def _run_sync(self, cluster_id: int | None) -> None:
-        from coldfront.storage.sync import run_sync
+            except StorageCluster.DoesNotExist:
+                self.stderr.write(self.style.ERROR(f"Cluster '{cluster_arg}' not found"))
+                return
+            cluster_names = [cluster.name]
 
         start = timezone.now()
-        if cluster_id is None:
-            self.stdout.write(self.style.NOTICE("Starting Storage sync"))
+        if dry_run:
+            self.stdout.write(self.style.NOTICE("Dry-run mode — no backend calls will be made"))
+            self.stdout.write(
+                self.style.NOTICE(
+                    "Starting Storage sync" + ("" if cluster_names is None else f" (cluster={cluster_names[0]})")
+                )
+            )
+            reports = self._run_sync(cluster_names, dry_run=True)
         else:
-            self.stdout.write(self.style.NOTICE("Starting Storage sync (cluster=%s)", cluster_id))
-
-        reports = run_sync(cluster_id=cluster_id)
+            self.stdout.write(
+                self.style.NOTICE(
+                    "Starting Storage sync" + ("" if cluster_names is None else f" (cluster={cluster_names[0]})")
+                )
+            )
+            reports = self._run_sync(cluster_names)
 
         duration = timedelta(seconds=(timezone.now() - start).total_seconds())
         for r in reports:
@@ -128,8 +132,10 @@ class Command(BaseCommand):
                         f"{r.paths_created} paths, "
                         f"{r.quotas_created} quotas created; "
                         f"{r.quotas_updated} quotas updated; "
-                        f"{r.paths_deleted} paths, "
-                        f"{r.quotas_deleted} quotas deleted "
+                        f"{r.paths_locked} paths locked, "
+                        f"{r.paths_unlocked} paths unlocked; "
+                        f"{r.quotas_deleted} quotas deleted; "
+                        f"{r.usage_updated} usage rows updated "
                         f"({r.duration_ms} ms)"
                     )
                 )
@@ -142,37 +148,7 @@ class Command(BaseCommand):
         total = len(reports)
         self.stdout.write(self.style.SUCCESS(f"Sync finished: {ok}/{total} clusters OK ({duration})"))
 
-    def _dry_run(self, cluster_id: int | None) -> None:
-        """Show what would change without making API calls."""
-        self.stdout.write(self.style.NOTICE("Dry-run mode — no API calls will be made"))
+    def _run_sync(self, cluster_names: list[str] | None, dry_run: bool = False):
+        from coldfront.storage.sync import sync_storage_clusters
 
-        clusters = StorageCluster.objects.all()
-        if cluster_id is not None:
-            clusters = clusters.filter(pk=cluster_id)
-
-        from coldfront.ras.choices import AllocationStatusChoices
-        from coldfront.storage.models import StorageQuota
-
-        for cluster in clusters:
-            self.stdout.write(f"\nCluster: {cluster.name}")
-
-            # Count active quotas that apply to this cluster
-            active_quotas = StorageQuota.objects.filter(
-                allocation__status=AllocationStatusChoices.STATUS_ACTIVE,
-            )
-
-            expected_count = 0
-            for quota in active_quotas:
-                if quota.clusters.exists():
-                    if quota.clusters.filter(pk=cluster.pk).exists():
-                        expected_count += 1
-                else:
-                    if quota.storage.clusters.filter(pk=cluster.pk).exists():
-                        expected_count += 1
-
-            self.stdout.write(f"  Active quotas on this cluster: {expected_count}")
-
-            if expected_count:
-                self.stdout.write(self.style.SUCCESS(f"  Would create/update: {expected_count} quotas"))
-            else:
-                self.stdout.write(self.style.WARNING("  No active quotas — nothing to sync"))
+        return sync_storage_clusters(cluster_names, dry_run=dry_run)

@@ -5,22 +5,25 @@
 """
 Storage sync engine.
 
-Provides core synchronization logic between ColdFront's local models and
-storage system backends.  Two entry points:
+Batch-only reconciliation between ColdFront's local models and storage
+system backends.  There are no targeted/real-time enqueues — allocation
+activation and expiry are reflected on the backend exclusively by these
+drivers, which the CLI commands and system jobs call.
 
-* ``run_sync()`` — full reconciliation sync for one or all clusters.
-* ``_recalculate_used_bytes()`` — update resource/cluster used_bytes from
-  active quota sums.
+Two entry points:
 
-* ``enqueue_activate_allocation()`` — targeted handler for allocation
-  activation.
-* ``enqueue_deactivate_allocation()`` — targeted handler for allocation
-  expire / revoke.
+* ``sync_storage_clusters()`` — full reconciliation sync for one or all
+  clusters: creates missing paths and quotas, updates out-of-sync limits,
+  unlocks re-activated paths, applies snapshot policies, sweeps orphaned
+  quotas under managed path prefixes, pulls usage back into the quota
+  rows, and recalculates resource/cluster used-bytes sums.
+* ``sync_storage_usage()`` — usage-only sync: fetches all quotas once per
+  cluster, updates ``used``/``used_files``/``state`` on the active quota
+  rows, and recalculates the used-bytes sums.  Never mutates the backend.
 
-The ``enqueue_*()`` wrappers are thin — they check the auto-sync gate and
-delegate to the task queue.  The actual backend logic is done by the
-``_run_activate_allocation()`` / ``_run_deactivate_allocation()`` functions
-so the CLI command can call them directly without going through the queue.
+Both drivers share the same per-cluster code path; the ``backends``
+parameter lets tests inject pre-seeded backend instances (CLI and system
+jobs pass nothing and resolve backends through the registry).
 """
 
 import logging
@@ -30,9 +33,13 @@ from django.db.models import Q, Sum
 from django.utils import timezone
 
 from coldfront.ras.choices import AllocationStatusChoices
+from coldfront.storage.backends.base import RESTRICTED_PATHS, ErrNotFound
 from coldfront.storage.models import StorageCluster, StorageQuota, StorageResource
 
 logger = logging.getLogger(__name__)
+
+#: Set view of ``RESTRICTED_PATHS`` for fast membership checks.
+RESTRICTED_PATHS_SET = frozenset(RESTRICTED_PATHS)
 
 
 # ---------------------------------------------------------------------------
@@ -47,95 +54,138 @@ class SyncReport:
     cluster: str
     success: bool = False
     paths_created: int = 0
-    paths_deleted: int = 0
+    paths_locked: int = 0
+    paths_unlocked: int = 0
     quotas_created: int = 0
     quotas_updated: int = 0
     quotas_deleted: int = 0
+    usage_updated: int = 0
     errors: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     duration_ms: int = 0
 
 
 # ---------------------------------------------------------------------------
-# Targeted handler wrappers (enqueue helpers)
+# Shared helpers
 # ---------------------------------------------------------------------------
 
 
-def enqueue_activate_allocation(allocation_id: int, cluster_id: int, share_type: str = "posix") -> None:
-    """Enqueue a targeted task to create path + quota on a cluster.
+def _resolve_backends(clusters, backends):
+    """Resolve a backend instance for each cluster.
 
-    Called by the ViewFlow callback when an allocation is activated.
-    Respects the per-cluster ``auto_sync_enabled`` setting and skips
-    clusters with no backend (``backend_path`` is null).
+    Args:
+        clusters: Iterable of ``StorageCluster``.
+        backends: Optional dict mapping cluster name to a backend
+            instance (test seam).  Clusters in the dict use the injected
+            instance; all others resolve through ``get_backend()``.
+
+    Yields:
+        ``(cluster, backend_or_None, error_or_None)`` tuples.
     """
-    cluster = StorageCluster.objects.get(pk=cluster_id)
-    if cluster.backend_path is None:
-        logger.debug(
-            "Storage cluster %s has no backend — skipping activate enqueue for allocation %s",
-            cluster.name,
-            allocation_id,
-        )
-        return
-    if not cluster.auto_sync_enabled:
-        logger.debug(
-            "Storage auto sync disabled for cluster %s — skipping activate enqueue for allocation %s",
-            cluster.name,
-            allocation_id,
-        )
-        return
+    from coldfront.storage.backends.registry import get_backend
 
-    logger.info("Enqueuing Storage activate for allocation %s on cluster %s", allocation_id, cluster.name)
-    from coldfront.core.models import Job
+    for cluster in clusters:
+        if backends is not None and cluster.name in backends:
+            yield cluster, backends[cluster.name], None
+            continue
 
-    Job.enqueue(
-        _run_activate_allocation,
-        name=f"StorageActivate:allocation-{allocation_id}:cluster-{cluster_id}",
-        args=(),
-        kwargs={
-            "allocation_id": allocation_id,
-            "cluster_id": cluster_id,
-            "share_type": share_type,
-        },
-        priority=3,
+        if cluster.backend_path is None:
+            logger.debug("Storage cluster %s has no backend — skipping sync", cluster.name)
+            yield cluster, None, None
+            continue
+
+        try:
+            backend = get_backend(cluster.backend_path, cluster_name=cluster.name)
+        except Exception as exc:
+            logger.error("Failed to instantiate backend for cluster %s: %s", cluster.name, exc)
+            yield cluster, None, exc
+            continue
+
+        yield cluster, backend, None
+
+
+def _active_quotas_for_cluster(cluster):
+    """Return the active ``StorageQuota`` rows that apply to a cluster.
+
+    A quota applies to a cluster when its ``clusters`` M2M contains the
+    cluster, or when the M2M is empty and the quota's storage resource is
+    backed by the cluster.
+    """
+    active_quotas = (
+        StorageQuota.objects.filter(
+            allocation__status=AllocationStatusChoices.STATUS_ACTIVE,
+        )
+        .select_related("storage", "allocation", "snapshot_policy")
+        .prefetch_related("clusters", "storage__clusters")
     )
 
+    expected = []
+    for quota in active_quotas:
+        if quota.clusters.exists():
+            if any(c.pk == cluster.pk for c in quota.clusters.all()):
+                expected.append(quota)
+        else:
+            if any(c.pk == cluster.pk for c in quota.storage.clusters.all()):
+                expected.append(quota)
+    return expected
 
-def enqueue_deactivate_allocation(allocation_id: int, cluster_id: int) -> None:
-    """Enqueue a targeted task to remove quota on a cluster.
 
-    Called by ViewFlow callbacks when an allocation is expired or revoked.
-    Respects the per-cluster ``auto_sync_enabled`` setting and skips
-    clusters with no backend (``backend_path`` is null).
+def _managed_prefixes(cluster, report):
+    """Return the static path prefixes managed by a cluster's resources.
+
+    A ``StorageResource`` owns the path space generated by its
+    ``path_template``.  The static prefix of the template (the text
+    before the first placeholder) scopes the orphan sweep: only backend
+    quotas under a managed prefix are ever removed — quotas elsewhere on
+    the storage system (e.g. created by admins for other purposes) are
+    never touched.
+
+    Resources whose template has no static prefix contribute nothing to
+    the scope; a warning is recorded on the report.
     """
-    cluster = StorageCluster.objects.get(pk=cluster_id)
-    if cluster.backend_path is None:
-        logger.debug(
-            "Storage cluster %s has no backend — skipping deactivate enqueue for allocation %s",
-            cluster.name,
-            allocation_id,
-        )
-        return
-    if not cluster.auto_sync_enabled:
-        logger.debug(
-            "Storage auto sync disabled for cluster %s — skipping deactivate enqueue for allocation %s",
-            cluster.name,
-            allocation_id,
-        )
-        return
+    prefixes = []
+    for resource in cluster.storage_resources.all():
+        # The prefix is the static text before the first placeholder —
+        # both ``{{ ... }}`` and ``{ ... }`` styles are used in templates.
+        prefix = resource.path_template.split("{", 1)[0].strip()
+        if not prefix:
+            report.warnings.append(
+                f"Storage resource {resource.name} has a path template without a static "
+                "prefix — its paths are outside the orphan sweep scope"
+            )
+            continue
+        if prefix not in prefixes:
+            prefixes.append(prefix)
+    return prefixes
 
-    logger.info("Enqueuing Storage deactivate for allocation %s on cluster %s", allocation_id, cluster.name)
-    from coldfront.core.models import Job
 
-    Job.enqueue(
-        _run_deactivate_allocation,
-        name=f"StorageDeactivate:allocation-{allocation_id}:cluster-{cluster_id}",
-        args=(),
-        kwargs={
-            "allocation_id": allocation_id,
-            "cluster_id": cluster_id,
-        },
-        priority=3,
-    )
+def _apply_quota_usage(backend_quota, quota) -> bool:
+    """Pull usage fields from a backend quota record into a quota row.
+
+    Returns:
+        True when any field changed and the row was updated.
+    """
+    updates = {}
+    if backend_quota.used_bytes is not None:
+        updates["used_bytes"] = backend_quota.used_bytes
+    if backend_quota.used_files is not None:
+        updates["used_files"] = backend_quota.used_files
+    if backend_quota.state is not None:
+        updates["state"] = backend_quota.state or ""
+    if not updates:
+        return False
+    StorageQuota.objects.filter(pk=quota.pk).update(**updates)
+    return True
+
+
+def _snapshot_policy_payload(quota) -> dict:
+    """Build the backend payload for a quota's snapshot policy."""
+    policy = quota.snapshot_policy
+    return {
+        "interval": policy.interval,
+        "retention_days": policy.retention_days,
+        "extra_config": policy.extra_config,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -143,174 +193,462 @@ def enqueue_deactivate_allocation(allocation_id: int, cluster_id: int) -> None:
 # ---------------------------------------------------------------------------
 
 
-def run_sync(cluster_id: int | None = None) -> list[SyncReport]:
+def sync_storage_clusters(
+    cluster_names: list[str] | None = None,
+    *,
+    dry_run: bool = False,
+    backends: dict[str, object] | None = None,
+) -> list[SyncReport]:
     """Perform a full reconciliation sync for one or all storage clusters.
 
-    For each cluster, queries active ``StorageQuota`` records, compares
-    against the backend's current state, and creates/updates/deletes paths
-    and quotas as needed.
-
     Args:
-        cluster_id: Optional cluster PK.  If ``None``, syncs all clusters.
+        cluster_names: Optional list of cluster names.  ``None`` syncs
+            all clusters.
+        dry_run: When True, fetch backend state and record intended
+            actions in the reports without making any mutating calls.
+        backends: Optional dict mapping cluster name to a backend
+            instance (test seam).
 
     Returns:
         List of ``SyncReport`` — one per cluster processed.
     """
-    reports: list[SyncReport] = []
-
     clusters = StorageCluster.objects.all()
-    if cluster_id is not None:
-        clusters = clusters.filter(pk=cluster_id)
+    if cluster_names is not None:
+        clusters = clusters.filter(name__in=cluster_names)
 
-    for cluster in clusters:
-        report = _sync_cluster(cluster)
+    reports: list[SyncReport] = []
+    for cluster, backend, error in _resolve_backends(clusters, backends):
+        report = SyncReport(cluster=cluster.name)
+        start = timezone.now()
+
+        if error is not None:
+            report.errors.append(f"Failed to instantiate backend: {error}")
+            report.duration_ms = _elapsed_ms(start)
+            reports.append(report)
+            continue
+        if backend is None:
+            report.success = True
+            report.duration_ms = _elapsed_ms(start)
+            reports.append(report)
+            continue
+
+        _sync_cluster(cluster, backend, report, dry_run=dry_run)
+        report.duration_ms = _elapsed_ms(start)
         reports.append(report)
 
-    # Recalculate used_bytes after all clusters are synced
     _recalculate_used_bytes()
-
     return reports
 
 
-def _sync_cluster(cluster: StorageCluster) -> SyncReport:
+def _sync_cluster(cluster, backend, report, *, dry_run=False):
     """Reconcile a single storage cluster with its backend."""
-    from coldfront.storage.backends.registry import get_backend
-
-    start = timezone.now()
-    report = SyncReport(cluster=cluster.name, success=False)
-
-    # ---- Step 0: Skip clusters with no backend ----
-    if cluster.backend_path is None:
-        logger.debug(
-            "Storage cluster %s has no backend — skipping sync",
-            cluster.name,
-        )
-        report.success = True
-        report.duration_ms = int((timezone.now() - start).total_seconds() * 1000)
-        return report
-
-    # ---- Step 1: Instantiate the backend ----
-    try:
-        backend = get_backend(cluster.backend_path, cluster_name=cluster.name)
-    except Exception as exc:
-        report.errors.append(f"Failed to instantiate backend: {exc}")
-        report.duration_ms = int((timezone.now() - start).total_seconds() * 1000)
-        return report
-
-    # ---- Step 2: Fetch current backend state ----
+    # ---- Step 1: Fetch current backend state ----
     try:
         backend_quotas = backend.get_all_quotas()
     except Exception as exc:
         report.errors.append(f"Failed to fetch backend quotas: {exc}")
-        report.duration_ms = int((timezone.now() - start).total_seconds() * 1000)
-        return report
+        return
 
-    # Build a lookup of backend quotas by path
     backend_by_path: dict[str, object] = {}
     for q in backend_quotas:
+        if q.path in backend_by_path:
+            report.warnings.append(f"Duplicate backend quota for path {q.path}")
         backend_by_path[q.path] = q
 
-    # ---- Step 3: Get active ColdFront quotas that apply to this cluster ----
-    active_quotas = StorageQuota.objects.filter(
-        allocation__status=AllocationStatusChoices.STATUS_ACTIVE,
-    ).select_related("storage", "allocation", "snapshot_policy")
+    # ---- Step 2: Expected quotas for this cluster ----
+    expected = _active_quotas_for_cluster(cluster)
+    expected_paths = {q.path for q in expected}
 
-    # Build lookup of quotas that should exist on this cluster
-    expected_quotas: list[StorageQuota] = []
-    for quota in active_quotas:
-        if quota.clusters.exists():
-            if quota.clusters.filter(pk=cluster.pk).exists():
-                expected_quotas.append(quota)
-        else:
-            # Empty M2M means apply to ALL clusters backing the resource
-            if quota.storage.clusters.filter(pk=cluster.pk).exists():
-                expected_quotas.append(quota)
+    # ---- Step 3: Create missing paths and quotas ----
+    for quota in expected:
+        path = quota.path
+        if path in backend_by_path:
+            continue
 
-    # ---- Step 4: Reconcile — for each expected quota, ensure it exists on backend ----
-    for quota in expected_quotas:
+        if dry_run:
+            report.paths_created += 1
+            report.quotas_created += 1
+            continue
+
+        try:
+            backend.create_path(
+                path=path,
+                user=quota.owning_user.username if quota.owning_user else "",
+                group=quota.owning_group.name if quota.owning_group else "",
+                mode=quota.path_mode,
+            )
+            report.paths_created += 1
+        except Exception as exc:
+            report.errors.append(f"Failed to create path {path}: {exc}")
+            continue
+
+        try:
+            backend.create_quota(
+                path=path,
+                share_type=quota.share_type,
+                hard_limit_bytes=quota.hard_limit_bytes,
+                files_limit=quota.hard_limit_files,
+                grace=str(quota.grace_period) if quota.grace_period else None,
+                soft_limit_bytes=quota.soft_limit_bytes,
+                soft_limit_files=quota.soft_limit_files,
+            )
+            report.quotas_created += 1
+        except Exception as exc:
+            report.errors.append(f"Failed to create quota for {path}: {exc}")
+            continue
+
+        # Apply snapshot policy if set
+        _apply_snapshot_policy(backend, quota, path, report)
+
+    # ---- Step 4: Update out-of-sync quotas ----
+    for quota in expected:
         path = quota.path
         backend_q = backend_by_path.get(path)
-
         if backend_q is None:
-            # Quota doesn't exist on backend — create path + quota
-            try:
-                backend.create_path(
-                    path=path,
-                    user=quota.owning_user.username if quota.owning_user else "",
-                    group=quota.owning_group.name if quota.owning_group else "",
-                    mode=quota.path_mode,
-                )
-                report.paths_created += 1
-            except Exception as exc:
-                report.errors.append(f"Failed to create path {path}: {exc}")
-                continue
+            continue
 
+        if _limits_differ(backend_q, quota):
+            if dry_run:
+                report.quotas_updated += 1
+                continue
             try:
-                backend.create_quota(
-                    path=path,
-                    share_type=quota.share_type,
+                backend.update_quota(
+                    quota_id=backend_q.id,
                     hard_limit_bytes=quota.hard_limit_bytes,
                     files_limit=quota.hard_limit_files,
-                    grace=str(quota.grace_period) if quota.grace_period else None,
+                    soft_limit_bytes=quota.soft_limit_bytes,
+                    soft_limit_files=quota.soft_limit_files,
+                    grace_period=str(quota.grace_period) if quota.grace_period else None,
                 )
-                report.quotas_created += 1
+                report.quotas_updated += 1
             except Exception as exc:
-                report.errors.append(f"Failed to create quota for {path}: {exc}")
-                continue
+                report.errors.append(f"Failed to update quota for {path}: {exc}")
 
-            # Apply snapshot policy if set
-            if quota.snapshot_policy_id and hasattr(backend, "apply_snapshot_policy"):
-                try:
-                    backend.apply_snapshot_policy(
-                        path=path,
-                        policy={
-                            "interval": quota.snapshot_policy.interval,
-                            "retention_days": quota.snapshot_policy.retention_days,
-                            "extra_config": quota.snapshot_policy.extra_config,
-                        },
-                    )
-                except Exception as exc:
-                    report.warnings.append(f"Failed to apply snapshot policy for {path}: {exc}")
+        # Pull usage from the backend
+        if not dry_run and _apply_quota_usage(backend_q, quota):
+            report.usage_updated += 1
 
-        else:
-            # Quota exists on backend — check if limits need updating
-            new_hard = quota.hard_limit_bytes
-            new_files = quota.hard_limit_files
-            current_hard = backend_q.hard_limit_bytes
-            current_files = backend_q.hard_limit_files
+        # Unlock re-activated paths
+        _unlock_if_locked(backend, path, report, dry_run=dry_run)
 
-            if new_hard != current_hard or new_files != current_files:
+        # Ensure snapshot policies stay applied
+        if not dry_run and quota.snapshot_policy_id:
+            _apply_snapshot_policy(backend, quota, path, report)
+
+    # ---- Step 5: Sweep orphaned quotas under managed prefixes ----
+    prefixes = _managed_prefixes(cluster, report)
+    for backend_q in backend_quotas:
+        path = backend_q.path
+        if path in expected_paths:
+            continue
+        if not any(path.startswith(prefix) for prefix in prefixes):
+            continue  # outside every managed prefix — foreign quota
+        if path in RESTRICTED_PATHS_SET:
+            report.warnings.append(f"Not deleting restricted path {path}")
+            continue
+
+        if dry_run:
+            report.quotas_deleted += 1
+            continue
+
+        try:
+            backend.delete_quota(path=path)
+            report.quotas_deleted += 1
+        except Exception as exc:
+            report.errors.append(f"Failed to delete orphaned quota {path}: {exc}")
+            continue
+
+        # Lock the path after removing its quota — mirrors the old
+        # deactivation handler so expired allocations lose write access
+        # at the next sync.
+        _lock_if_needed(backend, path, report)
+
+    report.success = len(report.errors) == 0
+
+
+def _limits_differ(backend_q, quota) -> bool:
+    """Compare a backend quota record against the expected quota row."""
+    return (
+        backend_q.hard_limit_bytes != quota.hard_limit_bytes
+        or backend_q.hard_limit_files != quota.hard_limit_files
+        or backend_q.soft_limit_bytes != quota.soft_limit_bytes
+        or backend_q.soft_limit_files != quota.soft_limit_files
+        or backend_q.grace_period != (str(quota.grace_period) if quota.grace_period else None)
+    )
+
+
+def _apply_snapshot_policy(backend, quota, path, report) -> None:
+    """Apply a quota's snapshot policy on the backend, when supported."""
+    if not quota.snapshot_policy_id:
+        return
+
+    if not getattr(backend, "supports_snapshot_policies", False):
+        report.warnings.append(f"Backend does not support snapshot policies — policy for {path} not applied")
+        return
+
+    try:
+        backend.apply_snapshot_policy(path=path, policy=_snapshot_policy_payload(quota))
+    except NotImplementedError:
+        report.warnings.append(f"Backend does not support snapshot policies — policy for {path} not applied")
+    except Exception as exc:
+        report.warnings.append(f"Failed to apply snapshot policy for {path}: {exc}")
+
+
+def _unlock_if_locked(backend, path, report, *, dry_run=False) -> None:
+    """Unlock a path that is still read-only for an active quota."""
+    try:
+        stat = backend.stat_path(path)
+    except Exception as exc:
+        report.warnings.append(f"Failed to stat path {path} for unlock check: {exc}")
+        return
+
+    if not stat.locked:
+        return
+
+    if dry_run:
+        report.paths_unlocked += 1
+        return
+
+    try:
+        backend.unlock_path(path)
+        report.paths_unlocked += 1
+    except Exception as exc:
+        report.warnings.append(f"Failed to unlock path {path}: {exc}")
+
+
+def _lock_if_needed(backend, path, report) -> None:
+    """Lock a path after its quota was swept, when the path exists."""
+    try:
+        stat = backend.stat_path(path)
+    except Exception as exc:
+        report.warnings.append(f"Failed to stat path {path} for lock check: {exc}")
+        return
+
+    if stat.locked:
+        return
+
+    try:
+        backend.lock_path(path)
+        report.paths_locked += 1
+    except Exception as exc:
+        report.warnings.append(f"Failed to lock path {path}: {exc}")
+
+
+# ---------------------------------------------------------------------------
+# Single-quota sync
+# ---------------------------------------------------------------------------
+
+
+def _clusters_for_quota(quota) -> list:
+    """Return the clusters a quota applies to.
+
+    A quota applies to the clusters in its own M2M, or — when that is
+    empty — to every cluster backing its storage resource.
+    """
+    if quota.clusters.exists():
+        return list(quota.clusters.all())
+    return list(quota.storage.clusters.all())
+
+
+def _sync_single_quota(backend, quota, report, *, dry_run=False) -> None:
+    """Reconcile one quota against a single cluster's backend.
+
+    Creates the missing path + quota (only for active allocations),
+    updates out-of-sync limits, pulls usage, unlocks a still read-only
+    re-activated path, and keeps the snapshot policy applied.  No orphan
+    sweep — this is scoped to the one quota.
+    """
+    path = quota.path
+    try:
+        backend_q = backend.get_quota(path)
+    except ErrNotFound:
+        backend_q = None
+    except Exception as exc:
+        report.errors.append(f"Failed to fetch backend quota for {path}: {exc}")
+        return
+
+    if backend_q is None:
+        if quota.allocation.status != AllocationStatusChoices.STATUS_ACTIVE:
+            report.errors.append(f"Allocation has not been activated. Quota will not be created for {path}")
+            return  # inactive quotas are never created on the backend
+
+        if dry_run:
+            report.paths_created += 1
+            report.quotas_created += 1
+            report.success = True
+            return
+
+        try:
+            backend.create_path(
+                path=path,
+                user=quota.owning_user.username if quota.owning_user else "",
+                group=quota.owning_group.name if quota.owning_group else "",
+                mode=quota.path_mode,
+            )
+            report.paths_created += 1
+        except Exception as exc:
+            report.errors.append(f"Failed to create path {path}: {exc}")
+            return
+
+        try:
+            backend.create_quota(
+                path=path,
+                share_type=quota.share_type,
+                hard_limit_bytes=quota.hard_limit_bytes,
+                files_limit=quota.hard_limit_files,
+                grace=str(quota.grace_period) if quota.grace_period else None,
+                soft_limit_bytes=quota.soft_limit_bytes,
+                soft_limit_files=quota.soft_limit_files,
+            )
+            report.quotas_created += 1
+        except Exception as exc:
+            report.errors.append(f"Failed to create quota for {path}: {exc}")
+            return
+
+        _apply_snapshot_policy(backend, quota, path, report)
+    else:
+        if _limits_differ(backend_q, quota):
+            if dry_run:
+                report.quotas_updated += 1
+            else:
                 try:
                     backend.update_quota(
                         quota_id=backend_q.id,
-                        hard_limit_bytes=new_hard,
-                        files_limit=new_files,
+                        hard_limit_bytes=quota.hard_limit_bytes,
+                        files_limit=quota.hard_limit_files,
+                        soft_limit_bytes=quota.soft_limit_bytes,
+                        soft_limit_files=quota.soft_limit_files,
+                        grace_period=str(quota.grace_period) if quota.grace_period else None,
                     )
                     report.quotas_updated += 1
                 except Exception as exc:
                     report.errors.append(f"Failed to update quota for {path}: {exc}")
 
-            # Update usage tracking from backend
-            if backend_q.used is not None:
-                StorageQuota.objects.filter(pk=quota.pk).update(
-                    used=backend_q.used,
-                    used_files=backend_q.used_files,
-                    state=backend_q.state or "",
-                )
+        # Pull usage from the backend
+        if not dry_run and _apply_quota_usage(backend_q, quota):
+            report.usage_updated += 1
 
-    # ---- Step 5: Remove orphaned quotas on backend ----
-    expected_paths = {q.path for q in expected_quotas}
-    for backend_q in backend_quotas:
-        if backend_q.path not in expected_paths:
-            try:
-                backend.delete_quota(path=backend_q.path)
-                report.quotas_deleted += 1
-            except Exception as exc:
-                report.errors.append(f"Failed to delete orphaned quota {backend_q.path}: {exc}")
+        # Unlock re-activated paths
+        _unlock_if_locked(backend, path, report, dry_run=dry_run)
 
-    report.duration_ms = int((timezone.now() - start).total_seconds() * 1000)
+        # Keep the snapshot policy applied
+        if not dry_run and quota.snapshot_policy_id:
+            _apply_snapshot_policy(backend, quota, path, report)
+
     report.success = len(report.errors) == 0
-    return report
+
+
+def sync_storage_quota(quota, *, dry_run=False, backends=None) -> list[SyncReport]:
+    """Reconcile a single quota against every cluster it belongs to.
+
+    Runs ``_sync_single_quota`` for each backend-backed cluster the quota
+    applies to (clusters with no backend are noted in the report), then
+    recalculates the resource/cluster used-bytes sums.
+
+    Args:
+        quota: The ``StorageQuota`` row to sync.
+        dry_run: When True, record intended actions without mutating.
+        backends: Optional dict mapping cluster name to a backend instance
+            (test seam).
+
+    Returns:
+        List of ``SyncReport`` — one per cluster processed.
+    """
+    from coldfront.storage.backends.registry import get_backend
+
+    reports: list[SyncReport] = []
+    for cluster in _clusters_for_quota(quota):
+        report = SyncReport(cluster=cluster.name)
+
+        if backends is not None and cluster.name in backends:
+            backend = backends[cluster.name]
+        elif cluster.backend_path is None:
+            report.warnings.append("Cluster has no backend configured")
+            report.success = True
+            reports.append(report)
+            continue
+        else:
+            try:
+                backend = get_backend(cluster.backend_path, cluster_name=cluster.name)
+            except Exception as exc:
+                report.errors.append(f"Failed to instantiate backend: {exc}")
+                reports.append(report)
+                continue
+
+        _sync_single_quota(backend, quota, report, dry_run=dry_run)
+        reports.append(report)
+
+    _recalculate_used_bytes()
+    return reports
+
+
+# ---------------------------------------------------------------------------
+# Usage-only sync
+# ---------------------------------------------------------------------------
+
+
+def sync_storage_usage(
+    cluster_names: list[str] | None = None,
+    backends: dict[str, object] | None = None,
+) -> list[SyncReport]:
+    """Sync quota usage only — no backend mutations.
+
+    For each cluster, fetches all quotas once, updates
+    ``used``/``used_files``/``state`` on the active quota rows whose paths
+    match backend quotas, and recalculates resource/cluster used-bytes
+    sums.  Safe to run frequently.
+
+    Args:
+        cluster_names: Optional list of cluster names.  ``None`` syncs
+            all clusters.
+        backends: Optional dict mapping cluster name to a backend
+            instance (test seam).
+
+    Returns:
+        List of ``SyncReport`` — one per cluster processed.
+    """
+    clusters = StorageCluster.objects.all()
+    if cluster_names is not None:
+        clusters = clusters.filter(name__in=cluster_names)
+
+    reports: list[SyncReport] = []
+    for cluster, backend, error in _resolve_backends(clusters, backends):
+        report = SyncReport(cluster=cluster.name)
+        start = timezone.now()
+
+        if error is not None:
+            report.errors.append(f"Failed to instantiate backend: {error}")
+            report.duration_ms = _elapsed_ms(start)
+            reports.append(report)
+            continue
+        if backend is None:
+            report.success = True
+            report.duration_ms = _elapsed_ms(start)
+            reports.append(report)
+            continue
+
+        try:
+            backend_quotas = backend.get_all_quotas()
+        except Exception as exc:
+            report.errors.append(f"Failed to fetch backend quotas: {exc}")
+            report.duration_ms = _elapsed_ms(start)
+            reports.append(report)
+            continue
+
+        backend_by_path = {q.path: q for q in backend_quotas}
+        for quota in _active_quotas_for_cluster(cluster):
+            backend_q = backend_by_path.get(quota.path)
+            if backend_q is None:
+                continue
+            if _apply_quota_usage(backend_q, quota):
+                report.usage_updated += 1
+
+        report.duration_ms = _elapsed_ms(start)
+        report.success = len(report.errors) == 0
+        reports.append(report)
+
+    _recalculate_used_bytes()
+    return reports
 
 
 # ---------------------------------------------------------------------------
@@ -319,11 +657,7 @@ def _sync_cluster(cluster: StorageCluster) -> SyncReport:
 
 
 def _recalculate_used_bytes() -> None:
-    """Update resource and cluster ``used_bytes`` from active quota sums.
-
-    Called at the end of ``run_sync()`` and after each targeted handler
-    completes.
-    """
+    """Update resource and cluster ``used_bytes`` from active quota sums."""
     STATUS_ACTIVE = AllocationStatusChoices.STATUS_ACTIVE
 
     # Per resource: sum of all active quotas on that resource
@@ -332,7 +666,7 @@ def _recalculate_used_bytes() -> None:
             StorageQuota.objects.filter(
                 storage=resource,
                 allocation__status=STATUS_ACTIVE,
-            ).aggregate(total=Sum("used"))["total"]
+            ).aggregate(total=Sum("used_bytes"))["total"]
             or 0
         )
         StorageResource.objects.filter(pk=resource.pk).update(used_bytes=total)
@@ -354,138 +688,12 @@ def _recalculate_used_bytes() -> None:
                     storage__clusters=cluster,
                 )
             )
-            .aggregate(total=Sum("used"))["total"]
+            .aggregate(total=Sum("used_bytes"))["total"]
             or 0
         )
         StorageCluster.objects.filter(pk=cluster.pk).update(used_bytes=total)
 
 
-# ---------------------------------------------------------------------------
-# Targeted handler implementations (called by worker or CLI)
-# ---------------------------------------------------------------------------
-
-
-def _run_activate_allocation(
-    *,
-    allocation_id: int,
-    cluster_id: int,
-    share_type: str = "posix",
-) -> SyncReport:
-    """Create path + quota on a cluster for a newly activated allocation.
-
-    Called by the worker process (or directly by CLI).  Delegates to
-    ``_sync_cluster()`` which handles the full reconciliation for the
-    cluster, but this function only activates a single allocation.
-    """
-    cluster = StorageCluster.objects.get(pk=cluster_id)
-    report = SyncReport(cluster=cluster.name, success=False)
-
-    from coldfront.storage.backends.registry import get_backend
-
-    backend = get_backend(cluster.backend_path, cluster_name=cluster.name)
-    if backend is None:
-        report.errors.append(f"Cluster {cluster.name} has no backend — cannot activate allocation {allocation_id}")
-        return report
-
-    try:
-        quota = StorageQuota.objects.get(allocation_id=allocation_id)
-    except StorageQuota.DoesNotExist:
-        report.errors.append(f"StorageQuota not found for allocation {allocation_id}")
-        return report
-
-    path = quota.path
-
-    # Create path
-    try:
-        backend.create_path(
-            path=path,
-            user=quota.owning_user.username if quota.owning_user else "",
-            group=quota.owning_group.name if quota.owning_group else "",
-            mode=quota.path_mode,
-        )
-        report.paths_created += 1
-    except Exception as exc:
-        report.errors.append(f"Failed to create path {path}: {exc}")
-        return report
-
-    # Create quota
-    try:
-        backend.create_quota(
-            path=path,
-            share_type=share_type,
-            hard_limit_bytes=quota.hard_limit_bytes,
-            files_limit=quota.hard_limit_files,
-            grace=str(quota.grace_period) if quota.grace_period else None,
-        )
-        report.quotas_created += 1
-    except Exception as exc:
-        report.errors.append(f"Failed to create quota for {path}: {exc}")
-        return report
-
-    # Apply snapshot policy if set
-    if quota.snapshot_policy_id and hasattr(backend, "apply_snapshot_policy"):
-        try:
-            backend.apply_snapshot_policy(
-                path=path,
-                policy={
-                    "interval": quota.snapshot_policy.interval,
-                    "retention_days": quota.snapshot_policy.retention_days,
-                    "extra_config": quota.snapshot_policy.extra_config,
-                },
-            )
-        except Exception as exc:
-            report.warnings.append(f"Failed to apply snapshot policy for {path}: {exc}")
-
-    report.success = len(report.errors) == 0
-    _recalculate_used_bytes()
-    return report
-
-
-def _run_deactivate_allocation(*, allocation_id: int, cluster_id: int) -> SyncReport:
-    """Remove quota on a cluster for an expired/revoked allocation.
-
-    Called by the worker process (or directly by CLI).
-    """
-    cluster = StorageCluster.objects.get(pk=cluster_id)
-    report = SyncReport(cluster=cluster.name, success=False)
-
-    from coldfront.storage.backends.registry import get_backend
-
-    backend = get_backend(cluster.backend_path, cluster_name=cluster.name)
-    if backend is None:
-        report.errors.append(f"Cluster {cluster.name} has no backend — cannot deactivate allocation {allocation_id}")
-        return report
-
-    try:
-        quota = StorageQuota.objects.get(allocation_id=allocation_id)
-    except StorageQuota.DoesNotExist:
-        report.errors.append(f"StorageQuota not found for allocation {allocation_id}")
-        return report
-
-    path = quota.path
-
-    # Remove snapshot policy if set
-    if quota.snapshot_policy_id and hasattr(backend, "remove_snapshot_policy"):
-        try:
-            backend.remove_snapshot_policy(path=path)
-        except Exception as exc:
-            report.warnings.append(f"Failed to remove snapshot policy for {path}: {exc}")
-
-    # Remove quota
-    try:
-        backend.delete_quota(path=path)
-        report.quotas_deleted += 1
-    except Exception as exc:
-        report.errors.append(f"Failed to delete quota for {path}: {exc}")
-        return report
-
-    # Lock path (optional)
-    try:
-        backend.lock_path(path=path)
-        report.paths_deleted += 1
-    except Exception as exc:
-        report.warnings.append(f"Failed to lock path {path}: {exc}")
-
-    report.success = len(report.errors) == 0
-    _recalculate_used_bytes()
-    return report
+def _elapsed_ms(start) -> int:
+    """Milliseconds elapsed since ``start``."""
+    return int((timezone.now() - start).total_seconds() * 1000)

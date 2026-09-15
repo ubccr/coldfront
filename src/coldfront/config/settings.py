@@ -18,6 +18,7 @@ coldfront_configs = [
     "core.py",
     "email.py",
     "slurm.py",
+    "storage.py",
     "plugins.py",
 ]
 

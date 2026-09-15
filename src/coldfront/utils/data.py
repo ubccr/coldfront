@@ -59,7 +59,7 @@ def get_config_value_ci(config_dict, key, default=None):
     return default
 
 
-def shallow_compare_dict(source_dict, destination_dict, exclude=tuple()):
+def shallow_compare_dict(source_dict, destination_dict, exclude=tuple(), include=tuple()):
     """
     Return a new dictionary of the different keys. The values of `destination_dict` are returned. Only the equality of
     the first layer of keys/values is checked. `exclude` is a list or tuple of keys to be ignored.
@@ -68,6 +68,8 @@ def shallow_compare_dict(source_dict, destination_dict, exclude=tuple()):
 
     for key, value in destination_dict.items():
         if key in exclude:
+            continue
+        if include and key not in include:
             continue
         if source_dict.get(key) != value:
             difference[key] = value

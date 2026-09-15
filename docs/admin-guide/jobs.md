@@ -1,8 +1,8 @@
 # Background Jobs
 
 ColdFront runs background jobs. Background jobs keep data current and do
-maintenance tasks. Examples: the Slurm accounting syncs and the notification
-digest.
+maintenance tasks. Examples: the Slurm accounting syncs, the storage quota
+syncs, and the notification digest.
 
 This page tells you how the job framework works and which processes a center
 must run in production.

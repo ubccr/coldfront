@@ -6,6 +6,7 @@ from .bulk_views import BulkDeleteView, BulkEditView, BulkImportView, ObjectList
 from .feature_views import ObjectChangeLogView
 from .object_views import (
     ObjectChildrenView,
+    ObjectConfirmationView,
     ObjectDeleteView,
     ObjectEditView,
     ObjectFlowView,
@@ -16,6 +17,7 @@ __all__ = (
     "ObjectDeleteView",
     "ObjectEditView",
     "ObjectView",
+    "ObjectConfirmationView",
     "ObjectFlowView",
     "ObjectChildrenView",
     "ObjectListView",
