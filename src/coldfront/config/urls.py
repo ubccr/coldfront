@@ -10,8 +10,6 @@ import environ
 import split_settings
 from django.conf import settings
 from django.contrib import admin
-from django.core import serializers
-from django.http import HttpResponse
 from django.urls import include, path
 from django.views.decorators.cache import cache_page
 from django.views.generic import TemplateView
@@ -26,7 +24,7 @@ from coldfront.views import HomeView, ObjectSelectorView
 admin.site.site_header = "ColdFront Administration"
 admin.site.site_title = "ColdFront Administration"
 
-urlpatterns = [
+_patterns = [
     path("admin/", admin.site.urls),
     path("robots.txt", TemplateView.as_view(template_name="robots.txt", content_type="text/plain"), name="robots"),
     # Base views
@@ -77,18 +75,6 @@ urlpatterns = [
     path("api/plugins/", include((plugin_api_patterns, "plugins-api"))),
 ]
 
-if "mozilla_django_oidc" in settings.INSTALLED_APPS:
-    urlpatterns.append(path("oidc/", include("mozilla_django_oidc.urls")))
-
-
-def export_as_json(modeladmin, request, queryset):
-    response = HttpResponse(content_type="application/json")
-    serializers.serialize("json", queryset, stream=response)
-    return response
-
-
-admin.site.add_action(export_as_json, "export_as_json")
-
 # Local urls overrides
 local_urls = [
     # Local urls relative to coldfront.config package
@@ -105,3 +91,5 @@ if ENV.str("COLDFRONT_URLS", default="") != "":
 
 for lu in local_urls:
     split_settings.tools.include(split_settings.tools.optional(lu))
+
+urlpatterns = [path(settings.BASE_PATH, include(_patterns))]

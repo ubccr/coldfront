@@ -16,8 +16,8 @@ from coldfront.utils.security import validate_peppers
 
 AUTH_USER_MODEL = "users.User"
 
-LOGIN_URL = "/login"
-LOGIN_REDIRECT_URL = "/"
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "home"
 LOGOUT_REDIRECT_URL = ENV.str("LOGOUT_REDIRECT_URL", LOGIN_URL)
 CSRF_TRUSTED_ORIGINS = ENV.list("CSRF_TRUSTED_ORIGINS", default=[])
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
