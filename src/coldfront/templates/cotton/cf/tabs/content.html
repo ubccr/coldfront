@@ -1,0 +1,10 @@
+{% cotton:vars id active %}
+
+<div
+    class="tab-pane{% if active %} show active{% endif %}"
+    id="{{ id }}"
+    role="tabpanel"
+    aria-labelledby="{{ id }}-tab"
+>
+    {{ slot }}
+</div>

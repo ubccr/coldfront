@@ -1,0 +1,3 @@
+{% for tab in tabs %}
+    <c-cf.tabs.tab link href="{{ tab.url }}" label="{{ tab.label }}" :active="tab.is_active" />
+{% endfor %}

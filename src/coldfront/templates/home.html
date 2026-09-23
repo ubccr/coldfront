@@ -8,8 +8,8 @@
 
 {% block content %}
     {# ---- Welcome & Summary Bar ---- #}
-    <c-layout.row>
-        <c-layout.col>
+    <c-cf.layout.row>
+        <c-cf.layout.col>
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
                 <div>
                     <h4 class="mb-1">
@@ -24,37 +24,37 @@
                     <p class="text-muted mb-0">{% trans "Welcome to ColdFront" %}</p>
                 </div>
                 <div class="d-flex gap-2 flex-wrap">
-                    <c-ui.badge
+                    <c-cf.ui.badge
                         value="{% blocktrans count count=projects|length %}{{ count }} Project{% plural %}{{ count }} Projects{% endblocktrans %}"
                         bg_color="primary"
                     />
-                    <c-ui.badge
+                    <c-cf.ui.badge
                         value="{% blocktrans count count=active_allocations|length %}{{ count }} Active Allocation{% plural %}{{ count }} Active Allocations{% endblocktrans %}"
                         bg_color="success"
                     />
                     {% if pending_change_requests %}
-                        <c-ui.badge
+                        <c-cf.ui.badge
                             value="{% blocktrans count count=pending_change_requests|length %}{{ count }} Pending Change{% plural %}{{ count }} Pending Changes{% endblocktrans %}"
                             bg_color="warning"
                         />
                     {% endif %}
                     {% if expiring_soon %}
-                        <c-ui.badge
+                        <c-cf.ui.badge
                             value="{% blocktrans count count=expiring_soon|length %}{{ count }} Expiring Soon{% plural %}{{ count }} Expiring Soon{% endblocktrans %}"
                             bg_color="danger"
                         />
                     {% endif %}
                 </div>
             </div>
-        </c-layout.col>
-    </c-layout.row>
+        </c-cf.layout.col>
+    </c-cf.layout.row>
 
     {# ---- Main Content Grid ---- #}
     {% if is_admin %}
         {# --- Admin view --- #}
-        <c-layout.panels>
+        <c-cf.layout.panels>
             <c-slot name="left">
-                <c-card>
+                <c-cf.card>
                     <h2 class="card-header">{% trans "Pending Allocations" %}</h2>
                     <div class="card-body">
                         {% if admin_pending_allocations %}
@@ -78,7 +78,7 @@
                                                 </td>
                                                 <td>{{ a.resource_object }}</td>
                                                 <td>
-                                                    <c-ui.badge
+                                                    <c-cf.ui.badge
                                                         value="{{ a.status|title }}"
                                                         :bg_color="a.get_status_color"
                                                     />
@@ -93,9 +93,9 @@
                             <span class="text-muted">{% trans "None" %}</span>
                         {% endif %}
                     </div>
-                </c-card>
+                </c-cf.card>
 
-                <c-card class="mt-3">
+                <c-cf.card class="mt-3">
                     <h2 class="card-header">{% trans "Pending Change Requests" %}</h2>
                     <div class="card-body">
                         {% if admin_pending_change_requests %}
@@ -121,7 +121,7 @@
                                                 </td>
                                                 <td>{{ cr.allocation.resource_object }}</td>
                                                 <td>
-                                                    <c-ui.badge
+                                                    <c-cf.ui.badge
                                                         value="{{ cr.status|title }}"
                                                         :bg_color="cr.get_status_color"
                                                     />
@@ -136,11 +136,11 @@
                             <span class="text-muted">{% trans "None" %}</span>
                         {% endif %}
                     </div>
-                </c-card>
+                </c-cf.card>
             </c-slot>
 
             <c-slot name="right">
-                <c-card>
+                <c-cf.card>
                     <h2 class="card-header">{% trans "Expired Allocations" %}</h2>
                     <div class="card-body">
                         {% if admin_expired_allocations %}
@@ -172,36 +172,36 @@
                             <span class="text-muted">{% trans "None" %}</span>
                         {% endif %}
                     </div>
-                </c-card>
+                </c-cf.card>
 
                 {# Show PI-specific content for admins who also own projects #}
                 {% if is_pi %}
                     {% include 'home/_pi_pending.html' %}
                 {% endif %}
             </c-slot>
-        </c-layout.panels>
+        </c-cf.layout.panels>
     {% elif is_pi %}
         {# --- PI view --- #}
-        <c-layout.panels>
+        <c-cf.layout.panels>
             <c-slot name="left">
-                <c-card.list header='{% trans "My Projects" %}' only>
+                <c-cf.card.list header='{% trans "My Projects" %}' only>
                     {% for project in projects %}
                         {% if project.owner == user %}
-                            <c-card.list.item
+                            <c-cf.card.list.item
                                 link="{{ project.get_absolute_url }}"
                                 :count="project.allocations.count"
                             >
                                 {{ project.name }}
-                            </c-card.list.item>
+                            </c-cf.card.list.item>
                         {% endif %}
                     {% empty %}
-                        <c-card.list.item>
+                        <c-cf.card.list.item>
                             {% trans "None" %}
-                        </c-card.list.item>
+                        </c-cf.card.list.item>
                     {% endfor %}
-                </c-card.list>
+                </c-cf.card.list>
 
-                <c-card class="mt-3">
+                <c-cf.card class="mt-3">
                     <h2 class="card-header">{% trans "Recent Allocations" %}</h2>
                     <div class="card-body">
                         {% if allocations %}
@@ -221,7 +221,7 @@
                                                 <td><a href="{{ a.get_absolute_url }}">{{ a.slug }}</a></td>
                                                 <td>{{ a.resource_object }}</td>
                                                 <td>
-                                                    <c-ui.badge
+                                                    <c-cf.ui.badge
                                                         value="{{ a.status|title }}"
                                                         :bg_color="a.get_status_color"
                                                     />
@@ -236,13 +236,13 @@
                             <span class="text-muted">{% trans "None" %}</span>
                         {% endif %}
                     </div>
-                </c-card>
+                </c-cf.card>
             </c-slot>
 
             <c-slot name="right">
                 {% include 'home/_pi_pending.html' %}
 
-                <c-card class="mt-3">
+                <c-cf.card class="mt-3">
                     <h2 class="card-header">{% trans "Available Resources" %}</h2>
                     <div class="card-body">
                         {% for resource_type, resource_list in resources.items %}
@@ -258,26 +258,26 @@
                             <span class="text-muted">{% trans "None" %}</span>
                         {% endfor %}
                     </div>
-                </c-card>
+                </c-cf.card>
             </c-slot>
-        </c-layout.panels>
+        </c-cf.layout.panels>
     {% else %}
         {# --- Regular user view --- #}
-        <c-layout.panels>
+        <c-cf.layout.panels>
             <c-slot name="left">
-                <c-card.list header='{% trans "My Projects" %}' only>
+                <c-cf.card.list header='{% trans "My Projects" %}' only>
                     {% for project in projects %}
-                        <c-card.list.item link="{{ project.get_absolute_url }}" :count="project.allocations.count">
+                        <c-cf.card.list.item link="{{ project.get_absolute_url }}" :count="project.allocations.count">
                             {{ project.name }}
-                        </c-card.list.item>
+                        </c-cf.card.list.item>
                     {% empty %}
-                        <c-card.list.item>
+                        <c-cf.card.list.item>
                             {% trans "None" %}
-                        </c-card.list.item>
+                        </c-cf.card.list.item>
                     {% endfor %}
-                </c-card.list>
+                </c-cf.card.list>
 
-                <c-card class="mt-3">
+                <c-cf.card class="mt-3">
                     <h2 class="card-header">{% trans "My Access" %}</h2>
                     <div class="card-body">
                         {% if active_allocations %}
@@ -301,7 +301,7 @@
                                                     <a href="{{ a.project.get_absolute_url }}">{{ a.project.name }}</a>
                                                 </td>
                                                 <td>
-                                                    <c-ui.badge
+                                                    <c-cf.ui.badge
                                                         value="{{ a.status|title }}"
                                                         :bg_color="a.get_status_color"
                                                     />
@@ -316,11 +316,11 @@
                             <span class="text-muted">{% trans "None" %}</span>
                         {% endif %}
                     </div>
-                </c-card>
+                </c-cf.card>
             </c-slot>
 
             <c-slot name="right">
-                <c-card>
+                <c-cf.card>
                     <h2 class="card-header">{% trans "Available Resources" %}</h2>
                     <div class="card-body">
                         {% for resource_type, resource_list in resources.items %}
@@ -336,19 +336,19 @@
                             <span class="text-muted">{% trans "None" %}</span>
                         {% endfor %}
                     </div>
-                </c-card>
+                </c-cf.card>
             </c-slot>
-        </c-layout.panels>
+        </c-cf.layout.panels>
     {% endif %}
 
     {# ---- Resource Explorer (common to all) ---- #}
-    <c-layout.row class="mt-3">
+    <c-cf.layout.row class="mt-3">
         {% for resource_type, resource_list in resources.items %}
-            <c-layout.col>
-                <c-card>
+            <c-cf.layout.col>
+                <c-cf.card>
                     <h2 class="card-header">
                         {{ resource_type }}
-                        <c-ui.badge value="{{ resource_list|length }}" bg_color="primary" />
+                        <c-cf.ui.badge value="{{ resource_list|length }}" bg_color="primary" />
                     </h2>
                     <div class="card-body">
                         {% for resource in resource_list|slice:":10" %}
@@ -357,8 +357,8 @@
                             </a>
                         {% endfor %}
                     </div>
-                </c-card>
-            </c-layout.col>
+                </c-cf.card>
+            </c-cf.layout.col>
         {% endfor %}
-    </c-layout.row>
+    </c-cf.layout.row>
 {% endblock %}

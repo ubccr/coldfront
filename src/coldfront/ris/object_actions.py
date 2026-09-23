@@ -27,7 +27,7 @@ class UnlinkChildren(ObjectAction):
     label = _("Remove Selected")
     multi = True
     permissions_required = {"unlink"}
-    template_name = "button.bulk_delete"
+    template_name = "cf.button.bulk_delete"
 
     @classmethod
     def render(cls, context, obj, **kwargs):

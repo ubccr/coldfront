@@ -3,17 +3,17 @@
 
 {% block extra_controls %}
     {% if perms.ras.add_projectuser %}
-        <a
-            href="{% url 'ras:projectuser_add' %}?project={{ object.pk }}&return_url={% url 'ras:project_users' pk=object.pk %}"
-            class="btn btn-primary"
-        >
-            <i class="fa-solid fa-plus" aria-hidden="true"></i> {% trans "Add User" %}
-        </a>
-        <a
-            href="{% url 'ras:projectuser_bulk_import' %}?project={{ object.pk }}&return_url={% url 'ras:project_users' pk=object.pk %}"
-            class="btn btn-success"
-        >
-            <i class="fa-solid fa-upload" aria-hidden="true"></i> {% trans "Import Users" %}
-        </a>
+        <c-cf.button
+            type="link"
+            url="{% url 'ras:projectuser_add' %}?project={{ object.pk }}&return_url={% url 'ras:project_users' pk=object.pk %}"
+            label="{% trans 'Add User' %}"
+            icon="fa-solid fa-plus"
+            css_class="btn-primary"
+        />
+        <c-cf.button.import
+            url="{% url 'ras:projectuser_bulk_import' %}?project={{ object.pk }}&return_url={% url 'ras:project_users' pk=object.pk %}"
+            label="{% trans 'Import Users' %}"
+            css_class="btn-success"
+        />
     {% endif %}
 {% endblock extra_controls %}

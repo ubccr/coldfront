@@ -22,7 +22,7 @@ OBJECTCHANGE_REQUEST_ID = """
 PLUGIN_IS_INSTALLED = """
 {% if record.is_local %}
     {% if record.is_loaded %}
-        <span class="text-success">{% cotton ui.checkmark :value="True" /%}</span>
+        <span class="text-success">{% cotton cf.ui.checkmark :value="True" /%}</span>
     {% else %}
         <span class="text-danger"><i class="fa-solid fa-triangle-exclamation" data-bs-toggle="tooltip" title="Could not load plugin. Version may be incompa
 tible. Min version: {{ record.coldfront_min_version }}, max version: {{ record.coldfront_max_version }}"></i></span>

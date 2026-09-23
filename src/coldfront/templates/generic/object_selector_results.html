@@ -8,7 +8,7 @@
             data-bs-dismiss="modal"
         >
             {{ object }}
-            {% if object.status %}<c-ui.badge
+            {% if object.status %}<c-cf.ui.badge
                     :value="object.get_status_display"
                     :bg_color="object.get_status_color"
                 />{% endif %}

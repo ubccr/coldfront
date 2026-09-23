@@ -4,8 +4,11 @@
     {% csrf_token %}
     {{ form|crispy }}
     <div class="d-grid gap-2">
-        <button type="submit" class="btn btn-primary">
-            <i class="fas fa-sign-in-alt" aria-hidden="true"></i> Log In
-        </button>
+        <c-cf.button
+            type="submit"
+            label="Log In"
+            icon="fas fa-sign-in-alt"
+            css_class="btn-primary"
+        />
     </div>
 </form>

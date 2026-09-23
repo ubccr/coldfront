@@ -1,5 +1,5 @@
 {% load i18n %}
-<c-card>
+<c-cf.card>
     <h2 class="card-header">{% trans "Pending Change Requests" %}</h2>
     <div class="card-body">
         {% if pending_change_requests %}
@@ -20,7 +20,7 @@
                                 <td><a href="{{ cr.get_absolute_url }}">{{ cr.slug }}</a></td>
                                 <td><a href="{{ cr.allocation.get_absolute_url }}">{{ cr.allocation.slug }}</a></td>
                                 <td>{{ cr.allocation.resource_object }}</td>
-                                <td><c-ui.badge value="{{ cr.status|title }}" :bg_color="cr.get_status_color" /></td>
+                                <td><c-cf.ui.badge value="{{ cr.status|title }}" :bg_color="cr.get_status_color" /></td>
                                 <td>{{ cr.created|isodatetime }}</td>
                             </tr>
                         {% endfor %}
@@ -31,4 +31,4 @@
             <span class="text-muted">{% trans "None" %}</span>
         {% endif %}
     </div>
-</c-card>
+</c-cf.card>

@@ -1,0 +1,19 @@
+{% cotton:vars :request="request" %}
+{% cotton:vars :perms="perms" %}
+{% cotton:vars table actions model link %}
+
+<c-cf.card>
+    {% if link %}
+        <div
+            class="htmx-container table-responsive"
+            hx-get="{{ link }}"
+            hx-target="this"
+            hx-trigger="load"
+            hx-select=".htmx-container"
+            hx-swap="outerHTML"
+        >
+        </div>
+    {% else %}
+        <c-cf.table.htmx :table="table" :actions="actions" :id="id" only />
+    {% endif %}
+</c-cf.card>

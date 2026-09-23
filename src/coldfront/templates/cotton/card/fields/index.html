@@ -1,8 +1,0 @@
-<c-card>
-    {% if object %}
-        <c-slot name="header">{{ object|meta:'verbose_name'|title }}</c-slot>
-    {% endif %}
-    <table class="table table-hover attr-table">
-        {{ slot }}
-    </table>
-</c-card>

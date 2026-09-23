@@ -23,7 +23,7 @@ Context:
 
 {% block content %}
     {% block table_controls %}
-        <c-table.controls
+        <c-cf.table.controls
             :table="table"
             :table_modal="table_config"
             :table_configs="table_configs"
@@ -33,7 +33,7 @@ Context:
     {% endblock table_controls %}
     <form method="post">
         {% csrf_token %}
-        <c-card.table.htmx :table="table" only />
+        <c-cf.card.table.htmx :table="table" only />
         <div class="d-print-none mt-2">
             {% block bulk_controls %}
                 {% if table.rows %}

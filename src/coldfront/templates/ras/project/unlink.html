@@ -21,94 +21,43 @@ Context:
 {% endblock %}
 
 {% block tabs %}
-    <ul class="nav nav-tabs">
-        <li class="nav-item" role="presentation">
-            <button
-                class="nav-link active"
-                id="unlink-form-tab"
-                data-bs-toggle="tab"
-                data-bs-target="#unlink-form"
-                type="button"
-                role="tab"
-                aria-controls="unlink-form"
-                aria-selected="true"
-            >
-                {% trans "Remove From Project" %}
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button
-                class="nav-link"
-                id="object-list-tab"
-                data-bs-toggle="tab"
-                data-bs-target="#object-list"
-                type="button"
-                role="tab"
-                aria-controls="object-list"
-                aria-selected="false"
-            >
-                {% trans "Selected Objects" %}
-                <c-ui.badge value="{{ table.rows|length }}" />
-            </button>
-        </li>
-    </ul>
+    <c-cf.tabs>
+        <c-cf.tabs.tab id="unlink-form" label="{% trans 'Remove From Project' %}" active />
+        <c-cf.tabs.tab id="object-list" label="{% trans 'Selected Objects' %}">
+            <c-cf.ui.badge value="{{ table.rows|length }}" />
+        </c-cf.tabs.tab>
+    </c-cf.tabs>
 {% endblock tabs %}
 
 {% block alerts %}
-    <c-alert.messages :form="form" only />
+    <c-cf.alert.messages :form="form" only />
 {% endblock %}
 
 {% block content %}
     {# Confirmation form #}
-    <div class="tab-pane show active" id="unlink-form" role="tabpanel" aria-labelledby="unlink-form-tab">
-        <div class="alert alert-danger bg-danger-subtle" role="alert">
-            <div class="d-flex">
-                <div>
-                    <i class="fa-solid fa-circle-exlamation p-2"></i>
-                </div>
-                <div>
-                    <h4 class="alert-title">{% trans "Confirm Removal" %}</h4>
-                    {% blocktrans trimmed with count=table.rows|length type_plural=model|meta:"verbose_name_plural" %}
-                        The following operation will remove <strong>{{ count }}</strong> {{ type_plural }} from this
-                        project. Please carefully review the selected objects and confirm this action.
-                    {% endblocktrans %}
-                </div>
-            </div>
-        </div>
-
-        <form action="" method="post" class="form form-horizontal mt-5">
-            <div id="form_fields">
-                {% csrf_token %}
-
-                {# Form fields #}
-                {% for field in form.hidden_fields %}
-                    {{ field|as_crispy_field }}
-                {% endfor %}
-
-                {# Meta fields #}
-                {% if form.changelog_message %}
-                    {{ form.changelog_message|as_crispy_field }}
-                {% endif %}
-
-                {# Form buttons #}
-                <div class="col-lg-9 text-end">
-                    <a href="{{ return_url }}" class="btn btn-outline-secondary">{% trans "Cancel" %}</a>
-                    <button type="submit" name="_confirm" class="btn btn-danger">
-                        {% trans "Remove" %} {{ table.rows|length }} {{ model|meta:"verbose_name_plural" }}
-                    </button>
-                </div>
-            </div>
-        </form>
-    </div>
+    <c-cf.tabs.content id="unlink-form" active>
+        <c-cf.confirm
+            submit_label="{% trans 'Remove' %} {{ table.rows|length }} {{ model|meta:'verbose_name_plural' }}"
+            :return_url="return_url"
+        >
+            <c-slot name="title">{% trans "Confirm Removal" %}</c-slot>
+            <c-slot name="message">
+                {% blocktrans trimmed with count=table.rows|length type_plural=model|meta:"verbose_name_plural" %}
+                    The following operation will remove <strong>{{ count }}</strong> {{ type_plural }} from this
+                    project. Please carefully review the selected objects and confirm this action.
+                {% endblocktrans %}
+            </c-slot>
+        </c-cf.confirm>
+    </c-cf.tabs.content>
     {# /Confirmation form #}
 
     {# Selected objects list #}
-    <div class="tab-pane" id="object-list" role="tabpanel" aria-labelledby="object-list-tab">
+    <c-cf.tabs.content id="object-list">
         <div class="card">
             <div class="table-responsive">
-                <c-table :table="table" />
+                <c-cf.table :table="table" />
             </div>
         </div>
-    </div>
+    </c-cf.tabs.content>
     {# /Selected objects list #}
 {% endblock content %}

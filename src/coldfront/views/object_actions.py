@@ -95,7 +95,7 @@ class AddObject(ObjectAction):
     name = "add"
     label = _("Add")
     permissions_required = {"add"}
-    template_name = "button.add"
+    template_name = "cf.button.add"
 
 
 class CloneObject(ObjectAction):
@@ -106,7 +106,7 @@ class CloneObject(ObjectAction):
     name = "add"
     label = _("Clone")
     permissions_required = {"add"}
-    template_name = "button.clone"
+    template_name = "cf.button.clone"
 
     @classmethod
     def get_url(cls, obj):
@@ -124,7 +124,7 @@ class EditObject(ObjectAction):
     label = _("Edit")
     permissions_required = {"change"}
     url_kwargs = ["pk"]
-    template_name = "button.edit"
+    template_name = "cf.button.edit"
 
 
 class DeleteObject(ObjectAction):
@@ -136,7 +136,7 @@ class DeleteObject(ObjectAction):
     label = _("Delete")
     permissions_required = {"delete"}
     url_kwargs = ["pk"]
-    template_name = "button.delete"
+    template_name = "cf.button.delete"
 
 
 class BulkImport(ObjectAction):
@@ -147,7 +147,7 @@ class BulkImport(ObjectAction):
     name = "bulk_import"
     label = _("Import")
     permissions_required = {"add"}
-    template_name = "button.import"
+    template_name = "cf.button.import"
 
 
 class BulkExport(ObjectAction):
@@ -158,7 +158,7 @@ class BulkExport(ObjectAction):
     name = "export"
     label = _("Export")
     permissions_required = {"view"}
-    template_name = "button.export"
+    template_name = "cf.button.export"
 
     @classmethod
     def get_context(cls, context, model):
@@ -183,7 +183,7 @@ class BulkEdit(ObjectAction):
     label = _("Edit Selected")
     multi = True
     permissions_required = {"change"}
-    template_name = "button.bulk_edit"
+    template_name = "cf.button.bulk_edit"
 
     @classmethod
     def get_context(cls, context, model):
@@ -210,7 +210,7 @@ class BulkRename(ObjectAction):
     label = _("Rename Selected")
     multi = True
     permissions_required = {"change"}
-    template_name = "button.bulk_rename"
+    template_name = "cf.button.bulk_rename"
 
 
 class BulkDelete(ObjectAction):
@@ -222,4 +222,4 @@ class BulkDelete(ObjectAction):
     label = _("Delete Selected")
     multi = True
     permissions_required = {"delete"}
-    template_name = "button.bulk_delete"
+    template_name = "cf.button.bulk_delete"

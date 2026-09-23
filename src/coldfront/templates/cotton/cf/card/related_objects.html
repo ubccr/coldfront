@@ -1,0 +1,25 @@
+{% load i18n %}
+
+<c-cf.card.list header='{% trans "Related" %}' only>
+    {% for related_object_count in models %}
+        {% if related_object_count.queryset.count == 1 %}
+            {% with related_object=related_object_count.queryset.first %}
+                <c-cf.card.list.item link="{{ related_object.get_absolute_url }}" count="1">
+                    {{ related_object_count.name }}
+                </c-cf.card.list.item>
+            {% endwith %}
+        {% else %}
+            {% action_url related_object_count.queryset.model 'list' as list_url %}
+            <c-cf.card.list.item
+                link="{% if list_url %}{{ list_url }}?{{ related_object_count.filter_param }}={{ object.pk }}{% endif %}"
+                :count="related_object_count.queryset.count"
+            >
+                {{ related_object_count.name }}
+            </c-cf.card.list.item>
+        {% endif %}
+    {% empty %}
+        <c-cf.card.list.item>
+            {% trans "None" %}
+        </c-cf.card.list.item>
+    {% endfor %}
+</c-cf.card.list>

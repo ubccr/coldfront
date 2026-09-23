@@ -2,7 +2,5 @@
 {% load i18n %}
 
 {% block breadcrumbs %}
-    <li class="breadcrumb-item">
-        <a href="{% url 'account:usertoken_list' %}">{% trans "My API Tokens" %}</a>
-    </li>
+    <c-cf.breadcrumbs.item href="{% url 'account:usertoken_list' %}">{% trans "My API Tokens" %}</c-cf.breadcrumbs.item>
 {% endblock breadcrumbs %}

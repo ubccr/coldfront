@@ -2,40 +2,40 @@
 {% load i18n %}
 
 {% block content %}
-    <c-layout.panels>
+    <c-cf.layout.panels>
         <c-slot name="left">
-            <c-card.fields :object="object" only>
-                <c-card.fields.item label="{% trans 'Name' %}">
+            <c-cf.card.fields :object="object" only>
+                <c-cf.card.fields.item label="{% trans 'Name' %}">
                     {{ object.name }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Status' %}">
-                    <c-ui.badge :value="object.get_status_color" bg_color="blue" only>
+                <c-cf.card.fields.item label="{% trans 'Status' %}">
+                    <c-cf.ui.badge :value="object.get_status_color" bg_color="blue" only>
                         <c-slot name="value">{{ object.get_status_display }}</c-slot>
-                    </c-ui.badge>
-                </c-card.fields.item>
+                    </c-cf.ui.badge>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Created' %}">
+                <c-cf.card.fields.item label="{% trans 'Created' %}">
                     {{ object.created|isodatetime }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Started' %}">
+                <c-cf.card.fields.item label="{% trans 'Started' %}">
                     {{ object.started|isodatetime|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Completed' %}">
+                <c-cf.card.fields.item label="{% trans 'Completed' %}">
                     {{ object.completed|isodatetime|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Duration' %}">
+                <c-cf.card.fields.item label="{% trans 'Duration' %}">
                     {{ object.duration|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'User' %}">
+                <c-cf.card.fields.item label="{% trans 'User' %}">
                     {{ object.user|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Schedule' %}">
+                <c-cf.card.fields.item label="{% trans 'Schedule' %}">
                     {% if object.cron_schedule %}
                         {% blocktrans trimmed with cron=object.cron_schedule %}
                             Cron schedule: {{ cron }}
@@ -47,20 +47,20 @@
                     {% else %}
                         {% trans "Not periodic" %}
                     {% endif %}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Queue' %}">
+                <c-cf.card.fields.item label="{% trans 'Queue' %}">
                     {{ object.queue_name|default:_("Default") }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Error' %}">
+                <c-cf.card.fields.item label="{% trans 'Error' %}">
                     {{ object.error|placeholder }}
-                </c-card.fields.item>
-            </c-card.fields>
+                </c-cf.card.fields.item>
+            </c-cf.card.fields>
         </c-slot>
 
         <c-slot name="right">
-            <c-card only>
+            <c-cf.card only>
                 <c-slot name="header">{% trans "Data" %}</c-slot>
                 <div class="card-body">
                     {% if object.data %}
@@ -69,11 +69,11 @@
                         <span class="text-muted">{% trans "None" %}</span>
                     {% endif %}
                 </div>
-            </c-card>
+            </c-cf.card>
         </c-slot>
 
         <c-slot name="bottom">
-            <c-card only>
+            <c-cf.card only>
                 <c-slot name="header">{% trans "Log Entries" %}</c-slot>
                 <div class="card-body">
                     {% if object.log_entries %}
@@ -109,7 +109,7 @@
                         <span class="text-muted">{% trans "No log entries" %}</span>
                     {% endif %}
                 </div>
-            </c-card>
+            </c-cf.card>
         </c-slot>
-    </c-layout.panels>
+    </c-cf.layout.panels>
 {% endblock %}

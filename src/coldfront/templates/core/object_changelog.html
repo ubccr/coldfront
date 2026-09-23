@@ -2,7 +2,7 @@
 {% load i18n %}
 
 {% block content %}
-    <c-card.table :table="table" only />
+    <c-cf.card.table :table="table" only />
     <div class="text-muted">
         {% trans "Change log retention" %}: {% if settings.CHANGELOG_RETENTION %}{{ settings.CHANGELOG_RETENTION }}
             {% trans "days" %}{% else %}{% trans "Indefinite" %}{% endif %}

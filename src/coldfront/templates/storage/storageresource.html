@@ -3,66 +3,66 @@
 
 {% block extra_controls %}
     {{ block.super }}
-    <c-button.request_allocation :resource="object" />
+    <c-cf.button.request_allocation :resource="object" />
 {% endblock extra_controls %}
 
 {% block content %}
-    <c-layout.panels>
+    <c-cf.layout.panels>
         <c-slot name="left">
-            <c-card.fields :object="object" only>
-                <c-card.fields.item label="{% trans 'Name' %}">
+            <c-cf.card.fields :object="object" only>
+                <c-cf.card.fields.item label="{% trans 'Name' %}">
                     {{ object.name }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Description' %}">
+                <c-cf.card.fields.item label="{% trans 'Description' %}">
                     {{ object.description|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Locked' %}">
-                    <c-ui.checkmark :value="object.locked" />
-                </c-card.fields.item>
+                <c-cf.card.fields.item label="{% trans 'Locked' %}">
+                    <c-cf.ui.checkmark :value="object.locked" />
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Tenant' %}">
+                <c-cf.card.fields.item label="{% trans 'Tenant' %}">
                     {{ object.tenant|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Clusters' %}">
+                <c-cf.card.fields.item label="{% trans 'Clusters' %}">
                     {% for cluster in object.clusters.all %}
                         {{ cluster.name }}{% if not forloop.last %}, {% endif %}
                     {% endfor %}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Path Template' %}">
+                <c-cf.card.fields.item label="{% trans 'Path Template' %}">
                     {{ object.path_template }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Capacity' %}">
+                <c-cf.card.fields.item label="{% trans 'Capacity' %}">
                     {% if object.capacity_bytes %}
                         {{ object.capacity_bytes|naturalsize }}
                     {% else %}
                         {% trans 'Unlimited' %}
                     {% endif %}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Allocated' %}">
+                <c-cf.card.fields.item label="{% trans 'Allocated' %}">
                     {{ object.allocated_bytes|filesizeformat }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Used' %}">
+                <c-cf.card.fields.item label="{% trans 'Used' %}">
                     {{ object.used_bytes|filesizeformat }}
-                </c-card.fields.item>
-            </c-card.fields>
+                </c-cf.card.fields.item>
+            </c-cf.card.fields>
 
-            <c-card.tags :object="object" only />
+            <c-cf.card.tags :object="object" only />
         </c-slot>
 
         <c-slot name="right">
-            <c-card.custom_fields :object="object" only />
-            <c-card.related_objects :object="object" :models="related_models" only />
+            <c-cf.card.custom_fields :object="object" only />
+            <c-cf.card.related_objects :object="object" :models="related_models" only />
         </c-slot>
 
         <c-slot name="bottom">
-            <c-card.schema :object="object" only />
+            <c-cf.card.schema :object="object" only />
         </c-slot>
-    </c-layout.panels>
+    </c-cf.layout.panels>
 {% endblock %}

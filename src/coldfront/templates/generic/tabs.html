@@ -1,9 +1,7 @@
 {% load tabs %}
 
 {% for tab in tabs %}
-    <li role="presentation" class="nav-item">
-        <a href="{{ tab.url }}" class="nav-link{% if tab.is_active %} active{% endif %}">
-            {{ tab.label }} <c-ui.badge :value="tab.badge" />
-        </a>
-    </li>
+    <c-cf.tabs.tab link href="{{ tab.url }}" label="{{ tab.label }}" :active="tab.is_active">
+        <c-cf.ui.badge :value="tab.badge" />
+    </c-cf.tabs.tab>
 {% endfor %}

@@ -1,0 +1,10 @@
+{% cotton:vars href icon %}
+
+<li class="breadcrumb-item{% if not href %} active{% endif %}">
+    {% if icon %}<i class="{{ icon }}" aria-hidden="true"></i>{% endif %}
+    {% if href %}
+        <a href="{{ href }}">{{ slot }}</a>
+    {% else %}
+        {{ slot }}
+    {% endif %}
+</li>

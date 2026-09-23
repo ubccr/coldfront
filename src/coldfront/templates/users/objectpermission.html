@@ -6,86 +6,86 @@
 {% block subtitle %}{% endblock %}
 
 {% block content %}
-    <c-layout.panels>
+    <c-cf.layout.panels>
         <c-slot name="left">
-            <c-card.fields :object="object" only>
-                <c-card.fields.item label="{% trans 'Name' %}">
+            <c-cf.card.fields :object="object" only>
+                <c-cf.card.fields.item label="{% trans 'Name' %}">
                     {{ object.name }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Description' %}">
+                <c-cf.card.fields.item label="{% trans 'Description' %}">
                     {{ object.description|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Enabled' %}">
-                    <c-ui.checkmark :value="object.enabled" />
-                </c-card.fields.item>
-            </c-card.fields>
+                <c-cf.card.fields.item label="{% trans 'Enabled' %}">
+                    <c-cf.ui.checkmark :value="object.enabled" />
+                </c-cf.card.fields.item>
+            </c-cf.card.fields>
 
-            <c-card.fields header='{% trans "Actions" %}' only>
-                <c-card.fields.item label="{% trans 'View' %}">
-                    <c-ui.checkmark :value="object.can_view" />
-                </c-card.fields.item>
+            <c-cf.card.fields header='{% trans "Actions" %}' only>
+                <c-cf.card.fields.item label="{% trans 'View' %}">
+                    <c-cf.ui.checkmark :value="object.can_view" />
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Add' %}">
-                    <c-ui.checkmark :value="object.can_add" />
-                </c-card.fields.item>
+                <c-cf.card.fields.item label="{% trans 'Add' %}">
+                    <c-cf.ui.checkmark :value="object.can_add" />
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Change' %}">
-                    <c-ui.checkmark :value="object.can_change" />
-                </c-card.fields.item>
+                <c-cf.card.fields.item label="{% trans 'Change' %}">
+                    <c-cf.ui.checkmark :value="object.can_change" />
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Delete' %}">
-                    <c-ui.checkmark :value="object.can_delete" />
-                </c-card.fields.item>
+                <c-cf.card.fields.item label="{% trans 'Delete' %}">
+                    <c-cf.ui.checkmark :value="object.can_delete" />
+                </c-cf.card.fields.item>
                 {% for a in object.additional_actions %}
-                    <c-card.fields.item label="{{ a }}">
-                        <c-ui.checkmark :value="True" />
-                    </c-card.fields.item>
+                    <c-cf.card.fields.item label="{{ a }}">
+                        <c-cf.ui.checkmark :value="True" />
+                    </c-cf.card.fields.item>
                 {% endfor %}
-            </c-card.fields>
+            </c-cf.card.fields>
 
-            <c-card.code header="{% trans 'Constraints' %}">
+            <c-cf.card.code header="{% trans 'Constraints' %}">
                 {{ object.constraints|json }}
-            </c-card.code>
+            </c-cf.card.code>
         </c-slot>
 
         <c-slot name="right">
-            <c-card.list header="{% trans 'Object Types' %}" only>
+            <c-cf.card.list header="{% trans 'Object Types' %}" only>
                 {% for object_type in object.object_types.all %}
-                    <c-card.list.item>
+                    <c-cf.card.list.item>
                         {{ object_type }}
-                    </c-card.list.item>
+                    </c-cf.card.list.item>
                 {% empty %}
-                    <c-card.list.item>
+                    <c-cf.card.list.item>
                         <span class="text-muted">{% trans "None" %}</span>
-                    </c-card.list.item>
+                    </c-cf.card.list.item>
                 {% endfor %}
-            </c-card.list>
+            </c-cf.card.list>
 
-            <c-card.list header="{% trans 'Assigned Users' %}" only>
+            <c-cf.card.list header="{% trans 'Assigned Users' %}" only>
                 {% for user in object.users.all %}
-                    <c-card.list.item link="{% url 'users:user' pk=user.pk %}">
+                    <c-cf.card.list.item link="{% url 'users:user' pk=user.pk %}">
                         {{ user }}
-                    </c-card.list.item>
+                    </c-cf.card.list.item>
                 {% empty %}
-                    <c-card.list.item>
+                    <c-cf.card.list.item>
                         <span class="text-muted">{% trans "None" %}</span>
-                    </c-card.list.item>
+                    </c-cf.card.list.item>
                 {% endfor %}
-            </c-card.list>
+            </c-cf.card.list>
 
-            <c-card.list header="{% trans 'Assigned Groups' %}" only>
+            <c-cf.card.list header="{% trans 'Assigned Groups' %}" only>
                 {% for group in object.groups.all %}
-                    <c-card.list.item link="{% url 'users:group' pk=group.pk %}">
+                    <c-cf.card.list.item link="{% url 'users:group' pk=group.pk %}">
                         {{ group }}
-                    </c-card.list.item>
+                    </c-cf.card.list.item>
                 {% empty %}
-                    <c-card.list.item>
+                    <c-cf.card.list.item>
                         <span class="text-muted">{% trans "None" %}</span>
-                    </c-card.list.item>
+                    </c-cf.card.list.item>
                 {% endfor %}
-            </c-card.list>
+            </c-cf.card.list>
         </c-slot>
-    </c-layout.panels>
+    </c-cf.layout.panels>
 {% endblock %}

@@ -4,46 +4,46 @@
 {% block title %}{% trans "Token" %} {{ object }}{% endblock %}
 
 {% block content %}
-    <c-layout.panels>
+    <c-cf.layout.panels>
         <c-slot name="left">
-            <c-card.fields :object="object" only>
-                <c-card.fields.item label="{% trans 'Key' %}">
+            <c-cf.card.fields :object="object" only>
+                <c-cf.card.fields.item label="{% trans 'Key' %}">
                     {{ object.key }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
                 {% if request.user.is_superuser %}
-                    <c-card.fields.item label="{% trans 'Pepper ID' %}">
+                    <c-cf.card.fields.item label="{% trans 'Pepper ID' %}">
                         {{ object.pepper_id }}
-                    </c-card.fields.item>
+                    </c-cf.card.fields.item>
                 {% endif %}
 
-                <c-card.fields.item label="{% trans 'User' %}">
+                <c-cf.card.fields.item label="{% trans 'User' %}">
                     {{ object.user|linkify }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Expires' %}">
+                <c-cf.card.fields.item label="{% trans 'Expires' %}">
                     {{ object.expires|isodatetime:"minutes"|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Last Used' %}">
+                <c-cf.card.fields.item label="{% trans 'Last Used' %}">
                     {{ object.last_used|isodatetime:"minutes"|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Enabled' %}">
-                    <c-ui.checkmark :value="object.enabled" />
-                </c-card.fields.item>
+                <c-cf.card.fields.item label="{% trans 'Enabled' %}">
+                    <c-cf.ui.checkmark :value="object.enabled" />
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Write Enabled' %}">
-                    <c-ui.checkmark :value="object.write_enabled" />
-                </c-card.fields.item>
+                <c-cf.card.fields.item label="{% trans 'Write Enabled' %}">
+                    <c-cf.ui.checkmark :value="object.write_enabled" />
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Description' %}">
+                <c-cf.card.fields.item label="{% trans 'Description' %}">
                     {{ object.description|placeholder }}
-                </c-card.fields.item>
-            </c-card.fields>
+                </c-cf.card.fields.item>
+            </c-cf.card.fields>
         </c-slot>
         <c-slot name="right">
-            <c-card header="{% trans 'Token Example' %}">
+            <c-cf.card header="{% trans 'Token Example' %}">
                 <div class="card-body">
                     <pre id="token-example">
 curl -X GET \
@@ -53,7 +53,7 @@ curl -X GET \
   {{ request.scheme }}://{{ request.get_host }}/api/
 </pre>
                 </div>
-            </c-card>
+            </c-cf.card>
         </c-slot>
-    </c-layout.panels>
+    </c-cf.layout.panels>
 {% endblock %}

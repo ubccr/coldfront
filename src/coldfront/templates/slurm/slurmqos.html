@@ -2,56 +2,56 @@
 {% load i18n %}
 
 {% block content %}
-    <c-layout.panels>
+    <c-cf.layout.panels>
         <c-slot name="left">
-            <c-card.fields :object="object" only>
-                <c-card.fields.item label="{% trans 'Name' %}">
+            <c-cf.card.fields :object="object" only>
+                <c-cf.card.fields.item label="{% trans 'Name' %}">
                     {{ object.name }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Description' %}">
+                <c-cf.card.fields.item label="{% trans 'Description' %}">
                     {{ object.description|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Priority' %}">
+                <c-cf.card.fields.item label="{% trans 'Priority' %}">
                     {{ object.priority|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Max Submit Jobs per User' %}">
+                <c-cf.card.fields.item label="{% trans 'Max Submit Jobs per User' %}">
                     {{ object.max_submit_jobs_per_user|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Max Jobs per User' %}">
+                <c-cf.card.fields.item label="{% trans 'Max Jobs per User' %}">
                     {{ object.max_jobs_per_user|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Max Submit Jobs per Account' %}">
+                <c-cf.card.fields.item label="{% trans 'Max Submit Jobs per Account' %}">
                     {{ object.max_submit_jobs_per_account|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Max Jobs per Account' %}">
+                <c-cf.card.fields.item label="{% trans 'Max Jobs per Account' %}">
                     {{ object.max_jobs_per_account|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Max Wall Duration per Job' %}">
+                <c-cf.card.fields.item label="{% trans 'Max Wall Duration per Job' %}">
                     {{ object.max_wall_duration_per_job|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Limit Factor' %}">
+                <c-cf.card.fields.item label="{% trans 'Limit Factor' %}">
                     {{ object.limit_factor|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Grace Time' %}">
+                <c-cf.card.fields.item label="{% trans 'Grace Time' %}">
                     {{ object.grace_time|placeholder }}
-                </c-card.fields.item>
-            </c-card.fields>
+                </c-cf.card.fields.item>
+            </c-cf.card.fields>
 
-            <c-card.tags :object="object" only />
+            <c-cf.card.tags :object="object" only />
         </c-slot>
 
         <c-slot name="right">
-            <c-card.related_objects :object="object" :models="related_models" only />
-            <c-card.custom_fields :object="object" only />
+            <c-cf.card.related_objects :object="object" :models="related_models" only />
+            <c-cf.card.custom_fields :object="object" only />
         </c-slot>
-    </c-layout.panels>
+    </c-cf.layout.panels>
 {% endblock %}

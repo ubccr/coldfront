@@ -4,19 +4,19 @@
 {% block title %}{{ object }}{% endblock %}
 
 {% block breadcrumbs %}
-    <li class="breadcrumb-item"><a href="{% url 'core:objectchange_list' %}">{% trans "Change Log" %}</a></li>
+    <c-cf.breadcrumbs.item href="{% url 'core:objectchange_list' %}">{% trans "Change Log" %}</c-cf.breadcrumbs.item>
     {% if object.related_object and object.related_object.get_absolute_url %}
-        <li class="breadcrumb-item">
-            <a href="{{ object.related_object.get_absolute_url }}changelog/">{{ object.related_object }}</a>
-        </li>
+        <c-cf.breadcrumbs.item
+            href="{{ object.related_object.get_absolute_url }}changelog/"
+        >{{ object.related_object }}</c-cf.breadcrumbs.item>
     {% elif object.changed_object and object.changed_object.get_absolute_url %}
-        <li class="breadcrumb-item">
-            <a href="{{ object.changed_object.get_absolute_url }}changelog/">{{ object.changed_object }}</a>
-        </li>
+        <c-cf.breadcrumbs.item
+            href="{{ object.changed_object.get_absolute_url }}changelog/"
+        >{{ object.changed_object }}</c-cf.breadcrumbs.item>
     {% elif object.changed_object and object.changed_object.get_display %}
-        <li class="breadcrumb-item">{{ object.changed_object }}</li>
+        <c-cf.breadcrumbs.item>{{ object.changed_object }}</c-cf.breadcrumbs.item>
     {% else %}
-        <li class="breadcrumb-item">{{ object.object_repr }}</li>
+        <c-cf.breadcrumbs.item>{{ object.object_repr }}</c-cf.breadcrumbs.item>
     {% endif %}
 {% endblock %}
 
@@ -25,51 +25,51 @@
 {% block subtitle %}{% endblock %}
 
 {% block content %}
-    <c-layout.row>
-        <c-layout.col>
-            <c-card.fields header='{% trans "Change" %}' only>
-                <c-card.fields.item label="{% trans 'Time' %}">
+    <c-cf.layout.row>
+        <c-cf.layout.col>
+            <c-cf.card.fields header='{% trans "Change" %}' only>
+                <c-cf.card.fields.item label="{% trans 'Time' %}">
                     {{ object.time|isodatetime }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'User' %}">
+                <c-cf.card.fields.item label="{% trans 'User' %}">
                     {% if object.user.get_full_name %}
                         {{ object.user.get_full_name }} ({{ object.user_name }})
                     {% else %}
                         {{ object.user_name }}
                     {% endif %}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Action' %}">
+                <c-cf.card.fields.item label="{% trans 'Action' %}">
                     {{ object.get_action_display }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Object Type' %}">
+                <c-cf.card.fields.item label="{% trans 'Object Type' %}">
                     {{ object.changed_object_type }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Object' %}">
+                <c-cf.card.fields.item label="{% trans 'Object' %}">
                     {% if object.changed_object and object.changed_object.get_absolute_url %}
                         {{ object.changed_object|linkify }}
                     {% else %}
                         {{ object.object_repr }}
                     {% endif %}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Message' %}">
+                <c-cf.card.fields.item label="{% trans 'Message' %}">
                     {{ object.message|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Request ID' %}">
+                <c-cf.card.fields.item label="{% trans 'Request ID' %}">
                     <a
                         href="{% url 'core:objectchange_list' %}?request_id={{ object.request_id }}"
                     >{{ object.request_id }}</a>
-                </c-card.fields.item>
-            </c-card.fields>
-        </c-layout.col>
+                </c-cf.card.fields.item>
+            </c-cf.card.fields>
+        </c-cf.layout.col>
 
-        <c-layout.col>
-            <c-card only>
+        <c-cf.layout.col>
+            <c-cf.card only>
                 <c-slot name="header">
                     {% trans "Difference" %}
                     <div class="btn-group btn-group-sm d-print-none">
@@ -112,13 +112,13 @@
                         <pre class="change-diff change-added">{{ diff_added|json }}</pre>
                     {% endif %}
                 </div>
-            </c-card>
-        </c-layout.col>
-    </c-layout.row>
+            </c-cf.card>
+        </c-cf.layout.col>
+    </c-cf.layout.row>
 
-    <c-layout.row>
-        <c-layout.col>
-            <c-card header="{% trans 'Pre-Change Data' %}" only>
+    <c-cf.layout.row>
+        <c-cf.layout.col>
+            <c-cf.card header="{% trans 'Pre-Change Data' %}" only>
                 <div class="card-body">
                     {% if object.prechange_data %}
                         {% spaceless %}
@@ -136,11 +136,11 @@
                         <span class="text-muted">{% trans "None" %}</span>
                     {% endif %}
                 </div>
-            </c-card>
-        </c-layout.col>
+            </c-cf.card>
+        </c-cf.layout.col>
 
-        <c-layout.col>
-            <c-card header="{% trans 'Post-Change Data' %}" only>
+        <c-cf.layout.col>
+            <c-cf.card header="{% trans 'Post-Change Data' %}" only>
                 <div class="card-body">
                     {% if object.postchange_data %}
                         {% spaceless %}
@@ -154,13 +154,13 @@
                         <span class="text-muted">{% trans "None" %}</span>
                     {% endif %}
                 </div>
-            </c-card>
-        </c-layout.col>
-    </c-layout.row>
+            </c-cf.card>
+        </c-cf.layout.col>
+    </c-cf.layout.row>
 
-    <c-layout.row>
-        <c-layout.col>
-            <c-card.table :table="related_changes_table" :show_paginator=False only>
+    <c-cf.layout.row>
+        <c-cf.layout.col>
+            <c-cf.card.table :table="related_changes_table" :show_paginator=False only>
                 <c-slot name="header">
                     {% trans "Related Changes" %}
                     {% if related_changes_count > related_changes_table.rows|length %}
@@ -176,7 +176,7 @@
                         </div>
                     {% endif %}
                 </c-slot>
-            </c-card.table>
-        </c-layout.col>
-    </c-layout.row>
+            </c-cf.card.table>
+        </c-cf.layout.col>
+    </c-cf.layout.row>
 {% endblock %}

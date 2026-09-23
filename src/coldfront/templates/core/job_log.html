@@ -2,7 +2,7 @@
 {% load i18n %}
 
 {% block content %}
-    <c-card only>
+    <c-cf.card only>
         <c-slot name="header">
             {% trans "Log" %}
             <div class="float-end">
@@ -45,5 +45,5 @@
                 <span class="text-muted">{% trans "No log entries" %}</span>
             {% endif %}
         </div>
-    </c-card>
+    </c-cf.card>
 {% endblock %}

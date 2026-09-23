@@ -1,12 +1,14 @@
 {% extends 'generic/object.html' %}
 {% block breadcrumbs %}
     {% if object.tenant %}
-        <li class="breadcrumb-item">{{ object.tenant|linkify }}</li>
+        <c-cf.breadcrumbs.item href="{{ object.tenant.get_absolute_url }}">{{ object.tenant }}</c-cf.breadcrumbs.item>
     {% elif object.project and object.project.tenant %}
-        <li class="breadcrumb-item">{{ object.project.tenant|linkify }}</li>
+        <c-cf.breadcrumbs.item
+            href="{{ object.project.tenant.get_absolute_url }}"
+        >{{ object.project.tenant }}</c-cf.breadcrumbs.item>
     {% endif %}
     {% if object.project %}
-        <li class="breadcrumb-item">{{ object.project|linkify }}</li>
+        <c-cf.breadcrumbs.item href="{{ object.project.get_absolute_url }}">{{ object.project }}</c-cf.breadcrumbs.item>
     {% endif %}
     {{ block.super }}
 {% endblock %}

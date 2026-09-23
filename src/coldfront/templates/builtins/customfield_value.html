@@ -4,9 +4,9 @@
 {% elif customfield.type == 'longtext' and value %}
     {{ value|markdown }}
 {% elif customfield.type == 'boolean' and value == True %}
-    <c-ui.checkmark :value="value" true_label="True" only />
+    <c-cf.ui.checkmark :value="value" true_label="True" only />
 {% elif customfield.type == 'boolean' and value == False %}
-    <c-ui.checkmark :value="value" false_label="False" only />
+    <c-cf.ui.checkmark :value="value" false_label="False" only />
 {% elif customfield.type == 'date' and value %}
     {{ value|isodate }}
 {% elif customfield.type == 'datetime' and value %}

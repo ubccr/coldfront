@@ -18,7 +18,7 @@ class GenerateObject(ObjectAction):
     transition = "generate"
     url_kwargs = ["pk"]
     permissions_required = {"generate"}
-    template_name = "button.generate"
+    template_name = "cf.button.generate"
 
 
 class InvoiceObject(ObjectAction):
@@ -32,7 +32,7 @@ class InvoiceObject(ObjectAction):
     transition = "finalize"
     url_kwargs = ["pk"]
     permissions_required = {"finalize"}
-    template_name = "button.invoice"
+    template_name = "cf.button.invoice"
 
 
 class PayObject(ObjectAction):
@@ -46,7 +46,7 @@ class PayObject(ObjectAction):
     transition = "pay"
     url_kwargs = ["pk"]
     permissions_required = {"pay"}
-    template_name = "button.pay"
+    template_name = "cf.button.pay"
 
 
 class VoidObject(ObjectAction):
@@ -60,7 +60,7 @@ class VoidObject(ObjectAction):
     transition = "void"
     url_kwargs = ["pk"]
     permissions_required = {"void"}
-    template_name = "button.void"
+    template_name = "cf.button.void"
 
 
 class ExportPdfObject(ObjectAction):
@@ -73,4 +73,4 @@ class ExportPdfObject(ObjectAction):
     multi = False
     url_kwargs = ["pk"]
     permissions_required = {"view"}
-    template_name = "button.pdf"
+    template_name = "cf.button.pdf"

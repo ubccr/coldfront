@@ -3,11 +3,12 @@
 
 {% block extra_controls %}
     {% if perms.ras.change_project %}
-        <a
-            href="{% url 'ras:project_add_funding' pk=object.pk %}?return_url={% url 'ras:project_funding' pk=object.pk %}"
-            class="btn btn-primary"
-        >
-            <i class="fa-solid fa-plus" aria-hidden="true"></i> {% trans "Add Funding" %}
-        </a>
+        <c-cf.button
+            type="link"
+            url="{% url 'ras:project_add_funding' pk=object.pk %}?return_url={% url 'ras:project_funding' pk=object.pk %}"
+            label="{% trans 'Add Funding' %}"
+            icon="fa-solid fa-plus"
+            css_class="btn-primary"
+        />
     {% endif %}
 {% endblock extra_controls %}

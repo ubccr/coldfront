@@ -13,6 +13,6 @@ class SyncQuotaAction(ObjectAction):
 
     name = "sync"
     label = _("Sync Quota")
-    template_name = "button.sync"
+    template_name = "cf.button.sync"
     url_kwargs = ["pk"]
     permissions_required = {"change"}

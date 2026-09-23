@@ -18,7 +18,7 @@ class RequestObject(ObjectAction):
     transition = "request"
     url_kwargs = ["pk"]
     permissions_required = {"request"}
-    template_name = "button.request"
+    template_name = "cf.button.request"
 
 
 class ApproveObject(ObjectAction):
@@ -32,7 +32,7 @@ class ApproveObject(ObjectAction):
     transition = "approve"
     url_kwargs = ["pk"]
     permissions_required = {"approve"}
-    template_name = "button.approve"
+    template_name = "cf.button.approve"
 
 
 class DenyObject(ObjectAction):
@@ -46,7 +46,7 @@ class DenyObject(ObjectAction):
     transition = "deny"
     url_kwargs = ["pk"]
     permissions_required = {"deny"}
-    template_name = "button.deny"
+    template_name = "cf.button.deny"
 
 
 class ActivateObject(ObjectAction):
@@ -60,7 +60,7 @@ class ActivateObject(ObjectAction):
     transition = "activate"
     url_kwargs = ["pk"]
     permissions_required = {"activate"}
-    template_name = "button.activate"
+    template_name = "cf.button.activate"
 
 
 class RenewObject(ObjectAction):
@@ -74,7 +74,7 @@ class RenewObject(ObjectAction):
     transition = "renew"
     url_kwargs = ["pk"]
     permissions_required = {"renew"}
-    template_name = "button.renew"
+    template_name = "cf.button.renew"
 
 
 class RevokeObject(ObjectAction):
@@ -88,7 +88,7 @@ class RevokeObject(ObjectAction):
     transition = "revoke"
     url_kwargs = ["pk"]
     permissions_required = {"revoke"}
-    template_name = "button.revoke"
+    template_name = "cf.button.revoke"
 
 
 class ReviewObject(ObjectAction):
@@ -102,7 +102,7 @@ class ReviewObject(ObjectAction):
     transition = "review"
     url_kwargs = ["pk"]
     permissions_required = {"change"}
-    template_name = "button.review"
+    template_name = "cf.button.review"
 
 
 class ApproveChange(ObjectAction):
@@ -116,7 +116,7 @@ class ApproveChange(ObjectAction):
     transition = "approve"
     url_kwargs = ["pk"]
     permissions_required = {"approve"}
-    template_name = "button.approve"
+    template_name = "cf.button.approve"
 
 
 class DenyChange(ObjectAction):
@@ -130,7 +130,7 @@ class DenyChange(ObjectAction):
     transition = "deny"
     url_kwargs = ["pk"]
     permissions_required = {"deny"}
-    template_name = "button.deny"
+    template_name = "cf.button.deny"
 
 
 class ApplyChange(ObjectAction):
@@ -144,4 +144,4 @@ class ApplyChange(ObjectAction):
     transition = "apply"
     url_kwargs = ["pk"]
     permissions_required = {"apply"}
-    template_name = "button.apply"
+    template_name = "cf.button.apply"

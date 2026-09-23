@@ -4,11 +4,11 @@
 {% block alerts %}
     {{ block.super }}
     {% if not request.user.is_superuser %}
-        <c-alert type="warning">
+        <c-cf.alert type="warning">
             Non-superusers should generally create and modify API tokens under their <a
                 href="{% url 'account:usertoken_list' %}"
             >
                 user profile</a>.
-        </c-alert>
+        </c-cf.alert>
     {% endif %}
 {% endblock %}

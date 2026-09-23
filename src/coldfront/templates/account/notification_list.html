@@ -8,20 +8,26 @@
         <form method="post" class="d-inline">
             {% csrf_token %}
             <input type="hidden" name="action" value="mark_all_read">
-            <button type="submit" class="btn btn-outline-primary btn-sm">
-                <i class="fa-solid fa-check-double" aria-hidden="true"></i>
-                {% trans "Mark All as Read" %}
-            </button>
+            <c-cf.button
+                type="submit"
+                label="{% trans 'Mark All as Read' %}"
+                icon="fa-solid fa-check-double"
+                css_class="btn-outline-primary"
+                small
+            />
         </form>
     {% endif %}
     {% if table.rows %}
         <form method="post" class="d-inline">
             {% csrf_token %}
             <input type="hidden" name="action" value="delete_all">
-            <button type="submit" class="btn btn-outline-danger btn-sm">
-                <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
-                {% trans "Delete All" %}
-            </button>
+            <c-cf.button
+                type="submit"
+                label="{% trans 'Delete All' %}"
+                icon="fa-solid fa-trash-can"
+                css_class="btn-outline-danger"
+                small
+            />
         </form>
     {% endif %}
 {% endblock %}

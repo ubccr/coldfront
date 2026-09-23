@@ -2,44 +2,44 @@
 {% load i18n %}
 
 {% block content %}
-    <c-layout.panels>
+    <c-cf.layout.panels>
         <c-slot name="left">
-            <c-card.fields :object="object" only>
-                <c-card.fields.item label="{% trans 'Name' %}">
+            <c-cf.card.fields :object="object" only>
+                <c-cf.card.fields.item label="{% trans 'Name' %}">
                     {{ object.name }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Description' %}">
+                <c-cf.card.fields.item label="{% trans 'Description' %}">
                     {{ object.description|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Backend Path' %}">
+                <c-cf.card.fields.item label="{% trans 'Backend Path' %}">
                     {{ object.backend_path }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Capacity' %}">
+                <c-cf.card.fields.item label="{% trans 'Capacity' %}">
                     {% if object.capacity_bytes %}
                         {{ object.capacity_bytes|naturalsize }}
                     {% else %}
                         {% trans 'Unlimited' %}
                     {% endif %}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Allocated' %}">
+                <c-cf.card.fields.item label="{% trans 'Allocated' %}">
                     {{ object.allocated_bytes|filesizeformat }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Used' %}">
+                <c-cf.card.fields.item label="{% trans 'Used' %}">
                     {{ object.used_bytes|filesizeformat }}
-                </c-card.fields.item>
-            </c-card.fields>
+                </c-cf.card.fields.item>
+            </c-cf.card.fields>
 
-            <c-card.tags :object="object" only />
+            <c-cf.card.tags :object="object" only />
         </c-slot>
 
         <c-slot name="right">
-            <c-card.custom_fields :object="object" only />
-            <c-card.related_objects :object="object" :models="related_models" only />
+            <c-cf.card.custom_fields :object="object" only />
+            <c-cf.card.related_objects :object="object" :models="related_models" only />
         </c-slot>
-    </c-layout.panels>
+    </c-cf.layout.panels>
 {% endblock %}

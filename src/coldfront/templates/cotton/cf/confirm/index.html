@@ -1,0 +1,37 @@
+{% load crispy_forms_tags %}
+{% load i18n %}
+{% cotton:vars variant="danger" submit_name="_confirm" %}
+
+<div class="alert alert-{{ variant }} bg-{{ variant }}-subtle" role="alert">
+    <div class="d-flex">
+        <div>
+            <i class="fa-solid fa-circle-exclamation p-2"></i>
+        </div>
+        <div>
+            <h4 class="alert-title">{{ title }}</h4>
+            {{ message }}
+        </div>
+    </div>
+</div>
+
+<form action="" method="post" class="form form-horizontal mt-5">
+    <div id="form_fields">
+        {% csrf_token %}
+        {% for field in form.hidden_fields %}
+            {{ field|as_crispy_field }}
+        {% endfor %}
+        {% if form.changelog_message %}
+            {{ form.changelog_message|as_crispy_field }}
+        {% endif %}
+        {{ slot }}
+    </div>
+
+    <div class="col-lg-9 text-end">
+        {% if return_url %}
+            <a href="{{ return_url }}" class="btn btn-outline-secondary">{% trans "Cancel" %}</a>
+        {% endif %}
+        <button type="submit" name="{{ submit_name }}" class="btn btn-{{ variant }}">
+            {{ submit_label }}
+        </button>
+    </div>
+</form>

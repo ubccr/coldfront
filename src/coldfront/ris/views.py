@@ -344,7 +344,7 @@ class ProjectAddResearchWorkView(BaseObjectView):
         # HTMX requests (quick search, filter, pagination, ordering) return only
         # the table partial; the target element is swapped, not the whole page.
         if htmx_partial(request):
-            return HttpResponse(render_component(request, "table.htmx", table=table, model=self.model))
+            return HttpResponse(render_component(request, "cf.table.htmx", table=table, model=self.model))
 
         return_url = request.GET.get("return_url", reverse(self.return_url_name, kwargs={"pk": project.pk}))
 

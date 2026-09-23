@@ -7,12 +7,12 @@
 {% endblock object_identifier %}
 
 {% block breadcrumbs %}
-    <li class="breadcrumb-item"><a href="{% url 'core:plugin_list' %}">{% trans "Plugins" %}</a></li>
+    <c-cf.breadcrumbs.item href="{% url 'core:plugin_list' %}">{% trans "Plugins" %}</c-cf.breadcrumbs.item>
 {% endblock breadcrumbs %}
 
 {% block subtitle %}
     <span class="text-secondary fs-5">
-        <c-ui.checkmark :value="plugin.is_local" />
+        <c-cf.ui.checkmark :value="plugin.is_local" />
         {% if plugin.is_local %}
             v{{ plugin.installed_version }} {% trans "installed" %}
         {% else %}
@@ -24,60 +24,47 @@
 {% block controls %}{% endblock %}
 
 {% block tabs %}
-    <ul class="nav nav-tabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <a
-                class="nav-link active"
-                id="overview-tab"
-                data-bs-toggle="tab"
-                data-bs-target="#overview"
-                type="button"
-                role="tab"
-                aria-controls="edit-form"
-                aria-selected="true"
-            >
-                {% trans "Overview" %}
-            </a>
-        </li>
-    </ul>
+    <c-cf.tabs>
+        <c-cf.tabs.tab id="overview" label="{% trans 'Overview' %}" active />
+    </c-cf.tabs>
 {% endblock tabs %}
 
 {% block content %}
-    <c-layout.panels>
+    <c-cf.layout.panels>
         <c-slot name="left">
-            <c-card.fields header="{% trans 'Plugin Details' %}" only>
-                <c-card.fields.item label="{% trans 'Name' %}">
+            <c-cf.card.fields header="{% trans 'Plugin Details' %}" only>
+                <c-cf.card.fields.item label="{% trans 'Name' %}">
                     {{ plugin.title_long }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Summary' %}">
+                <c-cf.card.fields.item label="{% trans 'Summary' %}">
                     {{ plugin.tag_line|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Author' %}">
+                <c-cf.card.fields.item label="{% trans 'Author' %}">
                     {{ plugin.author.name|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'URL' %}">
+                <c-cf.card.fields.item label="{% trans 'URL' %}">
                     {% if plugin.homepage_url %}
                         <a href="{{ plugin.homepage_url }}">{{ plugin.homepage_url }}</a>
                     {% else %}
                         {{ ''|placeholder }}
                     {% endif %}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Description' %}">
+                <c-cf.card.fields.item label="{% trans 'Description' %}">
                     {{ plugin.description_short|markdown }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Local' %}">
-                    <c-ui.checkmark :value="plugin.is_local" />
-                </c-card.fields.item>
-            </c-card.fields>
+                <c-cf.card.fields.item label="{% trans 'Local' %}">
+                    <c-cf.ui.checkmark :value="plugin.is_local" />
+                </c-cf.card.fields.item>
+            </c-cf.card.fields>
         </c-slot>
 
         <c-slot name="right">
-            <c-card.table :table="table" header="{% trans 'Version History' %}" />
+            <c-cf.card.table :table="table" header="{% trans 'Version History' %}" />
         </c-slot>
-    </c-layout.panels>
+    </c-cf.layout.panels>
 {% endblock %}

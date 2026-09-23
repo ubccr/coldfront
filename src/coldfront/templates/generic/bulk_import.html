@@ -18,47 +18,19 @@ Context:
 {% block title %}{{ model|meta:"verbose_name"|bettertitle }} {% trans "Bulk Import" %}{% endblock %}
 
 {% block tabs %}
-    <ul class="nav nav-tabs">
-        <li class="nav-item" role="presentation">
-            <button
-                class="nav-link active"
-                id="import-form-tab"
-                data-bs-toggle="tab"
-                data-bs-target="#import-form"
-                data-href="#tab_import-form"
-                type="button"
-                role="tab"
-                aria-controls="import-form"
-                aria-selected="true"
-            >
-                {% trans "Direct Import" %}
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button
-                class="nav-link"
-                id="upload-form-tab"
-                data-bs-toggle="tab"
-                data-bs-target="#upload-form"
-                data-href="#tab_upload-form"
-                type="button"
-                role="tab"
-                aria-controls="upload-form"
-                aria-selected="false"
-            >
-                {% trans "Upload File" %}
-            </button>
-        </li>
-    </ul>
+    <c-cf.tabs>
+        <c-cf.tabs.tab id="import-form" label="{% trans 'Direct Import' %}" active />
+        <c-cf.tabs.tab id="upload-form" label="{% trans 'Upload File' %}" />
+    </c-cf.tabs>
 {% endblock tabs %}
 
 {% block alerts %}
-    <c-alert.messages :form="form" only />
+    <c-cf.alert.messages :form="form" only />
 {% endblock %}
 
 {% block content %}
     {# Data Import Form #}
-    <div class="tab-pane show active" id="import-form" role="tabpanel" aria-labelledby="import-form-tab">
+    <c-cf.tabs.content id="import-form" active>
         <div class="col col-md-12 col-lg-10 offset-lg-1">
             <form action="" method="post" enctype="multipart/form-data" class="form">
                 {% csrf_token %}
@@ -86,10 +58,10 @@ Context:
                 </div>
             </form>
         </div>
-    </div>
+    </c-cf.tabs.content>
 
     {# File Upload Form #}
-    <div class="tab-pane show" id="upload-form" role="tabpanel" aria-labelledby="upload-form-tab">
+    <c-cf.tabs.content id="upload-form">
         <div class="col col-md-12 col-lg-10 offset-lg-1">
             <form action="" method="post" enctype="multipart/form-data" class="form">
                 {% csrf_token %}
@@ -117,7 +89,7 @@ Context:
                 </div>
             </form>
         </div>
-    </div>
+    </c-cf.tabs.content>
 
     {% if fields %}
         <div class="row my-3">
@@ -141,7 +113,7 @@ Context:
                                     </td>
                                     <td>
                                         {% if field.required %}
-                                            <c-ui.checkmark :value="True" />
+                                            <c-cf.ui.checkmark :value="True" />
                                         {% else %}
                                             {{ ''|placeholder }}
                                         {% endif %}

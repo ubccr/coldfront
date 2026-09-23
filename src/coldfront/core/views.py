@@ -530,7 +530,7 @@ class PluginListView(BasePluginView):
         if htmx_partial(request):
             return render_component(
                 request,
-                "table.htmx",
+                "cf.table.htmx",
                 table=table,
             )
 

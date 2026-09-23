@@ -1,0 +1,25 @@
+{% load plugins %}
+<c-cf.layout.row>
+    <c-cf.layout.col>
+        {{ left }}
+        {% if object %}
+            {% plugin_left_page object %}
+        {% endif %}
+    </c-cf.layout.col>
+    <c-cf.layout.col>
+        {{ right }}
+        {% if object %}
+            {% plugin_right_page object %}
+        {% endif %}
+    </c-cf.layout.col>
+</c-cf.layout.row>
+{% if bottom %}
+    <c-cf.layout.row>
+        <c-cf.layout.col>
+            {{ bottom }}
+        </c-cf.layout.col>
+        {% if object %}
+            {% plugin_full_width_page object %}
+        {% endif %}
+    </c-cf.layout.row>
+{% endif %}

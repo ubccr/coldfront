@@ -105,7 +105,7 @@ class ObjectEditView(GetReturnURLMixin, BaseObjectView):
 
     template_name = "generic/object_edit.html"
     form = None
-    form_component_name = "form"
+    form_component_name = "cf.form"
 
     def dispatch(self, request, *args, **kwargs):
         # Determine required permission based on whether we are editing an existing object
@@ -400,7 +400,7 @@ class ObjectDeleteView(GetReturnURLMixin, BaseObjectView):
             return HttpResponse(
                 render_component(
                     request,
-                    "form.delete",
+                    "cf.form.delete",
                     object=obj,
                     object_type=self.queryset.model._meta.verbose_name,
                     form=form,
@@ -548,7 +548,7 @@ class ObjectChildrenView(ObjectView, ActionsMixin, TableMixin):
             return HttpResponse(
                 render_component(
                     request,
-                    "table.htmx",
+                    "cf.table.htmx",
                     table=table,
                     model=self.child_model,
                 )
@@ -591,7 +591,7 @@ class ObjectFlowView(GetReturnURLMixin, BaseObjectView):
 
     template_name = "generic/object_flow.html"
     form = None
-    form_component_name = "form"
+    form_component_name = "cf.form"
     flow = None
     action = None
 
@@ -680,7 +680,7 @@ class ObjectFlowView(GetReturnURLMixin, BaseObjectView):
         # If the form is being displayed within a "modal" widget,
         # use the appropriate component
         if request.GET.get("_modal"):
-            return HttpResponse(render_component(request, "modal.transition", context))
+            return HttpResponse(render_component(request, "cf.modal.transition", context))
 
         # If this is an HTMX request, return only the rendered form HTML
         if htmx_partial(request):
@@ -783,7 +783,7 @@ class ObjectFlowView(GetReturnURLMixin, BaseObjectView):
 
         # Form was submitted via a "modal" widget
         if "_modal" in request.POST:
-            return HttpResponse(render_component(request, "modal.transition", context))
+            return HttpResponse(render_component(request, "cf.modal.transition", context))
 
         return render(request, self.template_name, context)
 
@@ -795,7 +795,7 @@ class ObjectConfirmationView(GetReturnURLMixin, BaseObjectView):
 
     template_name = "generic/object_confirm.html"
     form = ConfirmationForm
-    form_component_name = "form.confirm"
+    form_component_name = "cf.form.confirm"
     action = "edit"
     action_label = "Modify"
 

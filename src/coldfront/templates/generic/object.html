@@ -28,13 +28,13 @@ Context:
     <div class="container-fluid">
         <div class="d-flex justify-content-between align-items-center mt-2">
             {# Breadcrumbs #}
-            <ol class="breadcrumb" aria-label="breadcrumbs">
+            <c-cf.breadcrumbs>
                 {% block breadcrumbs %}
-                    <li class="breadcrumb-item">
-                        <a href="{% action_url object 'list' %}">{{ object|meta:'verbose_name_plural'|title }}</a>
-                    </li>
+                    <c-cf.breadcrumbs.item href="{% action_url object 'list' %}">
+                        {{ object|meta:'verbose_name_plural'|title }}
+                    </c-cf.breadcrumbs.item>
                 {% endblock breadcrumbs %}
-            </ol>
+            </c-cf.breadcrumbs>
 
             {# Object identifier #}
             <code class="d-block text-muted bg-transparent px-0">
@@ -82,22 +82,22 @@ Context:
 {% endblock controls %}
 
 {% block tabs %}
-    <ul class="nav nav-tabs" role="presentation">
+    <c-cf.tabs>
         {# Primary tab #}
-        <li class="nav-item">
-            <a
-                class="nav-link{% if not tab %} active{% endif %}"
-                href="{{ object.get_absolute_url }}"
-            >{{ object|meta:"verbose_name"|title }}</a>
-        </li>
+        <c-cf.tabs.tab
+            link
+            href="{{ object.get_absolute_url }}"
+            label='{{ object|meta:"verbose_name"|title }}'
+            :active="{% if not tab %}True{% else %}False{% endif %}"
+        />
 
         {# Include tabs for registered model views #}
         {% model_view_tabs object %}
-    </ul>
+    </c-cf.tabs>
 {% endblock tabs %}
 
 {% block modals %}
-    <c-modal.htmx size="lg" />
+    <c-cf.modal.htmx size="lg" />
 {% endblock %}
 
 {% block alerts %}

@@ -2,16 +2,15 @@
 
 {% block breadcrumbs %}
     {% if object.tenant %}
-        <li class="breadcrumb-item">
-            <a href="{% url 'ras:project_list' %}?tenant_id={{ object.tenant.id }}">{{ object.tenant }}</a>
-        </li>
+        <c-cf.breadcrumbs.item
+            href="{% url 'ras:project_list' %}?tenant_id={{ object.tenant.id }}"
+        >{{ object.tenant }}</c-cf.breadcrumbs.item>
     {% elif object.project.tenant %}
-        <li class="breadcrumb-item">
-            <a
-                href="{% url 'ras:project_list' %}?tenant_id={{ object.project.tenant.id }}"
-            >{{ object.project.tenant }}</a>
-        </li>
+        <c-cf.breadcrumbs.item
+            href="{% url 'ras:project_list' %}?tenant_id={{ object.project.tenant.id }}"
+        >{{ object.project.tenant }}</c-cf.breadcrumbs.item>
     {% endif %}
-    <li class="breadcrumb-item">{{ object.project|linkify }}</li>
-    <li class="breadcrumb-item"><a href="{% url 'ras:project_allocations' pk=object.project.pk %}">Allocations</a></li>
+    <c-cf.breadcrumbs.item href="{{ object.project.get_absolute_url }}">{{ object.project }}</c-cf.breadcrumbs.item>
+    <c-cf.breadcrumbs.item href="{% url 'ras:project_allocations' pk=object.project.pk %}"
+    >Allocations</c-cf.breadcrumbs.item>
 {% endblock %}

@@ -6,43 +6,43 @@
 {% block subtitle %}{% endblock %}
 
 {% block content %}
-    <c-layout.panels>
+    <c-cf.layout.panels>
         <c-slot name="left">
-            <c-card.fields :object="object" only>
-                <c-card.fields.item label="{% trans 'Name' %}">
+            <c-cf.card.fields :object="object" only>
+                <c-cf.card.fields.item label="{% trans 'Name' %}">
                     {{ object.name }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Description' %}">
+                <c-cf.card.fields.item label="{% trans 'Description' %}">
                     {{ object.description|placeholder }}
-                </c-card.fields.item>
-            </c-card.fields>
+                </c-cf.card.fields.item>
+            </c-cf.card.fields>
         </c-slot>
 
         <c-slot name="right">
-            <c-card.list header="{% trans 'Users' %}" only>
+            <c-cf.card.list header="{% trans 'Users' %}" only>
                 {% for user in object.users.all %}
-                    <c-card.list.item link="{% url 'users:user' pk=user.pk %}">
+                    <c-cf.card.list.item link="{% url 'users:user' pk=user.pk %}">
                         {{ user }}
-                    </c-card.list.item>
+                    </c-cf.card.list.item>
                 {% empty %}
-                    <c-card.list.item>
+                    <c-cf.card.list.item>
                         <span class="text-muted">{% trans "None" %}</span>
-                    </c-card.list.item>
+                    </c-cf.card.list.item>
                 {% endfor %}
-            </c-card.list>
+            </c-cf.card.list>
 
-            <c-card.list header="{% trans 'Assigned Permissions' %}" only>
+            <c-cf.card.list header="{% trans 'Assigned Permissions' %}" only>
                 {% for perm in object.object_permissions.all %}
-                    <c-card.list.item link="{% url 'users:objectpermission' pk=perm.pk %}">
+                    <c-cf.card.list.item link="{% url 'users:objectpermission' pk=perm.pk %}">
                         {{ perm }}
-                    </c-card.list.item>
+                    </c-cf.card.list.item>
                 {% empty %}
-                    <c-card.list.item>
+                    <c-cf.card.list.item>
                         <span class="text-muted">{% trans "None" %}</span>
-                    </c-card.list.item>
+                    </c-cf.card.list.item>
                 {% endfor %}
-            </c-card.list>
+            </c-cf.card.list>
         </c-slot>
-    </c-layout.panels>
+    </c-cf.layout.panels>
 {% endblock %}

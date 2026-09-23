@@ -67,11 +67,13 @@
                     <div class="row">
                         {% for backend in auth_backends %}
                             <div class="d-grid gap-2">
-                                <a
-                                    href="{{ backend.url }}"
-                                    class="btn btn-primary"
-                                    role="button"
-                                >{{ backend.display_name }}</a>
+                                <c-cf.button
+                                    type="link"
+                                    url="{{ backend.url }}"
+                                    label="{{ backend.display_name }}"
+                                    icon="fa-solid fa-key"
+                                    css_class="btn-primary"
+                                />
                             </div>
                         {% endfor %}
                     </div>

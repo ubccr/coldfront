@@ -4,14 +4,14 @@
 {% block title %}{% trans "My API Tokens" %}{% endblock %}
 
 {% block content %}
-    <c-layout.row>
-        <c-layout.col css_class="m-3 text-end">
-            <c-button.add url="{% url 'account:usertoken_add' %}" label='{% trans "Add a Token" %}' />
-        </c-layout.col>
-    </c-layout.row>
-    <c-layout.row>
-        <c-layout.col>
-            <c-card.table :table="table" only />
-        </c-layout.col>
-    </c-layout.row>
+    <c-cf.layout.row>
+        <c-cf.layout.col css_class="m-3 text-end">
+            <c-cf.button.add url="{% url 'account:usertoken_add' %}" label='{% trans "Add a Token" %}' />
+        </c-cf.layout.col>
+    </c-cf.layout.row>
+    <c-cf.layout.row>
+        <c-cf.layout.col>
+            <c-cf.card.table :table="table" only />
+        </c-cf.layout.col>
+    </c-cf.layout.row>
 {% endblock %}

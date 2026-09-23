@@ -18,40 +18,44 @@
 {% endblock %}
 
 {% block content %}
-    <c-layout.panels>
+    <c-cf.layout.panels>
         <c-slot name="left">
-            <c-card.fields header="{% trans 'Notification Details' %}" only>
-                <c-card.fields.item label="{% trans 'Subject' %}">
+            <c-cf.card.fields header="{% trans 'Notification Details' %}" only>
+                <c-cf.card.fields.item label="{% trans 'Subject' %}">
                     {{ notification.get_subject }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Message' %}">
+                <c-cf.card.fields.item label="{% trans 'Message' %}">
                     {{ notification.get_text }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Type' %}">
+                <c-cf.card.fields.item label="{% trans 'Type' %}">
                     {{ notification.notification_type }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Added' %}">
+                <c-cf.card.fields.item label="{% trans 'Added' %}">
                     {{ notification.added|isodate }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
                 {% if notification.read %}
-                    <c-card.fields.item label="{% trans 'Read At' %}">
+                    <c-cf.card.fields.item label="{% trans 'Read At' %}">
                         {{ notification.read|isodatetime:"minutes" }}
-                    </c-card.fields.item>
+                    </c-cf.card.fields.item>
                 {% endif %}
 
                 {% if notification.url %}
-                    <c-card.fields.item label="{% trans 'Link' %}">
-                        <a href="{{ notification.url }}" class="btn btn-outline-primary btn-sm">
-                            <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
-                            {% trans "View Related" %}
-                        </a>
-                    </c-card.fields.item>
+                    <c-cf.card.fields.item label="{% trans 'Link' %}">
+                        <c-cf.button
+                            type="link"
+                            url="{{ notification.url }}"
+                            label="{% trans 'View Related' %}"
+                            icon="fa-solid fa-arrow-up-right-from-square"
+                            css_class="btn-outline-primary"
+                            small
+                        />
+                    </c-cf.card.fields.item>
                 {% endif %}
-            </c-card.fields>
+            </c-cf.card.fields>
         </c-slot>
-    </c-layout.panels>
+    </c-cf.layout.panels>
 {% endblock %}

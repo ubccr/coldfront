@@ -29,7 +29,7 @@ from coldfront.core.models import ObjectChange
 from coldfront.core.tables import ObjectChangeTable
 from coldfront.registry import get_thirdparty_accounts, register_model_view
 from coldfront.users import forms
-from coldfront.views import generic
+from coldfront.views import ViewTab, generic
 
 from .filtersets import NotificationFilterSet
 from .forms import PasswordChangeForm
@@ -124,6 +124,8 @@ class HtmxLogoutView(LogoutView):
 
 
 class ProfileView(LoginRequiredMixin, View):
+    tab = ViewTab(label=_("Profile"))
+
     template_name = "account/profile.html"
 
     def get(self, request):
@@ -139,12 +141,14 @@ class ProfileView(LoginRequiredMixin, View):
             self.template_name,
             {
                 "changelog_table": changelog_table,
-                "active_tab": "profile",
+                "tab": self.tab,
             },
         )
 
 
 class ChangePasswordView(LoginRequiredMixin, View):
+    tab = ViewTab(label=_("Password"), visible=lambda u: u.has_usable_password())
+
     template_name = "account/password.html"
 
     def get(self, request):
@@ -160,7 +164,7 @@ class ChangePasswordView(LoginRequiredMixin, View):
             self.template_name,
             {
                 "form": form,
-                "active_tab": "password",
+                "tab": self.tab,
             },
         )
 
@@ -177,7 +181,7 @@ class ChangePasswordView(LoginRequiredMixin, View):
             self.template_name,
             {
                 "form": form,
-                "active_tab": "change_password",
+                "tab": self.tab,
             },
         )
 
@@ -188,6 +192,8 @@ class ThirdPartyAccountsView(LoginRequiredMixin, View):
     account providers (see ``coldfront.registry``) and renders, for each
     provider, either a Link button or the linked account plus an Unlink button.
     """
+
+    tab = ViewTab(label=_("Third-Party Accounts"), visible=lambda u: bool(get_thirdparty_accounts()))
 
     template_name = "account/third_party_accounts.html"
 
@@ -204,7 +210,7 @@ class ThirdPartyAccountsView(LoginRequiredMixin, View):
             self.template_name,
             {
                 "providers": providers,
-                "active_tab": "third-party",
+                "tab": self.tab,
             },
         )
 
@@ -216,6 +222,8 @@ class ThirdPartyAccountsView(LoginRequiredMixin, View):
 
 @register_model_view(UserToken, "list", path="", detail=False)
 class UserTokenListView(generic.ObjectListView):
+    tab = ViewTab(label=_("API Tokens"))
+
     template_name = "account/usertoken_list.html"
     table = UserTokenTable
 
@@ -224,7 +232,7 @@ class UserTokenListView(generic.ObjectListView):
 
     def get_extra_context(self, request):
         return {
-            "active_tab": "api-tokens",
+            "tab": self.tab,
         }
 
 
@@ -337,6 +345,8 @@ class NotificationPreferencesView(LoginRequiredMixin, View):
     View for managing notification preferences.
     """
 
+    tab = ViewTab(label=_("Notifications"))
+
     template_name = "account/notification_preferences.html"
 
     def get(self, request):
@@ -351,7 +361,7 @@ class NotificationPreferencesView(LoginRequiredMixin, View):
                 "settings_data": settings_data,
                 "channels": channels,
                 "frequencies": frequencies,
-                "active_tab": "notifications",
+                "tab": self.tab,
             },
         )
 

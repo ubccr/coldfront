@@ -35,60 +35,36 @@ Context:
 {% endblock controls %}
 
 {% block tabs %}
-    <ul class="nav nav-tabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <a
-                class="nav-link active"
-                id="object-list-tab"
-                data-bs-toggle="tab"
-                data-bs-target="#object-list"
-                type="button"
-                role="tab"
-                aria-controls="edit-form"
-                aria-selected="true"
-            >
-                {% trans "Results" %}
-                <c-ui.badge css_class="total-object-count" only>
-                    <c-slot
-                        name="value"
-                    >{% if table.page.paginator.count %}{{ table.page.paginator.count }}{% else %}{{ total_count|default:"0" }}{% endif %}</c-slot>
-                </c-ui.badge>
-            </a>
-        </li>
+    <c-cf.tabs>
+        <c-cf.tabs.tab id="object-list" label="{% trans 'Results' %}" active>
+            <c-cf.ui.badge css_class="total-object-count" only>
+                <c-slot
+                    name="value"
+                >{% if table.page.paginator.count %}{{ table.page.paginator.count }}{% else %}{{ total_count|default:"0" }}{% endif %}</c-slot>
+            </c-cf.ui.badge>
+        </c-cf.tabs.tab>
         {% if filter_form %}
-            <li class="nav-item" role="presentation">
-                <button
-                    class="nav-link"
-                    id="filters-form-tab"
-                    data-bs-toggle="tab"
-                    data-bs-target="#filters-form"
-                    type="button"
-                    role="tab"
-                    aria-controls="object-list"
-                    aria-selected="false"
-                >
-                    {% trans "Filters" %}
-                    {% if filter_form %}<c-ui.badge
-                            :value="{{ filter_form.changed_data|length }}"
-                            bg_color="primary"
-                            only
-                        />{% endif %}
-                </button>
-            </li>
+            <c-cf.tabs.tab id="filters-form" label="{% trans 'Filters' %}">
+                {% if filter_form %}<c-cf.ui.badge
+                        :value="{{ filter_form.changed_data|length }}"
+                        bg_color="primary"
+                        only
+                    />{% endif %}
+            </c-cf.tabs.tab>
         {% endif %}
-    </ul>
+    </c-cf.tabs>
 {% endblock tabs %}
 
 {% block content %}
     {# Object list tab #}
-    <div class="tab-pane show active" id="object-list" role="tabpanel" aria-labelledby="object-list-tab">
+    <c-cf.tabs.content id="object-list" active>
         {# Applied filters #}
         {% if filter_form %}
             {% applied_filters model filter_form request.GET %}
         {% endif %}
 
         {# Object table controls #}
-        <c-table.controls
+        <c-cf.table.controls
             :table="table"
             table_modal="ObjectTable_config"
             :table_configs="table_configs"
@@ -130,11 +106,11 @@ Context:
 
                 {# Warn of any missing prerequisite objects #}
                 {% if prerequisite_model %}
-                    <c-alert.missing_prereqs :model="model" :prerequisite_model="prerequisite_model" only />
+                    <c-cf.alert.missing_prereqs :model="model" :prerequisite_model="prerequisite_model" only />
                 {% endif %}
 
                 {# Objects table #}
-                <c-card.table.htmx :table="table" only />
+                <c-cf.card.table.htmx :table="table" only />
                 {# /Objects table #}
 
                 {# Form buttons #}
@@ -150,14 +126,14 @@ Context:
                 {# /Form buttons #}
             </div>
         </form>
-    </div>
+    </c-cf.tabs.content>
     {# /Object list tab #}
 
     {# Filters tab #}
     {% if filter_form %}
-        <div class="tab-pane show" id="filters-form" role="tabpanel" aria-labelledby="filters-form-tab">
-            <c-form.filters :filter_form="filter_form" only />
-        </div>
+        <c-cf.tabs.content id="filters-form">
+            <c-cf.form.filters :filter_form="filter_form" only />
+        </c-cf.tabs.content>
     {% endif %}
     {# /Filters tab #}
 {% endblock content %}

@@ -3,41 +3,7 @@
 {% load accounts %}
 
 {% block tabs %}
-    <ul class="nav nav-tabs" role="presentation">
-        <li class="nav-item">
-            <a
-                class="nav-link{% if active_tab == 'profile' %} active{% endif %}"
-                href="{% url 'account:profile' %}"
-            >{% trans "Profile" %}</a>
-        </li>
-        {% if request.user.has_usable_password %}
-            <li class="nav-item">
-                <a
-                    class="nav-link{% if active_tab == 'password' %} active{% endif %}"
-                    href="{% url 'account:change_password' %}"
-                >{% trans "Password" %}</a>
-            </li>
-        {% endif %}
-        <li class="nav-item">
-            <a
-                class="nav-link{% if active_tab == 'api-tokens' %} active{% endif %}"
-                href="{% url 'account:usertoken_list' %}"
-            >{% trans "API Tokens" %}</a>
-        </li>
-        {% get_thirdparty_accounts as thirdparty_accounts %}
-        {% if thirdparty_accounts %}
-            <li class="nav-item">
-                <a
-                    class="nav-link{% if active_tab == 'third-party' %} active{% endif %}"
-                    href="{% url 'account:third_party_accounts' %}"
-                >{% trans "Third-Party Accounts" %}</a>
-            </li>
-        {% endif %}
-        <li class="nav-item">
-            <a
-                class="nav-link{% if active_tab == 'notifications' %} active{% endif %}"
-                href="{% url 'account:notification_preferences' %}"
-            >{% trans "Notifications" %}</a>
-        </li>
-    </ul>
+    <c-cf.tabs>
+        {% account_tabs %}
+    </c-cf.tabs>
 {% endblock %}

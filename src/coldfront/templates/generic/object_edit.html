@@ -44,30 +44,21 @@ Context:
 {% endblock controls %}
 
 {% block tabs %}
-    <ul class="nav nav-tabs">
-        <li class="nav-item" role="presentation">
-            <button
-                class="nav-link active"
-                id="edit-form-tab"
-                data-bs-toggle="tab"
-                data-bs-target="#edit-form"
-                type="button"
-                role="tab"
-                aria-controls="edit-form"
-                aria-selected="true"
-            >
-                {% if object.pk %}{% trans "Edit" %}{% else %}{% trans "Create" %}{% endif %}
-            </button>
-        </li>
-    </ul>
+    <c-cf.tabs>
+        <c-cf.tabs.tab
+            id="edit-form"
+            label="{% if object.pk %}{% trans 'Edit' %}{% else %}{% trans 'Create' %}{% endif %}"
+            active
+        />
+    </c-cf.tabs>
 {% endblock tabs %}
 
 {% block content %}
-    <div class="tab-pane show active" id="edit-form" role="tabpanel" aria-labelledby="object-list-tab">
+    <c-cf.tabs.content id="edit-form" active>
         <form action="" method="post" enctype="multipart/form-data" class="object-edit mt-5">
             <div id="form_fields" hx-disinherit="hx-select hx-swap">
                 {% block form %}
-                    <c-form :form="form" />
+                    <c-cf.form :form="form" />
                 {% endblock form %}
             </div>
 
@@ -91,9 +82,9 @@ Context:
                 {% endblock buttons %}
             </div>
         </form>
-    </div>
+    </c-cf.tabs.content>
 {% endblock content %}
 
 {% block modals %}
-    <c-modal.htmx size="lg" />
+    <c-cf.modal.htmx size="lg" />
 {% endblock %}

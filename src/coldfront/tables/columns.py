@@ -226,7 +226,7 @@ class TagColumn(tables.TemplateColumn):
 
     template_code = """
     {% for tag in value.all %}
-        {% cotton ui.badge :value="tag" :link="{% url url_name %}?tag={{ tag.slug }}" :color="tag.color" only /%}
+        {% cotton cf.ui.badge :value="tag" :link="{% url url_name %}?tag={{ tag.slug }}" :color="tag.color" only /%}
     {% empty %}
         <span class="text-muted">&mdash;</span>
     {% endfor %}

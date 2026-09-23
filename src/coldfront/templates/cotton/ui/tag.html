@@ -1,9 +1,0 @@
-{% cotton:vars tag viewname %}
-
-<c-ui.badge
-    :value="tag"
-    :title="tag.description"
-    link="{% if viewname %}{% url viewname %}?tag={{ tag.slug }}{% endif %}"
-    :color="tag.color"
-    only
-/>

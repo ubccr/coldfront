@@ -4,7 +4,7 @@
 {% block extra_controls %}
     {{ block.super }}
     {% if perms.ras.request_allocation %}
-        <c-button.request
+        <c-cf.button.request
             url="{% url 'ras:project_allocationrequest' pk=object.pk %}?return_url={% url 'ras:project_allocations' pk=object.pk %}"
             label='{% trans "Request Allocation" %}'
         />
@@ -12,27 +12,27 @@
 {% endblock extra_controls %}
 
 {% block content %}
-    <c-layout.panels>
+    <c-cf.layout.panels>
         <c-slot name="left">
-            <c-card.fields :object="object" only>
-                <c-card.fields.item label="{% trans 'Slug' %}">
+            <c-cf.card.fields :object="object" only>
+                <c-cf.card.fields.item label="{% trans 'Slug' %}">
                     {{ object.slug }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Owner' %}">
+                <c-cf.card.fields.item label="{% trans 'Owner' %}">
                     {{ object.owner.first_name }} {{ object.owner.last_name }} ({{ object.owner.username }})
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Description' %}">
+                <c-cf.card.fields.item label="{% trans 'Description' %}">
                     {{ object.description|placeholder }}
-                </c-card.fields.item>
-            </c-card.fields>
+                </c-cf.card.fields.item>
+            </c-cf.card.fields>
 
-            <c-card.tags :object="object" only />
+            <c-cf.card.tags :object="object" only />
         </c-slot>
 
         <c-slot name="right">
-            <c-card.custom_fields :object="object" only />
+            <c-cf.card.custom_fields :object="object" only />
         </c-slot>
-    </c-layout.panels>
+    </c-cf.layout.panels>
 {% endblock %}

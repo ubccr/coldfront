@@ -1,0 +1,11 @@
+{% if link %}
+    <a href="{{ link }}" class="list-group-item list-group-item-action d-flex justify-content-between">
+        {{ slot }}
+        <c-cf.ui.badge :value="count" bg_color="primary" css_class="rounded-pill" only />
+    </a>
+{% else %}
+    <li class="list-group-item list-group-item-action d-flex justify-content-between">
+        {{ slot }}
+        <c-cf.ui.badge :value="count" bg_color="primary" css_class="rounded-pill" only />
+    </li>
+{% endif %}

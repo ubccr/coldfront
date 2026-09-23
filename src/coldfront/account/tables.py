@@ -34,7 +34,7 @@ class NotificationTable(ColdFrontTable):
         timespec="minutes",
     )
     read = tables.TemplateColumn(
-        template_code='{% load humanize %}{% if value %}{{ value|naturaltime }}{% else %}{% cotton ui.badge bg_color="primary" value="New" /%}{% endif %}',
+        template_code='{% load humanize %}{% if value %}{{ value|naturaltime }}{% else %}{% cotton cf.ui.badge bg_color="primary" value="New" /%}{% endif %}',
         verbose_name=_("Read"),
     )
     notification_type = tables.Column(

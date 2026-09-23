@@ -1,0 +1,24 @@
+{% cotton:vars id label active href link %}
+
+<li class="nav-item" role="presentation">
+    {% if link %}
+        <a href="{{ href }}" class="nav-link{% if active %} active{% endif %}" role="tab">
+            {{ label }}
+            {{ slot }}
+        </a>
+    {% else %}
+        <button
+            class="nav-link{% if active %} active{% endif %}"
+            id="{{ id }}-tab"
+            data-bs-toggle="tab"
+            data-bs-target="#{{ id }}"
+            type="button"
+            role="tab"
+            aria-controls="{{ id }}"
+            aria-selected="{% if active %}true{% else %}false{% endif %}"
+        >
+            {{ label }}
+            {{ slot }}
+        </button>
+    {% endif %}
+</li>

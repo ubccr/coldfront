@@ -3,120 +3,120 @@
 
 {% block extra_controls %}
     {{ block.super }}
-    <c-button.request_allocation :resource="object" />
+    <c-cf.button.request_allocation :resource="object" />
 {% endblock extra_controls %}
 
 {% block content %}
-    <c-layout.panels>
+    <c-cf.layout.panels>
         <c-slot name="left">
-            <c-card.fields :object="object" only>
-                <c-card.fields.item label="{% trans 'Cluster' %}">
-                    <c-ui.badge link="{{ object.cluster.get_absolute_url }}" :value="object.cluster" />
-                </c-card.fields.item>
+            <c-cf.card.fields :object="object" only>
+                <c-cf.card.fields.item label="{% trans 'Cluster' %}">
+                    <c-cf.ui.badge link="{{ object.cluster.get_absolute_url }}" :value="object.cluster" />
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Slug' %}">
+                <c-cf.card.fields.item label="{% trans 'Slug' %}">
                     {{ object.slug }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Nodes' %}">
+                <c-cf.card.fields.item label="{% trans 'Nodes' %}">
                     {{ object.nodes|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Priority' %}">
+                <c-cf.card.fields.item label="{% trans 'Priority' %}">
                     {{ object.priority|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Default' %}">
-                    <c-ui.checkmark :value="object.is_default" />
-                </c-card.fields.item>
+                <c-cf.card.fields.item label="{% trans 'Default' %}">
+                    <c-cf.ui.checkmark :value="object.is_default" />
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Default Time' %}">
+                <c-cf.card.fields.item label="{% trans 'Default Time' %}">
                     {{ object.default_time|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'State' %}">
+                <c-cf.card.fields.item label="{% trans 'State' %}">
                     {{ object.state|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Preempt Mode' %}">
+                <c-cf.card.fields.item label="{% trans 'Preempt Mode' %}">
                     {{ object.preempt_mode|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Default Memory Per CPU' %}">
+                <c-cf.card.fields.item label="{% trans 'Default Memory Per CPU' %}">
                     {{ object.def_mem_per_cpu|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Description' %}">
+                <c-cf.card.fields.item label="{% trans 'Description' %}">
                     {{ object.description|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Locked' %}">
-                    <c-ui.checkmark :value="object.locked" />
-                </c-card.fields.item>
+                <c-cf.card.fields.item label="{% trans 'Locked' %}">
+                    <c-cf.ui.checkmark :value="object.locked" />
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'TRES Billing Weights' %}">
+                <c-cf.card.fields.item label="{% trans 'TRES Billing Weights' %}">
                     {{ object.tres_billing_weights|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Default Time' %}">
+                <c-cf.card.fields.item label="{% trans 'Default Time' %}">
                     {{ object.default_time|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Max Time' %}">
+                <c-cf.card.fields.item label="{% trans 'Max Time' %}">
                     {{ object.max_time|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Max Jobs' %}">
+                <c-cf.card.fields.item label="{% trans 'Max Jobs' %}">
                     {{ object.max_jobs|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Max Submit Jobs' %}">
+                <c-cf.card.fields.item label="{% trans 'Max Submit Jobs' %}">
                     {{ object.max_submit_jobs|placeholder }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Fairshare' %}">
+                <c-cf.card.fields.item label="{% trans 'Fairshare' %}">
                     {{ object.fairshare }}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Allowed Groups' %}">
+                <c-cf.card.fields.item label="{% trans 'Allowed Groups' %}">
                     {% for group in object.allow_groups.all %}
-                        <c-ui.badge link="{{ group.get_absolute_url }}" :value="group" />
+                        <c-cf.ui.badge link="{{ group.get_absolute_url }}" :value="group" />
                     {% empty %}
                         {{ ""|placeholder }}
                     {% endfor %}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Allowed Accounts' %}">
+                <c-cf.card.fields.item label="{% trans 'Allowed Accounts' %}">
                     {% for acct in object.allow_accounts.all %}
-                        <c-ui.badge link="{{ acct.get_absolute_url }}" :value="acct" />
+                        <c-cf.ui.badge link="{{ acct.get_absolute_url }}" :value="acct" />
                     {% empty %}
                         {{ ""|placeholder }}
                     {% endfor %}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'Allow QOS' %}">
+                <c-cf.card.fields.item label="{% trans 'Allow QOS' %}">
                     {% for qos in object.allow_qos.all %}
-                        <c-ui.badge link="{{ qos.get_absolute_url }}" :value="qos" />
+                        <c-cf.ui.badge link="{{ qos.get_absolute_url }}" :value="qos" />
                     {% empty %}
                         {{ ""|placeholder }}
                     {% endfor %}
-                </c-card.fields.item>
+                </c-cf.card.fields.item>
 
-                <c-card.fields.item label="{% trans 'QOS' %}">
+                <c-cf.card.fields.item label="{% trans 'QOS' %}">
                     {{ object.qos|placeholder }}
-                </c-card.fields.item>
-            </c-card.fields>
+                </c-cf.card.fields.item>
+            </c-cf.card.fields>
 
-            <c-card.tags :object="object" only />
+            <c-cf.card.tags :object="object" only />
         </c-slot>
 
         <c-slot name="right">
-            <c-card.custom_fields :object="object" only />
-            <c-card.related_objects :object="object" :models="related_models" only />
+            <c-cf.card.custom_fields :object="object" only />
+            <c-cf.card.related_objects :object="object" :models="related_models" only />
         </c-slot>
 
         <c-slot name="bottom">
-            <c-card.schema :object="object" only />
+            <c-cf.card.schema :object="object" only />
         </c-slot>
-    </c-layout.panels>
+    </c-cf.layout.panels>
 {% endblock %}

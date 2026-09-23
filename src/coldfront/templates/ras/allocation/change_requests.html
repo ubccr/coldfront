@@ -3,7 +3,7 @@
 
 {% block extra_controls %}
     {% if perms.ras.add_allocationchangerequest %}
-        <c-button.request
+        <c-cf.button.request
             url="{% url 'ras:allocationchangerequest_add' %}?allocation={{ object.pk }}&amp;return_url={{ request.path }}"
             label='{% trans "Request Change" %}'
         />
