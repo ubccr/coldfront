@@ -227,6 +227,45 @@ def __add_members_and_handle_errors(
     return
 
 
+def add_allocation_group_to_parent_ad_group(
+    allocation_group_name: str,
+    parent_group_name: str,
+) -> None:
+    logger = logging.getLogger("task_qumulo_allocation_group_membership")
+    active_directory_api = ActiveDirectoryAPI()
+
+    allocation_group_dn = None
+    for attempt in range(1, 5):
+        try:
+            allocation_group_dn = active_directory_api.get_group_dn(
+                allocation_group_name
+            )
+            break
+        except ValueError:
+            logger.warning(
+                "Allocation AD group %s not found on try %s",
+                allocation_group_name,
+                attempt,
+            )
+            if attempt < 4:
+                time.sleep(3)
+
+    if allocation_group_dn is None:
+        logger.error("Allocation AD group %s was not found", allocation_group_name)
+        return
+
+    try:
+        active_directory_api.add_members_to_ad_group(
+            [allocation_group_dn], parent_group_name
+        )
+    except Exception:
+        logger.exception(
+            "Error adding allocation AD group %s to parent group %s",
+            allocation_group_name,
+            parent_group_name,
+        )
+
+
 def __send_error_adding_users_email(
     acl_allocation: Allocation, wustlkeys: list[str]
 ) -> None:
