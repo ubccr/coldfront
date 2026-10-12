@@ -95,7 +95,7 @@ class TestAddMembersToADGroup(TestCase):
         mock_allocation_view_async_task: MagicMock,
     ):
         result = self.create_allocation(user=self.user, form_data=self.form_data)
-        parent_group_name = self.form_data["storage_type"].lower()
+        parent_group_name = "storage2"
 
         for access_allocation in result["access_allocations"]:
             allocation_group_name = access_allocation.get_attribute(
@@ -111,6 +111,37 @@ class TestAddMembersToADGroup(TestCase):
             )
 
         self.assertEqual(mock_allocation_view_AD.return_value.create_ad_group.call_count, 2)
+
+    def test_allocation_creation_uses_filesystem_path_parent_group(
+        self,
+        mock_active_directory_api: MagicMock,
+        mock_allocation_view_AD: MagicMock,
+        mock_allocation_view_async_task: MagicMock,
+    ):
+        form_data = self.form_data.copy()
+        form_data["storage_filesystem_path"] = "/storage2-dev/fs1/allocation-name"
+        result = self.create_allocation(user=self.user, form_data=form_data)
+
+        scheduled_calls = [
+            call.args[:3]
+            for call in mock_allocation_view_async_task.call_args_list
+            if call.args and call.args[0] == add_allocation_group_to_parent_ad_group
+        ]
+        self.assertEqual(
+            scheduled_calls,
+            [
+                (
+                    add_allocation_group_to_parent_ad_group,
+                    result["access_allocations"][0].get_attribute("storage_acl_name"),
+                    "storage2-dev",
+                ),
+                (
+                    add_allocation_group_to_parent_ad_group,
+                    result["access_allocations"][1].get_attribute("storage_acl_name"),
+                    "storage2-dev",
+                ),
+            ],
+        )
 
     def test_allocation_group_is_added_to_parent_group(
         self,

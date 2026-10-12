@@ -6,6 +6,7 @@ from typing import Any, Dict, Optional
 
 import json
 import os
+from pathlib import PurePosixPath
 
 from coldfront.core.allocation.models import (
     Allocation,
@@ -75,7 +76,12 @@ class AllocationService:
         )
 
         active_directory_api = ActiveDirectoryAPI()
-        parent_group_name = allocation.resources.first().name.lower()
+        storage_filesystem_path = allocation.get_attribute(
+            name="storage_filesystem_path"
+        )
+        path_parts = PurePosixPath(storage_filesystem_path).parts
+        parent_group_name = path_parts[1]
+        
         for access_allocation in access_allocations:
             access_users = list(
                 AllocationUser.objects.filter(allocation=access_allocation)
