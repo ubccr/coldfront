@@ -258,13 +258,13 @@ def add_allocation_group_to_parent_ad_group(
         active_directory_api.add_members_to_ad_group(
             [allocation_group_dn], parent_group_name
         )
-        logger.info(
+        logger.warning(
             "Added allocation AD group %s to storage parent group %s",
             allocation_group_name,
             parent_group_name,
         )
     except Exception:
-        logger.exception(
+        logger.warning(
             "Error adding allocation AD group %s to parent group %s",
             allocation_group_name,
             parent_group_name,
