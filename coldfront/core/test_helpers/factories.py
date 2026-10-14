@@ -63,6 +63,9 @@ class ColdfrontProvider(BaseProvider):
     def resource_name(self):
         return fake.word().lower() + "/" + fake.word().lower()
 
+    def attribute_name(self):
+        return " ".join([fake.word(), fake.word()]).lower()
+
     def username(self):
         first_name = fake.first_name()
         last_name = fake.last_name()
@@ -186,7 +189,7 @@ class ProjectUserFactory(DjangoModelFactory):
 class PAttributeTypeFactory(DjangoModelFactory):
     class Meta:
         model = PAttributeType
-        # django_get_or_create = ('name',)
+        django_get_or_create = ("name",)
 
     name = "Text"
 
@@ -194,8 +197,9 @@ class PAttributeTypeFactory(DjangoModelFactory):
 class ProjectAttributeTypeFactory(DjangoModelFactory):
     class Meta:
         model = ProjectAttributeType
+        django_get_or_create = ("name",)
 
-    name = "Test attribute type"
+    name = factory.Faker("attribute_name")
     attribute_type = SubFactory(PAttributeTypeFactory)
 
 
@@ -257,7 +261,7 @@ class ResourceAttributeTypeFactory(DjangoModelFactory):
         model = ResourceAttributeType
         django_get_or_create = ("name",)
 
-    name = "Test attribute type"
+    name = factory.Faker("attribute_name")
     attribute_type = SubFactory(RAttributeTypeFactory)
 
 
@@ -307,7 +311,7 @@ class AllocationAttributeTypeFactory(DjangoModelFactory):
         model = AllocationAttributeType
         django_get_or_create = ("name",)
 
-    name = "Test attribute type"
+    name = factory.Faker("attribute_name")
     attribute_type = SubFactory(AAttributeTypeFactory)
 
 
