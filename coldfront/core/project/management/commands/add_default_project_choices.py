@@ -22,13 +22,15 @@ class Command(BaseCommand):
         ]:
             ProjectStatusChoice.objects.get_or_create(name=choice)
 
-        for choice in [
-            "Research",
-            "Instruction",
-            "Experimentation",
-            "Other",
-        ]:
-            ProjectUseCaseChoice.objects.get_or_create(name=choice)
+        for pk, choice in enumerate(
+            [
+                "Other",
+                "Research",
+                "Instruction",
+                "Experimentation",
+            ]
+        ):
+            ProjectUseCaseChoice.objects.get_or_create(pk=pk, name=choice)
 
         for choice in [
             "Completed",

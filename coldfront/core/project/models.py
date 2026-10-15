@@ -12,9 +12,7 @@ from coldfront.core.school.models import School
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.validate import AttributeValidator
 
-PROJECT_ENABLE_PROJECT_REVIEW = import_from_settings(
-    "PROJECT_ENABLE_PROJECT_REVIEW", False
-)
+PROJECT_ENABLE_PROJECT_REVIEW = import_from_settings("PROJECT_ENABLE_PROJECT_REVIEW", False)
 
 
 class ProjectPermission(Enum):
@@ -49,9 +47,10 @@ class ProjectStatusChoice(TimeStampedModel):
     def natural_key(self):
         return (self.name,)
 
+
 class ProjectUseCaseChoice(TimeStampedModel):
     """Indicates the intended use case of the project, e.g. Research, Education, Instruction
-    
+
     Attributes:
         name (str): name of project use case choice
     """
@@ -62,15 +61,19 @@ class ProjectUseCaseChoice(TimeStampedModel):
     class ProjectUseCaseChoiceManager(models.Manager):
         def get_by_natural_key(self, name):
             return self.get(name=name)
-    
-    name = models.CharField(unique=True)
+
+    name = models.CharField(max_length=64, unique=True)
     objects = ProjectUseCaseChoiceManager()
-    
+
+    # create the default choice first in the management script
+    DEFAULT_PRIMARY_KEY = 0
+
     def __str__(self):
         return self.name
-    
+
     def natural_key(self):
         return (self.name,)
+
 
 class Project(TimeStampedModel):
     """A project is a container that includes users, allocations, publications, grants, and other research output.
@@ -123,7 +126,9 @@ We do not have information about your research. Please provide a detailed descri
         ],
     )
     school = models.ForeignKey(School, on_delete=models.CASCADE, default=School.DEFAULT_PK)
-    use_case = models.ForeignKey(ProjectUseCaseChoice, on_delete=models.CASCADE, default="Other")
+    use_case = models.ForeignKey(
+        ProjectUseCaseChoice, on_delete=models.CASCADE, default=ProjectUseCaseChoice.DEFAULT_PRIMARY_KEY
+    )
     status = models.ForeignKey(ProjectStatusChoice, on_delete=models.CASCADE)
     force_review = models.BooleanField(default=False)
     requires_review = models.BooleanField(default=True)
@@ -229,28 +234,19 @@ We do not have information about your research. Please provide a detailed descri
         if user.is_superuser:
             return list(ProjectPermission)
 
-        user_conditions = models.Q(status__name__in=("Active", "New")) & models.Q(
-            user=user
-        )
+        user_conditions = models.Q(status__name__in=("Active", "New")) & models.Q(user=user)
         if not self.projectuser_set.filter(user_conditions).exists():
             return []
 
         permissions = [ProjectPermission.USER]
 
-        if self.projectuser_set.filter(
-            user_conditions & models.Q(role__name="Manager")
-        ).exists():
+        if self.projectuser_set.filter(user_conditions & models.Q(role__name="Manager")).exists():
             permissions.append(ProjectPermission.MANAGER)
 
-        if self.projectuser_set.filter(
-            user_conditions & models.Q(project__pi_id=user.id)
-        ).exists():
+        if self.projectuser_set.filter(user_conditions & models.Q(project__pi_id=user.id)).exists():
             permissions.append(ProjectPermission.PI)
 
-        if (
-            ProjectPermission.MANAGER in permissions
-            or ProjectPermission.MANAGER in permissions
-        ):
+        if ProjectPermission.MANAGER in permissions or ProjectPermission.MANAGER in permissions:
             permissions.append(ProjectPermission.UPDATE)
 
         return permissions
@@ -339,9 +335,7 @@ class ProjectReview(TimeStampedModel):
     """
 
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    status = models.ForeignKey(
-        ProjectReviewStatusChoice, on_delete=models.CASCADE, verbose_name="Status"
-    )
+    status = models.ForeignKey(ProjectReviewStatusChoice, on_delete=models.CASCADE, verbose_name="Status")
     reason_for_not_updating_project = models.TextField(blank=True, null=True)
     history = HistoricalRecords()
 
@@ -412,9 +406,7 @@ class ProjectUser(TimeStampedModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     role = models.ForeignKey(ProjectUserRoleChoice, on_delete=models.CASCADE)
-    status = models.ForeignKey(
-        ProjectUserStatusChoice, on_delete=models.CASCADE, verbose_name="Status"
-    )
+    status = models.ForeignKey(ProjectUserStatusChoice, on_delete=models.CASCADE, verbose_name="Status")
     enable_notifications = models.BooleanField(default=True)
     history = HistoricalRecords()
 
@@ -500,27 +492,16 @@ class ProjectAttribute(TimeStampedModel):
     def save(self, *args, **kwargs):
         """Saves the project attribute."""
         super().save(*args, **kwargs)
-        if (
-            self.proj_attr_type.has_usage
-            and not ProjectAttributeUsage.objects.filter(
-                project_attribute=self
-            ).exists()
-        ):
+        if self.proj_attr_type.has_usage and not ProjectAttributeUsage.objects.filter(project_attribute=self).exists():
             ProjectAttributeUsage.objects.create(project_attribute=self)
 
     def clean(self):
         """Validates the project and raises errors if the project is invalid."""
         if (
             self.proj_attr_type.is_unique
-            and self.project.projectattribute_set.filter(
-                proj_attr_type=self.proj_attr_type
-            ).exists()
+            and self.project.projectattribute_set.filter(proj_attr_type=self.proj_attr_type).exists()
         ):
-            raise ValidationError(
-                "'{}' attribute already exists for this project.".format(
-                    self.proj_attr_type
-                )
-            )
+            raise ValidationError("'{}' attribute already exists for this project.".format(self.proj_attr_type))
 
         expected_value_type = self.proj_attr_type.attribute_type.name.strip()
 
@@ -547,9 +528,7 @@ class ProjectAttributeUsage(TimeStampedModel):
         value (float): usage value of the project attribute
     """
 
-    project_attribute = models.OneToOneField(
-        ProjectAttribute, on_delete=models.CASCADE, primary_key=True
-    )
+    project_attribute = models.OneToOneField(ProjectAttribute, on_delete=models.CASCADE, primary_key=True)
     value = models.FloatField(default=0)
     history = HistoricalRecords()
 
