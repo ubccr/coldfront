@@ -70,6 +70,7 @@ Project Detail
     </h3>
     <p class="card-text"><strong>Description: </strong>{{ project.description }}</p>
     <p class="card-text"><strong>School: </strong>{{ project.school }}</p>
+    <p class="card-text"><strong>Use Case: </strong>{{ project.use_case }}</p>
     <p class="card-text"><strong>Project Status: </strong>{{ project.status }}
         {% if project.last_project_review and  project.last_project_review.status.name == 'Pending'%}
           <span class="badge rounded-pill bg-info text-dark">project review pending</span>

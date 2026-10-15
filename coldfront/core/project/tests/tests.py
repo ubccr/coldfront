@@ -10,6 +10,7 @@ from coldfront.core.project.models import (
     ProjectAttributeType,
     ProjectPermission,
     ProjectStatusChoice,
+    ProjectUseCaseChoice,
     ProjectUser,
 )
 from coldfront.core.test_helpers.factories import (

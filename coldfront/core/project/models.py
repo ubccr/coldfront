@@ -49,6 +49,28 @@ class ProjectStatusChoice(TimeStampedModel):
     def natural_key(self):
         return (self.name,)
 
+class ProjectUseCaseChoice(TimeStampedModel):
+    """Indicates the intended use case of the project, e.g. Research, Education, Instruction
+    
+    Attributes:
+        name (str): name of project use case choice
+    """
+
+    class Meta:
+        ordering = ("name",)
+
+    class ProjectUseCaseChoiceManager(models.Manager):
+        def get_by_natural_key(self, name):
+            return self.get(name=name)
+    
+    name = models.CharField(unique=True)
+    objects = ProjectUseCaseChoiceManager()
+    
+    def __str__(self):
+        return self.name
+    
+    def natural_key(self):
+        return (self.name,)
 
 class Project(TimeStampedModel):
     """A project is a container that includes users, allocations, publications, grants, and other research output.
@@ -58,6 +80,7 @@ class Project(TimeStampedModel):
         pi (User): represents the User object of the project's PI
         description (str): description of the project
         school (School): represents a school for this project
+        use_case (ProjectUseCaseChoice): indicates the use case of this project, e.g. Research, Instruction, etc.
         status (ProjectStatusChoice): represents the ProjectStatusChoice of this project
         force_review (bool): indicates whether or not to force a review for the project
         requires_review (bool): indicates whether or not the project requires review
@@ -99,10 +122,8 @@ We do not have information about your research. Please provide a detailed descri
             )
         ],
     )
-
-    school = models.ForeignKey(
-        School, on_delete=models.CASCADE, default=School.DEFAULT_PK
-    )
+    school = models.ForeignKey(School, on_delete=models.CASCADE, default=School.DEFAULT_PK)
+    use_case = models.ForeignKey(ProjectUseCaseChoice, on_delete=models.CASCADE, default="Other")
     status = models.ForeignKey(ProjectStatusChoice, on_delete=models.CASCADE)
     force_review = models.BooleanField(default=False)
     requires_review = models.BooleanField(default=True)

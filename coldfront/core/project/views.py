@@ -559,6 +559,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         "title",
         "description",
         "school",
+        "use_case",
     ]
 
     def test_func(self):
