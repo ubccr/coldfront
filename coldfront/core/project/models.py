@@ -48,33 +48,6 @@ class ProjectStatusChoice(TimeStampedModel):
         return (self.name,)
 
 
-# class ProjectUseCaseChoice(TimeStampedModel):
-#     """Indicates the intended use case of the project, e.g. Research, Education, Instruction
-
-#     Attributes:
-#         name (str): name of project use case choice
-#     """
-
-#     class Meta:
-#         ordering = ("name",)
-
-#     class ProjectUseCaseChoiceManager(models.Manager):
-#         def get_by_natural_key(self, name):
-#             return self.get(name=name)
-
-#     name = models.CharField(max_length=64, unique=True)
-#     objects = ProjectUseCaseChoiceManager()
-
-#     # create the default choice first in the management script
-#     DEFAULT_PRIMARY_KEY = 0
-
-#     def __str__(self):
-#         return self.name
-
-#     def natural_key(self):
-#         return (self.name,)
-
-
 class Project(TimeStampedModel):
     """A project is a container that includes users, allocations, publications, grants, and other research output.
 
@@ -113,7 +86,6 @@ We do not have information about your research. Please provide a detailed descri
         RESEARCH = "Research"
         INSTRUCTION = "Instruction"
         EXPERIMENTATION = "Experimentation"
-        OTHER = "Other"
 
     title = models.CharField(
         max_length=255,
@@ -132,7 +104,7 @@ We do not have information about your research. Please provide a detailed descri
         ],
     )
     school = models.ForeignKey(School, on_delete=models.CASCADE, default=School.DEFAULT_PK)
-    use_case = models.CharField(choices=ProjectUseCaseChoice, default=ProjectUseCaseChoice.OTHER)
+    use_case = models.CharField(choices=ProjectUseCaseChoice, default="")
     status = models.ForeignKey(ProjectStatusChoice, on_delete=models.CASCADE)
     force_review = models.BooleanField(default=False)
     requires_review = models.BooleanField(default=True)

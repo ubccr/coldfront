@@ -32,7 +32,6 @@ from coldfront.core.project.models import (
     ProjectAttributeType,
     ProjectStatusChoice,
     ProjectUser,
-    # ProjectUseCaseChoice,
     ProjectUserRoleChoice,
     ProjectUserStatusChoice,
 )
@@ -43,7 +42,7 @@ from coldfront.core.school.models import School
 ### Default values and Faker provider setup ###
 
 project_status_choice_names = ["New", "Active", "Archived"]
-project_use_case_choice_names = ["Other", "Research", "Instruction", "Experimentation"]
+project_use_case_choice_names = ["Research", "Instruction", "Experimentation"]
 project_user_role_choice_names = ["User", "Manager"]
 school_names = [
     "Arts & Science",
@@ -127,16 +126,6 @@ class ProjectStatusChoiceFactory(DjangoModelFactory):
 
     # randomly generate names from list of default values
     name = FuzzyChoice(project_status_choice_names)
-
-
-# class ProjectUseCaseChoiceFactory(DjangoModelFactory):
-#     class Meta:
-#         model = ProjectUseCaseChoice
-#         django_get_or_create = ("name",)
-
-#     # randomly generate names from list of default values
-#     name = FuzzyChoice(project_use_case_choice_names)
-#     pk = factory.Sequence(int)
 
 
 class ProjectFactory(DjangoModelFactory):

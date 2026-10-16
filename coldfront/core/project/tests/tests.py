@@ -10,7 +10,6 @@ from coldfront.core.project.models import (
     ProjectAttributeType,
     ProjectPermission,
     ProjectStatusChoice,
-    # ProjectUseCaseChoice,
     ProjectUser,
 )
 from coldfront.core.test_helpers.factories import (
@@ -228,7 +227,7 @@ class TestProject(TestCase):
         self.assertEqual(0, len(Project.objects.all()))
 
     def test_use_case_invalid(self):
-        invalid_use_case = "Fun"
+        invalid_use_case = "JustForFun"
         valid_use_case = "Instruction"
         
         project_obj = self.data.unsaved_object
