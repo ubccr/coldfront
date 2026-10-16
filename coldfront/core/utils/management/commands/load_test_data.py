@@ -233,6 +233,7 @@ class Command(BaseCommand):
             title="Angular momentum in QGP holography",
             description="We want to estimate the quark chemical potential of a rotating sample of plasma.",
             school=School.objects.get(description="Tandon School of Engineering"),
+            use_case="Research",
             status=ProjectStatusChoice.objects.get(name="Active"),
             force_review=True,
         )
