@@ -2,18 +2,22 @@
 {% load i18n %}
 
 {% block content %}
-    <c-cf.card only>
-        <c-slot name="header">
+    <c-cf.card>
+        <c-slot name="title">
             {% trans "Log" %}
-            <div class="float-end">
-                <a href="{{ object.get_absolute_url }}" class="btn btn-sm btn-outline-secondary">
-                    <i class="fa fa-arrow-left" aria-hidden="true"></i> {% trans "Back" %}
-                </a>
+            <div class="flex justify-end">
+                <c-cf.button
+                    as="a"
+                    href="{{ object.get_absolute_url }}"
+                    icon="heroicon.arrow-left"
+                    btnStyle="outline"
+                    size="sm"
+                >{% trans "Back" %}</c-cf.button>
             </div>
         </c-slot>
-        <div class="card-body">
+        <c-cf.card.body>
             {% if log_entries %}
-                <table class="table table-hover">
+                <table class="table">
                     <thead>
                         <tr>
                             <th>{% trans "Timestamp" %}</th>
@@ -27,16 +31,16 @@
                                 <td>{{ entry.timestamp }}</td>
                                 <td>
                                     {% if entry.level == "ERROR" %}
-                                        <span class="badge bg-danger">{{ entry.level }}</span>
+                                        <c-cf.badge variant="error">{{ entry.level }}</c-cf.badge>
                                     {% elif entry.level == "WARNING" %}
-                                        <span class="badge bg-warning text-dark">{{ entry.level }}</span>
+                                        <c-cf.badge variant="warning">{{ entry.level }}</c-cf.badge>
                                     {% elif entry.level == "INFO" %}
-                                        <span class="badge bg-info text-dark">{{ entry.level }}</span>
+                                        <c-cf.badge variant="info">{{ entry.level }}</c-cf.badge>
                                     {% else %}
-                                        <span class="badge bg-secondary">{{ entry.level }}</span>
+                                        <c-cf.badge variant="secondary">{{ entry.level }}</c-cf.badge>
                                     {% endif %}
                                 </td>
-                                <td class="font-monospace">{{ entry.message }}</td>
+                                <td class="font-mono">{{ entry.message }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -44,6 +48,6 @@
             {% else %}
                 <span class="text-muted">{% trans "No log entries" %}</span>
             {% endif %}
-        </div>
+        </c-cf.card.body>
     </c-cf.card>
 {% endblock %}

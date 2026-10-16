@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from crispy_forms.layout import Fieldset
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.translation import gettext_lazy as _
 
@@ -14,6 +13,7 @@ from coldfront.forms import (
     TenancyImportForm,
 )
 from coldfront.forms.fields import CSVModelChoiceField, DynamicModelChoiceField
+from coldfront.forms.layout import FieldSet
 from coldfront.ras.models import Project, ProjectUser
 from coldfront.users.models import Group, User
 from coldfront.utils.forms import get_field_value
@@ -33,12 +33,21 @@ class ProjectForm(TenancyForm, OrganizationalModelForm):
         ]
 
     fieldsets = (
-        Fieldset(
-            _("Project"),
+        FieldSet(
             "name",
             "slug",
             "description",
             "group",
+            name=_("Project"),
+        ),
+        FieldSet(
+            "tenant_group",
+            "tenant",
+            name=_("Tenant"),
+        ),
+        FieldSet(
+            "tags",
+            name=_("Tags"),
         ),
     )
 
@@ -74,10 +83,10 @@ class ProjectUserForm(PrimaryModelForm):
         ]
 
     fieldsets = (
-        Fieldset(
-            _("Project User"),
+        FieldSet(
             "project",
             "user",
+            name=_("Project User"),
         ),
     )
 

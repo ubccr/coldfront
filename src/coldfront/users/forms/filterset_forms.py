@@ -3,13 +3,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from crispy_forms.layout import Fieldset
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from coldfront.constants import BOOLEAN_WITH_BLANK_CHOICES
 from coldfront.forms import ColdFrontModelFilterSetForm
-from coldfront.forms.layouts import DateTime
+from coldfront.forms.layout import FieldSet
 from coldfront.ras.models import Project
 from coldfront.users.models import Group, ObjectPermission, Role, Token, User
 
@@ -26,10 +25,13 @@ class GroupFilterSetForm(ColdFrontModelFilterSetForm):
 
     model = Group
     fieldsets = (
-        Fieldset(
-            _("Group"),
+        FieldSet(
+            "q",
+        ),
+        FieldSet(
             "name",
             "description",
+            name=_("Group"),
         ),
     )
 
@@ -58,15 +60,18 @@ class UserFilterSetForm(ColdFrontModelFilterSetForm):
 
     model = User
     fieldsets = (
-        Fieldset(
-            _("User"),
+        FieldSet(
+            "q",
+        ),
+        FieldSet(
             "group_id",
             "project_id",
+            name=_("User"),
         ),
-        Fieldset(
-            _("Status"),
+        FieldSet(
             "is_active",
             "is_superuser",
+            name=_("Status"),
         ),
     )
 
@@ -83,10 +88,13 @@ class RoleFilterSetForm(ColdFrontModelFilterSetForm):
 
     model = Role
     fieldsets = (
-        Fieldset(
-            _("Role"),
+        FieldSet(
+            "q",
+        ),
+        FieldSet(
             "name",
             "description",
+            name=_("Role"),
         ),
     )
 
@@ -128,18 +136,21 @@ class ObjectPermissionFilterSetForm(ColdFrontModelFilterSetForm):
 
     model = ObjectPermission
     fieldsets = (
-        Fieldset(
-            _("Permission"),
+        FieldSet(
+            "q",
+        ),
+        FieldSet(
             "enabled",
             "group_id",
             "user_id",
+            name=_("Permission"),
         ),
-        Fieldset(
-            _("Actions"),
+        FieldSet(
             "can_view",
             "can_add",
             "can_change",
             "can_delete",
+            name=_("Actions"),
         ),
     )
 
@@ -171,12 +182,15 @@ class TokenFilterSetForm(ColdFrontModelFilterSetForm):
 
     model = Token
     fieldsets = (
-        Fieldset(
-            _("Token"),
+        FieldSet(
+            "q",
+        ),
+        FieldSet(
             "user_id",
             "enabled",
             "write_enabled",
-            DateTime("expires"),
-            DateTime("last_used"),
+            "expires",
+            "last_used",
+            name=_("Token"),
         ),
     )

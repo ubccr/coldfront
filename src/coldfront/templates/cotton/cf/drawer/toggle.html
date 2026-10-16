@@ -1,0 +1,22 @@
+{% load i18n %}
+
+{% comment %}
+DaisyUI drawer toggle — a label linked to the drawer checkbox that opens/closes
+the drawer.
+{% endcomment %}
+
+<c-vars class="" for="" title="" />
+
+{% trans 'Open navigation' as open_nav %}
+<label
+    class="{{ class }}"
+    {% if for %}for="{{ for }}"{% endif %}
+    aria-label="{{ title|default:open_nav }}"
+    {{ attrs }}
+>
+    {% if slot %}
+        {{ slot }}
+    {% else %}
+        {{ title }}
+    {% endif %}
+</label>

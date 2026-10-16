@@ -12,16 +12,19 @@
 
 {% block extra_controls %}
     {% if perms.tenancy.add_tenant %}
-        <a href="{% url 'tenancy:tenant_add' %}?group={{ object.pk }}" class="btn btn-primary">
-            <span class="fa-solid fa-plus" aria-hidden="true"></span> {% trans "Add Tenant" %}
-        </a>
+        <c-cf.button
+            as="a"
+            href="{% url 'tenancy:tenant_add' %}?group={{ object.pk }}"
+            icon="heroicon.plus"
+            variant="primary"
+        >{% trans "Add Tenant" %}</c-cf.button>
     {% endif %}
 {% endblock extra_controls %}
 
 {% block content %}
     <c-cf.layout.panels>
         <c-slot name="left">
-            <c-cf.card.fields :object="object" only>
+            <c-cf.card.fields :object="object">
                 <c-cf.card.fields.item label="{% trans 'Name' %}">
                     {{ object.name }}
                 </c-cf.card.fields.item>
@@ -35,31 +38,32 @@
                 </c-cf.card.fields.item>
             </c-cf.card.fields>
 
-            <c-cf.card.tags :object="object" only />
+            <c-cf.card.tags :object="object" />
         </c-slot>
 
         <c-slot name="right">
-            <c-cf.card.related_objects :object="object" :models="related_models" only />
-            <c-cf.card.custom_fields :object="object" only />
+            <c-cf.card.related_objects :object="object" :models="related_models" />
+            <c-cf.card.custom_fields :object="object" />
         </c-slot>
 
         <c-slot name="bottom">
             {% querystring embedded=True parent_id=object.pk return_url=request.path as qstring %}
-            <c-cf.card.table.htmx link="{% url 'tenancy:tenantgroup_list' %}{{ qstring }}" only>
-                <c-slot name="header">
+            <c-cf.card.table link="{% url 'tenancy:tenantgroup_list' %}{{ qstring }}">
+                <c-slot name="title">
                     {% trans "Child Groups" %}
                     {% if perms.tenancy.add_tenantgroup %}
-                        <div class="card-actions">
-                            <a
+                        <c-cf.card.actions>
+                            <c-cf.button
+                                as="a"
                                 href="{% url 'tenancy:tenantgroup_add' %}?parent={{ object.pk }}"
-                                class="btn btn-primary btn-sm"
-                            >
-                                <span class="fa-solid fa-plus" aria-hidden="true"></span> {% trans "Add Tenant Group" %}
-                            </a>
-                        </div>
+                                icon="heroicon.plus"
+                                variant="primary"
+                                size="sm"
+                            >{% trans "Add Tenant Group" %}</c-cf.button>
+                        </c-cf.card.actions>
                     {% endif %}
                 </c-slot>
-            </c-cf.card.table.htmx>
+            </c-cf.card.table>
         </c-slot>
     </c-cf.layout.panels>
 {% endblock %}

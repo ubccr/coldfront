@@ -4,13 +4,13 @@
 {% block content %}
     <c-cf.layout.panels>
         <c-slot name="left">
-            <c-cf.card.fields header='{% trans "Comment Entry" %}' only>
+            <c-cf.card.fields title='{% trans "Comment Entry" %}'>
                 <c-cf.card.fields.item label='{% trans "Created" %}'>
                     {{ object.created|isodate }}
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label='{% trans "Kind" %}'>
-                    <c-cf.ui.badge :value="object.get_kind_display" :bg_color="object.get_kind_color" />
+                    <c-cf.badge variant="{{ object.get_kind_color }}">{{ object.get_kind_display }}</c-cf.badge>
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label='{% trans "Created By" %}'>
@@ -22,12 +22,12 @@
                 </c-cf.card.fields.item>
             </c-cf.card.fields>
 
-            <c-cf.card.tags :object="object" only />
+            <c-cf.card.tags :object="object" />
         </c-slot>
 
         <c-slot name="right">
-            <c-cf.card.related_objects :object="object" :models="related_models" only />
-            <c-cf.card.custom_fields :object="object" only />
+            <c-cf.card.related_objects :object="object" :models="related_models" />
+            <c-cf.card.custom_fields :object="object" />
         </c-slot>
     </c-cf.layout.panels>
 {% endblock %}

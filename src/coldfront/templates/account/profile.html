@@ -6,7 +6,7 @@
 {% block content %}
     <c-cf.layout.panels>
         <c-slot name="left">
-            <c-cf.card.fields header="Account Details" only>
+            <c-cf.card.fields title="Account Details">
                 <c-cf.card.fields.item label="{% trans 'Username' %}">
                     {{ request.user.username }}
                 </c-cf.card.fields.item>
@@ -33,13 +33,13 @@
 
                 {% if request.user.is_superuser %}
                     <c-cf.card.fields.item label="{% trans 'Superuser' %}">
-                        <c-cf.ui.checkmark :value="request.user.is_superuser" />
+                        <c-cf.checkmark :value="request.user.is_superuser" />
                     </c-cf.card.fields.item>
                 {% endif %}
             </c-cf.card.fields>
         </c-slot>
         <c-slot name="right">
-            <c-cf.card.list header="{% trans 'Assigned Groups' %}" only>
+            <c-cf.card.list title="{% trans 'Assigned Groups' %}">
                 {% for group in request.user.groups.all %}
                     <c-cf.card.list.item link="{% url 'users:group' pk=group.pk %}">
                         {{ group }}
@@ -54,17 +54,20 @@
 
         {% if perms.core.view_objectchange %}
             <c-slot name="bottom">
-                <c-cf.card.table :table="changelog_table" show_paginator=False only>
-                    <c-slot name="header">
+                <c-cf.card.table :table="changelog_table" show_paginator=False>
+                    <c-slot name="title">
                         {% trans "Recent Activity" %}
-                        <div class="card-actions">
-                            <a
+                        <c-cf.card.actions>
+                            <c-cf.button
+                                as="a"
                                 href="{% url 'core:objectchange_list' %}?user_id={{ user.pk }}"
-                                class="btn btn-ghost-primary btn-sm"
-                            >
-                                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i> {% trans "View All" %}
-                            </a>
-                        </div>
+                                icon="heroicon.arrow-right"
+                                icon.size="sm"
+                                btnStyle="ghost"
+                                variant="primary"
+                                size="sm"
+                            >{% trans "View All" %}</c-cf.button>
+                        </c-cf.card.actions>
                     </c-slot>
                 </c-cf.card.table>
             </c-slot>

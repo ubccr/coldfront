@@ -79,7 +79,7 @@ class PublicationAddTable(ColdFrontTable):
     source = columns.TemplateColumn(
         template_code="""
             {{ record.source }}
-            {% if record.is_local %}<span class="badge bg-secondary">{{ local_label }}</span>{% endif %}
+            {% if record.is_local %}{% cotton cf.badge variant="secondary" %}{{ local_label }}{% endcotton %}{% endif %}
         """,
         extra_context={"local_label": _("local")},
         verbose_name=_("Source"),
@@ -120,7 +120,7 @@ class FundingAddTable(ColdFrontTable):
     source = columns.TemplateColumn(
         template_code="""
             {{ record.source }}
-            {% if record.is_local %}<span class="badge bg-secondary">{{ local_label }}</span>{% endif %}
+            {% if record.is_local %}{% cotton cf.badge variant="secondary" %}{{ local_label }}{% endcotton %}{% endif %}
         """,
         extra_context={"local_label": _("local")},
         verbose_name=_("Source"),

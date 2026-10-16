@@ -1,11 +1,9 @@
 {% extends 'generic/base.html' %}
-{% load crispy_forms_tags %}
-{% load i18n %}
+{% load form_helpers i18n %}
 
 {% comment %}
 Blocks:
   - title:    Page title
-  - tabs:     Page tabs
   - content:  Primary page content
 
 Context:
@@ -17,188 +15,174 @@ Context:
 
 {% block title %}{{ model|meta:"verbose_name"|bettertitle }} {% trans "Bulk Import" %}{% endblock %}
 
-{% block tabs %}
-    <c-cf.tabs>
-        <c-cf.tabs.tab id="import-form" label="{% trans 'Direct Import' %}" active />
-        <c-cf.tabs.tab id="upload-form" label="{% trans 'Upload File' %}" />
-    </c-cf.tabs>
-{% endblock tabs %}
-
-{% block alerts %}
-    <c-cf.alert.messages :form="form" only />
-{% endblock %}
-
 {% block content %}
-    {# Data Import Form #}
-    <c-cf.tabs.content id="import-form" active>
-        <div class="col col-md-12 col-lg-10 offset-lg-1">
-            <form action="" method="post" enctype="multipart/form-data" class="form">
-                {% csrf_token %}
-                <input type="hidden" name="import_method" value="direct">
+    <c-cf.tabs name="import-tabs" role="group">
+        {# Data Import tab — handle + panel #}
+        <c-cf.tabs.content name="import-tabs" id="import-direct" title="{% trans 'Direct Import' %}" checked>
+            <c-cf.form :form="form">
+                <c-slot name="hidden">
+                    <input type="hidden" name="import_method" value="direct">
+                </c-slot>
+                <c-slot name="fields">
+                    {# Form fields #}
+                    <c-cf.field :field="form.data" />
+                    <c-cf.field :field="form.format" />
+                    <c-cf.field :field="form.csv_delimiter" />
 
-                {# Form fields #}
-                {{ form.data|as_crispy_field }}
-                {{ form.format|as_crispy_field }}
-                {{ form.csv_delimiter|as_crispy_field }}
+                    {# Meta fields #}
+                    {% if form.changelog_message %}
+                        <div class="bg-primary/10 rounded-box p-3 mb-3">
+                            <c-cf.field :field="form.changelog_message" />
+                        </div>
+                    {% endif %}
+                </c-slot>
+                <c-slot name="buttons">
+                    {% if return_url %}
+                        <c-cf.button
+                            as="a"
+                            href="{{ return_url }}"
+                            btnStyle="outline"
+                            label="{% trans 'Cancel' %}"
+                        />
+                    {% endif %}
+                    <c-cf.button type="submit" name="data_submit" variant="primary" label="{% trans 'Submit' %}" />
+                </c-slot>
+            </c-cf.form>
+        </c-cf.tabs.content>
+        {# /Data Import tab #}
 
-                {# Meta fields #}
-                {% if form.changelog_message %}
-                    <div class="bg-primary-subtle border border-primary rounded-1 pt-3 px-3 mb-3">
-                        {{ form.changelog_message|as_crispy_field }}
-                    </div>
-                {% endif %}
+        {# File Upload tab — handle + panel #}
+        <c-cf.tabs.content name="import-tabs" id="import-upload" title="{% trans 'Upload File' %}">
+            <c-cf.form :form="form">
+                <c-slot name="hidden">
+                    <input type="hidden" name="import_method" value="upload">
+                </c-slot>
+                <c-slot name="fields">
+                    {# Form fields #}
+                    <c-cf.field :field="form.upload_file" />
+                    <c-cf.field :field="form.format" />
+                    <c-cf.field :field="form.csv_delimiter" />
 
-                <div class="form-group">
-                    <div class="col col-md-12 text-end">
-                        {% if return_url %}
-                            <a href="{{ return_url }}" class="btn btn-outline-secondary">{% trans "Cancel" %}</a>
-                        {% endif %}
-                        <button type="submit" name="data_submit" class="btn btn-primary">{% trans "Submit" %}</button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </c-cf.tabs.content>
-
-    {# File Upload Form #}
-    <c-cf.tabs.content id="upload-form">
-        <div class="col col-md-12 col-lg-10 offset-lg-1">
-            <form action="" method="post" enctype="multipart/form-data" class="form">
-                {% csrf_token %}
-                <input type="hidden" name="import_method" value="upload">
-
-                {# Form fields #}
-                {{ form.upload_file|as_crispy_field }}
-                {{ form.format|as_crispy_field }}
-                {{ form.csv_delimiter|as_crispy_field }}
-
-                {# Meta fields #}
-                {% if form.changelog_message %}
-                    <div class="bg-primary-subtle border border-primary rounded-1 pt-3 px-3 mb-3">
-                        {{ form.changelog_message|as_crispy_field }}
-                    </div>
-                {% endif %}
-
-                <div class="form-group">
-                    <div class="col col-md-12 text-end">
-                        {% if return_url %}
-                            <a href="{{ return_url }}" class="btn btn-outline-secondary">{% trans "Cancel" %}</a>
-                        {% endif %}
-                        <button type="submit" name="file_submit" class="btn btn-primary">{% trans "Submit" %}</button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </c-cf.tabs.content>
+                    {# Meta fields #}
+                    {% if form.changelog_message %}
+                        <div class="bg-primary/10 rounded-box p-3 mb-3">
+                            <c-cf.field :field="form.changelog_message" />
+                        </div>
+                    {% endif %}
+                </c-slot>
+                <c-slot name="buttons">
+                    {% if return_url %}
+                        <c-cf.button
+                            as="a"
+                            href="{{ return_url }}"
+                            btnStyle="outline"
+                            label="{% trans 'Cancel' %}"
+                        />
+                    {% endif %}
+                    <c-cf.button type="submit" name="file_submit" variant="primary" label="{% trans 'Submit' %}" />
+                </c-slot>
+            </c-cf.form>
+        </c-cf.tabs.content>
+        {# /File Upload tab #}
+    </c-cf.tabs>
 
     {% if fields %}
-        <div class="row my-3">
-            <div class="col col-md-12">
-                <div class="card">
-                    <h2 class="card-header">{% trans "Field Options" %}</h2>
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>{% trans "Field" %}</th>
-                                <th>{% trans "Required" %}</th>
-                                <th>{% trans "Accessor" %}</th>
-                                <th>{% trans "Description" %}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for name, field in fields.items %}
-                                <tr>
-                                    <td class="font-monospace{% if field.required %} fw-bold{% endif %}">
-                                        {{ name }}
-                                    </td>
-                                    <td>
-                                        {% if field.required %}
-                                            <c-cf.ui.checkmark :value="True" />
-                                        {% else %}
-                                            {{ ''|placeholder }}
-                                        {% endif %}
-                                    </td>
-                                    {% if field.to_field_name %}
-                                        <td class="font-monospace">{{ field.to_field_name }}</td>
-                                    {% else %}
-                                        <td>{{ ''|placeholder }}</td>
-                                    {% endif %}
-                                    <td>
-                                        {% if field.help_text %}
-                                            {{ field.help_text }}
-                                        {% elif field.label %}
-                                            {{ field.label }}
-                                        {% endif %}
-                                        {% if field.STATIC_CHOICES %}
-                                            <a
-                                                href="#"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#{{ name }}_choices"
-                                                aria-label='{{ name }} {% trans "choices" %}'
-                                            ><i class="fa-solid fa-circle-question"></i></a>
-                                            <div class="modal fade" id="{{ name }}_choices" tabindex="-1" role="dialog">
-                                                <div class="modal-dialog" role="document">
-                                                    <div class="modal-content">
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title">
-                                                                <span class="font-monospace">{{ name }}</span>
-                                                                {% trans "Choices" %}
-                                                            </h5>
-                                                            <button
-                                                                type="button"
-                                                                class="btn-close"
-                                                                data-bs-dismiss="modal"
-                                                                aria-label="Close"
-                                                            >
-                                                            </button>
-                                                        </div>
-                                                        <table class="table table-striped modal-body">
-                                                            <thead>
-                                                                <tr>
-                                                                    <th>{% trans "Import Value" %}</th>
-                                                                    <th>{% trans "Label" %}</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                {% for value, label in field.choices %}
-                                                                    {% if value %}
-                                                                        <tr>
-                                                                            <td><samp>{{ value }}</samp></td>
-                                                                            <td>{{ label }}</td>
-                                                                        </tr>
-                                                                    {% endif %}
-                                                                {% endfor %}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        {% endif %}
-                                        {% if field|widget_type == 'dateinput' %}
-                                            <br><small class="text-muted">{% trans "Format: YYYY-MM-DD" %}</small>
-                                        {% elif field|widget_type == 'checkboxinput' %}
-                                            <br><small class="text-muted">{% trans "Specify true or false" %}</small>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        <p class="small text-muted">
-            <i class="fa-solid fa-check text-success"></i>
-            {% blocktrans trimmed %}
-                Required fields <strong>must</strong> be specified for all objects.
-            {% endblocktrans %}
+        <c-cf.card title="{% trans 'Field Options' %}">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>{% trans "Field" %}</th>
+                        <th>{% trans "Required" %}</th>
+                        <th>{% trans "Accessor" %}</th>
+                        <th>{% trans "Description" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for name, field in fields.items %}
+                        <tr>
+                            <td class="font-mono{% if field.required %} font-bold{% endif %}">{{ name }}</td>
+                            <td>
+                                {% if field.required %}
+                                    <c-cf.checkmark :value="True" />
+                                {% else %}
+                                    {{ ''|placeholder }}
+                                {% endif %}
+                            </td>
+                            {% if field.to_field_name %}
+                                <td class="font-mono">{{ field.to_field_name }}</td>
+                            {% else %}
+                                <td>{{ ''|placeholder }}</td>
+                            {% endif %}
+                            <td>
+                                {% if field.help_text %}
+                                    {{ field.help_text }}
+                                {% elif field.label %}
+                                    {{ field.label }}
+                                {% endif %}
+                                {% if field.STATIC_CHOICES %}
+                                    <c-cf.button
+                                        as="a"
+                                        href="#"
+                                        onclick="document.getElementById('{{ name }}_choices').showModal()"
+                                        aria-label='{{ name }} {% trans "choices" %}'
+                                        size="xs"
+                                        btnStyle="ghost"
+                                        modifier="circle"
+                                        icon="heroicon.question-mark-circle"
+                                        icon.size="sm"
+                                    />
+                                    <c-cf.modal id="{{ name }}_choices" size="md" withCloseBtn>
+                                        <h3 id="{{ name }}_choices_title" class="font-bold text-lg">
+                                            <span class="font-mono">{{ name }}</span> {% trans "Choices" %}
+                                        </h3>
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th>{% trans "Import Value" %}</th>
+                                                    <th>{% trans "Label" %}</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for value, label in field.choices %}
+                                                    {% if value %}
+                                                        <tr>
+                                                            <td><samp>{{ value }}</samp></td>
+                                                            <td>{{ label }}</td>
+                                                        </tr>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </c-cf.modal>
+                                {% endif %}
+                                {% if field|widget_type == 'dateinput' %}
+                                    <br><small class="text-sm text-muted">{% trans "Format: YYYY-MM-DD" %}</small>
+                                {% elif field|widget_type == 'checkboxinput' %}
+                                    <br><small class="text-sm text-muted">{% trans "Specify true or false" %}</small>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </c-cf.card>
+        <p class="text-sm text-muted">
+            <span class="inline-flex items-center gap-1">
+                <c-cfi n="heroicon.check" class="text-success align-middle" /> &nbsp;
+                {% blocktrans trimmed %}
+                    Required fields <strong>must</strong> be specified for all objects.
+                {% endblocktrans %}
+            </span>
         </p>
-        <p class="small text-muted">
-            <i class="fa-solid fa-circle-info"></i>
-            {% blocktrans trimmed with example="vrf.rd" %}
-                Related objects may be referenced by any unique attribute. For example, <code>{{ example }}</code> would
-                identify a VRF by its route distinguisher.
-            {% endblocktrans %}
+
+        <p class="text-sm text-muted">
+            <span class="inline-flex items-center gap-1">
+                <c-cfi n="heroicon.information-circle" class="align-middle" /> &nbsp;
+                {% blocktrans trimmed with example="project.slug" %}
+                    Related objects may be referenced by any unique attribute. For example, <code>{{ example }}</code>
+                    would identify a Project by its slug.
+                {% endblocktrans %}
+            </span>
         </p>
     {% endif %}
 {% endblock content %}

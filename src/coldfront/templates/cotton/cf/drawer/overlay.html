@@ -1,0 +1,20 @@
+{% load i18n %}
+
+{% comment %}
+DaisyUI drawer overlay — a click target that closes the drawer when clicked.
+A non-label clickable (role=button) so the drawer checkbox keeps a single label
+(the toggle); the overlay just unchecks the hidden drawer checkbox via Alpine.
+{% endcomment %}
+
+<c-vars class="" for="" />
+
+<div
+    role="button"
+    aria-label="{% trans 'Close sidebar' %}"
+    tabindex="-1"
+    class="drawer-overlay {{ class }}"
+    @click="document.getElementById('{{ for }}').checked = false"
+    {{ attrs }}
+>
+    {{ slot }}
+</div>

@@ -17,23 +17,22 @@ Context:
     <c-cf.layout.panels>
         <c-slot name="left">
             <c-cf.card>
-                <div class="card-body">
+                <c-cf.card.body>
                     <p>
-                        {% blocktrans with project=invite.project.name %}You are about to join the project
+                        {% blocktrans trimmed with project=invite.project.name %}You are about to join the project
                             <strong>{{ project }}</strong> as a member.{% endblocktrans %}
                     </p>
-                    <form method="post" action="{{ accept_url }}">
-                        {% csrf_token %}
-                        <div class="d-flex">
+                    <c-cf.form action="{{ accept_url }}">
+                        <c-slot name="buttons">
                             <c-cf.button
+                                as="button"
                                 type="submit"
-                                label="{% trans 'Accept Invite' %}"
-                                icon="fa-solid fa-check"
-                                css_class="btn-primary"
-                            />
-                        </div>
-                    </form>
-                </div>
+                                icon="heroicon.check"
+                                variant="primary"
+                            >{% trans "Accept Invite" %}</c-cf.button>
+                        </c-slot>
+                    </c-cf.form>
+                </c-cf.card.body>
             </c-cf.card>
         </c-slot>
     </c-cf.layout.panels>

@@ -1,6 +1,0 @@
-<fieldset {% if fieldset.css_id %}id="{{ fieldset.css_id }}"{% endif %} {{ fieldset.flat_attrs }}>
-    {% if legend %}<legend class="{% if fieldset.css_class %}{{ fieldset.css_class }}{% else %}col-9 offset-3{% endif %}">
-            {{ legend|safe }}
-        </legend>{% endif %}
-    {{ fields|safe }}
-</fieldset>

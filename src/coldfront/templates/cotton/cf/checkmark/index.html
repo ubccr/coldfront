@@ -1,0 +1,21 @@
+{% comment %}
+DaisyUI checkmark component — renders a success (check-circle) or error
+(x-circle) icon for a boolean value, sized inline. Icons render through c-cfi
+(heroicon). Props: value, true_label, false_label. A None value renders an
+em-dash placeholder; otherwise true → check and false → X. The title tooltip is
+kept on a wrapping span since c-cfi forwards attrs to the svg.
+{% endcomment %}
+
+<c-vars value="" true_label="Yes" false_label="No" />
+
+{% if value is None %}
+    <span class="text-muted">&mdash;</span>
+{% elif value %}
+    <span role="img" aria-label="{{ true_label }}">
+        <c-cfi n="heroicon.check-circle" variant="solid" size="sm" class="text-success" />
+    </span>
+{% else %}
+    <span role="img" aria-label="{{ false_label }}">
+        <c-cfi n="heroicon.x-circle" variant="solid" size="sm" class="text-error" />
+    </span>
+{% endif %}

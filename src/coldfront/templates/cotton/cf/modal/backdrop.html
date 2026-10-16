@@ -1,0 +1,17 @@
+{% comment %}
+DaisyUI modal backdrop — a form that closes the dialog when the backdrop is
+clicked.
+{% endcomment %}
+
+<c-vars class="" />
+
+{% load i18n %}
+<form method="dialog" class="modal-backdrop {{ class }}" {{ attrs }}>
+    <button aria-label="{% trans 'Close' %}">
+        {% if slot %}
+            {{ slot }}
+        {% else %}
+            <span class="sr-only">{% trans 'Close' %}</span>
+        {% endif %}
+    </button>
+</form>

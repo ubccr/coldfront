@@ -1,0 +1,39 @@
+{% comment %}
+ColdFront icon component — a thin wrapper over the cotton-icons packs
+{% endcomment %}
+
+<c-vars
+    n=""
+    size="md"
+    width="24"
+    height="24"
+    class=""
+    variant=""
+    stroke_width="2"
+    stroke_linecap="round"
+    stroke_linejoin="round"
+    :sizeClasses="{
+        'xs': 'size-3.5',
+        'sm': 'size-4',
+        'md': 'size-5',
+        'lg': 'size-6',
+        'xl': 'size-8',
+        '2xl': 'size-10',
+    }"
+/>
+
+{% if "lucideicon." in n %}
+    {% cotton component is="{{ n }}" height="{{ height }}" width="{{ width }}" class="{{ sizeClasses|get_dict_item:size }} {{ class }}" aria-hidden="true" focusable="false" stroke-width="{{ stroke_width }}" stroke-linecap="{{ stroke_linecap }}" stroke-linejoin="{{ stroke_linejoin }}" %}{% endcotton %}
+{% elif "tablericon." in n %}
+    {% if variant %}
+        {% cotton component is="{{ n }}" height="{{ height }}" width="{{ width }}" class="{{ sizeClasses|get_dict_item:size }} {{ class }}" variant="{{ variant }}" aria-hidden="true" focusable="false" stroke-width="{{ stroke_width }}" stroke-linecap="{{ stroke_linecap }}" stroke-linejoin="{{ stroke_linejoin }}" %}{% endcotton %}
+    {% else %}
+        {% cotton component is="{{ n }}" height="{{ height }}" width="{{ width }}" class="{{ sizeClasses|get_dict_item:size }} {{ class }}" aria-hidden="true" focusable="false" stroke-width="{{ stroke_width }}" stroke-linecap="{{ stroke_linecap }}" stroke-linejoin="{{ stroke_linejoin }}" %}{% endcotton %}
+    {% endif %}
+{% elif n %}
+    {% if variant %}
+        {% cotton component is="{{ n }}" height="{{ height }}" width="{{ width }}" class="{{ sizeClasses|get_dict_item:size }} {{ class }}" variant="{{ variant }}" focusable="false" %}{% endcotton %}
+    {% else %}
+        {% cotton component is="{{ n }}" height="{{ height }}" width="{{ width }}" class="{{ sizeClasses|get_dict_item:size }} {{ class }}" focusable="false" %}{% endcotton %}
+    {% endif %}
+{% endif %}

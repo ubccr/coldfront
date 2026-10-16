@@ -29,7 +29,7 @@ class ResourceType(OrganizationalModel):
     )
     color = ColorField(
         verbose_name=_("color"),
-        default=ColorChoices.COLOR_GREY,
+        default=ColorChoices.NEUTRAL,
     )
 
     class Meta:

@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from crispy_forms.layout import Fieldset
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
@@ -12,6 +11,7 @@ from coldfront.forms.fields import (
     DynamicModelMultipleChoiceField,
     TagFilterField,
 )
+from coldfront.forms.layout import FieldSet
 from coldfront.ras.models import Allocation
 from coldfront.storage.choices import StorageShareTypeChoices, StorageSnapshotIntervalChoices
 from coldfront.storage.models import StorageCluster, StorageQuota, StorageResource, StorageSnapshotPolicy
@@ -33,11 +33,14 @@ class StorageResourceFilterSetForm(PrimaryModelFilterSetForm):
     tag = TagFilterField(model)
 
     fieldsets = (
-        Fieldset(
-            _("Storage Resource"),
+        FieldSet(
+            "q",
+            "tag",
+        ),
+        FieldSet(
             "clusters",
             "locked",
-            "tag",
+            name=_("Storage Resource"),
         ),
     )
 
@@ -51,10 +54,13 @@ class StorageClusterFilterSetForm(PrimaryModelFilterSetForm):
     tag = TagFilterField(model)
 
     fieldsets = (
-        Fieldset(
-            _("Storage Cluster"),
-            "backend_path",
+        FieldSet(
+            "q",
             "tag",
+        ),
+        FieldSet(
+            "backend_path",
+            name=_("Storage Cluster"),
         ),
     )
 
@@ -102,8 +108,11 @@ class StorageQuotaFilterSetForm(PrimaryModelFilterSetForm):
     tag = TagFilterField(model)
 
     fieldsets = (
-        Fieldset(
-            _("Storage Quota"),
+        FieldSet(
+            "q",
+            "tag",
+        ),
+        FieldSet(
             "storage_id",
             "allocation_id",
             "share_type",
@@ -112,7 +121,7 @@ class StorageQuotaFilterSetForm(PrimaryModelFilterSetForm):
             "owning_group",
             "state",
             "path",
-            "tag",
+            name=_("Storage Quota"),
         ),
     )
 
@@ -136,11 +145,14 @@ class StorageSnapshotPolicyFilterSetForm(PrimaryModelFilterSetForm):
     tag = TagFilterField(model)
 
     fieldsets = (
-        Fieldset(
-            _("Snapshot Policy"),
+        FieldSet(
+            "q",
+            "tag",
+        ),
+        FieldSet(
             "cluster_id",
             "interval",
             "retention_days",
-            "tag",
+            name=_("Snapshot Policy"),
         ),
     )

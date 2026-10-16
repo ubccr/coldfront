@@ -1,14 +1,14 @@
 {% load i18n %}
 {% load buttons %}
 
-<c-cf.card header='{% trans "Comments" %}'>
-    <div class="card-body">
+<c-cf.card title='{% trans "Comments" %}'>
+    <c-cf.card.body>
         {% if object.comments.count %}
-            <div class="d-flex justify-content-between align-items-center">
+            <div class="flex justify-between items-center">
                 <span>{{ object.comments.count }} {% trans "comment(s)" %}</span>
             </div>
         {% else %}
             <span class="text-muted">{% trans "None" %}</span>
         {% endif %}
-    </div>
+    </c-cf.card.body>
 </c-cf.card>

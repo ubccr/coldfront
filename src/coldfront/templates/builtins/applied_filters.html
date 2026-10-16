@@ -1,20 +1,23 @@
 {% load i18n %}
 {% if applied_filters %}
-    <div class="mb-3">
+    <div class="flex flex-wrap items-center gap-1 mb-3">
         {% for filter in applied_filters %}
-            <a href="{{ filter.link_url }}" class="badge rounded-pill text-bg-primary text-decoration-none me-1">
-                <i class="fa-solid fa-xmark"></i> {{ filter.link_text }}
-            </a>
+            <c-cf.badge variant="primary" href="{{ filter.link_url }}">
+                <c-cfi n="heroicon.x-mark" size="sm" />
+                {{ filter.link_text }}
+            </c-cf.badge>
         {% endfor %}
         {% if applied_filters|length > 1 %}
-            <a href="?" class="badge rounded-pill text-bg-danger text-decoration-none me-1">
-                <i class="fa-solid fa-ban"></i> {% trans "Clear all" %}
-            </a>
+            <c-cf.badge variant="error" href="?">
+                <c-cfi n="tablericon.eraser" size="sm" />
+                {% trans "Clear all" %}
+            </c-cf.badge>
         {% endif %}
         {% if save_link %}
-            <a href="{{ save_link }}" class="badge rounded-pill text-bg-success text-decoration-none me-1">
-                <i class="fa-solid fa-floppy-disk"></i> {% trans "Save" %}
-            </a>
+            <c-cf.badge variant="success" href="{{ save_link }}">
+                <c-cfi n="heroicon.bookmark" size="sm" />
+                {% trans "Save" %}
+            </c-cf.badge>
         {% endif %}
     </div>
 {% endif %}

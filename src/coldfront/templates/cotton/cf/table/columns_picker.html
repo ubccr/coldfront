@@ -1,0 +1,69 @@
+{% comment %}
+Column picker control: two native multi-select listboxes (available / selected
+columns) with Add / Remove / Move Up / Move Down buttons between them. Renders
+the two bound fields as native daisyUI selects — the fields carry the
+`no-alpine-select` marker class so `select.html` opts out of the Alpine
+combobox. Used by the table-config edit page and the "Configure Table" modal
+(`builtins/table_config_form.html`).
+{% endcomment %}
+{% load form_helpers i18n %}
+
+<c-vars
+    :form="form"
+    class=""
+/>
+
+<div class="grid grid-cols-12 items-start gap-3 {{ class }}">
+    <div class="col-span-5 space-y-1 text-center">
+        <label
+            for="{{ form.available_columns.id_for_label }}"
+            class="text-sm font-medium text-muted"
+        >
+            {{ form.available_columns.label }}
+        </label>
+        {% render_field_with_aria form.available_columns %}
+    </div>
+    <div class="col-span-2 flex items-center justify-center self-center">
+        <div class="w-full space-y-2">
+            <c-cf.button
+                tabindex="0"
+                variant="success"
+                size="sm"
+                id="add_columns"
+                class="w-full"
+                icon="heroicon.arrow-right"
+            >{% trans "Add" %}</c-cf.button>
+            <c-cf.button
+                tabindex="0"
+                variant="error"
+                size="sm"
+                id="remove_columns"
+                class="w-full"
+                icon="heroicon.arrow-left"
+            >{% trans "Remove" %}</c-cf.button>
+        </div>
+    </div>
+    <div class="col-span-5 space-y-1 text-center">
+        <label
+            for="{{ form.columns.id_for_label }}"
+            class="text-sm font-medium text-muted"
+        >
+            {{ form.columns.label }}
+        </label>
+        {% render_field_with_aria form.columns %}
+        <div class="flex justify-center gap-2 pt-1">
+            <c-cf.button
+                tabindex="0"
+                size="sm"
+                class="move-option-up"
+                icon="heroicon.arrow-up"
+            >{% trans "Move Up" %}</c-cf.button>
+            <c-cf.button
+                tabindex="0"
+                size="sm"
+                class="move-option-down"
+                icon="heroicon.arrow-down"
+            >{% trans "Move Down" %}</c-cf.button>
+        </div>
+    </div>
+</div>

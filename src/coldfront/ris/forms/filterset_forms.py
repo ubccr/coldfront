@@ -2,11 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from crispy_forms.layout import Fieldset, Layout
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from coldfront.forms import ColdFrontModelFilterSetForm
+from coldfront.forms.layout import FieldSet
 from coldfront.ris.models import Funding, Publication
 from coldfront.ris.providers.local import LocalProvider
 from coldfront.ris.registry import get_providers_for_model
@@ -28,7 +28,19 @@ class PublicationFilterSetForm(ColdFrontModelFilterSetForm):
     journal = forms.CharField(required=False, label=_("Journal"))
     source = forms.CharField(required=False, label=_("Source"))
 
-    fieldsets = (Fieldset(_("Publication"), "doi", "title", "year", "journal", "source"),)
+    fieldsets = (
+        FieldSet(
+            "q",
+        ),
+        FieldSet(
+            "doi",
+            "title",
+            "year",
+            "journal",
+            "source",
+            name=_("Publication"),
+        ),
+    )
 
 
 class FundingFilterSetForm(ColdFrontModelFilterSetForm):
@@ -38,7 +50,18 @@ class FundingFilterSetForm(ColdFrontModelFilterSetForm):
     title = forms.CharField(required=False, label=_("Title"))
     status = forms.CharField(required=False, label=_("Status"))
 
-    fieldsets = (Fieldset(_("Funding"), "award_number", "funding_agency", "title", "status"),)
+    fieldsets = (
+        FieldSet(
+            "q",
+        ),
+        FieldSet(
+            "award_number",
+            "funding_agency",
+            "title",
+            "status",
+            name=_("Funding"),
+        ),
+    )
 
 
 class ProviderSelectionMixin(forms.Form):
@@ -62,7 +85,7 @@ class ProviderSelectionMixin(forms.Form):
 
     def provider_fieldset(self):
         """Return the layout fieldset holding the provider selection field."""
-        return Fieldset(_("Providers"), "providers")
+        return FieldSet("providers", name=_("Providers"))
 
 
 class PublicationAddFilterForm(ProviderSelectionMixin, ColdFrontModelFilterSetForm):
@@ -81,12 +104,22 @@ class PublicationAddFilterForm(ProviderSelectionMixin, ColdFrontModelFilterSetFo
     journal = forms.CharField(required=False, label=_("Journal"))
     source = forms.CharField(required=False, label=_("Source"))
 
-    def get_layout(self):
-        return Layout(
-            Fieldset(_("Search"), "q"),
-            Fieldset(_("Publication"), "title", "doi", "author", "year", "journal", "source"),
+    def fieldsets(self):
+        return [
+            FieldSet(
+                "q",
+            ),
+            FieldSet(
+                "title",
+                "doi",
+                "author",
+                "year",
+                "journal",
+                "source",
+                name=_("Publication"),
+            ),
             self.provider_fieldset(),
-        )
+        ]
 
 
 class FundingAddFilterForm(ProviderSelectionMixin, ColdFrontModelFilterSetForm):
@@ -103,9 +136,17 @@ class FundingAddFilterForm(ProviderSelectionMixin, ColdFrontModelFilterSetForm):
     funding_agency = forms.CharField(required=False, label=_("Funding agency"))
     status = forms.CharField(required=False, label=_("Status"))
 
-    def get_layout(self):
-        return Layout(
-            Fieldset(_("Search"), "q"),
-            Fieldset(_("Funding"), "title", "award_number", "funding_agency", "status"),
+    def fieldsets(self):
+        return [
+            FieldSet(
+                "q",
+            ),
+            FieldSet(
+                "title",
+                "award_number",
+                "funding_agency",
+                "status",
+                name=_("Funding"),
+            ),
             self.provider_fieldset(),
-        )
+        ]

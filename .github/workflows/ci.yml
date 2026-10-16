@@ -15,10 +15,8 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.12", "3.13"]
-        node-version: ["24.x"]
     env:
       PLUGIN_API: true
-      DJANGO_VITE_DEV_MODE: true
 
     steps:
       - uses: actions/checkout@v6
@@ -28,16 +26,16 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install Node.js
-        uses: actions/setup-node@v6
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: ${{ matrix.node-version }}
+          bun-revision: 1.4.2+744846f84
 
       - name: Install the project
         run: uv sync --locked --dev
 
       - name: Install frontend packages
-        run: npm --prefix src/coldfront/static install
+        run: bun install --cwd src/frontend
 
       - name: Check for lint violations
         run: uv run ruff check
@@ -46,23 +44,13 @@ jobs:
         run: uv run ruff format --check
 
       - name: Check django template formatting
-        run: uv run djangofmt src/coldfront
+        run: uv run djangofmt check src/coldfront
 
-      - name: Check django template formatting have been commited
-        run: |
-          if [[ `git status --porcelain` ]]; then
-            echo "Error: django templates have not been formatted. Run djangofmt"
-            git status
-            exit 1
-          else
-            echo "django template formatting check passed."
-          fi
-
-      - name: Check frontend with eslint and prettier
-        run: npm --prefix src/coldfront/static run check
+      - name: Check frontend typescript and css
+        run: bun run --cwd src/frontend check
 
       - name: Compile and bundle frontend static assets
-        run: npm --prefix src/coldfront/static run build
+        run: bun run --cwd src/frontend build
 
       - name: Check bundled frontend static assets have been commited
         run: |

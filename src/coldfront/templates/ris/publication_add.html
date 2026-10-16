@@ -3,66 +3,91 @@
 
 {% block title %}{% trans "Add Publications" %}{% endblock %}
 
-{% block tabs %}
-    <c-cf.tabs>
-        <c-cf.tabs.tab id="object-list" label="{% trans 'Results' %}" active>
-            <c-cf.ui.badge css_class="total-object-count" only>
-                <c-slot
-                    name="value"
-                >{% if table.page.paginator.count %}{{ table.page.paginator.count }}{% else %}0{% endif %}</c-slot>
-            </c-cf.ui.badge>
-        </c-cf.tabs.tab>
-        {% if filter_form %}
-            <c-cf.tabs.tab id="filters-form" label="{% trans 'Filters' %}">
-                <c-cf.ui.badge :value="{{ filter_form.changed_data|length }}" bg_color="primary" only />
-            </c-cf.tabs.tab>
-        {% endif %}
-    </c-cf.tabs>
-{% endblock tabs %}
-
 {% block content %}
-    {# Results tab #}
-    <c-cf.tabs.content id="object-list" active>
-        <form method="post" action="{% url 'ras:project_add_publication' pk=project.pk %}">
-            {% csrf_token %}
-            <input type="hidden" name="return_url" value="{{ return_url }}">
+    <c-cf.tabs name="ris-add-tabs" role="group">
+        {# Results tab — handle + panel #}
+        <c-cf.tabs.content name="ris-add-tabs" id="ris-add-results" title="{% trans 'Results' %}" checked>
+            <c-slot name="badge">
+                <c-cf.badge variant="warning" size="sm" class="ml-1 total-object-count">
+                    {% if table.page.paginator.count %}{{ table.page.paginator.count }}{% else %}0{% endif %}
+                </c-cf.badge>
+            </c-slot>
+            <form method="post" action="{% url 'ras:project_add_publication' pk=project.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="return_url" value="{{ return_url }}">
 
-            {% if providers %}
-                <div class="mb-3">
-                    {% trans "Research Work Providers:" %}
-                    {% for provider in providers %}
-                        <c-cf.ui.badge :value="provider" bg_color="secondary" css_class="rounded-pill" only />
-                    {% endfor %}
-                </div>
-            {% endif %}
+                {% if providers %}
+                    <div class="mb-3">
+                        {% trans "Research Work Providers:" %}
+                        {% for provider in providers %}
+                            <c-cf.badge variant="secondary" class="me-1">{{ provider }}</c-cf.badge>
+                        {% endfor %}
+                    </div>
+                {% endif %}
 
-            <c-cf.card.table.htmx :table="table" :model="model" only />
+                <c-cf.card.table :table="table" :model="model" />
 
-            {# Form buttons #}
-            <c-cf.button.list>
-                <c-cf.button
-                    type="link"
-                    url="{{ return_url }}"
-                    label="{% trans 'Cancel' %}"
-                    icon="fa-solid fa-arrow-left"
-                    css_class="btn-outline-secondary btn-float"
-                />
-                <c-cf.button
-                    type="submit"
-                    label="{% trans 'Link Selected' %}"
-                    icon="fa-solid fa-check"
-                    css_class="btn-primary"
-                />
-            </c-cf.button.list>
-        </form>
-    </c-cf.tabs.content>
-    {# /Results tab #}
-
-    {# Filters tab #}
-    {% if filter_form %}
-        <c-cf.tabs.content id="filters-form">
-            <c-cf.form.filters :filter_form="filter_form" :return_url="return_url" only />
+                {# Form buttons #}
+                <c-cf.button.list>
+                    <c-cf.button
+                        as="a"
+                        href="{{ return_url }}"
+                        icon="heroicon.x-mark"
+                        icon.size="sm"
+                        btnStyle="outline"
+                        variant="secondary"
+                    >{% trans "Cancel" %}</c-cf.button>
+                    <c-cf.button
+                        as="button"
+                        type="submit"
+                        icon="heroicon.check"
+                        icon.size="sm"
+                        variant="primary"
+                        behavior="{% if table.page.paginator.count %}active{% else %}disabled{% endif %}"
+                    >{% trans "Link Selected" %}</c-cf.button>
+                </c-cf.button.list>
+            </form>
         </c-cf.tabs.content>
-    {% endif %}
-    {# /Filters tab #}
+        {# /Results tab #}
+
+        {# Filters tab — handle + panel #}
+        {% if filter_form %}
+            <c-cf.tabs.content name="ris-add-tabs" id="ris-add-filters" title="{% trans 'Filters' %}">
+                {% if filter_form.changed_data|length %}
+                    <c-slot name="badge">
+                        <c-cf.badge
+                            variant="warning"
+                            size="sm"
+                            class="ml-1"
+                        >{{ filter_form.changed_data|length }}</c-cf.badge>
+                    </c-slot>
+                {% endif %}
+                <c-cf.form method="get" action="." :form="filter_form">
+                    <c-slot name="hidden">
+                        {% if return_url %}
+                            <input type="hidden" name="return_url" value="{{ return_url }}">
+                        {% endif %}
+                    </c-slot>
+                    <c-slot name="buttons">
+                        <c-cf.button
+                            type="button"
+                            variant="error"
+                            btnStyle="outline"
+                            icon="heroicon.x-mark"
+                            data-reset=""
+                            data-reset-preserve="return_url"
+                            label="{% trans 'Reset' %}"
+                        />
+                        <c-cf.button
+                            type="submit"
+                            variant="primary"
+                            icon="heroicon.magnifying-glass"
+                            label="{% trans 'Search' %}"
+                        />
+                    </c-slot>
+                </c-cf.form>
+            </c-cf.tabs.content>
+        {% endif %}
+        {# /Filters tab #}
+    </c-cf.tabs>
 {% endblock content %}

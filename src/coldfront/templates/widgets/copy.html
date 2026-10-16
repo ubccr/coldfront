@@ -1,0 +1,13 @@
+{% load i18n %}
+<div class="join w-full">
+    {% include "django/forms/widgets/input.html" %}
+    <button
+        type="button"
+        title="{% trans 'Copy to clipboard' %}"
+        aria-label="{% trans 'Copy to clipboard' %}"
+        class="btn join-item copy-content rounded-r-field"
+        data-clipboard-target="#{{ widget.attrs.id }}"
+    >
+        <c-cfi n="tablericon.copy" size="sm" />
+    </button>
+</div>

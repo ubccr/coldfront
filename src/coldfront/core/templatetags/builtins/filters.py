@@ -192,17 +192,6 @@ def bettertitle(value):
 
 
 @register.filter()
-def getfield(form, fieldname):
-    """
-    Return the specified bound field of a Form.
-    """
-    try:
-        return form[fieldname]
-    except KeyError:
-        return None
-
-
-@register.filter()
 def validated_viewname(model, action):
     """
     Return the view name for the given model and action if valid, or None if invalid.
@@ -217,24 +206,25 @@ def validated_viewname(model, action):
         return None
 
 
-@register.filter(name="widget_type")
-def widget_type(field):
-    """
-    Return the widget type
-    """
-    if hasattr(field, "widget"):
-        return field.widget.__class__.__name__.lower()
-    if hasattr(field, "field"):
-        return field.field.widget.__class__.__name__.lower()
-    return None
-
-
 @register.filter()
 def dict_get(dictionary, key):
     """
     Get a value from a dictionary by key.
     """
     return dictionary.get(key)
+
+
+@register.filter()
+def get_dict_item(dictionary, key):
+    """
+    Get a value from a dictionary by key, returning an empty string instead of
+    None when the key is missing, the value is None, or the input is not a dict.
+    Renders as nothing in templates, so lookups need no {% if %} guards.
+    """
+    if not isinstance(dictionary, dict):
+        return ""
+    value = dictionary.get(key)
+    return "" if value is None else value
 
 
 @register.filter()
@@ -271,30 +261,51 @@ def naturalsize(value):
 
 
 @register.filter
-def status_from_tag(tag: str = "info") -> str:
+def toast_variant(tag: str = "info") -> str:
     """
-    Determine Bootstrap theme status/level from Django's Message.level_tag.
+    Map a Django Message level_tag to a daisyUI alert variant.
     """
-    status_map = {
-        "warning": "warning",
-        "success": "success",
-        "error": "danger",
-        "danger": "danger",
+    return {
         "debug": "info",
         "info": "info",
-    }
-    return status_map.get(tag.lower(), "info")
+        "success": "success",
+        "warning": "warning",
+        "error": "error",
+    }.get(tag.lower(), "info")
 
 
 @register.filter
-def icon_from_status(status: str = "info") -> str:
+def toast_icon(tag: str = "info") -> str:
     """
-    Determine icon class name from Bootstrap theme status/level.
+    Map a Django Message level_tag to a cotton-icons heroicon name.
     """
-    icon_map = {
-        "warning": "fa-solid fa-circle-exclamation",
-        "success": "fa-solid fa-check-circle",
-        "info": "fa-solid fa-circle-info",
-        "danger": "fa-solid fa-circle-exclamation",
-    }
-    return icon_map.get(status.lower(), "information")
+    return {
+        "debug": "heroicon.information-circle",
+        "info": "heroicon.information-circle",
+        "success": "heroicon.check",
+        "warning": "heroicon.exclamation-triangle",
+        "error": "heroicon.exclamation-circle",
+    }.get(tag.lower(), "heroicon.information-circle")
+
+
+@register.filter
+def strip_icon_attrs(attrs):
+    """
+    Remove all icon-related attributes from a cotton attrs string.
+
+    Removes attributes matching: icon="...", icon.fill="...", icon.class="...",
+    icon.variant="...", etc.
+
+    Usage: {{ attrs|strip_icon_attrs }}
+    """
+    if not attrs:
+        return ""
+
+    s = str(attrs)
+
+    # Remove icon attributes with values: icon="...", icon.fill="...", icon.class="...", etc.
+    s = re.sub(r'\s*\bicon(?:\.[\w.]+)?\s*=["\'][^"\']*["\']', "", s)
+
+    # Clean up whitespace
+    s = re.sub(r"\s+", " ", s).strip()
+    return mark_safe(s)

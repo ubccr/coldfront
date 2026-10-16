@@ -12,45 +12,9 @@ from coldfront.forms import widgets
 from coldfront.views import get_action_url
 
 __all__ = (
-    "DynamicChoiceField",
     "DynamicModelChoiceField",
     "DynamicModelMultipleChoiceField",
-    "DynamicMultipleChoiceField",
 )
-
-
-#
-# Choice fields
-#
-
-
-class DynamicChoiceField(forms.ChoiceField):
-    def get_bound_field(self, form, field_name):
-        bound_field = BoundField(form, self, field_name)
-        data = bound_field.value()
-
-        if data is not None:
-            self.choices = [choice for choice in self.choices if choice[0] == data]
-        else:
-            self.choices = []
-
-        return bound_field
-
-
-class DynamicMultipleChoiceField(forms.MultipleChoiceField):
-    def get_bound_field(self, form, field_name):
-        bound_field = BoundField(form, self, field_name)
-        data = bound_field.value()
-
-        if data is not None:
-            self.choices = [choice for choice in self.choices if choice[0] and choice[0] in data]
-
-        return bound_field
-
-
-#
-# Model choice fields
-#
 
 
 class DynamicModelChoiceMixin:
@@ -118,9 +82,10 @@ class DynamicModelChoiceMixin:
         if self.null_option is not None:
             attrs["data-null-option"] = self.null_option
 
-        # Set any custom template attributes for TomSelect
+        # Set any custom template attributes for the `widgets/alpine_select.html`
+        # option template
         for var, accessor in self.context.items():
-            attrs[f"ts-{var}-field"] = accessor
+            attrs[f"cf-{var}-field"] = accessor
 
         # Attach any static query parameters
         if len(self.query_params) > 0:

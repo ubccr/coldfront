@@ -6,28 +6,26 @@
 {% block content %}
     <c-cf.layout.panels>
         <c-slot name="left">
-            <c-cf.card.fields header="{% trans 'Linked Accounts' %}" only>
+            <c-cf.card.fields title="{% trans 'Linked Accounts' %}">
                 {% for provider in providers %}
                     <c-cf.card.fields.item label="{{ provider.display_name }}">
                         {% if provider.linked %}
                             {{ provider.account.account_id }}
                             <c-cf.button
-                                type="link"
-                                url="{% url provider.unlink_url %}"
-                                label="{% trans 'Unlink' %}"
-                                icon="fa-solid fa-unlink"
-                                css_class="btn-danger"
-                                small
-                            />
+                                as="a"
+                                href="{% url provider.unlink_url %}"
+                                icon="tablericon.link-off"
+                                variant="error"
+                                size="sm"
+                            >{% trans "Unlink" %}</c-cf.button>
                         {% else %}
                             <c-cf.button
-                                type="link"
-                                url="{% url provider.link_url %}"
-                                label="{% trans 'Link' %} {{ provider.display_name }}"
-                                icon="fa-solid fa-link"
-                                css_class="btn-primary"
-                                small
-                            />
+                                as="a"
+                                href="{% url provider.link_url %}"
+                                icon="heroicon.link"
+                                variant="primary"
+                                size="sm"
+                            >{% trans "Link" %} {{ provider.display_name }}</c-cf.button>
                         {% endif %}
                     </c-cf.card.fields.item>
                 {% empty %}

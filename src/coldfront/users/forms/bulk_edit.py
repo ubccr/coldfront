@@ -2,13 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from crispy_forms.layout import Fieldset
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from coldfront.forms import BulkEditForm
 from coldfront.forms.fields import DynamicModelMultipleChoiceField
-from coldfront.forms.mixins import HorizontalFormMixin
+from coldfront.forms.layout import FieldSet
 from coldfront.forms.widgets import BulkEditNullBooleanSelect
 from coldfront.users.models import Group, ObjectPermission, Role, Token, User
 
@@ -17,7 +16,7 @@ from coldfront.users.models import Group, ObjectPermission, Role, Token, User
 #
 
 
-class UserBulkEditForm(HorizontalFormMixin, BulkEditForm):
+class UserBulkEditForm(BulkEditForm):
     pk = forms.ModelMultipleChoiceField(
         queryset=User.objects.all(),
         widget=forms.MultipleHiddenInput,
@@ -58,20 +57,20 @@ class UserBulkEditForm(HorizontalFormMixin, BulkEditForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("User"),
+            FieldSet(
                 "first_name",
                 "last_name",
                 "email",
+                name=_("User"),
             ),
-            Fieldset(
-                _("Status"),
+            FieldSet(
                 "is_active",
+                name=_("Status"),
             ),
-            Fieldset(
-                _("Groups"),
+            FieldSet(
                 "add_groups",
                 "remove_groups",
+                name=_("Groups"),
             ),
         ]
 
@@ -81,7 +80,7 @@ class UserBulkEditForm(HorizontalFormMixin, BulkEditForm):
 #
 
 
-class GroupBulkEditForm(HorizontalFormMixin, BulkEditForm):
+class GroupBulkEditForm(BulkEditForm):
     pk = forms.ModelMultipleChoiceField(
         queryset=Group.objects.all(),
         widget=forms.MultipleHiddenInput,
@@ -98,9 +97,9 @@ class GroupBulkEditForm(HorizontalFormMixin, BulkEditForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Group"),
+            FieldSet(
                 "description",
+                name=_("Group"),
             ),
         ]
 
@@ -110,7 +109,7 @@ class GroupBulkEditForm(HorizontalFormMixin, BulkEditForm):
 #
 
 
-class RoleBulkEditForm(HorizontalFormMixin, BulkEditForm):
+class RoleBulkEditForm(BulkEditForm):
     pk = forms.ModelMultipleChoiceField(
         queryset=Role.objects.all(),
         widget=forms.MultipleHiddenInput,
@@ -131,15 +130,15 @@ class RoleBulkEditForm(HorizontalFormMixin, BulkEditForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Role"),
+            FieldSet(
                 "description",
                 "weight",
+                name=_("Role"),
             ),
         ]
 
 
-class ObjectPermissionBulkEditForm(HorizontalFormMixin, BulkEditForm):
+class ObjectPermissionBulkEditForm(BulkEditForm):
     pk = forms.ModelMultipleChoiceField(
         queryset=ObjectPermission.objects.all(),
         widget=forms.MultipleHiddenInput,
@@ -161,10 +160,10 @@ class ObjectPermissionBulkEditForm(HorizontalFormMixin, BulkEditForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Object Permission"),
+            FieldSet(
                 "description",
                 "enabled",
+                name=_("Object Permission"),
             ),
         ]
 
@@ -174,7 +173,7 @@ class ObjectPermissionBulkEditForm(HorizontalFormMixin, BulkEditForm):
 #
 
 
-class TokenBulkEditForm(HorizontalFormMixin, BulkEditForm):
+class TokenBulkEditForm(BulkEditForm):
     pk = forms.ModelMultipleChoiceField(
         queryset=Token.objects.all(),
         widget=forms.MultipleHiddenInput,
@@ -201,10 +200,10 @@ class TokenBulkEditForm(HorizontalFormMixin, BulkEditForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Token"),
+            FieldSet(
                 "description",
                 "enabled",
                 "write_enabled",
+                name=_("Token"),
             ),
         ]

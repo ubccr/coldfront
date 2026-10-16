@@ -530,7 +530,7 @@ class PluginListView(BasePluginView):
         if htmx_partial(request):
             return render_component(
                 request,
-                "cf.table.htmx",
+                "cf.table",
                 table=table,
             )
 
@@ -574,7 +574,7 @@ class RenderMarkdownView(LoginRequiredMixin, View):
         form = forms.RenderMarkdownForm(request.POST)
         if not form.is_valid():
             HttpResponseBadRequest()
-        rendered = render_markdown(form.cleaned_data["text"])
+        rendered = render_markdown(form.cleaned_data["comments"])
 
         return HttpResponse(rendered)
 

@@ -436,7 +436,7 @@ class ProjectAddPublicationViewTestCase(ColdFrontTestCase):
         response = self.client.get(reverse("ras:project_add_publication", kwargs={"pk": self.project.pk}))
         self.assertEqual(response.status_code, 200)
         # The shared table component renders the uniform empty state.
-        self.assertContains(response, "card-body text-muted")
+        self.assertContains(response, "No results found.")
 
     @mock.patch(
         "coldfront.ris.plugins.crossref.client.CrossrefClient.search",
@@ -447,7 +447,7 @@ class ProjectAddPublicationViewTestCase(ColdFrontTestCase):
         response = self.client.get(
             reverse("ras:project_add_publication", kwargs={"pk": self.project.pk}),
             {"q": "Publication"},
-            HTTP_HX_REQUEST="true",
+            headers={"hx-request": "true"},
         )
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()

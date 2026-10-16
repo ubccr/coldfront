@@ -1,7 +1,42 @@
-<div class="card">
-    {% if header %}
-        <h2 class="card-header d-flex justify-content-between">{{ header }}</h2>
+{% comment %}
+DaisyUI card component (variant, border, dash, side, imageFull, size, class, title).
+Renders a card with the uniform ColdFront look (card-border + shadow-sm w-full mb-4).
+The title renders as a header bar via c-cf.card.title.
+{% endcomment %}
+
+<c-vars
+    class=""
+    variant=""
+    border=True
+    dash
+    side
+    imageFull
+    size="md"
+    title=""
+    :variantClasses="{
+        'primary': 'bg-primary text-primary-content',
+        'secondary': 'bg-secondary text-secondary-content',
+        'accent': 'bg-accent text-accent-content',
+        'neutral': 'bg-neutral text-neutral-content',
+        'info': 'bg-info text-info-content',
+        'success': 'bg-success text-success-content',
+        'warning': 'bg-warning text-warning-content',
+        'error': 'bg-error text-error-content'
+    }"
+    :sizeClasses="{
+        'lg': 'card-lg',
+        'md': 'card-md',
+        'sm': 'card-sm',
+        'xs': 'card-xs'
+    }"
+/>
+
+<div
+    class="card {% if border %}card-border border-base-content/25{% endif %} shadow-sm w-full mb-4 {{ variantClasses|get_dict_item:variant }} {% if dash %}card-dash{% endif %} {% if side %}card-side{% endif %} {% if imageFull %}image-full{% endif %} {{ sizeClasses|get_dict_item:size }} {{ class }}"
+    {{ attrs }}
+>
+    {% if title %}
+        <c-cf.card.title>{{ title }}</c-cf.card.title>
     {% endif %}
     {{ slot }}
-    {{ footer }}
 </div>

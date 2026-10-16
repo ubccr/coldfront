@@ -56,6 +56,7 @@ class ResourceTypeTable(OrganizationalModelTable):
 class ResourceTable(TenancyColumnsMixin, NestedGroupModelTable):
     resource_type = columns.ColoredLabelColumn(
         verbose_name=_("Resource Type"),
+        linkify=True,
     )
     allocation_count = columns.LinkedCountColumn(
         viewname="ras:allocation_list",

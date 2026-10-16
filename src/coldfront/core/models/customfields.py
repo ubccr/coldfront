@@ -588,6 +588,10 @@ class CustomField(CloningMixin, ChangeLoggedModel):
         for_csv_import: Return a form field suitable for bulk import of objects in CSV format.
         for_filterset_form: Return a form field suitable for use in a FilterSet form.
         """
+
+        from coldfront.forms import fields as cf_fields
+        from coldfront.forms.widgets import AlpineMultipleSelectWidget, AlpineSelectWidget
+
         initial = self.default if set_initial else None
         required = self.required if enforce_required else False
 
@@ -615,17 +619,23 @@ class CustomField(CloningMixin, ChangeLoggedModel):
                 (True, _("True")),
                 (False, _("False")),
             )
-            field = forms.NullBooleanField(required=required, initial=initial, widget=forms.Select(choices=choices))
+            field = forms.NullBooleanField(
+                required=required, initial=initial, widget=AlpineSelectWidget(choices=choices)
+            )
 
         # Date
         elif self.type == CustomFieldTypeChoices.TYPE_DATE:
-            field = forms.DateField(required=required, initial=initial)
-            field.widget.attrs.update({"class": "date-picker", "placeholder": "YYYY-MM-DD"})
+            field = forms.DateField(
+                required=required,
+                initial=initial,
+            )
 
         # Date & time
         elif self.type == CustomFieldTypeChoices.TYPE_DATETIME:
-            field = forms.DateTimeField(required=required, initial=initial)
-            field.widget.attrs.update({"class": "datetime-picker", "placeholder": "YYYY-MM-DD hh:mm:ss"})
+            field = forms.DateTimeField(
+                required=required,
+                initial=initial,
+            )
 
         # Select
         elif self.type in (CustomFieldTypeChoices.TYPE_SELECT, CustomFieldTypeChoices.TYPE_MULTISELECT):
@@ -641,59 +651,52 @@ class CustomField(CloningMixin, ChangeLoggedModel):
 
             if for_csv_import:
                 if self.type == CustomFieldTypeChoices.TYPE_SELECT:
-                    field_class = forms.ChoiceField
+                    field_class = cf_fields.CSVChoiceField
                 else:
-                    field_class = forms.MultipleChoiceField
+                    field_class = cf_fields.CSVMultipleChoiceField
                 field = field_class(choices=choices, required=required, initial=initial)
             else:
                 if self.type == CustomFieldTypeChoices.TYPE_SELECT and not for_filterset_form:
-                    field_class = forms.ChoiceField
+                    field = forms.ChoiceField(
+                        choices=choices,
+                        required=required,
+                        initial=initial,
+                        widget=AlpineSelectWidget(),
+                    )
                 else:
-                    field_class = forms.MultipleChoiceField
-                field = field_class(
-                    choices=choices,
-                    required=required,
-                    initial=initial,
-                )
+                    field = forms.MultipleChoiceField(
+                        choices=choices,
+                        required=required,
+                        initial=initial,
+                        widget=AlpineMultipleSelectWidget(),
+                    )
 
         # Object
         elif self.type == CustomFieldTypeChoices.TYPE_OBJECT:
             model = self.related_object_type.model_class()
-            field_class = forms.ModelChoiceField
-            kwargs = {
-                "queryset": model.objects.all(),
-                "required": required,
-                "initial": initial,
-            }
-            # TODO implement filters
-            # if not for_csv_import:
-            #    kwargs["query_params"] = self.related_object_filter
-            #    kwargs["selector"] = True
-
-            field = field_class(**kwargs)
+            field = forms.ModelChoiceField(
+                queryset=model.objects.all(),
+                required=required,
+                initial=initial,
+                widget=AlpineSelectWidget(),
+            )
 
         # Multiple objects
         elif self.type == CustomFieldTypeChoices.TYPE_MULTIOBJECT:
             model = self.related_object_type.model_class()
-            field_class = forms.ModelMultipleChoiceField
-            kwargs = {
-                "queryset": model.objects.all(),
-                "required": required,
-                "initial": initial,
-            }
-            # TODO implement filters
-            # if not for_csv_import:
-            #    kwargs["query_params"] = self.related_object_filter
-            #    kwargs["selector"] = True
-
-            field = field_class(**kwargs)
+            field = forms.ModelMultipleChoiceField(
+                queryset=model.objects.all(),
+                required=required,
+                initial=initial,
+                widget=AlpineMultipleSelectWidget(),
+            )
 
         # Text
         else:
             widget = (
                 forms.Textarea
                 if self.type == CustomFieldTypeChoices.TYPE_LONGTEXT
-                else forms.TextInput(attrs={"class": "textinput form-control"})
+                else forms.TextInput(attrs={"class": "textinput input"})
             )
             field = forms.CharField(required=required, initial=initial, widget=widget)
             if self.validation_regex:

@@ -1,0 +1,18 @@
+{% comment %}
+DaisyUI label for a form field. Props: for (id), label text, required. Renders
+the label with a required asterisk.
+{% endcomment %}
+
+<c-vars
+    :for="None"
+    label=""
+    :required="False"
+    class=""
+/>
+
+<label
+    {% if for %}for="{{ for }}"{% endif %}
+    class="{% if required %}font-semibold {% endif %}text-base-content {{ class }}"
+>
+    {{ label }}{% if required %}<span class="text-error"> *</span>{% endif %}
+</label>

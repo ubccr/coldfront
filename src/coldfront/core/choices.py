@@ -17,67 +17,29 @@ class ObjectChangeActionChoices(ChoiceSet):
     CHOICES = (
         (ACTION_CREATE, _("Created"), "success"),
         (ACTION_UPDATE, _("Updated"), "info"),
-        (ACTION_DELETE, _("Deleted"), "danger"),
+        (ACTION_DELETE, _("Deleted"), "error"),
     )
 
 
 class ColorChoices(ChoiceSet):
-    COLOR_DARK_RED = "aa1409"
-    COLOR_RED = "f44336"
-    COLOR_PINK = "e91e63"
-    COLOR_ROSE = "ffe4e1"
-    COLOR_FUCHSIA = "ff66ff"
-    COLOR_PURPLE = "9c27b0"
-    COLOR_DARK_PURPLE = "673ab7"
-    COLOR_INDIGO = "3f51b5"
-    COLOR_BLUE = "2196f3"
-    COLOR_LIGHT_BLUE = "03a9f4"
-    COLOR_CYAN = "00bcd4"
-    COLOR_TEAL = "009688"
-    COLOR_AQUA = "00ffff"
-    COLOR_DARK_GREEN = "2f6a31"
-    COLOR_GREEN = "4caf50"
-    COLOR_LIGHT_GREEN = "8bc34a"
-    COLOR_LIME = "cddc39"
-    COLOR_YELLOW = "ffeb3b"
-    COLOR_AMBER = "ffc107"
-    COLOR_ORANGE = "ff9800"
-    COLOR_DARK_ORANGE = "ff5722"
-    COLOR_BROWN = "795548"
-    COLOR_LIGHT_GREY = "c0c0c0"
-    COLOR_GREY = "9e9e9e"
-    COLOR_DARK_GREY = "607d8b"
-    COLOR_BLACK = "111111"
-    COLOR_WHITE = "ffffff"
+    PRIMARY = "primary"
+    SECONDARY = "secondary"
+    ACCENT = "accent"
+    NEUTRAL = "neutral"
+    INFO = "info"
+    SUCCESS = "success"
+    WARNING = "warning"
+    ERROR = "error"
 
     CHOICES = (
-        (COLOR_DARK_RED, _("Dark Red")),
-        (COLOR_RED, _("Red")),
-        (COLOR_PINK, _("Pink")),
-        (COLOR_ROSE, _("Rose")),
-        (COLOR_FUCHSIA, _("Fuchsia")),
-        (COLOR_PURPLE, _("Purple")),
-        (COLOR_DARK_PURPLE, _("Dark Purple")),
-        (COLOR_INDIGO, _("Indigo")),
-        (COLOR_BLUE, _("Blue")),
-        (COLOR_LIGHT_BLUE, _("Light Blue")),
-        (COLOR_CYAN, _("Cyan")),
-        (COLOR_TEAL, _("Teal")),
-        (COLOR_AQUA, _("Aqua")),
-        (COLOR_DARK_GREEN, _("Dark Green")),
-        (COLOR_GREEN, _("Green")),
-        (COLOR_LIGHT_GREEN, _("Light Green")),
-        (COLOR_LIME, _("Lime")),
-        (COLOR_YELLOW, _("Yellow")),
-        (COLOR_AMBER, _("Amber")),
-        (COLOR_ORANGE, _("Orange")),
-        (COLOR_DARK_ORANGE, _("Dark Orange")),
-        (COLOR_BROWN, _("Brown")),
-        (COLOR_LIGHT_GREY, _("Light Grey")),
-        (COLOR_GREY, _("Grey")),
-        (COLOR_DARK_GREY, _("Dark Grey")),
-        (COLOR_BLACK, _("Black")),
-        (COLOR_WHITE, _("White")),
+        (PRIMARY, _("Primary")),
+        (SECONDARY, _("Secondary")),
+        (ACCENT, _("Accent")),
+        (NEUTRAL, _("Neutral")),
+        (INFO, _("Info")),
+        (SUCCESS, _("Success")),
+        (WARNING, _("Warning")),
+        (ERROR, _("Error")),
     )
 
 
@@ -127,9 +89,9 @@ class CustomFieldUIVisibleChoices(ChoiceSet):
     HIDDEN = "hidden"
 
     CHOICES = (
-        (ALWAYS, _("Always"), "green"),
-        (IF_SET, _("If set"), "yellow"),
-        (HIDDEN, _("Hidden"), "gray"),
+        (ALWAYS, _("Always"), "success"),
+        (IF_SET, _("If set"), "warning"),
+        (HIDDEN, _("Hidden"), "neutral"),
     )
 
 
@@ -139,34 +101,9 @@ class CustomFieldUIEditableChoices(ChoiceSet):
     HIDDEN = "hidden"
 
     CHOICES = (
-        (YES, _("Yes"), "green"),
-        (NO, _("No"), "red"),
-        (HIDDEN, _("Hidden"), "gray"),
-    )
-
-
-#
-# Button color choices
-#
-
-
-class ButtonColorChoices(ChoiceSet):
-    DEFAULT = "default"
-    PRIMARY = "primary"
-    SECONDARY = "secondary"
-    SUCCESS = "success"
-    DANGER = "danger"
-    WARNING = "warning"
-    INFO = "info"
-
-    CHOICES = (
-        (DEFAULT, _("Default")),
-        (PRIMARY, _("Primary")),
-        (SECONDARY, _("Secondary")),
-        (SUCCESS, _("Success")),
-        (DANGER, _("Danger")),
-        (WARNING, _("Warning")),
-        (INFO, _("Info")),
+        (YES, _("Yes"), "success"),
+        (NO, _("No"), "error"),
+        (HIDDEN, _("Hidden"), "neutral"),
     )
 
 
@@ -219,11 +156,11 @@ class JobStatusChoices(ChoiceSet):
     STATUS_ERRORED = "errored"
 
     CHOICES = (
-        (STATUS_PENDING, _("Pending"), "default"),
+        (STATUS_PENDING, _("Pending"), "neutral"),
         (STATUS_SCHEDULED, _("Scheduled"), "info"),
         (STATUS_RUNNING, _("Running"), "warning"),
         (STATUS_COMPLETED, _("Completed"), "success"),
-        (STATUS_FAILED, _("Failed"), "danger"),
+        (STATUS_FAILED, _("Failed"), "error"),
         (STATUS_ERRORED, _("Errored"), "secondary"),
     )
 
@@ -254,33 +191,6 @@ class JobNotificationChoices(ChoiceSet):
     )
 
 
-class CustomLinkButtonClassChoices(ChoiceSet):
-    key = "CustomLink.button_class"
-
-    DEFAULT = ButtonColorChoices.DEFAULT
-    PRIMARY = ButtonColorChoices.PRIMARY
-    SECONDARY = ButtonColorChoices.SECONDARY
-    SUCCESS = ButtonColorChoices.SUCCESS
-    DANGER = ButtonColorChoices.DANGER
-    WARNING = ButtonColorChoices.WARNING
-    INFO = ButtonColorChoices.INFO
-
-    CHOICES = list(ButtonColorChoices.CHOICES)
-
-
-def button_class(value):
-    """
-    Return the CSS framework button class suffix for a semantic button class.
-
-    This is the single framework-specific function in the codebase. To switch
-    CSS frameworks, modify only this mapping; the stored choice values (and
-    therefore the database) never change.
-    """
-    if value == ButtonColorChoices.DEFAULT:
-        return "outline-secondary"
-    return value
-
-
 class CommentKindChoices(ChoiceSet):
     key = "CommentEntry.kind"
 
@@ -293,5 +203,5 @@ class CommentKindChoices(ChoiceSet):
         (KIND_INFO, _("Info"), "info"),
         (KIND_SUCCESS, _("Success"), "success"),
         (KIND_WARNING, _("Warning"), "warning"),
-        (KIND_DANGER, _("Danger"), "danger"),
+        (KIND_DANGER, _("Danger"), "error"),
     ]

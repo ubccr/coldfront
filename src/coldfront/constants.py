@@ -71,9 +71,13 @@ HTML_ALLOWED_ATTRIBUTES = {
     "th": {"align"},
 }
 
+# The stock blank option label used by every ColdFront select (and by the
+# Django 6.1 BLANK_CHOICE_LABEL override in coldfront.core.apps).
+COLDFRONT_BLANK_CHOICE_LABEL = "---------"
+
 # Boolean widget choices
 BOOLEAN_WITH_BLANK_CHOICES = (
-    ("", "---------"),
+    ("", COLDFRONT_BLANK_CHOICE_LABEL),
     ("True", "Yes"),
     ("False", "No"),
 )

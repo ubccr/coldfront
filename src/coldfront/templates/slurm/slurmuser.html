@@ -4,13 +4,13 @@
 {% block content %}
     <c-cf.layout.panels>
         <c-slot name="left">
-            <c-cf.card.fields :object="object" only>
+            <c-cf.card.fields :object="object">
                 <c-cf.card.fields.item label="{% trans 'User' %}">
-                    <c-cf.ui.badge link="{{ object.user.get_absolute_url }}" :value="object.user" />
+                    <c-cf.badge href="{{ object.user.get_absolute_url }}">{{ object.user }}</c-cf.badge>
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label="{% trans 'Cluster' %}">
-                    <c-cf.ui.badge link="{{ object.cluster.get_absolute_url }}" :value="object.cluster" />
+                    <c-cf.badge href="{{ object.cluster.get_absolute_url }}">{{ object.cluster }}</c-cf.badge>
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label="{% trans 'Default Account' %}">
@@ -30,11 +30,11 @@
                 </c-cf.card.fields.item>
             </c-cf.card.fields>
 
-            <c-cf.card.tags :object="object" only />
+            <c-cf.card.tags :object="object" />
         </c-slot>
 
         <c-slot name="right">
-            <c-cf.card.custom_fields :object="object" only />
+            <c-cf.card.custom_fields :object="object" />
         </c-slot>
     </c-cf.layout.panels>
 {% endblock %}

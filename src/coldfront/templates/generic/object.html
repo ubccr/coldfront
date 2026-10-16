@@ -25,25 +25,23 @@ Context:
 {% endcomment %}
 
 {% block page-header %}
-    <div class="container-fluid">
-        <div class="d-flex justify-content-between align-items-center mt-2">
-            {# Breadcrumbs #}
-            <c-cf.breadcrumbs>
-                {% block breadcrumbs %}
-                    <c-cf.breadcrumbs.item href="{% action_url object 'list' %}">
-                        {{ object|meta:'verbose_name_plural'|title }}
-                    </c-cf.breadcrumbs.item>
-                {% endblock breadcrumbs %}
-            </c-cf.breadcrumbs>
+    <div class="flex items-center justify-between mt-2">
+        {# Breadcrumbs #}
+        <c-cf.breadcrumbs>
+            {% block breadcrumbs %}
+                <c-cf.breadcrumbs.item href="{% action_url object 'list' %}">
+                    {{ object|meta:'verbose_name_plural'|title }}
+                </c-cf.breadcrumbs.item>
+            {% endblock breadcrumbs %}
+        </c-cf.breadcrumbs>
 
-            {# Object identifier #}
-            <code class="d-block text-muted bg-transparent px-0">
-                {% block object_identifier %}
-                    {{ object|meta:"app_label" }}.{{ object|meta:"model_name" }}:{{ object.pk }}
-                    {% if object.slug %}({{ object.slug }}){% endif %}
-                {% endblock object_identifier %}
-            </code>
-        </div>
+        {# Object identifier #}
+        <code class="block text-muted bg-transparent px-0">
+            {% block object_identifier %}
+                {{ object|meta:"app_label" }}.{{ object|meta:"model_name" }}:{{ object.pk }}
+                {% if object.slug %}({{ object.slug }}){% endif %}
+            {% endblock object_identifier %}
+        </code>
     </div>
     {{ block.super }}
 {% endblock page-header %}
@@ -51,15 +49,15 @@ Context:
 {% block title %}{{ object }}{% endblock %}
 
 {% block subtitle %}
-    <div class="text-secondary fs-7">
+    <div class="text-secondary text-sm">
         Created <span title="{{ object.created | naturaltime }}">{{ object.created | date:'Y-m-d' }}</span>
-        <span class="separator">·</span>
+        <span class="mx-1 text-base-content/40">·</span>
         Updated <span title="{{ object.last_updated | naturaltime }}">{{ object.last_updated | date:'Y-m-d' }}</span>
     </div>
 {% endblock subtitle %}
 
 {% block controls %}
-    <div class="btn-list justify-content-end mb-2">
+    <div class="btn-list justify-end mb-2">
         {% plugin_buttons object %}
 
         {# Add/edit/delete/etc. buttons #}
@@ -72,7 +70,7 @@ Context:
         {% endblock control-buttons %}
     </div>
     {# Custom links #}
-    <div class="d-flex justify-content-end">
+    <div class="flex justify-end">
         <div class="btn-list">
             {% block custom-links %}
                 {% custom_links object %}
@@ -87,7 +85,7 @@ Context:
         <c-cf.tabs.tab
             link
             href="{{ object.get_absolute_url }}"
-            label='{{ object|meta:"verbose_name"|title }}'
+            title='{{ object|meta:"verbose_name"|title }}'
             :active="{% if not tab %}True{% else %}False{% endif %}"
         />
 
@@ -97,7 +95,7 @@ Context:
 {% endblock tabs %}
 
 {% block modals %}
-    <c-cf.modal.htmx size="lg" />
+    <c-cf.modal.htmx boxClass="max-w-3xl" />
 {% endblock %}
 
 {% block alerts %}

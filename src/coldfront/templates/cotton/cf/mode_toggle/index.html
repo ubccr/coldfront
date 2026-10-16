@@ -1,0 +1,66 @@
+{% load i18n %}
+
+<c-vars
+    storage_key="theme"
+    default="system"
+    class=""
+    light=""
+    dark=""
+/>
+
+{% comment %}
+Light/dark switch. Alpine sets <html> data-theme to cflight/cfdark, persists the
+choice and (in system mode) follows the OS.
+{% endcomment %}
+<div
+    x-data="{
+        key: '{{ storage_key }}',
+        mode: '{{ default }}',
+        mq: null,
+        get isDark() { return this.mode === 'dark' || (this.mode === 'system' && this.mq && this.mq.matches); },
+        init() {
+            this.mq = window.matchMedia('(prefers-color-scheme: dark)');
+            var stored = null;
+            try { stored = localStorage.getItem(this.key); } catch (e) {}
+            this.mode = stored || (document.documentElement.getAttribute('data-theme') === 'cfdark' ? 'dark' : '{{ default }}');
+            this.apply();
+            this.mq.addEventListener('change', () => { if (this.mode === 'system') this.apply(); });
+            new MutationObserver(() => {
+                var domDark = document.documentElement.getAttribute('data-theme') === 'cfdark';
+                if (domDark !== this.isDark) this.mode = domDark ? 'dark' : 'light';
+            }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+            window.addEventListener('storage', (e) => {
+                if (e.key === this.key) { this.mode = e.newValue || '{{ default }}'; this.apply(); }
+            });
+        },
+        set(mode) {
+            this.mode = mode;
+            try { localStorage.setItem(this.key, mode); } catch (e) {}
+            this.apply();
+        },
+        toggle() { this.set(this.isDark ? 'light' : 'dark'); },
+        apply() { document.documentElement.setAttribute('data-theme', this.isDark ? 'cfdark' : 'cflight'); }
+    }"
+>
+    <button
+        type="button"
+        role="switch"
+        @click="toggle()"
+        :aria-checked="isDark"
+        aria-label="{% trans 'Toggle dark mode' %}"
+        class="inline-flex items-center h-7 w-14 shrink-0 rounded-full bg-base-300 border border-base-content/60 cursor-pointer transition-colors {{ class }}"
+        {{ attrs }}
+    >
+        <span
+            class="inline-flex items-center justify-center size-6 rounded-full bg-base-100 text-base-content shadow-sm transition-transform duration-200"
+            :style="isDark ? 'transform: translateX(1.875rem)' : 'transform: translateX(0.125rem)'"
+        >
+            <span class="text-primary" x-show="!isDark" x-cloak>
+                {% if light %}{{ light }}{% else %}<c-cfi n="heroicon.sun" size="sm" />{% endif %}
+            </span>
+            <span class="text-primary" x-show="isDark" x-cloak>
+                {% if dark %}{{ dark }}{% else %}<c-cfi n="heroicon.moon" size="sm" />{% endif %}
+            </span>
+        </span>
+    </button>
+</div>

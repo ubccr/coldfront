@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from crispy_forms.layout import Fieldset
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
@@ -24,6 +23,7 @@ from coldfront.billing.models import (
 from coldfront.forms import ColdFrontModelBulkEditForm, PrimaryModelBulkEditForm
 from coldfront.forms.fields import MoneyField
 from coldfront.forms.fields.bytes import BytesField
+from coldfront.forms.layout import FieldSet
 from coldfront.users.models import User
 from coldfront.utils.forms import add_blank_choice
 
@@ -97,23 +97,23 @@ class InvoiceBulkEditForm(PrimaryModelBulkEditForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Invoice"),
+            FieldSet(
                 "owner",
                 "status",
                 "description",
+                name=_("Invoice"),
             ),
-            Fieldset(
-                _("Payment"),
+            FieldSet(
                 "payment_amount",
                 "payment_method",
+                name=_("Payment"),
             ),
-            Fieldset(
-                _("Totals"),
+            FieldSet(
                 "subtotal",
                 "allowance_total",
                 "discount_total",
                 "grand_total",
+                name=_("Totals"),
             ),
         ]
 
@@ -167,8 +167,7 @@ class InvoiceLineItemBulkEditForm(ColdFrontModelBulkEditForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Invoice Line Item"),
+            FieldSet(
                 "invoice",
                 "line_type",
                 "description",
@@ -176,6 +175,7 @@ class InvoiceLineItemBulkEditForm(ColdFrontModelBulkEditForm):
                 "unit_format",
                 "unit_price",
                 "amount",
+                name=_("Invoice Line Item"),
             ),
         ]
 
@@ -216,13 +216,13 @@ class RateBulkEditForm(PrimaryModelBulkEditForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Rate"),
+            FieldSet(
                 "unit",
                 "unit_format",
                 "amount",
                 "charge_basis",
                 "description",
+                name=_("Rate"),
             ),
         ]
 
@@ -251,12 +251,12 @@ class FreeAllowanceBulkEditForm(PrimaryModelBulkEditForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Free Allowance"),
+            FieldSet(
                 "owner",
                 "unit_format",
                 "quantity_total",
                 "description",
+                name=_("Free Allowance"),
             ),
         ]
 
@@ -285,11 +285,11 @@ class DiscountBulkEditForm(PrimaryModelBulkEditForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Discount"),
+            FieldSet(
                 "owner",
                 "type",
                 "value",
                 "description",
+                name=_("Discount"),
             ),
         ]

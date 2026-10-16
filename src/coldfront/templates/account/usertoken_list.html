@@ -3,15 +3,19 @@
 
 {% block title %}{% trans "My API Tokens" %}{% endblock %}
 
+{% block controls %}
+    <c-cf.button
+        as="a"
+        variant="primary"
+        icon="heroicon.plus"
+        href="{% url 'account:usertoken_add' %}"
+    >{% trans "Add a Token" %}</c-cf.button>
+{% endblock controls %}
+
 {% block content %}
     <c-cf.layout.row>
-        <c-cf.layout.col css_class="m-3 text-end">
-            <c-cf.button.add url="{% url 'account:usertoken_add' %}" label='{% trans "Add a Token" %}' />
-        </c-cf.layout.col>
-    </c-cf.layout.row>
-    <c-cf.layout.row>
         <c-cf.layout.col>
-            <c-cf.card.table :table="table" only />
+            <c-cf.card.table :table="table" />
         </c-cf.layout.col>
     </c-cf.layout.row>
 {% endblock %}

@@ -100,8 +100,8 @@ uv run ruff format --check
 # Django template formatting
 uv run djangofmt src/coldfront/
 
-# Frontend TypeScript (ESLint & Prettier)
-npm --prefix src/coldfront/static run check
+# Frontend TypeScript/CSS (Biome)
+bun run check --cwd src/frontend
 
 # License compliance
 uv run reuse lint
@@ -116,6 +116,7 @@ uv run coldfront makemigrations --check
 uv run ruff check --fix
 uv run ruff format
 uv run djangofmt src/coldfront/
+bun run --cwd src/frontend format
 ```
 
 ### Testing
@@ -190,6 +191,12 @@ src/coldfront/<app>/
 
 - `src/coldfront/templates/<app>/base.html` — extends `generic/base.html`
 - `src/coldfront/templates/<app>/<model>.html` — detail view template
+
+### Django Comments in Templates
+
+- `{# ... #}` is a **single-line** comment — it MUST stay on one line (no newlines inside).
+- For multi-line comments, use `{% comment %}...{% endcomment %}`.
+- Never write `{# ... #}` across multiple lines; that's invalid Django template syntax.
 
 ### Tests
 

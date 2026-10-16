@@ -4,16 +4,16 @@
 {% block extra_controls %}
     {% if perms.ras.add_projectinvite %}
         <c-cf.button
-            type="link"
-            url="{% url 'ras:projectinvite_add' %}?project={{ object.pk }}&return_url={% url 'ras:project_invites' pk=object.pk %}"
-            label="{% trans 'Invite User' %}"
-            icon="fa-solid fa-plus"
-            css_class="btn-primary"
-        />
-        <c-cf.button.import
-            url="{% url 'ras:projectinvite_bulk_import' %}?project={{ object.pk }}&return_url={% url 'ras:project_invites' pk=object.pk %}"
-            label="{% trans 'Import Invites' %}"
-            css_class="btn-success"
-        />
+            as="a"
+            variant="primary"
+            icon="heroicon.plus"
+            href="{% url 'ras:projectinvite_add' %}?project={{ object.pk }}&return_url={% url 'ras:project_invites' pk=object.pk %}"
+        >{% trans "Invite User" %}</c-cf.button>
+        <c-cf.button
+            as="a"
+            variant="success"
+            icon="heroicon.arrow-up-tray"
+            href="{% url 'ras:projectinvite_bulk_import' %}?project={{ object.pk }}&return_url={% url 'ras:project_invites' pk=object.pk %}"
+        >{% trans "Import Invites" %}</c-cf.button>
     {% endif %}
 {% endblock extra_controls %}

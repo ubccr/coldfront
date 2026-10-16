@@ -1,20 +1,20 @@
-<div class="list-group">
+<div class="flex flex-col gap-1">
     {% for object in results %}
-        <a
-            href="#"
-            class="list-group-item list-group-item-action p-2"
+        <button
+            type="button"
+            class="btn btn-ghost btn-sm w-full flex-col items-start justify-start text-left"
             data-label="{{ object }}"
             data-value="{{ object.pk }}"
-            data-bs-dismiss="modal"
         >
-            {{ object }}
-            {% if object.status %}<c-cf.ui.badge
-                    :value="object.get_status_display"
-                    :bg_color="object.get_status_color"
-                />{% endif %}
+            <span class="flex w-full items-center justify-between gap-2">
+                {{ object }}
+                {% if object.status %}
+                    <c-cf.badge variant="{{ object.get_status_color }}">{{ object.get_status_display }}</c-cf.badge>
+                {% endif %}
+            </span>
             {% if object.description %}
-                <small class="d-block text-muted">{{ object.description }}</small>
+                <span class="text-sm text-muted">{{ object.description }}</span>
             {% endif %}
-        </a>
+        </button>
     {% endfor %}
 </div>

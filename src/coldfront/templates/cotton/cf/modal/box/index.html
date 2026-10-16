@@ -1,0 +1,20 @@
+{% comment %}
+DaisyUI modal box — the modal content container, sized via the size prop.
+{% endcomment %}
+
+<c-vars
+    class=""
+    size=""
+    :sizeClasses="{
+        'xs': 'w-72 max-w-xs',
+        'sm': 'w-80 max-w-sm',
+        'md': 'w-96 max-w-md',
+        'lg': 'w-[32rem] max-w-lg',
+        'xl': 'w-[36rem] max-w-xl',
+        'screen': 'w-11/12 max-w-5xl'
+    }"
+/>
+
+<div class="modal-box {{ sizeClasses|get_dict_item:size }} {{ class }}" {{ attrs }}>
+    {{ slot }}
+</div>

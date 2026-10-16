@@ -31,7 +31,7 @@ class ProjectInviteStatusColumn(tables.Column):
             "accepted": _("Accepted"),
         }
         return format_html(
-            '<span class="badge text-bg-{}">{}</span>',
+            '<span class="badge badge-{}">{}</span>',
             colors.get(status, "secondary"),
             labels.get(status, status),
         )

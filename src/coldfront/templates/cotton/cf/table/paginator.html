@@ -1,33 +1,37 @@
 {% load i18n %}
 
-{% cotton:vars :request="request" %}
-
 {% if page %}
     <div
-        class="d-flex justify-content-between align-items-center border-{% if placement == 'top' %}bottom{% else %}top{% endif %} p-2"
+        class="flex flex-wrap items-center justify-between gap-2 border-t border-base-200 p-2 text-sm"
         hx-target="closest .htmx-container"
         hx-disinherit="hx-select"
         hx-swap="outerHTML"
-        {% if not table.embedded %}hx-push-url="true"{% endif %}
+        {% if table and not table.embedded %}hx-push-url="true"{% endif %}
     >
         {# Pages carousel #}
         {% if paginator.num_pages > 1 %}
             <nav aria-label='{% trans "Page selection" %}'>
-                <ul class="pagination mb-0">
+                <ul class="flex items-center gap-1">
                     {# Previous page #}
                     {% if page.has_previous %}
-                        <li class="page-item">
-                            {% if htmx %}
-                                <a
+                        <li>
+                            {% if table %}
+                                <c-cf.button
+                                    btnStyle="ghost"
+                                    size="sm"
+                                    as="a"
                                     href="#"
                                     hx-get="{{ table.htmx_url }}{% qstring_update request page=page.previous_page_number %}"
-                                    class="page-link"
-                                >
-                                    <i class="fa-solid fa-chevron-left"></i>
-                                </a>
+                                    icon="heroicon.chevron-left"
+                                    aria-label="{% trans 'Previous page' %}"
+                                ></c-cf.button>
                             {% else %}
-                                <a href="{% qstring_update request page=page.previous_page_number %}" class="page-link">
-                                    <i class="fa-solid fa-chevron-left"></i>
+                                <a
+                                    href="{% qstring_update request page=page.previous_page_number %}"
+                                    class="btn btn-ghost btn-sm"
+                                    aria-label="{% trans 'Previous page' %}"
+                                >
+                                    <c-cfi n="heroicon.chevron-left" size="sm" />
                                 </a>
                             {% endif %}
                         </li>
@@ -36,24 +40,26 @@
 
                     {# Page numbers #}
                     {% for p in page.smart_pages %}
-                        <li class="page-item{% if page.number == p %} active" aria-current="page{% endif %}">
-                            {% if p and htmx %}
-                                <a
-                                    href="#"
-                                    hx-get="{{ table.htmx_url }}{% qstring_update request page=p %}"
-                                    class="page-link"
-                                >
-                                    {{ p }}
-                                </a>
-                            {% elif p %}
-                                <a
-                                    href="{% qstring_update request page=p %}"
-                                    class="page-link {% if page.number == p %} active{% endif %}"
-                                >
-                                    {{ p }}
-                                </a>
+                        <li>
+                            {% if p %}
+                                {% if table %}
+                                    <c-cf.button
+                                        variant="{% if page.number == p %}primary{% endif %}"
+                                        btnStyle="{% if page.number != p %}ghost{% endif %}"
+                                        size="sm"
+                                        as="a"
+                                        href="#"
+                                        hx-get="{{ table.htmx_url }}{% qstring_update request page=p %}"
+                                    >{{ p }}</c-cf.button>
+                                {% else %}
+                                    <a
+                                        href="{% qstring_update request page=p %}"
+                                        class="btn btn-sm {% if page.number == p %}btn-primary{% else %}btn-ghost{% endif %}"
+                                    >{{ p }}</a>
+                                {% endif %}
                             {% else %}
-                                <span class="page-link" disabled>&hellip;</span>
+                                <span class="inline-flex items-center justify-center px-1 text-base-content/60"
+                                >&hellip;</span>
                             {% endif %}
                         </li>
                     {% endfor %}
@@ -61,18 +67,24 @@
 
                     {# Next page #}
                     {% if page.has_next %}
-                        <li class="page-item">
-                            {% if htmx %}
-                                <a
+                        <li>
+                            {% if table %}
+                                <c-cf.button
+                                    btnStyle="ghost"
+                                    size="sm"
+                                    as="a"
                                     href="#"
                                     hx-get="{{ table.htmx_url }}{% qstring_update request page=page.next_page_number %}"
-                                    class="page-link"
-                                >
-                                    <i class="fa-solid fa-chevron-right"></i>
-                                </a>
+                                    icon="heroicon.chevron-right"
+                                    aria-label="{% trans 'Next page' %}"
+                                ></c-cf.button>
                             {% else %}
-                                <a href="{% qstring_update request page=page.next_page_number %}" class="page-link">
-                                    <i class="fa-solid fa-chevron-right"></i>
+                                <a
+                                    href="{% qstring_update request page=page.next_page_number %}"
+                                    class="btn btn-ghost btn-sm"
+                                    aria-label="{% trans 'Next page' %}"
+                                >
+                                    <c-cfi n="heroicon.chevron-right" size="sm" />
                                 </a>
                             {% endif %}
                         </li>
@@ -84,7 +96,7 @@
         {# /Pages carousel #}
 
         {# Showing #}
-        <small class="text-end text-muted">
+        <small class="text-muted">
             {% blocktrans trimmed with start=page.start_index end=page.end_index total=page.paginator.count %}
                 Showing {{ start }}-{{ end }} of {{ total }}
             {% endblocktrans %}
@@ -92,34 +104,29 @@
         {# /Showing #}
 
         {# Pagination options #}
-        <nav aria-label='{% trans "Pagination options" %}'>
-            {% if page %}
-                <div class="dropdown dropdown-menu-end">
-                    <button
-                        class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                        type="button"
-                        data-bs-toggle="dropdown"
-                    >
-                        {% trans "Per Page" %}
-                    </button>
-                    <ul class="dropdown-menu">
-                        {% for n in page.paginator.get_page_lengths %}
-                            <li>
-                                {% if htmx %}
-                                    <a
-                                        href="#"
-                                        hx-get="{{ table.htmx_url }}{% qstring_update request per_page=n %}"
-                                        class="dropdown-item"
-                                    >{{ n }}</a>
-                                {% else %}
-                                    <a href="{% qstring_update request per_page=n %}" class="dropdown-item">{{ n }}</a>
-                                {% endif %}
-                            </li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            {% endif %}
-        </nav>
+        <c-cf.dropdown alignment="end">
+            <c-cf.dropdown.trigger
+                class="btn btn-outline btn-sm border-base-content/70"
+                aria-label='{% trans "Per Page" %}'
+            >
+                {% trans "Per Page" %}
+                <c-cfi n="heroicon.chevron-down" size="sm" />
+            </c-cf.dropdown.trigger>
+            <c-cf.dropdown.content class="w-40">
+                <c-cf.menu class="w-full">
+                    {% for n in page.paginator.get_page_lengths %}
+                        {% if table %}
+                            <c-cf.menu.item
+                                href="#"
+                                hx-get="{{ table.htmx_url }}{% qstring_update request per_page=n %}"
+                            >{{ n }}</c-cf.menu.item>
+                        {% else %}
+                            <c-cf.menu.item href="{% qstring_update request per_page=n %}">{{ n }}</c-cf.menu.item>
+                        {% endif %}
+                    {% endfor %}
+                </c-cf.menu>
+            </c-cf.dropdown.content>
+        </c-cf.dropdown>
         {# /Pagination options #}
     </div>
 {% endif %}

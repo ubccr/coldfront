@@ -7,7 +7,7 @@ import jinja2
 from django.test import override_settings
 from django.urls import reverse
 
-from coldfront.core.choices import CustomLinkButtonClassChoices
+from coldfront.core.choices import ColorChoices
 from coldfront.core.models import CustomLink
 from coldfront.utils.testing import ViewTestCases
 
@@ -48,7 +48,7 @@ class CustomLinkTestCase(ViewTestCases.PrimaryObjectViewTestCase):
             "enabled": True,
             "weight": 50,
             "group_name": "",
-            "button_class": CustomLinkButtonClassChoices.DEFAULT,
+            "button_variant": ColorChoices.SECONDARY,
             "new_window": False,
         }
 
@@ -60,7 +60,7 @@ class CustomLinkTestCase(ViewTestCases.PrimaryObjectViewTestCase):
             "enabled": True,
             "weight": 50,
             "group_name": "",
-            "button_class": CustomLinkButtonClassChoices.DEFAULT,
+            "button_variant": ColorChoices.SECONDARY,
             "new_window": False,
         }
 
@@ -70,7 +70,7 @@ class CustomLinkTestCase(ViewTestCases.PrimaryObjectViewTestCase):
         }
 
         cls.csv_data = (
-            "name,object_types,enabled,link_text,link_url,weight,group_name,button_class,new_window",
+            "name,object_types,enabled,link_text,link_url,weight,group_name,button_variant,new_window",
             "CSV Import 1,ras.project,true,{{ object.name }},https://example.com/{{ object.pk }},100,,primary,false",
             "CSV Import 2,ras.project,false,{{ object.name }},https://example.com/{{ object.pk }},200,,success,true",
         )
@@ -179,20 +179,20 @@ class CustomLinkTestCase(ViewTestCases.PrimaryObjectViewTestCase):
         attrs = link.clone()
         self.assertIn("enabled", attrs)
         self.assertIn("weight", attrs)
-        self.assertIn("button_class", attrs)
+        self.assertIn("button_variant", attrs)
         self.assertIn("new_window", attrs)
         self.assertIn("object_types", attrs)
 
-    def test_button_class_choices(self):
-        """Verify button_class uses CustomLinkButtonClassChoices."""
-        for value, label in CustomLinkButtonClassChoices:
+    def test_button_variant_choices(self):
+        """Verify button_variant uses ColorChoices."""
+        for value, label in ColorChoices:
             link = CustomLink(
                 name=f"Button {value}",
                 link_text="test",
                 link_url="/test",
-                button_class=value,
+                button_variant=value,
             )
-            self.assertEqual(link.button_class, value)
+            self.assertEqual(link.button_variant, value)
 
     def test_object_type_filtering(self):
         """Verify CustomLink can be filtered by object_types."""

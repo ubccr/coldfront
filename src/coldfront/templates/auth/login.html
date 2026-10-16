@@ -4,81 +4,41 @@
     Login
 {% endblock title %}
 
-{% block head %}
-    <style>
-        .bd-placeholder-img {
-            font-size: 1.125rem;
-            text-anchor: middle;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            user-select: none;
-        }
-
-        @media (min-width: 768px) {
-            .bd-placeholder-img-lg {
-                font-size: 3.5rem;
-            }
-        }
-        html,
-        body {
-            height: 100%;
-        }
-
-        body {
-            display: flex;
-            align-items: center;
-            padding-top: 40px;
-            padding-bottom: 40px;
-        }
-
-        .form-signin {
-            width: 100%;
-            max-width: 430px;
-            margin: auto;
-            padding: 15px;
-        }
-    </style>
-{% endblock head %}
-
 {% block layout %}
-    <main class="form-signin">
-        <div class="text-center">
-            <h1 class="h3 mb-3 fw-normal">
-                <i class="fa-solid fa-snowflake fa-xl fa-fw me-2" style="color: #f39c12"></i>ColdFront
-            </h1>
-        </div>
-        <div class="card">
-            <div class="card-header text-center">
-                <h2 class="h5"><i class="fas fa-lock" aria-hidden="true"></i> Log In</h2>
-            </div>
-            <div class="card-body">
-                {% include "auth/login_form.html" %}
-            </div>
+    <main id="main-content" tabindex="-1" class="flex h-dvh items-center justify-center px-4">
+        <c-cf.card class="max-w-md shadow-xl">
+            <c-cf.card.body>
+                <div class="flex items-center justify-center gap-2">
+                    <c-cfi n="cfi.logo" size="2xl" class="shrink-0" />
+                    <span class="text-xl font-bold text-base-content">ColdFront</span>
+                </div>
 
-            {# SSO login #}
-            {% if auth_backends %}
-                {% if not login_form_hidden %}
-                    <div class="text-center">{% trans "Or" context "Denotes an alternative option" %}</div>
-                {% endif %}
-                <div class="card-body">
-                    {% if login_form_hidden %}
-                        <h2 class="text-center mb-4">{% trans "Log In" %}</h2>
+                <h2 class="flex items-center justify-center gap-2 text-lg font-semibold text-base-content">
+                    <c-cfi n="heroicon.lock-closed" size="sm" /> {% trans "Log In" %}
+                </h2>
+
+                {% include "auth/login_form.html" %}
+
+                {# SSO login #}
+                {% if auth_backends %}
+                    {% if not login_form_hidden %}
+                        <div class="divider">{% trans "Or" context "Denotes an alternative option" %}</div>
                     {% endif %}
-                    <div class="row">
+                    {% if login_form_hidden %}
+                        <h2 class="text-center mb-4 text-lg font-semibold text-base-content">{% trans "Log In" %}</h2>
+                    {% endif %}
+                    <div class="flex flex-col gap-2">
                         {% for backend in auth_backends %}
-                            <div class="d-grid gap-2">
-                                <c-cf.button
-                                    type="link"
-                                    url="{{ backend.url }}"
-                                    label="{{ backend.display_name }}"
-                                    icon="fa-solid fa-key"
-                                    css_class="btn-primary"
-                                />
-                            </div>
+                            <c-cf.button
+                                as="a"
+                                href="{{ backend.url }}"
+                                icon="heroicon.key"
+                                variant="primary"
+                            >{{ backend.display_name }}</c-cf.button>
                         {% endfor %}
                     </div>
-                </div>
-            {% endif %}
-        </div>
+                {% endif %}
+            </c-cf.card.body>
+        </c-cf.card>
     </main>
 {% endblock layout %}

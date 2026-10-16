@@ -1,0 +1,68 @@
+{% load i18n %}
+
+<c-vars
+    items
+    split_actions=True
+    extra_buttons=""
+/>
+
+<div class="flex justify-end">
+    {{ extra_buttons|safe }}
+    {% if items %}
+        {% if items|length == 1 %}
+            {% with item=items.0 %}
+                <c-cf.button
+                    variant="{{ item.css_class }}"
+                    size="sm"
+                    btnStyle="outline"
+                    as="a"
+                    href="{{ item.url }}"
+                    icon="{{ item.icon }}"
+                    icon.size="sm"
+                    class="border-base-content/70"
+                    title="{{ item.title }}"
+                    aria-label="{{ item.title }}"
+                ></c-cf.button>
+            {% endwith %}
+        {% else %}
+            <div class="join">
+                {% if split_actions %}
+                    {% with item=items.0 %}
+                        <c-cf.button
+                            variant="{{ item.css_class }}"
+                            size="sm"
+                            btnStyle="outline"
+                            as="a"
+                            href="{{ item.url }}"
+                            icon="{{ item.icon }}"
+                            icon.size="sm"
+                            title="{{ item.title }}"
+                            aria-label="{{ item.title }}"
+                            class="join-item border-r-0 border-base-content/70"
+                        ></c-cf.button>
+                    {% endwith %}
+                {% endif %}
+                <c-cf.dropdown alignment="end" data-cf-flip>
+                    <c-cf.dropdown.trigger
+                        class="btn btn-sm btn-{{ items.0.css_class }} btn-outline join-item border-l-0 rounded-l-none border-base-content/70"
+                        aria-label='{% trans "Toggle Dropdown" %}'
+                    >
+                        <c-cfi n="heroicon.chevron-down" size="sm" />
+                    </c-cf.dropdown.trigger>
+                    <c-cf.dropdown.content>
+                        <c-cf.menu class="p-1">
+                            {% for item in items %}
+                                {% if not split_actions or not forloop.first %}
+                                    <c-cf.menu.item href="{{ item.url }}">
+                                        <c-cfi n="{{ item.icon }}" size="sm" class="text-{{ item.css_class }} me-1" />
+                                        {{ item.title }}
+                                    </c-cf.menu.item>
+                                {% endif %}
+                            {% endfor %}
+                        </c-cf.menu>
+                    </c-cf.dropdown.content>
+                </c-cf.dropdown>
+            </div>
+        {% endif %}
+    {% endif %}
+</div>

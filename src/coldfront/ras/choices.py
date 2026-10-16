@@ -23,7 +23,7 @@ class ResourceStatusChoices(ChoiceSet):
     CHOICES = [
         (STATUS_OFFLINE, _("Offline"), "secondary"),
         (STATUS_ACTIVE, _("Active"), "success"),
-        (STATUS_PLANNED, _("Planned"), "danger"),
+        (STATUS_PLANNED, _("Planned"), "error"),
         (STATUS_STAGED, _("Staged"), "info"),
         (STATUS_DECOMMISSIONING, _("Decommissioning"), "warning"),
     ]
@@ -43,10 +43,10 @@ class AllocationStatusChoices(ChoiceSet):
     CHOICES = [
         (STATUS_REQUESTED, _("Requested"), "info"),
         (STATUS_ACTIVE, _("Active"), "success"),
-        (STATUS_DENIED, _("Denied"), "danger"),
+        (STATUS_DENIED, _("Denied"), "error"),
         (STATUS_EXPIRED, _("Expired"), "warning"),
         (STATUS_APPROVED, _("Approved"), "primary"),
-        (STATUS_REVOKED, _("Revoked"), "danger"),
+        (STATUS_REVOKED, _("Revoked"), "error"),
         (STATUS_RENEW, _("Renew"), "info"),
     ]
 
@@ -62,7 +62,7 @@ class AllocationChangeRequestStatusChoices(ChoiceSet):
     CHOICES = [
         (STATUS_REQUESTED, _("Requested"), "primary"),
         (STATUS_APPROVED, _("Approved"), "success"),
-        (STATUS_DENIED, _("Denied"), "danger"),
+        (STATUS_DENIED, _("Denied"), "error"),
         (STATUS_APPLIED, _("Applied"), "success"),
     ]
 

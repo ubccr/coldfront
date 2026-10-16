@@ -22,7 +22,7 @@ class Tag(CloningMixin, ChangeLoggedModel, TagBase):
     )
     color = ColorField(
         verbose_name=_("color"),
-        default=ColorChoices.COLOR_GREY,
+        default=ColorChoices.NEUTRAL,
     )
     description = models.CharField(
         verbose_name=_("description"),

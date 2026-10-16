@@ -18,12 +18,12 @@ from .csv import (
     CSVTypedChoiceField,
 )
 from .dynamic import (
-    DynamicChoiceField,
     DynamicModelChoiceField,
     DynamicModelMultipleChoiceField,
-    DynamicMultipleChoiceField,
 )
 from .fields import (
+    BooleanSelectField,
+    ColorChoiceField,
     CommentField,
     JSONField,
     MoneyField,
@@ -34,8 +34,8 @@ from .fields import (
 )
 
 __all__ = (
+    "BooleanSelectField",
     "CSVChoiceField",
-    "CommentField",
     "CSVContentTypeField",
     "CSVContentTypeObjectField",
     "CSVModelChoiceField",
@@ -44,12 +44,12 @@ __all__ = (
     "CSVMultipleChoiceField",
     "CSVMultipleContentTypeField",
     "CSVTypedChoiceField",
+    "ColorChoiceField",
+    "CommentField",
     "ContentTypeChoiceField",
     "ContentTypeMultipleChoiceField",
-    "DynamicChoiceField",
     "DynamicModelChoiceField",
     "DynamicModelMultipleChoiceField",
-    "DynamicMultipleChoiceField",
     "JSONField",
     "MoneyField",
     "QueryField",

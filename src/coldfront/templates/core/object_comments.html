@@ -2,17 +2,20 @@
 {% load i18n %}
 
 {% block content %}
-    <c-cf.card.table :table="table" only />
+    <c-cf.card.table :table="table" />
     {% if form %}
-        <form action="{% url 'core:commententry_add' %}" method="post" class="form form-horizontal mt-5">
-            {% csrf_token %}
-            <div id="form_fields">
-                <c-cf.form :form="form" />
-                <div class="col-lg-9 text-end">
-                    <button type="submit" class="btn btn-primary">{% trans "Save" %}</button>
-                    <a href="{{ object.get_absolute_url }}" class="btn btn-outline-secondary">{% trans "Cancel" %}</a>
-                </div>
-            </div>
-        </form>
+        <c-cf.form :form="form" action="{% url 'core:commententry_add' %}" method="post" wrapper_class="">
+            <c-slot name="buttons">
+                <c-cf.button
+                    as="a"
+                    href="{{ object.get_absolute_url }}"
+                    btnStyle="outline"
+                >{% trans "Cancel" %}</c-cf.button>
+                <c-cf.button
+                    type="submit"
+                    variant="primary"
+                >{% trans "Save" %}</c-cf.button>
+            </c-slot>
+        </c-cf.form>
     {% endif %}
 {% endblock %}

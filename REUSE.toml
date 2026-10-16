@@ -25,6 +25,8 @@ path = [
     "**.po",
     "**.mo",
     "**.webmanifest",
+    "src/coldfront/static/assets/images/logo.svg",
+    "src/coldfront/static/assets/images/logo.png",
 ]
 SPDX-FileCopyrightText = "(C) University at Buffalo"
 SPDX-License-Identifier = "Apache-2.0"
@@ -41,12 +43,13 @@ SPDX-License-Identifier = "CC-BY-NC-ND-4.0"
 path = [
     "NOTICE",
     "uv.lock",
-    "src/coldfront/static/package-lock.json",
-    "src/coldfront/static/bundles/manifest.json",
-    "src/coldfront/static/package.json",
-    "src/coldfront/static/tsconfig.json",
-    "src/coldfront/static/.prettierignore",
-    "src/coldfront/static/.prettierrc",
+    "src/frontend/bun.lock",
+    "src/frontend/biome.json",
+    "src/frontend/bunfig.toml",
+    "src/frontend/package.json",
+    "src/frontend/tsconfig.json",
+    "src/frontend/.prettierignore",
+    "src/frontend/.prettierrc",
     "src/coldfront/**.png",
     "src/coldfront/**.jpg",
     "tests/slurm/conf/*.conf",

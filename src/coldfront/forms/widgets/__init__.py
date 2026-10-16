@@ -2,15 +2,32 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from .apiselect import APISelectMultipleWidget, APISelectWidget
-from .select import BulkEditNullBooleanSelect, HTMXSelectWidget
-from .widgets import MarkdownWidget, MoneyWidget
+from .select import (
+    AlpineMultipleSelectWidget,
+    AlpineSelectWidget,
+    APISelectMultipleWidget,
+    APISelectWidget,
+    BulkEditNullBooleanSelect,
+    RefreshSelectWidget,
+)
+from .widgets import (
+    BooleanSelectWidget,
+    CopyWidget,
+    MarkdownWidget,
+    MoneyWidget,
+    SlugWidget,
+)
 
 __all__ = (
-    "HTMXSelectWidget",
+    "RefreshSelectWidget",
     "BulkEditNullBooleanSelect",
+    "AlpineMultipleSelectWidget",
+    "AlpineSelectWidget",
     "APISelectWidget",
     "APISelectMultipleWidget",
+    "BooleanSelectWidget",
+    "CopyWidget",
     "MarkdownWidget",
     "MoneyWidget",
+    "SlugWidget",
 )

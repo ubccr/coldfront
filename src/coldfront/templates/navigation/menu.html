@@ -1,44 +1,64 @@
 {% load i18n %}
 {% load navigation %}
 
-<nav id="sidebar" class="nav flex-column sidebar collapse show">
-    {% for menu, groups in nav_items %}
-        <button
-            class="btn btn-toggle d-flex align-items-center w-100"
-            data-bs-toggle="collapse"
-            data-bs-target="#{{ menu.label }}-collapse"
-            aria-expanded="false"
-            aria-controls="{{ menu.label }}-collapse"
-        >
-            <i class="{{ menu.icon_class }} fa-fw me-2"></i> {{ menu.label }}
-            <i class="fa-solid fa-chevron-down fa-xs ms-auto toggle-icon"></i>
-        </button>
-        <div class="collapse" id="{{ menu.label }}-collapse">
-            {% for group, items in groups %}
-                <ul class="nav flex-column">
-                    <li class="nav-item d-flex nav-link text-secondary text-uppercase fw-bold pt-1 justify-content-between py-0">
-                        {{ group.label }}
-                    </li>
-                    {% for item, buttons in items %}
-                        <li class="nav-item d-flex justify-content-between py-0">
-                            <a href="{{ item.url }}" class="nav-link">{{ item.link_text }}</a>
-                            {% if buttons %}
-                                <div class="btn-group btn-group-sm">
-                                    {% for button in buttons %}
-                                        <a
-                                            href="{{ button.url }}"
-                                            class='btn btn-sm btn-outline-{{ button.color|default:"secondary" }} px-1 py-2'
-                                            title="{{ button.title }}"
+{% comment %}
+daisyUI .menu — the sidebar nav. Hand-rolled rather than a menu-kit item because
+ColdFront menu rows carry trailing action buttons, which a single full-width item
+link can't host inline. The item link and its buttons are siblings in the li, with
+the buttons overlaid in the row's right padding.
+{% endcomment %}
+<nav class="flex-1 overflow-y-auto pb-4">
+    <ul class="menu menu-md w-full text-base-content nav-menu">
+        {% for menu, groups, active in nav_items %}
+            <li>
+                {#  Section toggle #}
+                <details {% if active %}open{% endif %}>
+                    <summary class="flex items-center gap-2">
+                        <c-cfi n="{{ menu.icon }}" size="sm" />
+                        {{ menu.label }}
+                    </summary>
+
+                    <ul class="menu-dropdown">
+                        {% for group, items in groups %}
+                            {# Group label — daisyUI .menu-title #}
+                            <li class="menu-title uppercase text-accent">
+                                {{ group.label }}
+                            </li>
+
+                            {% for item, buttons, item_active in items %}
+                                <li class="group relative">
+                                    {# Item link — daisyUI full-width row + free active highlight #}
+                                    <a
+                                        href="{{ item.url }}"
+                                        {% if item_active %}aria-current="page"{% endif %}
+                                        class="{% if item_active %}menu-active{% endif %} min-w-0 pr-10"
+                                    >
+                                        {{ item.link_text }}
+                                    </a>
+
+                                    {# Action buttons — absolute overlay in the row's right padding #}
+                                    {% if buttons %}
+                                        <span
+                                            class="nav-buttons opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
                                         >
-                                            <i class="{{ button.icon_class }}"></i>
-                                        </a>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </li>
-                    {% endfor %}
-                </ul>
-            {% endfor %}
-        </div>
-    {% endfor %}
+                                            {% for button in buttons %}
+                                                <a
+                                                    href="{{ button.url }}"
+                                                    title="{{ button.title }}"
+                                                    aria-label="{{ button.title }}"
+                                                    class="btn btn-xs btn-{{ button.variant }}"
+                                                >
+                                                    <c-cfi n="{{ button.icon }}" size="sm" />
+                                                </a>
+                                            {% endfor %}
+                                        </span>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        {% endfor %}
+                    </ul>
+                </details>
+            </li>
+        {% endfor %}
+    </ul>
 </nav>

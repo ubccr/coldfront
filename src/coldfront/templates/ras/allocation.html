@@ -26,9 +26,10 @@
 {% block content %}
     <c-cf.layout.panels>
         <c-slot name="left">
-            <c-cf.card.fields only>
-                <c-slot name="header">
-                    Allocation <c-cf.ui.badge value="{{object.status|title}}" :bg_color="object.get_status_color" />
+            <c-cf.card.fields>
+                <c-slot name="title">
+                    Allocation <c-cf.badge variant="{{ object.get_status_color }}">{{ object.status|title }}
+                    </c-cf.badge>
                 </c-slot>
 
                 <c-cf.card.fields.item label="{% trans 'Slug' %}">
@@ -53,10 +54,9 @@
 
                 <c-cf.card.fields.item label="{% trans 'Resources' %}">
                     <div>
-                        <c-cf.ui.badge
-                            :value="object.resource_object"
-                            link="{{ object.resource_object.get_absolute_url }}"
-                        />
+                        <c-cf.badge
+                            href="{{ object.resource_object.get_absolute_url }}"
+                        >{{ object.resource_object }}</c-cf.badge>
                     </div>
                 </c-cf.card.fields.item>
 
@@ -69,13 +69,13 @@
                 </c-cf.card.fields.item>
             </c-cf.card.fields>
 
-            <c-cf.card.tags :object="object" only />
-            <c-cf.card.related_objects :object="object" :models="related_models" only />
+            <c-cf.card.tags :object="object" />
+            <c-cf.card.related_objects :object="object" :models="related_models" />
         </c-slot>
 
         <c-slot name="right">
             {% if object.attributes %}
-                <c-cf.card.fields header="{% trans 'Attributes' %}" only>
+                <c-cf.card.fields title="{% trans 'Attributes' %}">
                     {% for k, v in object.attributes.items %}
                         <c-cf.card.fields.item :label="k">
                             {{ v|placeholder }}
@@ -84,7 +84,7 @@
                 </c-cf.card.fields>
             {% endif %}
 
-            <c-cf.card.custom_fields :object="object" only />
+            <c-cf.card.custom_fields :object="object" />
         </c-slot>
     </c-cf.layout.panels>
 {% endblock %}

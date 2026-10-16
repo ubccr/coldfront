@@ -1,0 +1,40 @@
+{% load i18n %}
+
+<c-cf.toast horizontal="end" vertical="bottom" id="django-messages" hx-swap-oob="true">
+    {# Non-Field Form Errors #}
+    {% if form and form.non_field_errors %}
+        {% for error in form.non_field_errors.get_json_data %}
+            <c-cf.alert
+                variant="error"
+                icon="heroicon.exclamation-circle"
+                class="shadow-sm"
+                data-dismiss="10000"
+            >
+                <div class="grid gap-1">
+                    <div class="font-semibold">{% trans "Error" %}</div>
+                    <div>{{ error.message }}</div>
+                </div>
+                <button type="button" class="cf-toast-close btn btn-sm btn-ghost" aria-label='{% trans "Close" %}'>
+                    ✕
+                </button>
+            </c-cf.alert>
+        {% endfor %}
+    {% endif %}
+
+    {% for message in messages %}
+        <c-cf.alert
+            variant="{{ message.level_tag|toast_variant }}"
+            icon="{{ message.level_tag|toast_icon }}"
+            class="shadow-sm"
+            data-dismiss="10000"
+        >
+            <div class="grid gap-1">
+                <div class="font-semibold"></div>
+                <div>{{ message }}</div>
+            </div>
+            <button type="button" class="cf-toast-close btn btn-sm btn-ghost" aria-label='{% trans "Close" %}'>
+                ✕
+            </button>
+        </c-cf.alert>
+    {% endfor %}
+</c-cf.toast>

@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from crispy_forms.layout import Fieldset
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
@@ -15,7 +14,7 @@ from coldfront.forms import (
     TenancyImportForm,
 )
 from coldfront.forms.fields import CSVModelChoiceField, DynamicModelChoiceField, JSONField, SlugField
-from coldfront.forms.layouts import Slug
+from coldfront.forms.layout import FieldSet
 from coldfront.ras.models import Resource, ResourceType
 
 
@@ -33,12 +32,16 @@ class ResourceTypeForm(OrganizationalModelForm):
         ]
 
     fieldsets = (
-        Fieldset(
-            _("Resource Type"),
+        FieldSet(
             "name",
-            Slug(),
+            "slug",
             "color",
             "description",
+            name=_("Resource Type"),
+        ),
+        FieldSet(
+            "tags",
+            name=_("Tags"),
         ),
     )
 
@@ -79,19 +82,28 @@ class ResourceForm(TenancyForm, NestedGroupModelForm):
         ]
 
     fieldsets = (
-        Fieldset(
-            "Resource Type",
+        FieldSet(
             "resource_type",
+            name=_("Resource Type"),
         ),
-        Fieldset(
-            _("Resource"),
+        FieldSet(
             "name",
-            Slug(),
+            "slug",
             "parent",
             "status",
             "description",
             "locked",
             "schema",
+            name=_("Resource"),
+        ),
+        FieldSet(
+            "tenant_group",
+            "tenant",
+            name=_("Tenant"),
+        ),
+        FieldSet(
+            "tags",
+            name=_("Tags"),
         ),
     )
 

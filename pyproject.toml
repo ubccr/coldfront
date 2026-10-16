@@ -13,10 +13,8 @@ classifiers = [
     'Topic :: System :: Systems Administration',
 ]
 dependencies = [
-    "crispy-bootstrap5>=2025.6",
-    "django>6,<6.1",
+    "django>6.1,<6.2",
     "django-cotton>=2.6.1",
-    "django-crispy-forms>=2.3",
     "django-environ>=0.12.0",
     "django-filter>=25.1",
     "django-generic-notifications>=2.4.0",
@@ -29,7 +27,6 @@ dependencies = [
     "django-tables2>=2.8.0",
     "django-taggit>=6.1.0",
     "django-viewflow>=2.2.15",
-    "django-vite>=3.1.0",
     "djangorestframework>=3.16.0",
     "doi2bib>=0.4.0",
     "drf-spectacular[sidecar]>=0.29.0",
@@ -53,6 +50,7 @@ dependencies = [
     "django-money>=3.6.1",
     "fpdf2>=2.8.8",
     "semver>=3.0.4",
+    "cotton-icons>=0.2.0",
 ]
 
 [project.urls]
@@ -118,7 +116,7 @@ publish-url = "https://test.pypi.org/legacy/"
 explicit = true
 
 [build-system]
-requires = ["uv_build>=0.11.2,<0.12"]
+requires = ["uv_build>=0.12.0,<0.13"]
 build-backend = "uv_build"
 
 [tool.uv]
@@ -146,7 +144,8 @@ markers = [
     "e2e: end-to-end tests that spin up real containers (docker); disabled unless COLDFRONT_E2E=1",
 ]
 filterwarnings = [
-    'ignore::DeprecationWarning',
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
 ]
 
 [tool.coverage.run]
@@ -160,5 +159,4 @@ coldfront-initializer = { git = "https://github.com/coldfront/coldfront-initiali
 line-length = 120
 indent-width = 4
 profile = "django"
-preserve-unquoted-attrs = true
 html-void-self-closing = "never"

@@ -1,0 +1,39 @@
+{% comment %}
+Renders a Django form's fields only: hidden fields, then either its declared
+fieldsets (form.fieldsets of FieldSet descriptors) or all visible fields, then
+the custom-fields section. Does NOT emit a <form> tag, csrf, wrapper, or
+buttons — use inside c-cf.form (which owns the form element) or directly in a
+custom form (filters, bulk import, selectors, HTMX dynamic-fieldset partials).
+
+Props:
+  form                the form to render
+  layout              "inline" (default) or "stacked" (used for filter panels)
+  nullify             render nullable (set-to-None) checkboxes for fields in
+                      form.nullable_fields
+  show_custom_fields  render the Custom Fields section
+{% endcomment %}
+
+<c-vars
+    :form="form"
+    layout="inline"
+    :nullify="False"
+    :show_custom_fields="True"
+/>
+
+{% for field in form.hidden_fields %}{{ field }}{% endfor %}
+
+{% if form.fieldsets %}
+    <c-cf.form.fieldsets :form="form" :layout="layout" :nullify="nullify" />
+{% else %}
+    {% for field in form.visible_fields %}
+        {% if field.name in form.meta_fields %}
+            {# Skip meta fields - they're rendered separately by the caller #}
+        {% else %}
+            <c-cf.field :field="field" :form="form" :layout="layout" :nullify="nullify" />
+        {% endif %}
+    {% endfor %}
+{% endif %}
+
+{% if show_custom_fields and form.custom_fields %}
+    <c-cf.form.custom-fields :form="form" :layout="layout" />
+{% endif %}

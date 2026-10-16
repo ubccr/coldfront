@@ -2,14 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from crispy_forms.layout import Fieldset
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from coldfront.constants import BOOLEAN_WITH_BLANK_CHOICES
 from coldfront.forms import PrimaryModelFilterSetForm
 from coldfront.forms.fields import TagFilterField
-from coldfront.forms.layouts import Date
+from coldfront.forms.layout import FieldSet
 from coldfront.ras.models import Allocation
 from coldfront.slurm.choices import (
     SlurmAdminLevelChoices,
@@ -34,8 +33,8 @@ class SlurmQOSFilterSetForm(PrimaryModelFilterSetForm):
     tag = TagFilterField(model)
 
     fieldsets = (
-        Fieldset(
-            _("Slurm QOS"),
+        FieldSet(
+            "q",
             "tag",
         ),
     )
@@ -60,12 +59,15 @@ class SlurmClusterFilterSetForm(PrimaryModelFilterSetForm):
     tag = TagFilterField(model)
 
     fieldsets = (
-        Fieldset(
-            _("Slurm Cluster"),
+        FieldSet(
+            "q",
+            "tag",
+        ),
+        FieldSet(
             "locked",
             "default_qos_id",
             "classification",
-            "tag",
+            name=_("Slurm Cluster"),
         ),
     )
 
@@ -105,15 +107,18 @@ class SlurmPartitionFilterSetForm(PrimaryModelFilterSetForm):
     tag = TagFilterField(model)
 
     fieldsets = (
-        Fieldset(
-            _("Slurm Partition"),
+        FieldSet(
+            "q",
+            "tag",
+        ),
+        FieldSet(
             "cluster_id",
             "state",
             "is_default",
             "preempt_mode",
             "qos_id",
             "locked",
-            "tag",
+            name=_("Slurm Partition"),
         ),
     )
 
@@ -128,10 +133,13 @@ class SlurmAccountFilterSetForm(PrimaryModelFilterSetForm):
     tag = TagFilterField(model)
 
     fieldsets = (
-        Fieldset(
-            _("Slurm Account"),
-            "cluster_id",
+        FieldSet(
+            "q",
             "tag",
+        ),
+        FieldSet(
+            "cluster_id",
+            name=_("Slurm Account"),
         ),
     )
 
@@ -158,12 +166,15 @@ class SlurmAccountUsageFilterSetForm(PrimaryModelFilterSetForm):
     )
 
     fieldsets = (
-        Fieldset(
-            _("SU Usage"),
+        FieldSet(
+            "q",
+        ),
+        FieldSet(
             "cluster_id",
             "account_id",
-            Date("period_start"),
-            Date("period_start_lte"),
+            "period_start",
+            "period_start_lte",
+            name=_("SU Usage"),
         ),
     )
 
@@ -193,13 +204,16 @@ class SlurmAssociationFilterSetForm(PrimaryModelFilterSetForm):
     tag = TagFilterField(model)
 
     fieldsets = (
-        Fieldset(
-            _("Slurm Association"),
+        FieldSet(
+            "q",
+            "tag",
+        ),
+        FieldSet(
             "slurm_account_id",
             "allocation_id",
             "parent_id",
             "default_qos_id",
-            "tag",
+            name=_("Slurm Association"),
         ),
     )
 
@@ -234,13 +248,16 @@ class SlurmUserFilterSetForm(PrimaryModelFilterSetForm):
     tag = TagFilterField(model)
 
     fieldsets = (
-        Fieldset(
-            _("Slurm User"),
+        FieldSet(
+            "q",
+            "tag",
+        ),
+        FieldSet(
             "cluster_id",
             "user_id",
             "default_account_id",
             "default_qos_id",
             "admin_level",
-            "tag",
+            name=_("Slurm User"),
         ),
     )

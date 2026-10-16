@@ -1,0 +1,39 @@
+{% comment %}
+DaisyUI toggle switch component — renders a checkbox input as an on/off
+switch. Props: variant (color), size (xs..xl, default md), checked, disabled,
+validate. Class passthrough via {{ attrs }}.
+{% endcomment %}
+
+<c-vars
+    class=""
+    variant=""
+    size="md"
+    checked=""
+    disabled=""
+    validate=""
+    :variantClasses="{
+        'neutral': 'toggle-neutral',
+        'primary': 'toggle-primary',
+        'secondary': 'toggle-secondary',
+        'accent': 'toggle-accent',
+        'info': 'toggle-info',
+        'success': 'toggle-success',
+        'warning': 'toggle-warning',
+        'error': 'toggle-error'
+    }"
+    :sizeClasses="{
+        'xs': 'toggle-xs',
+        'sm': 'toggle-sm',
+        'md': 'toggle-md',
+        'lg': 'toggle-lg',
+        'xl': 'toggle-xl'
+    }"
+/>
+
+<input
+    type="checkbox"
+    class="toggle {{ variantClasses|get_dict_item:variant }} {{ sizeClasses|get_dict_item:size }}{% if validate %} validator{% endif %} {{ class }}"
+    {% if checked %}checked{% endif %}
+    {% if disabled %}disabled{% endif %}
+    {{ attrs }}
+>

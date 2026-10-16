@@ -1,0 +1,229 @@
+{% load form_helpers i18n %}
+
+{% select_should_show_search widget as searchable %}
+{% select_blank_label widget as blank_label %}
+
+{% comment %}
+    Custom select (Alpine + daisyUI), rendered as the Django widget template.
+
+    The widget (a hidden native <select>) is the value sink: options and the
+    initial selection are parsed from it, and every change is written back to it
+    + a bubbling `change` event is dispatched, so form submission, validation,
+    and htmx all keep working. The visible trigger is a WAI-ARIA 1.2 combobox:
+    the search <input> lives in the popup and carries the combobox role / aria-*
+    / keyboard handling.
+
+    Single and multiple selects share this template — the hidden sink renders
+    `multiple` from widget.attrs.multiple. Search is disabled when
+    widget.attrs.data-cf-search is "0". Remote (API-backed) mode is enabled
+    when widget.attrs.data-url is set; color mode when data-cf-color is set.
+{% endcomment %}
+<div
+    x-data="cfSelect()"
+    x-cloak
+    data-cf-field-id="{{ widget.attrs.id }}"
+    {% if 'data-cf-label' in widget.attrs %}data-cf-label="{{ widget.attrs|get_dict_item:'data-cf-label' }}"{% endif %}
+    {% if 'data-cf-invalid' in widget.attrs %}data-cf-invalid="1"{% endif %}
+    data-cf-placeholder="{% if widget.attrs.placeholder %}{{ widget.attrs.placeholder }}{% else %}{{ blank_label }}{% endif %}"
+    {% if "data-cf-color" in widget.attrs %}data-cf-color="1"{% endif %}
+    {% if "data-url" in widget.attrs %}data-cf-remote="1"{% endif %}
+    {% if not searchable %}data-cf-search="0"{% endif %}
+    @click.outside="close(false)"
+    class="relative w-full"
+>
+    <div class="flex items-start gap-1">
+        <div class="relative flex-1">
+            {# Visible trigger = ARIA combobox #}
+            <div
+                role="combobox"
+                :tabindex="disabled ? -1 : 0"
+                :aria-expanded="open"
+                aria-haspopup="listbox"
+                :aria-controls="'cf-' + fieldId + '-listbox'"
+                :aria-activedescendant="open && activeIndex >= 0 ? 'cf-' + fieldId + '-opt-' + activeIndex : null"
+                :aria-label="label || null"
+                :aria-invalid="invalid ? 'true' : 'false'"
+                :aria-required="required || null"
+                :aria-disabled="disabled ? 'true' : 'false'"
+                {% if 'aria-describedby' in widget.attrs %}
+                    aria-describedby="{{ widget.attrs|get_dict_item:'aria-describedby' }}"
+                {% endif %}
+                @click="openDropdown()"
+                @keydown="keydown($event)"
+                class="select w-full flex flex-wrap items-center gap-1 h-auto min-h-[var(--size)] cursor-pointer{% if 'data-cf-invalid' in widget.attrs %} select-error{% endif %} cf-opened:border-primary"
+                :class="(open ? 'opened ' : '') + (invalid ? 'select-error' : '') + (disabled ? ' opacity-50 pointer-events-none' : '')"
+                data-cf-trigger
+            >
+                {# Display: selected badges OR placeholder, never both #}
+                <span class="flex flex-wrap items-center gap-1 min-w-0">
+                    <template x-for="item in selected" :key="item.value">
+                        <span class="contents">
+                            <span
+                                x-show="multiple"
+                                class="badge gap-1 rounded-md flex items-center"
+                                :class="colorMode ? 'badge-' + item.value : 'badge-ghost'"
+                            >
+                                <span x-text="item.label"></span>
+                                <button
+                                    type="button"
+                                    class="btn btn-xs btn-ghost p-0"
+                                    @click.stop="removeItem(item.value)"
+                                    aria-label="{% trans 'Remove' %}"
+                                >
+                                    ×
+                                </button>
+                            </span>
+                            <span
+                                x-show="!multiple && !colorMode"
+                                class="text-base-content"
+                                x-text="item.label"
+                            ></span>
+                            <span
+                                x-show="!multiple && colorMode"
+                                class="inline-flex items-center gap-1"
+                            >
+                                <span
+                                    class="badge badge-xs"
+                                    :class="'badge-' + item.value"
+                                ></span>
+                                <span x-text="item.label"></span>
+                            </span>
+                        </span>
+                    </template>
+                    <span
+                        x-show="selected.length === 0"
+                        class="text-muted"
+                        x-text="placeholder"
+                    ></span>
+                </span>
+
+                {# Clear current selection, at the end before the caret #}
+                <button
+                    type="button"
+                    class="btn btn-ghost btn-xs ml-auto flex-shrink-0"
+                    x-show="selected.length > 0 && (!required || remote)"
+                    @click.stop="clear()"
+                    aria-label="{% trans 'Clear selection' %}"
+                >
+                    <c-cfi n="heroicon.x-mark" size="sm" />
+                </button>
+            </div>
+
+            {# Dropdown panel #}
+            <div
+                x-show="open"
+                x-transition
+                role="listbox"
+                :id="'cf-' + fieldId + '-listbox'"
+                aria-label="{% trans 'Options' %}"
+                :aria-multiselectable="multiple || null"
+                class="absolute z-50 mt-1 max-h-60 min-w-full w-max max-w-md overflow-y-auto rounded-box bg-base-100 p-1 shadow-xl border border-base-200 border-base-content/50"
+                data-cf-panel
+            >
+                {# Search input lives in the popup, sticky while scrolling #}
+                {% if searchable %}
+                    <div class="sticky top-0 border-b border-base-200 bg-base-100 p-1">
+                        <input
+                            type="search"
+                            role="searchbox"
+                            :aria-controls="'cf-' + fieldId + '-listbox'"
+                            :aria-expanded="open"
+                            :aria-activedescendant="open && activeIndex >= 0 ? 'cf-' + fieldId + '-opt-' + activeIndex : null"
+                            aria-label="{% trans 'Search options' %}"
+                            class="input w-full cursor-text"
+                            placeholder="{% trans 'Search...' %}"
+                            x-model="search"
+                            @input="onSearch($event)"
+                            @keydown="keydown($event)"
+                            data-cf-search
+                        >
+                    </div>
+                {% endif %}
+                <template x-if="!loading && filtered().length === 0">
+                    <div class="px-3 py-2 text-sm text-muted">
+                        {% trans 'No options found...' %}
+                    </div>
+                </template>
+                <div x-show="loading" class="px-3 py-2 text-sm text-muted">
+                    {% trans 'Loading...' %}
+                </div>
+                <template x-for="(option, index) in filtered()" :key="option.value">
+                    <div
+                        :id="'cf-' + fieldId + '-opt-' + index"
+                        role="option"
+                        :aria-selected="selected.some(s => s.value === option.value)"
+                        @click="selectOption(option)"
+                        @mouseenter="activeIndex = index"
+                        x-html="renderOption(option)"
+                        class="cursor-pointer rounded-box px-3 py-2 text-base-content cf-active:bg-base-200 cf-active:text-primary cf-selected:bg-base-200 cf-disabled:opacity-50 cf-disabled:pointer-events-none"
+                        :class="(selected.some(s => s.value === option.value) ? 'selected ' : '')
+                    + (activeIndex === index ? 'active ' : '')
+                    + (option.disabled ? 'disabled' : '')"
+                    >
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        {# Object selector / quick-add buttons (API-backed selects) #}
+        {% if widget.attrs.selector and not widget.attrs.disabled %}
+            <div class="flex shrink-0 items-start gap-1">
+                <button
+                    type="button"
+                    title="{% trans 'Open selector' %}"
+                    aria-label="{% trans 'Open selector' %}"
+                    class="btn btn-outline"
+                    onclick="htmxModal.showModal()"
+                    hx-on::before-request="document.getElementById('htmxModal-content').innerHTML = ''"
+                    hx-get="{% url 'htmx_object_selector' %}?_model={{ widget.attrs.selector }}&target={{ widget.attrs.id }}"
+                    hx-target="#htmxModal-content"
+                    hx-swap="innerHTML"
+                >
+                    <c-cfi n="tablericon.database" size="sm" />
+                </button>
+                {% if quick_add and not widget.attrs.disabled %}
+                    <button
+                        type="button"
+                        title="{% trans 'Quick add' %}"
+                        aria-label="{% trans 'Quick add' %}"
+                        class="btn btn-outline"
+                        hx-on::before-request="document.getElementById('htmxModal-content').innerHTML = ''"
+                        onclick="htmxModal.showModal()"
+                        hx-get="{{ quick_add.url }}?_quickadd=True&target={{ widget.attrs.id }}{% for k, v in quick_add.params.items %}&{{ k }}={{ v }}{% endfor %}"
+                        hx-target="#htmxModal-content"
+                        hx-swap="innerHTML"
+                    >
+                        <c-cfi n="heroicon.plus-circle" size="sm" />
+                    </button>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+    {# Hidden native select sink (Django widget), class forced to sr-only #}
+    <select
+        name="{{ widget.name }}"
+        class="sr-only"
+        aria-hidden="true"
+        {% if widget.attrs.id %}id="{{ widget.attrs.id }}"{% endif %}
+        {% for name, value in widget.attrs.items %}
+            {% if name != 'class' and value is not False %}
+                {% if value is not True %}{{ name }}="{{ value }}"{% else %}{{ name }}{% endif %}
+            {% endif %}
+        {% endfor %}
+    >
+        {% for group_name, group_choices, group_index in widget.optgroups %}
+            {% if group_name %}
+                <optgroup label="{{ group_name }}">
+                    {% for option in group_choices %}
+                        {% include option.template_name with widget=option %}
+                    {% endfor %}
+                </optgroup>
+            {% else %}
+                {% for option in group_choices %}
+                    {% include option.template_name with widget=option %}
+                {% endfor %}
+            {% endif %}
+        {% endfor %}
+    </select>
+</div>

@@ -1,0 +1,43 @@
+{% comment %}
+ColdFront logo icon — the ColdFront brand mark
+{% endcomment %}
+
+<c-vars
+    stroke_width="14"
+    stroke_linecap="round"
+    stroke_linejoin="round"
+/>
+
+<svg
+    aria-hidden="true"
+    {{ attrs }}
+    viewbox="0 0 343 396"
+    xmlns="http://www.w3.org/2000/svg"
+>
+    <path
+        class="fill-accent"
+        d="M162 5.5a19 19 0 0 1 19 0l152.5 88a19 19 0 0 1 9.5 16.5v176a19 19 0 0 1-9.5 16.5l-152.5 88a19 19 0 0 1-19 0l-152.5-88A19 19 0 0 1 0 286V110a19 19 0 0 1 9.5-16.5z"
+    />
+    <g
+        fill="none"
+        class="stroke-base-100"
+        stroke-width="{{ stroke_width }}"
+        stroke-linecap="{{ stroke_linecap }}"
+        stroke-linejoin="{{ stroke_linejoin }}"
+    >
+        <g transform="translate(171.5 198)">
+            <circle r="31.5" />
+            <g id="arm">
+                <path d="M0 -34V-82" />
+                <path d="M-32.5 -114.5 0 -82 32.5 -114.5" />
+            </g>
+            <use href="#arm" transform="rotate(45)" />
+            <use href="#arm" transform="rotate(90)" />
+            <use href="#arm" transform="rotate(135)" />
+            <use href="#arm" transform="rotate(180)" />
+            <use href="#arm" transform="rotate(225)" />
+            <use href="#arm" transform="rotate(270)" />
+            <use href="#arm" transform="rotate(315)" />
+        </g>
+    </g>
+</svg>

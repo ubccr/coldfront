@@ -14,11 +14,13 @@ class RequestObject(ObjectAction):
 
     name = "request"
     label = _("Request")
+    icon = "tablericon.git-pull-request"
+    variant = "primary"
+    as_ = "a"
     multi = False
     transition = "request"
     url_kwargs = ["pk"]
     permissions_required = {"request"}
-    template_name = "cf.button.request"
 
 
 class ApproveObject(ObjectAction):
@@ -28,11 +30,13 @@ class ApproveObject(ObjectAction):
 
     name = "approve"
     label = _("Approve")
+    icon = "heroicon.shield-check"
+    variant = "success"
+    modal = True
     multi = False
     transition = "approve"
     url_kwargs = ["pk"]
     permissions_required = {"approve"}
-    template_name = "cf.button.approve"
 
 
 class DenyObject(ObjectAction):
@@ -42,11 +46,13 @@ class DenyObject(ObjectAction):
 
     name = "deny"
     label = _("Deny")
+    icon = "tablericon.forbid"
+    variant = "error"
+    modal = True
     multi = False
     transition = "deny"
     url_kwargs = ["pk"]
     permissions_required = {"deny"}
-    template_name = "cf.button.deny"
 
 
 class ActivateObject(ObjectAction):
@@ -56,11 +62,13 @@ class ActivateObject(ObjectAction):
 
     name = "activate"
     label = _("Activate")
+    icon = "tablericon.player-play"
+    variant = "primary"
+    as_ = "a"
     multi = False
     transition = "activate"
     url_kwargs = ["pk"]
     permissions_required = {"activate"}
-    template_name = "cf.button.activate"
 
 
 class RenewObject(ObjectAction):
@@ -70,11 +78,13 @@ class RenewObject(ObjectAction):
 
     name = "renew"
     label = _("Renew")
+    icon = "tablericon.refresh"
+    variant = "primary"
+    modal = True
     multi = False
     transition = "renew"
     url_kwargs = ["pk"]
     permissions_required = {"renew"}
-    template_name = "cf.button.renew"
 
 
 class RevokeObject(ObjectAction):
@@ -84,11 +94,13 @@ class RevokeObject(ObjectAction):
 
     name = "revoke"
     label = _("Revoke")
+    icon = "tablericon.player-stop"
+    variant = "error"
+    modal = True
     multi = False
     transition = "revoke"
     url_kwargs = ["pk"]
     permissions_required = {"revoke"}
-    template_name = "cf.button.revoke"
 
 
 class ReviewObject(ObjectAction):
@@ -98,11 +110,13 @@ class ReviewObject(ObjectAction):
 
     name = "review"
     label = _("Review")
+    icon = "heroicon.eye"
+    variant = "warning"
+    modal = True
     multi = False
     transition = "review"
     url_kwargs = ["pk"]
     permissions_required = {"change"}
-    template_name = "cf.button.review"
 
 
 class ApproveChange(ObjectAction):
@@ -112,11 +126,13 @@ class ApproveChange(ObjectAction):
 
     name = "approve"
     label = _("Approve Change")
+    icon = "heroicon.check-circle"
+    variant = "success"
+    modal = True
     multi = False
     transition = "approve"
     url_kwargs = ["pk"]
     permissions_required = {"approve"}
-    template_name = "cf.button.approve"
 
 
 class DenyChange(ObjectAction):
@@ -126,11 +142,13 @@ class DenyChange(ObjectAction):
 
     name = "deny"
     label = _("Deny Change")
+    icon = "tablericon.forbid"
+    variant = "error"
+    modal = True
     multi = False
     transition = "deny"
     url_kwargs = ["pk"]
     permissions_required = {"deny"}
-    template_name = "cf.button.deny"
 
 
 class ApplyChange(ObjectAction):
@@ -140,8 +158,10 @@ class ApplyChange(ObjectAction):
 
     name = "apply"
     label = _("Apply Change")
+    icon = "tablericon.player-play"
+    variant = "primary"
+    modal = True
     multi = False
     transition = "apply"
     url_kwargs = ["pk"]
     permissions_required = {"apply"}
-    template_name = "cf.button.apply"

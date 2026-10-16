@@ -1,72 +1,25 @@
 {% extends 'generic/object_edit.html' %}
-{% load crispy_forms_tags %}
 {% load i18n %}
 
 {% block form %}
-    {% csrf_token %}
-    {% if request.POST.return_url %}
-        <input type="hidden" name="return_url" value="{{ request.POST.return_url }}">
-    {% endif %}
-
-    {# Standard fields #}
-    {% for field in form.hidden_fields %}
-        {{ field|as_crispy_field }}
-    {% endfor %}
-
-    <div class="field-group my-5">
-        <div class="row">
-            <h2 class="col-9 offset-3">{% trans "Table Configuration" %}</h2>
-        </div>
-        {{ form.name|as_crispy_field }}
-        {{ form.object_type|as_crispy_field }}
-        {{ form.table|as_crispy_field }}
-        {{ form.description|as_crispy_field }}
-        {{ form.weight|as_crispy_field }}
-        {{ form.enabled|as_crispy_field }}
-        {{ form.shared|as_crispy_field }}
-        {{ form.ordering|as_crispy_field }}
-    </div>
-
-    {# Column picker #}
-    <div class="field-group my-5">
-        <div class="row">
-            <div class="col-3 offset-2 text-center">
-                <label class="form-label">{{ form.available_columns.label }}</label>
-                {{ form.available_columns }}
-            </div>
-            <div class="col-1 d-flex align-items-center">
-                <div>
-                    <a tabindex="0" class="btn btn-success btn-sm w-100 my-2" id="add_columns">
-                        <i class="fa-solid fa-arrow-right"></i> {% trans "Add" %}
-                    </a>
-                    <a tabindex="0" class="btn btn-danger btn-sm w-100 my-2" id="remove_columns">
-                        <i class="fa-solid fa-arrow-left"></i> {% trans "Remove" %}
-                    </a>
-                </div>
-            </div>
-            <div class="col-3 text-center">
-                <label class="form-label">{{ form.columns.label }}</label>
-                {{ form.columns }}
-                <a tabindex="0" class="btn btn-primary btn-sm mt-2 move-option-up" data-target="columns">
-                    <i class="fa-solid fa-arrow-up"></i> {% trans "Move Up" %}
-                </a>
-                <a tabindex="0" class="btn btn-primary btn-sm mt-2 move-option-down" data-target="columns">
-                    <i class="fa-solid fa-arrow-down"></i> {% trans "Move Down" %}
-                </a>
-            </div>
-        </div>
-    </div>
-
-    {# Meta fields #}
-    {% if form.changelog_message %}
-        {{ form.changelog_message|as_crispy_field }}
-    {% endif %}
+    <c-cf.form :form="form">
+        <c-slot name="hidden">
+            {% if request.POST.return_url %}
+                <input type="hidden" name="return_url" value="{{ request.POST.return_url }}">
+            {% endif %}
+        </c-slot>
+        <c-slot name="fields">
+            <c-cf.form.fields :form="form" />
+            <c-cf.table.columns-picker :form="form" />
+            {% if form.changelog_message %}
+                <c-cf.field :field="form.changelog_message" :form="form" />
+            {% endif %}
+        </c-slot>
+        <c-slot name="buttons">
+            <c-cf.button as="a" href="{{ return_url }}" btnStyle="outline">{% trans "Cancel" %}</c-cf.button>
+            <c-cf.button type="submit" name="_update" variant="primary">
+                {% trans "Save" %}
+            </c-cf.button>
+        </c-slot>
+    </c-cf.form>
 {% endblock %}
-
-{# Form buttons #}
-{% block buttons %}
-    <a href="{{ return_url }}" class="btn btn-outline-secondary">{% trans "Cancel" %}</a>
-    <button type="submit" name="_update" class="btn btn-primary">
-        {% trans "Save" %}
-    </button>
-{% endblock buttons %}

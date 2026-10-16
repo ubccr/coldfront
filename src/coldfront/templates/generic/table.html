@@ -1,7 +1,86 @@
-{% extends 'django_tables2/bootstrap5.html' %}
+{% extends 'django_tables2/table.html' %}
+{% load django_tables2 %}
+{% load i18n %}
+
+{% comment %}
+Single always-HTMX django-tables2 render template for ColdFront, styled with
+daisyUI via the c-cf.table component. Header sort controls swap the enclosing
+.htmx-container. Read-only tables (orderable=False) render no sort controls, so
+no HTMX requests are ever issued for them.
+{% endcomment %}
 
 {% block table-wrapper %}
     {% block table %}
-        {{ block.super }}
+        <div class="overflow-x-auto min-h-50">
+            <table class="table {{ table.attrs.class }}" hx-disinherit="hx-target hx-select" hx-swap="outerHTML">
+                {% if table.caption %}<caption>{{ table.caption }}</caption>{% endif %}
+                {% block table.thead %}
+                    {% if table.show_header %}
+                        <thead
+                            hx-target="closest .htmx-container"
+                            {% if not table.embedded %}hx-push-url="true"{% endif %}
+                            {{ table.attrs.thead.as_html }}
+                        >
+                            <tr>
+                                {% for column in table.columns %}
+                                    <th scope="col" {{ column.attrs.th.as_html }}>
+                                        {% if column.orderable %}
+                                            {# Sort control #}
+                                            <span class="inline-flex items-center gap-1.5">
+                                                <span>{{ column.header }}</span>
+                                                {% if not column.is_ordered %}
+                                                    {% querystring_replace table.prefixed_order_by_field=column.order_by_alias as=sort_url %}
+                                                    <c-cf.button
+                                                        btnStyle="ghost"
+                                                        size="xs"
+                                                        as="a"
+                                                        href="#"
+                                                        hx-get="{{ table.htmx_url }}{{ sort_url }}"
+                                                        icon="heroicon.arrows-up-down"
+                                                        icon.size="sm"
+                                                        aria-label="{% trans 'Sort ascending' %}"
+                                                        class="!px-1.5 !py-1 !leading-none !text-base-content/60 hover:!text-base-content"
+                                                    ></c-cf.button>
+                                                {% elif column.order_by_alias.is_ascending %}
+                                                    {% querystring_replace table.prefixed_order_by_field=column.order_by_alias.opposite as=sort_url %}
+                                                    <c-cf.button
+                                                        btnStyle="ghost"
+                                                        size="xs"
+                                                        as="a"
+                                                        href="#"
+                                                        hx-get="{{ table.htmx_url }}{{ sort_url }}"
+                                                        icon="heroicon.arrow-small-up"
+                                                        icon.size="sm"
+                                                        aria-label="{% trans 'Sort descending' %}"
+                                                        class="!px-1.5 !py-1 !leading-none !text-base-content"
+                                                    ></c-cf.button>
+                                                {% else %}
+                                                    {% querystring_replace table.prefixed_order_by_field='' as=sort_url %}
+                                                    <c-cf.button
+                                                        btnStyle="ghost"
+                                                        size="xs"
+                                                        as="a"
+                                                        href="#"
+                                                        hx-get="{{ table.htmx_url }}{{ sort_url }}"
+                                                        icon="heroicon.arrow-small-down"
+                                                        icon.size="sm"
+                                                        aria-label="{% trans 'Clear sorting' %}"
+                                                        class="!px-1.5 !py-1 !leading-none !text-base-content"
+                                                    ></c-cf.button>
+                                                {% endif %}
+                                            </span>
+                                        {% else %}
+                                            {{ column.header }}
+                                        {% endif %}
+                                    </th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                    {% endif %}
+                {% endblock table.thead %}
+                {% block table.tbody %}{{ block.super }}{% endblock table.tbody %}
+                {% block table.tfoot %}{{ block.super }}{% endblock table.tfoot %}
+            </table>
+        </div>
     {% endblock table %}
 {% endblock table-wrapper %}

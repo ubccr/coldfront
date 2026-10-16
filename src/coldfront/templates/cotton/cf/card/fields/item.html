@@ -1,6 +1,6 @@
-<tr>
-    <th scope="row">{{ label }}</th>
-    <td>
-        <div class="d-flex align-items-start">{{ slot }}</div>
-    </td>
-</tr>
+<c-vars label />
+
+<div class="grid grid-cols-3 gap-3 px-6 py-3 border-b border-base-content/25">
+    <dt class="font-medium text-muted">{{ label }}</dt>
+    <dd class="col-span-2 flex items-start text-base-content">{{ slot }}</dd>
+</div>

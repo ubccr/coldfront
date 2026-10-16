@@ -97,7 +97,7 @@ class StorageResource(AllocatableResourceMixin, PrimaryModel):
         return self.name
 
     def get_status_color(self):
-        return "green"
+        return "success"
 
     def auto_generate_path(self, allocation):
         """Generate a storage path from the resource's path_template.
@@ -201,7 +201,7 @@ class StorageCluster(PrimaryModel):
         return self.name
 
     def get_status_color(self):
-        return "green"
+        return "success"
 
 
 @register_allocation_extension(StorageResource)
@@ -385,7 +385,7 @@ class StorageQuota(AllocationExtensionMixin, PrimaryModel):
         return f"Quota {self.path} -> {self.allocation}"
 
     def get_status_color(self):
-        return "green"
+        return "success"
 
     @classmethod
     def create_for_allocation(cls, allocation, values=None):
@@ -488,4 +488,4 @@ class StorageSnapshotPolicy(PrimaryModel):
         return f"{self.name} ({self.cluster.name})"
 
     def get_status_color(self):
-        return "green"
+        return "success"

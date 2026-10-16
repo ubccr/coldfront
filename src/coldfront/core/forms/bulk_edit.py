@@ -2,16 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from crispy_forms.layout import Fieldset
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from coldfront.core.choices import (
-    ColorChoices,
     CommentKindChoices,
     CustomFieldUIEditableChoices,
     CustomFieldUIVisibleChoices,
-    CustomLinkButtonClassChoices,
 )
 from coldfront.core.models import (
     CommentEntry,
@@ -23,7 +20,8 @@ from coldfront.core.models import (
     Tag,
 )
 from coldfront.forms import ColdFrontModelBulkEditForm
-from coldfront.forms.fields import CommentField
+from coldfront.forms.fields import ColorChoiceField, CommentField
+from coldfront.forms.layout import FieldSet
 from coldfront.forms.widgets.select import BulkEditNullBooleanSelect
 from coldfront.utils.forms import add_blank_choice
 
@@ -45,9 +43,9 @@ class CustomFieldChoiceSetBulkEditForm(ColdFrontModelBulkEditForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Custom Field Choice Set"),
+            FieldSet(
                 "description",
+                name=_("Custom Field Choice Set"),
             ),
         ]
 
@@ -116,20 +114,20 @@ class CustomFieldBulkEditForm(ColdFrontModelBulkEditForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Custom Field"),
+            FieldSet(
                 "label",
                 "description",
                 "group_name",
+                name=_("Custom Field"),
             ),
-            Fieldset(
-                _("Behavior"),
+            FieldSet(
                 "required",
                 "search_weight",
                 "weight",
                 "ui_visible",
                 "ui_editable",
                 "is_cloneable",
+                name=_("Behavior"),
             ),
         ]
 
@@ -140,13 +138,8 @@ class CustomFieldBulkEditForm(ColdFrontModelBulkEditForm):
 
 
 class TagBulkEditForm(ColdFrontModelBulkEditForm):
-    color = forms.CharField(
-        max_length=100,
+    color = ColorChoiceField(
         required=False,
-        widget=forms.Select(
-            choices=add_blank_choice(ColorChoices),
-            attrs={"class": "color-select"},
-        ),
         label=_("Color"),
     )
     weight = forms.IntegerField(
@@ -169,11 +162,11 @@ class TagBulkEditForm(ColdFrontModelBulkEditForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Tag"),
+            FieldSet(
                 "color",
                 "weight",
                 "description",
+                name=_("Tag"),
             ),
         ]
 
@@ -209,12 +202,12 @@ class SavedFilterBulkEditForm(ColdFrontModelBulkEditForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Saved Filter"),
+            FieldSet(
                 "description",
                 "weight",
                 "enabled",
                 "shared",
+                name=_("Saved Filter"),
             ),
         ]
 
@@ -250,12 +243,12 @@ class TableConfigBulkEditForm(ColdFrontModelBulkEditForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Tag"),
+            FieldSet(
                 "description",
                 "weight",
                 "enabled",
                 "shared",
+                name=_("Tag"),
             ),
         ]
 
@@ -275,10 +268,9 @@ class CustomLinkBulkEditForm(ColdFrontModelBulkEditForm):
         max_length=50,
         required=False,
     )
-    button_class = forms.ChoiceField(
-        choices=add_blank_choice(CustomLinkButtonClassChoices),
+    button_variant = ColorChoiceField(
         required=False,
-        label=_("Button class"),
+        label=_("Button variant"),
     )
     new_window = forms.NullBooleanField(
         label=_("New window"),
@@ -287,12 +279,12 @@ class CustomLinkBulkEditForm(ColdFrontModelBulkEditForm):
     )
     link_text = forms.CharField(
         label=_("Link text"),
-        widget=forms.Textarea(attrs={"class": "font-monospace"}),
+        widget=forms.Textarea(attrs={"class": "font-mono"}),
         required=False,
     )
     link_url = forms.CharField(
         label=_("Link URL"),
-        widget=forms.Textarea(attrs={"class": "font-monospace"}),
+        widget=forms.Textarea(attrs={"class": "font-mono"}),
         required=False,
     )
 
@@ -302,18 +294,18 @@ class CustomLinkBulkEditForm(ColdFrontModelBulkEditForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Custom Link"),
+            FieldSet(
                 "enabled",
                 "weight",
                 "group_name",
-                "button_class",
+                "button_variant",
                 "new_window",
+                name=_("Custom Link"),
             ),
-            Fieldset(
-                _("Templates"),
+            FieldSet(
                 "link_text",
                 "link_url",
+                name=_("Templates"),
             ),
         ]
 
@@ -332,9 +324,9 @@ class CommentEntryBulkEditForm(ColdFrontModelBulkEditForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Comment Entry"),
+            FieldSet(
                 "kind",
                 "comments",
+                name=_("Comment Entry"),
             ),
         ]

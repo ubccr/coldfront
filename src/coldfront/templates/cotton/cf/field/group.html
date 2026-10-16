@@ -1,0 +1,60 @@
+{% comment %}
+Renders a set of bound fields side-by-side (the GroupFields layout
+descriptor). Each field always renders with its own label above its control.
+
+Props:
+  fields   list of bound fields to render in the group
+  form     the form
+  label    shared label (optional). Inline: shown in the 12rem label column.
+           Stacked: shown as a group heading above the row.
+  layout   "inline" (default) or "stacked"
+  nullify  render a "Set to None" checkbox for each nullable field
+
+Layout:
+  * inline  -> fields in a flex row that grows to fill the width, wrapped in
+               the 12rem label column (shared label or empty spacer)
+  * stacked -> fields in a flex row that grows to fill; a shared label (if
+               any) becomes a group heading
+{% endcomment %}
+{% load i18n %}
+
+<c-vars
+    :fields="fields"
+    :form="form"
+    label=""
+    layout="inline"
+    :nullify="False"
+/>
+
+{% if layout == 'stacked' %}
+    {% if label %}
+        <h3 class="mb-3 text-lg font-semibold">{{ label }}</h3>
+    {% endif %}
+    <div class="flex flex-wrap gap-4">
+        {% for field in fields %}
+            <div class="flex-1 min-w-0">
+                <c-cf.field :field="field" :form="form" layout="stacked" :nullify="nullify" />
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="grid grid-cols-[12rem_1fr] items-start gap-4 mb-4">
+        {% if label %}
+            <c-cf.label
+                :for="None"
+                label="{{ label }}"
+                :required="False"
+                class="sm:text-right self-center"
+            />
+        {% else %}
+            <div></div>
+        {% endif %}
+        <div class="flex flex-wrap gap-4">
+            {% for field in fields %}
+                <div class="flex-1 min-w-0">
+                    <c-cf.field :field="field" :form="form" layout="stacked" :nullify="nullify" />
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endif %}

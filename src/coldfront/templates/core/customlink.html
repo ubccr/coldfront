@@ -4,17 +4,13 @@
 {% block content %}
     <c-cf.layout.panels>
         <c-slot name="left">
-            <c-cf.card.fields header='{% trans "Custom Link" %}' only>
+            <c-cf.card.fields title='{% trans "Custom Link" %}'>
                 <c-cf.card.fields.item label='{% trans "Name" %}'>
                     {{ object.name }}
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label='{% trans "Enabled" %}'>
-                    {% if object.enabled %}
-                        <i class="fa-solid fa-check text-success"></i>
-                    {% else %}
-                        <i class="fa-solid fa-xmark text-danger"></i>
-                    {% endif %}
+                    <c-cf.checkmark :value="object.enabled" />
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label='{% trans "Group Name" %}'>
@@ -25,20 +21,16 @@
                     {{ object.weight }}
                 </c-cf.card.fields.item>
 
-                <c-cf.card.fields.item label='{% trans "Button Class" %}'>
-                    {{ object.get_button_class_display }}
+                <c-cf.card.fields.item label='{% trans "Button Variant" %}'>
+                    {{ object.get_button_variant_display }}
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label='{% trans "New Window" %}'>
-                    {% if object.new_window %}
-                        <i class="fa-solid fa-check text-success"></i>
-                    {% else %}
-                        <i class="fa-solid fa-xmark text-danger"></i>
-                    {% endif %}
+                    <c-cf.checkmark :value="object.new_window" />
                 </c-cf.card.fields.item>
             </c-cf.card.fields>
 
-            <c-cf.card.fields header='{% trans "Templates" %}' only>
+            <c-cf.card.fields title='{% trans "Templates" %}'>
                 <c-cf.card.fields.item label='{% trans "Link Text" %}'>
                     <code>{{ object.link_text }}</code>
                 </c-cf.card.fields.item>
@@ -50,14 +42,14 @@
         </c-slot>
 
         <c-slot name="right">
-            <c-cf.card.list header='{% trans "Object Types" %}' only>
+            <c-cf.card.list title='{% trans "Object Types" %}'>
                 {% for ct in object.object_types.all %}
                     <c-cf.card.list.item>
                         {{ ct }}
                     </c-cf.card.list.item>
                 {% endfor %}
             </c-cf.card.list>
-            <c-cf.card.related_objects :object="object" :models="related_models" only />
+            <c-cf.card.related_objects :object="object" :models="related_models" />
         </c-slot>
     </c-cf.layout.panels>
 {% endblock %}

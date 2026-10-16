@@ -4,7 +4,14 @@
 {% block title %}{% trans "Invite Accepted" %}{% endblock %}
 
 {% block content %}
-    <div class="alert alert-success">
-        {% blocktrans %}You have joined the project <strong>{{ invite.project.name }}</strong>.{% endblocktrans %}
-    </div>
+    <c-cf.alert
+        class="m-4"
+        variant="success"
+        icon="heroicon.information-circle"
+    >
+        <span>
+            {% blocktrans trimmed %}You have joined the project <strong
+                >{{ invite.project.name }}</strong>.{% endblocktrans %}
+        </span>
+    </c-cf.alert>
 {% endblock %}

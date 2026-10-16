@@ -5,7 +5,6 @@
 
 import json
 
-from crispy_forms.layout import Fieldset, Layout
 from django import forms
 from django.contrib.auth import password_validation
 from django.core.exceptions import FieldError
@@ -17,15 +16,15 @@ from coldfront.forms.fields import (
     DynamicModelMultipleChoiceField,
     JSONField,
 )
-from coldfront.forms.layouts import CopyClipboard, DateTime
-from coldfront.forms.mixins import HorizontalFormMixin
+from coldfront.forms.layout import FieldSet
+from coldfront.forms.widgets import CopyWidget
 from coldfront.registry import registry
 from coldfront.users.constants import CONSTRAINT_TOKEN_USER, OBJECTPERMISSION_OBJECT_TYPES, RESERVED_ACTIONS
 from coldfront.users.models import Group, ObjectPermission, Role, Token, User
 from coldfront.users.permissions import qs_filter_from_constraints
 
 
-class UserForm(HorizontalFormMixin, forms.ModelForm):
+class UserForm(forms.ModelForm):
     password = forms.CharField(
         label=_("Password"),
         widget=forms.PasswordInput(),
@@ -54,31 +53,31 @@ class UserForm(HorizontalFormMixin, forms.ModelForm):
     )
 
     fieldsets = (
-        Fieldset(
-            _("User"),
+        FieldSet(
             "username",
             "password",
             "confirm_password",
             "first_name",
             "last_name",
             "email",
+            name=_("User"),
         ),
-        Fieldset(
-            _("Groups"),
+        FieldSet(
             "groups",
+            name=_("Groups"),
         ),
-        Fieldset(
-            _("Status"),
+        FieldSet(
             "is_active",
             "is_superuser",
+            name=_("Status"),
         ),
-        Fieldset(
-            _("Roles"),
+        FieldSet(
             "roles",
+            name=_("Roles"),
         ),
-        Fieldset(
-            _("Permissions"),
+        FieldSet(
             "object_permissions",
+            name=_("Permissions"),
         ),
     )
 
@@ -125,7 +124,7 @@ class UserForm(HorizontalFormMixin, forms.ModelForm):
             password_validation.validate_password(self.cleaned_data["password"], self.instance)
 
 
-class GroupForm(HorizontalFormMixin, forms.ModelForm):
+class GroupForm(forms.ModelForm):
     users = DynamicModelMultipleChoiceField(
         label=_("Users"),
         required=False,
@@ -143,22 +142,22 @@ class GroupForm(HorizontalFormMixin, forms.ModelForm):
     )
 
     fieldsets = (
-        Fieldset(
-            _("Group"),
+        FieldSet(
             "name",
             "description",
+            name=_("Group"),
         ),
-        Fieldset(
-            _("Users"),
+        FieldSet(
             "users",
+            name=_("Users"),
         ),
-        Fieldset(
-            _("Roles"),
+        FieldSet(
             "roles",
+            name=_("Roles"),
         ),
-        Fieldset(
-            _("Permissions"),
+        FieldSet(
             "object_permissions",
+            name=_("Permissions"),
         ),
     )
 
@@ -190,7 +189,7 @@ class GroupForm(HorizontalFormMixin, forms.ModelForm):
         return instance
 
 
-class ObjectPermissionForm(HorizontalFormMixin, forms.ModelForm):
+class ObjectPermissionForm(forms.ModelForm):
     object_types = ContentTypeMultipleChoiceField(
         label=_("Object types"),
         queryset=ObjectType.objects.filter(OBJECTPERMISSION_OBJECT_TYPES),
@@ -226,32 +225,32 @@ class ObjectPermissionForm(HorizontalFormMixin, forms.ModelForm):
     )
 
     fieldsets = (
-        Fieldset(
-            _("Permission"),
+        FieldSet(
             "name",
             "description",
             "enabled",
+            name=_("Permission"),
         ),
-        Fieldset(
-            _("Actions"),
+        FieldSet(
             "can_view",
             "can_add",
             "can_change",
             "can_delete",
             "actions",
+            name=_("Actions"),
         ),
-        Fieldset(
-            _("Objects"),
+        FieldSet(
             "object_types",
+            name=_("Objects"),
         ),
-        Fieldset(
-            _("Assignment"),
+        FieldSet(
             "groups",
             "users",
+            name=_("Assignment"),
         ),
-        Fieldset(
-            _("Constraints"),
+        FieldSet(
             "constraints",
+            name=_("Constraints"),
         ),
     )
 
@@ -292,33 +291,33 @@ class ObjectPermissionForm(HorizontalFormMixin, forms.ModelForm):
         # Rebuild the Actions fieldset to include dynamic fields
         if action_field_names:
             self.fieldsets = (
-                Fieldset(
-                    _("Permission"),
+                FieldSet(
                     "name",
                     "description",
                     "enabled",
+                    name=_("Permission"),
                 ),
-                Fieldset(
-                    _("Actions"),
+                FieldSet(
                     "can_view",
                     "can_add",
                     "can_change",
                     "can_delete",
                     *action_field_names,
                     "actions",
+                    name=_("Actions"),
                 ),
-                Fieldset(
-                    _("Objects"),
+                FieldSet(
                     "object_types",
+                    name=_("Objects"),
                 ),
-                Fieldset(
-                    _("Assignment"),
+                FieldSet(
                     "groups",
                     "users",
+                    name=_("Assignment"),
                 ),
-                Fieldset(
-                    _("Constraints"),
+                FieldSet(
                     "constraints",
+                    name=_("Constraints"),
                 ),
             )
 
@@ -429,7 +428,7 @@ class ObjectPermissionForm(HorizontalFormMixin, forms.ModelForm):
         return instance
 
 
-class RoleForm(HorizontalFormMixin, forms.ModelForm):
+class RoleForm(forms.ModelForm):
     object_permissions = DynamicModelMultipleChoiceField(
         required=False,
         label=_("Permissions"),
@@ -447,23 +446,23 @@ class RoleForm(HorizontalFormMixin, forms.ModelForm):
     )
 
     fieldsets = (
-        Fieldset(
-            _("Role"),
+        FieldSet(
             "name",
             "description",
             "weight",
+            name=_("Role"),
         ),
-        Fieldset(
-            _("Permissions"),
+        FieldSet(
             "object_permissions",
+            name=_("Permissions"),
         ),
-        Fieldset(
-            _("Users"),
+        FieldSet(
             "users",
+            name=_("Users"),
         ),
-        Fieldset(
-            _("Groups"),
+        FieldSet(
             "groups",
+            name=_("Groups"),
         ),
     )
 
@@ -496,8 +495,9 @@ class RoleForm(HorizontalFormMixin, forms.ModelForm):
         return instance
 
 
-class UserTokenForm(HorizontalFormMixin, forms.ModelForm):
+class UserTokenForm(forms.ModelForm):
     token = forms.CharField(
+        widget=CopyWidget(),
         label=_("Token"),
         help_text=_(
             "Tokens must be at least 40 characters in length. <strong>Be sure to record your token</strong> prior to "
@@ -505,12 +505,17 @@ class UserTokenForm(HorizontalFormMixin, forms.ModelForm):
         ),
     )
 
+    expires = forms.DateTimeField(
+        label=_("expires"),
+        required=False,
+    )
+
     fieldsets = (
-        Layout(
-            CopyClipboard("token"),
+        FieldSet(
+            "token",
             "enabled",
             "write_enabled",
-            DateTime("expires"),
+            "expires",
             "description",
         ),
     )
@@ -551,12 +556,12 @@ class TokenForm(UserTokenForm):
     )
 
     fieldsets = (
-        Layout(
-            CopyClipboard("token"),
+        FieldSet(
+            "token",
             "user",
             "enabled",
             "write_enabled",
-            DateTime("expires"),
+            "expires",
             "description",
         ),
     )

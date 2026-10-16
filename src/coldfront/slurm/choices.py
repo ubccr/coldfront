@@ -19,7 +19,7 @@ class SlurmAdminLevelChoices(ChoiceSet):
         (LEVEL_NOTSET, _("Not Set"), "secondary"),
         (LEVEL_NONE, _("None"), "info"),
         (LEVEL_OPERATOR, _("Operator"), "warning"),
-        (LEVEL_ADMIN, _("Administrator"), "danger"),
+        (LEVEL_ADMIN, _("Administrator"), "error"),
     ]
 
 
@@ -33,7 +33,7 @@ class SlurmPartitionStateChoices(ChoiceSet):
 
     CHOICES = [
         (STATE_UP, _("UP"), "success"),
-        (STATE_DOWN, _("DOWN"), "danger"),
+        (STATE_DOWN, _("DOWN"), "error"),
         (STATE_DRAIN, _("DRAIN"), "warning"),
         (STATE_INACTIVE, _("INACTIVE"), "secondary"),
     ]
@@ -54,7 +54,7 @@ class SlurmPreemptModeChoices(ChoiceSet):
         (MODE_OFF, _("OFF"), "secondary"),
         (MODE_SUSPEND, _("SUSPEND"), "info"),
         (MODE_REQUEUE, _("REQUEUE"), "warning"),
-        (MODE_CANCEL, _("CANCEL"), "danger"),
+        (MODE_CANCEL, _("CANCEL"), "error"),
         (MODE_GANG, _("GANG"), "primary"),
         (MODE_WITHIN, _("WITHIN"), "info"),
         (MODE_PRIORITY, _("PRIORITY"), "warning"),
@@ -87,7 +87,7 @@ class SlurmPriorityFlagsChoices(ChoiceSet):
         (FLAG_NO_FAIR_TREE, _("NO_FAIR_TREE"), "secondary"),
         (FLAG_INCR_ONLY, _("INCR_ONLY"), "info"),
         (FLAG_MAX_TRES, _("MAX_TRES"), "warning"),
-        (FLAG_MAX_TRES_GRES, _("MAX_TRES_GRES"), "danger"),
+        (FLAG_MAX_TRES_GRES, _("MAX_TRES_GRES"), "error"),
         (FLAG_NO_NORMAL_ALL, _("NO_NORMAL_ALL"), "secondary"),
         (FLAG_NO_NORMAL_ASSOC, _("NO_NORMAL_ASSOC"), "secondary"),
         (FLAG_NO_NORMAL_PART, _("NO_NORMAL_PART"), "secondary"),
@@ -126,12 +126,12 @@ class SlurmPriorityUsageResetPeriodChoices(ChoiceSet):
 
     CHOICES = [
         (PERIOD_NONE, _("NONE"), "secondary"),
-        (PERIOD_NOW, _("NOW"), "danger"),
+        (PERIOD_NOW, _("NOW"), "error"),
         (PERIOD_DAILY, _("DAILY"), "info"),
         (PERIOD_WEEKLY, _("WEEKLY"), "info"),
         (PERIOD_MONTHLY, _("MONTHLY"), "warning"),
         (PERIOD_QUARTERLY, _("QUARTERLY"), "warning"),
-        (PERIOD_YEARLY, _("YEARLY"), "danger"),
+        (PERIOD_YEARLY, _("YEARLY"), "error"),
     ]
 
 
@@ -150,7 +150,7 @@ class SlurmBillingModeChoices(ChoiceSet):
     CHOICES = [
         (MODE_SUM, _("Sum"), "info"),
         (MODE_MAX_TRES, _("Max TRES"), "warning"),
-        (MODE_MAX_TRES_GRES, _("Max TRES GRES"), "danger"),
+        (MODE_MAX_TRES_GRES, _("Max TRES GRES"), "error"),
     ]
 
 
@@ -170,5 +170,5 @@ class SlurmSuEnforcementModeChoices(ChoiceSet):
     CHOICES = [
         (MODE_NONE, _("None"), "secondary"),
         (MODE_DECAY, _("Decay"), "warning"),
-        (MODE_HARD, _("Hard"), "danger"),
+        (MODE_HARD, _("Hard"), "error"),
     ]

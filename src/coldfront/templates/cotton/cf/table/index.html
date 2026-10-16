@@ -1,20 +1,28 @@
 {% load render_table from django_tables2 %}
 {% load i18n %}
 
-{% cotton:vars :request="request" %}
-{% cotton:vars :perms="perms" %}
-{% cotton:vars show_paginator=True %}
-{% cotton:vars table %}
+<c-vars
+    id="object_list"
+    show_paginator=True
+    table
+/>
 
 {% if table.rows %}
-    <div class="table-container table-responsive">
-        {% render_table table 'generic/table.html' %}
+    <div class="htmx-container" id="{{ id }}">
+        {% render_table table %}
+        {% if show_paginator %}
+            <c-cf.table.paginator :table="table" :paginator="table.paginator" :page="table.page" />
+        {% endif %}
     </div>
-    {% if show_paginator %}
-        <c-cf.table.paginator :paginator="table.paginator" :page="table.page" only />
-    {% endif %}
 {% else %}
-    <div class="card-body text-muted">
+    <c-cf.card.body class="htmx-container text-muted">
         {% if table.empty_text %}{{ table.empty_text }}{% else %}{% trans "None" %}{% endif %}
-    </div>
+    </c-cf.card.body>
+{% endif %}
+
+{% if request.htmx %}
+    {# Include the updated object count for display elsewhere on the page #}
+    {% if not table.embedded %}
+        <div hx-swap-oob="innerHTML:.total-object-count">{{ table.rows|length }}</div>
+    {% endif %}
 {% endif %}

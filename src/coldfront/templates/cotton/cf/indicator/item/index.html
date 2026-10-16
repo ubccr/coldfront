@@ -1,0 +1,83 @@
+{% comment %}
+DaisyUI indicator item (shape: badge/status, variant, position, size). Renders
+a span.indicator-item positioned against a wrapper element. shape="none" renders
+no badge/status styling.
+{% endcomment %}
+
+<c-vars
+    class=""
+    shape="badge"
+    variant=""
+    size=""
+    horizontal=""
+    vertical=""
+    :badgeVariantClasses="{
+        'neutral': 'badge-neutral',
+        'primary': 'badge-primary',
+        'secondary': 'badge-secondary',
+        'accent': 'badge-accent',
+        'info': 'badge-info',
+        'success': 'badge-success',
+        'warning': 'badge-warning',
+        'error': 'badge-error'
+    }"
+    :statusVariantClasses="{
+        'neutral': 'status-neutral',
+        'primary': 'status-primary',
+        'secondary': 'status-secondary',
+        'accent': 'status-accent',
+        'info': 'status-info',
+        'success': 'status-success',
+        'warning': 'status-warning',
+        'error': 'status-error'
+    }"
+    :horizontalClasses="{
+        'start': 'indicator-start',
+        'center': 'indicator-center',
+        'end': 'indicator-end'
+    }"
+    :verticalClasses="{
+        'top': 'indicator-top',
+        'middle': 'indicator-middle',
+        'bottom': 'indicator-bottom'
+    }"
+    :badgeSizeClasses="{
+        'xs': 'badge-xs',
+        'sm': 'badge-sm',
+        'md': 'badge-md',
+        'lg': 'badge-lg',
+        'xl': 'badge-xl'
+    }"
+    :statusSizeClasses="{
+        'xs': 'status-xs',
+        'sm': 'status-sm',
+        'md': 'status-md',
+        'lg': 'status-lg',
+        'xl': 'status-xl'
+    }"
+/>
+{% parse_icon attrs as i %}
+
+<span
+    class="
+        indicator-item
+        {% if shape == 'badge' %}
+        badge
+        {{ badgeVariantClasses|get_dict_item:variant }}
+        {{ badgeSizeClasses|get_dict_item:size }}
+        {% elif shape == 'status' %}
+        status
+        {{ statusVariantClasses|get_dict_item:variant }}
+        {{ statusSizeClasses|get_dict_item:size }}
+        {% endif %}
+        {{ horizontalClasses|get_dict_item:horizontal }}
+        {{ verticalClasses|get_dict_item:vertical }}
+        {{ class }}
+    "
+    {{ attrs|strip_icon_attrs }}
+>
+    {% if i.name %}
+        <c-cfi n="{{ i.name }}" class="{{ i.css_class }}" />
+    {% endif %}
+    {{ slot }}
+</span>

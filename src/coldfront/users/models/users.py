@@ -14,7 +14,7 @@ from django.contrib.auth.models import (
     UserManager as DjangoUserManager,
 )
 from django.contrib.auth.validators import UnicodeUsernameValidator
-from django.core.mail import send_mail
+from django.core.mail import EmailMessage
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
@@ -133,9 +133,20 @@ class User(AbstractBaseUser, PermissionsMixin):
         """Return the short name for the user."""
         return self.first_name
 
-    def email_user(self, subject, message, from_email=None, **kwargs):
+    def get_initials(self):
+        """
+        Return the initials of the user's first and last name. Falls back to the
+        first letter of the username if neither name is set.
+        """
+        initials = (self.first_name[:1] + self.last_name[:1]).upper()
+        if not initials:
+            initials = self.username[:1].upper()
+        return initials
+
+    def email_user(self, subject, message, from_email=None):
         """Send an email to this user."""
-        send_mail(subject, message, from_email, [self.email], **kwargs)
+        email = EmailMessage(subject, message, from_email, [self.email])
+        email.send(using="default")
 
     def __str__(self):
         if not self.get_full_name():

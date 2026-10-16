@@ -4,7 +4,6 @@
 
 import django.db.models.deletion
 import taggit.managers
-from django.conf import settings
 from django.db import migrations, models
 
 import coldfront.core.utils
@@ -17,14 +16,308 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ("core", "0002_initial"),
-        ("ras", "0003_projectinvite"),
+        ("core", "0001_initial"),
+        ("ras", "0001_initial"),
         ("tenancy", "0001_initial"),
-        ("users", "0001_initial"),
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
+        migrations.CreateModel(
+            name="SlurmQOS",
+            fields=[
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("created", models.DateTimeField(auto_now_add=True, null=True, verbose_name="created")),
+                ("last_updated", models.DateTimeField(auto_now=True, null=True, verbose_name="last updated")),
+                (
+                    "custom_field_data",
+                    models.JSONField(blank=True, default=dict, encoder=coldfront.core.utils.CustomFieldJSONEncoder),
+                ),
+                ("name", models.CharField(max_length=100, unique=True, verbose_name="name")),
+                ("description", models.CharField(blank=True, max_length=200, verbose_name="description")),
+                (
+                    "priority",
+                    models.PositiveIntegerField(
+                        blank=True,
+                        help_text="QOS priority factor. Higher values increase a job's priority when this QOS is used. Maps to Priority in the dump format.",
+                        null=True,
+                        verbose_name="priority",
+                    ),
+                ),
+                (
+                    "max_submit_jobs_per_user",
+                    models.PositiveIntegerField(
+                        blank=True,
+                        help_text="Maximum number of jobs a user can submit with this QOS. Maps to MaxSubmitJobsPU in the dump format.",
+                        null=True,
+                        verbose_name="max submit jobs per user",
+                    ),
+                ),
+                (
+                    "max_jobs_per_user",
+                    models.PositiveIntegerField(
+                        blank=True,
+                        help_text="Maximum number of running jobs a user can have with this QOS. Maps to MaxJobsPU in the dump format.",
+                        null=True,
+                        verbose_name="max jobs per user",
+                    ),
+                ),
+                (
+                    "max_submit_jobs_per_account",
+                    models.PositiveIntegerField(
+                        blank=True,
+                        help_text="Maximum number of jobs an account can submit with this QOS. Maps to MaxSubmitJobsPA in the dump format.",
+                        null=True,
+                        verbose_name="max submit jobs per account",
+                    ),
+                ),
+                (
+                    "max_jobs_per_account",
+                    models.PositiveIntegerField(
+                        blank=True,
+                        help_text="Maximum number of running jobs an account can have with this QOS. Maps to MaxJobsPA in the dump format.",
+                        null=True,
+                        verbose_name="max jobs per account",
+                    ),
+                ),
+                (
+                    "max_wall_duration_per_job",
+                    coldfront.slurm.models.SlurmTimeField(
+                        blank=True,
+                        help_text="Maximum wall clock time per job using this QOS. Maps to MaxWallDurationPerJob in the dump format.",
+                        max_length=64,
+                        null=True,
+                        verbose_name="max wall duration per job",
+                    ),
+                ),
+                (
+                    "limit_factor",
+                    models.FloatField(
+                        blank=True,
+                        help_text="A float that is factored into an association's GrpTRES limits. Maps to LimitFactor in the dump format.",
+                        null=True,
+                        verbose_name="limit factor",
+                    ),
+                ),
+                (
+                    "grace_time",
+                    models.PositiveIntegerField(
+                        blank=True,
+                        help_text="Preemption grace time in seconds. Jobs selected for preemption are given this much time before termination. Maps to GraceTime in the dump format.",
+                        null=True,
+                        verbose_name="grace time",
+                    ),
+                ),
+            ],
+            options={
+                "verbose_name": "slurm qos",
+                "verbose_name_plural": "slurm qos",
+                "ordering": ["name"],
+            },
+            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+        ),
+        migrations.CreateModel(
+            name="SlurmUser",
+            fields=[
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("created", models.DateTimeField(auto_now_add=True, null=True, verbose_name="created")),
+                ("last_updated", models.DateTimeField(auto_now=True, null=True, verbose_name="last updated")),
+                (
+                    "custom_field_data",
+                    models.JSONField(blank=True, default=dict, encoder=coldfront.core.utils.CustomFieldJSONEncoder),
+                ),
+                ("description", models.CharField(blank=True, max_length=200, verbose_name="description")),
+                (
+                    "default_wckey",
+                    models.CharField(
+                        blank=True,
+                        help_text="Default wckey for fairshare and accounting.",
+                        max_length=100,
+                        null=True,
+                        verbose_name="default wckey",
+                    ),
+                ),
+                (
+                    "admin_level",
+                    models.SmallIntegerField(
+                        blank=True,
+                        choices=[(0, "Not Set"), (1, "None"), (2, "Operator"), (3, "Administrator")],
+                        help_text="Slurm administrator level for this user. Not Set (0), None (1), Operator (2), or Administrator (3). Operators can modify accounting entities; Administrators have full control.",
+                        null=True,
+                        verbose_name="admin level",
+                    ),
+                ),
+            ],
+            options={
+                "verbose_name": "slurm user",
+                "verbose_name_plural": "slurm users",
+                "ordering": ["cluster__name", "user__username"],
+            },
+            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+        ),
+        migrations.CreateModel(
+            name="SlurmAccount",
+            fields=[
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("created", models.DateTimeField(auto_now_add=True, null=True, verbose_name="created")),
+                ("last_updated", models.DateTimeField(auto_now=True, null=True, verbose_name="last updated")),
+                (
+                    "custom_field_data",
+                    models.JSONField(blank=True, default=dict, encoder=coldfront.core.utils.CustomFieldJSONEncoder),
+                ),
+                ("description", models.CharField(blank=True, max_length=200, verbose_name="description")),
+                ("name", models.CharField(max_length=100, verbose_name="name")),
+                (
+                    "fairshare",
+                    models.PositiveIntegerField(
+                        blank=True,
+                        default=None,
+                        help_text="Account-level fairshare. When set, all user associations under this account inherit via Fairshare=parent in the dump. ",
+                        null=True,
+                        verbose_name="fairshare",
+                    ),
+                ),
+                (
+                    "service_units",
+                    models.PositiveBigIntegerField(
+                        blank=True,
+                        help_text="Service units (SU) granted to this account. When the cluster's enforce_su_limits is on, this is pushed to Slurm as GrpTresMins=billing on the account association.",
+                        null=True,
+                        verbose_name="service units",
+                    ),
+                ),
+                (
+                    "tags",
+                    taggit.managers.TaggableManager(
+                        help_text="A comma-separated list of tags.",
+                        through="core.TaggedItem",
+                        to="core.Tag",
+                        verbose_name="Tags",
+                    ),
+                ),
+            ],
+            options={
+                "verbose_name": "slurm account",
+                "verbose_name_plural": "slurm accounts",
+                "ordering": ["cluster__name", "name"],
+            },
+            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+        ),
+        migrations.CreateModel(
+            name="SlurmAssociation",
+            fields=[
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("created", models.DateTimeField(auto_now_add=True, null=True, verbose_name="created")),
+                ("last_updated", models.DateTimeField(auto_now=True, null=True, verbose_name="last updated")),
+                (
+                    "custom_field_data",
+                    models.JSONField(blank=True, default=dict, encoder=coldfront.core.utils.CustomFieldJSONEncoder),
+                ),
+                ("description", models.CharField(blank=True, max_length=200, verbose_name="description")),
+                (
+                    "fairshare",
+                    models.PositiveIntegerField(
+                        blank=True,
+                        default=1,
+                        help_text="Fairshare value for this association. Determines relative priority within the fairshare tree.",
+                        verbose_name="fairshare",
+                    ),
+                ),
+                (
+                    "max_jobs",
+                    models.PositiveIntegerField(
+                        blank=True,
+                        help_text="Maximum number of jobs that can run simultaneously in this association.",
+                        null=True,
+                        verbose_name="max jobs",
+                    ),
+                ),
+                (
+                    "max_submit_jobs",
+                    models.PositiveIntegerField(
+                        blank=True,
+                        help_text="Maximum number of jobs that can be submitted by this association.",
+                        null=True,
+                        verbose_name="max submit jobs",
+                    ),
+                ),
+                (
+                    "max_tres_per_job",
+                    models.JSONField(
+                        blank=True,
+                        help_text='JSON dict of TRES limits per job (e.g., {"node":5,"cpu":20}).',
+                        null=True,
+                        verbose_name="max TRES per job",
+                    ),
+                ),
+                (
+                    "max_tres_mins_per_job",
+                    models.JSONField(
+                        blank=True,
+                        help_text='JSON dict of TRES minute limits per job (e.g., {"cpu":360}).',
+                        null=True,
+                        verbose_name="max TRES minutes per job",
+                    ),
+                ),
+                (
+                    "max_wall_duration_per_job",
+                    coldfront.slurm.models.SlurmTimeField(
+                        blank=True,
+                        help_text="Maximum wall clock duration per job.",
+                        max_length=64,
+                        null=True,
+                        verbose_name="max wall duration per job",
+                    ),
+                ),
+                (
+                    "allocation",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="%(app_label)s_%(class)s_extensions",
+                        to="ras.allocation",
+                        unique=True,
+                    ),
+                ),
+                (
+                    "parent",
+                    models.ForeignKey(
+                        blank=True,
+                        help_text="Parent account in the Slurm hierarchy for this association.",
+                        null=True,
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="child_associations",
+                        to="slurm.slurmaccount",
+                        verbose_name="parent account",
+                    ),
+                ),
+                (
+                    "slurm_account",
+                    models.ForeignKey(
+                        blank=True,
+                        help_text="The Slurm account for this allocation. Links the allocation to a named Slurm accounting account.",
+                        null=True,
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="associations",
+                        to="slurm.slurmaccount",
+                        verbose_name="Slurm account",
+                    ),
+                ),
+                (
+                    "tags",
+                    taggit.managers.TaggableManager(
+                        help_text="A comma-separated list of tags.",
+                        through="core.TaggedItem",
+                        to="core.Tag",
+                        verbose_name="Tags",
+                    ),
+                ),
+            ],
+            options={
+                "verbose_name": "slurm association",
+                "verbose_name_plural": "slurm associations",
+                "ordering": ["allocation__slug"],
+            },
+            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+        ),
         migrations.CreateModel(
             name="SlurmCluster",
             fields=[
@@ -185,452 +478,6 @@ class Migration(migrations.Migration):
             bases=(coldfront.models.deletion.DeleteMixin, models.Model),
         ),
         migrations.CreateModel(
-            name="SlurmAccount",
-            fields=[
-                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
-                ("created", models.DateTimeField(auto_now_add=True, null=True, verbose_name="created")),
-                ("last_updated", models.DateTimeField(auto_now=True, null=True, verbose_name="last updated")),
-                (
-                    "custom_field_data",
-                    models.JSONField(blank=True, default=dict, encoder=coldfront.core.utils.CustomFieldJSONEncoder),
-                ),
-                ("description", models.CharField(blank=True, max_length=200, verbose_name="description")),
-                ("name", models.CharField(max_length=100, verbose_name="name")),
-                (
-                    "fairshare",
-                    models.PositiveIntegerField(
-                        blank=True,
-                        default=None,
-                        help_text="Account-level fairshare. When set, all user associations under this account inherit via Fairshare=parent in the dump. ",
-                        null=True,
-                        verbose_name="fairshare",
-                    ),
-                ),
-                (
-                    "service_units",
-                    models.PositiveBigIntegerField(
-                        blank=True,
-                        help_text="Service units (SU) granted to this account. When the cluster's enforce_su_limits is on, this is pushed to Slurm as GrpTresMins=billing on the account association.",
-                        null=True,
-                        verbose_name="service units",
-                    ),
-                ),
-                (
-                    "tags",
-                    taggit.managers.TaggableManager(
-                        help_text="A comma-separated list of tags.",
-                        through="core.TaggedItem",
-                        to="core.Tag",
-                        verbose_name="Tags",
-                    ),
-                ),
-                (
-                    "cluster",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="accounts",
-                        to="slurm.slurmcluster",
-                        verbose_name="cluster",
-                    ),
-                ),
-            ],
-            options={
-                "verbose_name": "slurm account",
-                "verbose_name_plural": "slurm accounts",
-                "ordering": ["cluster__name", "name"],
-            },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
-        ),
-        migrations.CreateModel(
-            name="SlurmQOS",
-            fields=[
-                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
-                ("created", models.DateTimeField(auto_now_add=True, null=True, verbose_name="created")),
-                ("last_updated", models.DateTimeField(auto_now=True, null=True, verbose_name="last updated")),
-                (
-                    "custom_field_data",
-                    models.JSONField(blank=True, default=dict, encoder=coldfront.core.utils.CustomFieldJSONEncoder),
-                ),
-                ("name", models.CharField(max_length=100, unique=True, verbose_name="name")),
-                ("description", models.CharField(blank=True, max_length=200, verbose_name="description")),
-                (
-                    "priority",
-                    models.PositiveIntegerField(
-                        blank=True,
-                        help_text="QOS priority factor. Higher values increase a job's priority when this QOS is used. Maps to Priority in the dump format.",
-                        null=True,
-                        verbose_name="priority",
-                    ),
-                ),
-                (
-                    "max_submit_jobs_per_user",
-                    models.PositiveIntegerField(
-                        blank=True,
-                        help_text="Maximum number of jobs a user can submit with this QOS. Maps to MaxSubmitJobsPU in the dump format.",
-                        null=True,
-                        verbose_name="max submit jobs per user",
-                    ),
-                ),
-                (
-                    "max_jobs_per_user",
-                    models.PositiveIntegerField(
-                        blank=True,
-                        help_text="Maximum number of running jobs a user can have with this QOS. Maps to MaxJobsPU in the dump format.",
-                        null=True,
-                        verbose_name="max jobs per user",
-                    ),
-                ),
-                (
-                    "max_submit_jobs_per_account",
-                    models.PositiveIntegerField(
-                        blank=True,
-                        help_text="Maximum number of jobs an account can submit with this QOS. Maps to MaxSubmitJobsPA in the dump format.",
-                        null=True,
-                        verbose_name="max submit jobs per account",
-                    ),
-                ),
-                (
-                    "max_jobs_per_account",
-                    models.PositiveIntegerField(
-                        blank=True,
-                        help_text="Maximum number of running jobs an account can have with this QOS. Maps to MaxJobsPA in the dump format.",
-                        null=True,
-                        verbose_name="max jobs per account",
-                    ),
-                ),
-                (
-                    "max_wall_duration_per_job",
-                    coldfront.slurm.models.SlurmTimeField(
-                        blank=True,
-                        help_text="Maximum wall clock time per job using this QOS. Maps to MaxWallDurationPerJob in the dump format.",
-                        max_length=64,
-                        null=True,
-                        verbose_name="max wall duration per job",
-                    ),
-                ),
-                (
-                    "limit_factor",
-                    models.FloatField(
-                        blank=True,
-                        help_text="A float that is factored into an association's GrpTRES limits. Maps to LimitFactor in the dump format.",
-                        null=True,
-                        verbose_name="limit factor",
-                    ),
-                ),
-                (
-                    "grace_time",
-                    models.PositiveIntegerField(
-                        blank=True,
-                        help_text="Preemption grace time in seconds. Jobs selected for preemption are given this much time before termination. Maps to GraceTime in the dump format.",
-                        null=True,
-                        verbose_name="grace time",
-                    ),
-                ),
-                (
-                    "tags",
-                    taggit.managers.TaggableManager(
-                        help_text="A comma-separated list of tags.",
-                        through="core.TaggedItem",
-                        to="core.Tag",
-                        verbose_name="Tags",
-                    ),
-                ),
-            ],
-            options={
-                "verbose_name": "slurm qos",
-                "verbose_name_plural": "slurm qos",
-                "ordering": ["name"],
-            },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
-        ),
-        migrations.AddField(
-            model_name="slurmcluster",
-            name="default_qos",
-            field=models.ForeignKey(
-                blank=True,
-                help_text="Default QOS applied to jobs that do not specify one. Maps to DefaultQOS in the dump format",
-                null=True,
-                on_delete=django.db.models.deletion.PROTECT,
-                related_name="default_for_clusters",
-                to="slurm.slurmqos",
-                verbose_name="default QOS",
-            ),
-        ),
-        migrations.AddField(
-            model_name="slurmcluster",
-            name="qos_list",
-            field=models.ManyToManyField(
-                blank=True,
-                help_text="QOS options available on this cluster. Associations inherit these via QOS+= syntax.",
-                related_name="clusters",
-                related_query_name="cluster",
-                to="slurm.slurmqos",
-                verbose_name="QOS list",
-            ),
-        ),
-        migrations.CreateModel(
-            name="SlurmAssociation",
-            fields=[
-                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
-                ("created", models.DateTimeField(auto_now_add=True, null=True, verbose_name="created")),
-                ("last_updated", models.DateTimeField(auto_now=True, null=True, verbose_name="last updated")),
-                (
-                    "custom_field_data",
-                    models.JSONField(blank=True, default=dict, encoder=coldfront.core.utils.CustomFieldJSONEncoder),
-                ),
-                ("description", models.CharField(blank=True, max_length=200, verbose_name="description")),
-                (
-                    "fairshare",
-                    models.PositiveIntegerField(
-                        blank=True,
-                        default=1,
-                        help_text="Fairshare value for this association. Determines relative priority within the fairshare tree.",
-                        verbose_name="fairshare",
-                    ),
-                ),
-                (
-                    "max_jobs",
-                    models.PositiveIntegerField(
-                        blank=True,
-                        help_text="Maximum number of jobs that can run simultaneously in this association.",
-                        null=True,
-                        verbose_name="max jobs",
-                    ),
-                ),
-                (
-                    "max_submit_jobs",
-                    models.PositiveIntegerField(
-                        blank=True,
-                        help_text="Maximum number of jobs that can be submitted by this association.",
-                        null=True,
-                        verbose_name="max submit jobs",
-                    ),
-                ),
-                (
-                    "max_tres_per_job",
-                    models.JSONField(
-                        blank=True,
-                        help_text='JSON dict of TRES limits per job (e.g., {"node":5,"cpu":20}).',
-                        null=True,
-                        verbose_name="max TRES per job",
-                    ),
-                ),
-                (
-                    "max_tres_mins_per_job",
-                    models.JSONField(
-                        blank=True,
-                        help_text='JSON dict of TRES minute limits per job (e.g., {"cpu":360}).',
-                        null=True,
-                        verbose_name="max TRES minutes per job",
-                    ),
-                ),
-                (
-                    "max_wall_duration_per_job",
-                    coldfront.slurm.models.SlurmTimeField(
-                        blank=True,
-                        help_text="Maximum wall clock duration per job.",
-                        max_length=64,
-                        null=True,
-                        verbose_name="max wall duration per job",
-                    ),
-                ),
-                (
-                    "allocation",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="%(app_label)s_%(class)s_extensions",
-                        to="ras.allocation",
-                        unique=True,
-                    ),
-                ),
-                (
-                    "parent",
-                    models.ForeignKey(
-                        blank=True,
-                        help_text="Parent account in the Slurm hierarchy for this association.",
-                        null=True,
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="child_associations",
-                        to="slurm.slurmaccount",
-                        verbose_name="parent account",
-                    ),
-                ),
-                (
-                    "slurm_account",
-                    models.ForeignKey(
-                        blank=True,
-                        help_text="The Slurm account for this allocation. Links the allocation to a named Slurm accounting account.",
-                        null=True,
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="associations",
-                        to="slurm.slurmaccount",
-                        verbose_name="Slurm account",
-                    ),
-                ),
-                (
-                    "tags",
-                    taggit.managers.TaggableManager(
-                        help_text="A comma-separated list of tags.",
-                        through="core.TaggedItem",
-                        to="core.Tag",
-                        verbose_name="Tags",
-                    ),
-                ),
-                (
-                    "default_qos",
-                    models.ForeignKey(
-                        blank=True,
-                        help_text="Default QOS for this association. Jobs under this association inherit this QOS unless they specify one.",
-                        null=True,
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="associations",
-                        to="slurm.slurmqos",
-                        verbose_name="default QOS",
-                    ),
-                ),
-                (
-                    "qos_add",
-                    models.ManyToManyField(
-                        blank=True,
-                        help_text="QOSes to add to this association via QOS+= in the dump format. These are added on top of the cluster/account defaults.",
-                        related_name="added_to_associations",
-                        related_query_name="added_to_association",
-                        to="slurm.slurmqos",
-                        verbose_name="QOS add",
-                    ),
-                ),
-                (
-                    "qos_remove",
-                    models.ManyToManyField(
-                        blank=True,
-                        help_text="QOSes to remove from this association via QOS-= in the dump format. These are subtracted from the inherited QOS list.",
-                        related_name="removed_from_associations",
-                        related_query_name="removed_from_association",
-                        to="slurm.slurmqos",
-                        verbose_name="QOS remove",
-                    ),
-                ),
-            ],
-            options={
-                "verbose_name": "slurm association",
-                "verbose_name_plural": "slurm associations",
-                "ordering": ["allocation__slug"],
-            },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
-        ),
-        migrations.AddField(
-            model_name="slurmaccount",
-            name="qos_add",
-            field=models.ManyToManyField(
-                blank=True,
-                help_text="QOSes to add to this account via QOS+= in the dump format. These are added on top of the cluster defaults.",
-                related_name="added_to_accounts",
-                related_query_name="added_to_account",
-                to="slurm.slurmqos",
-                verbose_name="QOS add",
-            ),
-        ),
-        migrations.AddField(
-            model_name="slurmaccount",
-            name="qos_remove",
-            field=models.ManyToManyField(
-                blank=True,
-                help_text="QOSes to remove from this account via QOS-= in the dump format. These are subtracted from the inherited QOS list.",
-                related_name="removed_from_accounts",
-                related_query_name="removed_from_account",
-                to="slurm.slurmqos",
-                verbose_name="QOS remove",
-            ),
-        ),
-        migrations.CreateModel(
-            name="SlurmUser",
-            fields=[
-                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
-                ("created", models.DateTimeField(auto_now_add=True, null=True, verbose_name="created")),
-                ("last_updated", models.DateTimeField(auto_now=True, null=True, verbose_name="last updated")),
-                (
-                    "custom_field_data",
-                    models.JSONField(blank=True, default=dict, encoder=coldfront.core.utils.CustomFieldJSONEncoder),
-                ),
-                ("description", models.CharField(blank=True, max_length=200, verbose_name="description")),
-                (
-                    "default_wckey",
-                    models.CharField(
-                        blank=True,
-                        help_text="Default wckey for fairshare and accounting.",
-                        max_length=100,
-                        null=True,
-                        verbose_name="default wckey",
-                    ),
-                ),
-                (
-                    "admin_level",
-                    models.SmallIntegerField(
-                        blank=True,
-                        choices=[(0, "Not Set"), (1, "None"), (2, "Operator"), (3, "Administrator")],
-                        help_text="Slurm administrator level for this user. Not Set (0), None (1), Operator (2), or Administrator (3). Operators can modify accounting entities; Administrators have full control.",
-                        null=True,
-                        verbose_name="admin level",
-                    ),
-                ),
-                (
-                    "cluster",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="users",
-                        to="slurm.slurmcluster",
-                        verbose_name="cluster",
-                    ),
-                ),
-                (
-                    "default_account",
-                    models.ForeignKey(
-                        help_text="User's default Slurm account on this cluster. Jobs submitted by this user without specifying an account use this.",
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="default_for_users",
-                        to="slurm.slurmaccount",
-                        verbose_name="default account",
-                    ),
-                ),
-                (
-                    "default_qos",
-                    models.ForeignKey(
-                        blank=True,
-                        help_text="Default QOS for this user on this cluster. Applies to all jobs regardless of association.",
-                        null=True,
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="default_for_users",
-                        to="slurm.slurmqos",
-                        verbose_name="default QOS",
-                    ),
-                ),
-                (
-                    "tags",
-                    taggit.managers.TaggableManager(
-                        help_text="A comma-separated list of tags.",
-                        through="core.TaggedItem",
-                        to="core.Tag",
-                        verbose_name="Tags",
-                    ),
-                ),
-                (
-                    "user",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="slurm_users",
-                        to=settings.AUTH_USER_MODEL,
-                        verbose_name="user",
-                    ),
-                ),
-            ],
-            options={
-                "verbose_name": "slurm user",
-                "verbose_name_plural": "slurm users",
-                "ordering": ["cluster__name", "user__username"],
-            },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
-        ),
-        migrations.CreateModel(
             name="SlurmAccountUsage",
             fields=[
                 ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
@@ -737,13 +584,17 @@ class Migration(migrations.Migration):
                 "verbose_name": "slurm account usage",
                 "verbose_name_plural": "slurm account usage",
                 "ordering": ["cluster__name", "account__name", "period_start"],
-                "constraints": [
-                    models.UniqueConstraint(
-                        fields=("cluster", "account", "period_start"),
-                        name="slurm_slurmaccountusage_unique_cluster_account_day",
-                    )
-                ],
             },
+        ),
+        migrations.AddField(
+            model_name="slurmaccount",
+            name="cluster",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="accounts",
+                to="slurm.slurmcluster",
+                verbose_name="cluster",
+            ),
         ),
         migrations.CreateModel(
             name="SlurmPartition",
@@ -918,88 +769,12 @@ class Migration(migrations.Migration):
                         verbose_name="allowed accounts",
                     ),
                 ),
-                (
-                    "allow_groups",
-                    models.ManyToManyField(
-                        blank=True,
-                        help_text="Restrict partition access to specific ColdFront Groups. Users must be in one of these groups to submit allocations to this partition. Maps to AllowGroups in slurm.conf.",
-                        related_name="allowed_partitions",
-                        related_query_name="allowed_partition",
-                        to="users.group",
-                        verbose_name="allowed groups",
-                    ),
-                ),
-                (
-                    "cluster",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="partitions",
-                        to="slurm.slurmcluster",
-                        verbose_name="cluster",
-                    ),
-                ),
-                (
-                    "tags",
-                    taggit.managers.TaggableManager(
-                        help_text="A comma-separated list of tags.",
-                        through="core.TaggedItem",
-                        to="core.Tag",
-                        verbose_name="Tags",
-                    ),
-                ),
-                (
-                    "allow_qos",
-                    models.ManyToManyField(
-                        blank=True,
-                        help_text="QOS whitelist for admission control. Only jobs requesting one of these QOSes are permitted to submit to this partition. Maps to AllowQOS in slurm.conf.",
-                        related_name="allowed_partitions",
-                        related_query_name="allowed_partition",
-                        to="slurm.slurmqos",
-                        verbose_name="allowed QOS",
-                    ),
-                ),
-                (
-                    "deny_qos",
-                    models.ManyToManyField(
-                        blank=True,
-                        help_text="QOS blocklist for admission control. Jobs requesting one of these QOSes are denied access to this partition. Maps to DenyQOS in slurm.conf.",
-                        related_name="denied_partitions",
-                        related_query_name="denied_partition",
-                        to="slurm.slurmqos",
-                        verbose_name="denied QOS",
-                    ),
-                ),
-                (
-                    "qos",
-                    models.ForeignKey(
-                        blank=True,
-                        help_text="Partition-level QOS whose resource limits (max time, CPUs, memory) apply to every job in this partition. The partition QOS and the job's QOS are both enforced — the stricter limit wins. Maps to QOS in slurm.conf.",
-                        null=True,
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="assigned_partitions",
-                        to="slurm.slurmqos",
-                        verbose_name="QOS",
-                    ),
-                ),
             ],
             options={
                 "verbose_name": "slurm partition",
                 "verbose_name_plural": "slurm partitions",
                 "ordering": ["cluster__name", "name"],
-                "constraints": [
-                    models.UniqueConstraint(fields=("cluster", "name"), name="slurm_slurmpartition_unique_cluster_name")
-                ],
             },
             bases=(coldfront.models.deletion.DeleteMixin, models.Model),
-        ),
-        migrations.AddConstraint(
-            model_name="slurmaccount",
-            constraint=models.UniqueConstraint(
-                fields=("cluster", "name"), name="slurm_slurmaccount_unique_cluster_name"
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="slurmuser",
-            constraint=models.UniqueConstraint(fields=("user", "cluster"), name="slurm_slurmuser_unique_user_cluster"),
         ),
     ]

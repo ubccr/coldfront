@@ -1,7 +1,10 @@
-<div class="modal modal-lg fade" id="htmx-modal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog{% if size %} modal-{{ size }}{% endif %}">
-        <div class="modal-content" id="htmx-modal-content">
-            {# Dynamic content goes here #}
-        </div>
+<c-vars
+    size=""
+    boxClass=""
+/>
+
+<c-cf.modal id="htmxModal" size="{{ size }}" boxClass="{{ boxClass }}" withCloseBtn>
+    <div id="htmxModal-content">
+        {# Dynamic content goes here #}
     </div>
-</div>
+</c-cf.modal>

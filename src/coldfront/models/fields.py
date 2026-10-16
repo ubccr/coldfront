@@ -5,19 +5,13 @@
 
 from typing import cast
 
-from django import forms
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db import models
 from django.db.models.fields import SlugField
 from django.utils.module_loading import import_string
-from django.utils.safestring import mark_safe
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
-
-from coldfront.core.choices import ColorChoices
-from coldfront.utils.forms import add_blank_choice
-from coldfront.utils.validators import ColorValidator
 
 try:
     AUTO_SLUG_FUNC = import_string(settings.AUTO_SLUG_FUNC)
@@ -26,20 +20,18 @@ except ImportError:
 
 
 class ColorField(models.CharField):
-    default_validators = [ColorValidator]
-    description = "A hexadecimal RGB color code"
+    description = "A color variant"
 
     def __init__(self, *args, **kwargs):
-        kwargs["max_length"] = 6
+        kwargs["max_length"] = 20
         super().__init__(*args, **kwargs)
 
     def formfield(self, **kwargs):
-        kwargs["widget"] = forms.Select(
-            choices=add_blank_choice(ColorChoices),
-            attrs={"class": "color-select"},
-        )
-        kwargs["help_text"] = mark_safe(_("RGB color in hexadecimal. Example: ") + "<code>00ff00</code>")
-        return super().formfield(**kwargs)
+        from coldfront.forms.fields import ColorChoiceField
+
+        defaults = {"form_class": ColorChoiceField}
+        defaults.update(kwargs)
+        return models.Field.formfield(self, **defaults)
 
 
 class AutoSlugField(SlugField):

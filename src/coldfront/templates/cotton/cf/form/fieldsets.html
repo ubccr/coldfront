@@ -1,25 +1,37 @@
-{% load crispy_forms_tags %}
-{% load i18n %}
+{% comment %}
+Renders form.fieldsets (a list of FieldSet descriptors) as headed groups of
+items. Each item is normalized by the fieldset_rows filter into a
+(kind, title, items) row and dispatched:
+  * 'field'     -> a single field (c-cf.field)
+  * 'inline'    -> side-by-side fields (c-cf.field.group)
+  * 'display'   -> a read-only instance attribute (c-cf.field.display)
+Meta fields (form.meta_fields) are skipped by fieldset_rows - the caller
+renders them separately. Nullable fields get their set-to-None checkbox when
+nullify is on.
+{% endcomment %}
+{% load form_helpers i18n %}
 
-{% cotton:vars :form="form" %}
+<c-vars
+    :form="form"
+    layout="inline"
+    :nullify="False"
+/>
 
 {% for fieldset in form.fieldsets %}
-    <div class="field-group mb-5">
-        {% if fieldset.legend %}
-            <div class="row">
-                <h2 class="col-9 offset-3">{{ fieldset.legend }}</h2>
-            </div>
+    <div class="mb-5">
+        {% if fieldset.name %}
+            <h2 class="mb-4 block pb-2 text-lg font-semibold text-base-content{% if layout == 'inline' %} sm:ms-52{% endif %}">
+                {{ fieldset.name }}
+            </h2>
         {% endif %}
-        {% for field_name in fieldset.fields %}
-            {% with field=form|get_bound_field:field_name %}
-                {% if field_name in form.meta_fields %}
-                    {# Skip meta fields - they're rendered separately #}
-                {% elif field_name in form.nullable_fields %}
-                    <c-cf.field.nullify :field="field" :form="form" />
-                {% else %}
-                    {{ field|as_crispy_field }}
-                {% endif %}
-            {% endwith %}
+        {% for kind, title, items in fieldset|fieldset_rows:form %}
+            {% if kind == 'field' %}
+                <c-cf.field :field="items.0" :form="form" :layout="layout" :nullify="nullify" />
+            {% elif kind == 'inline' %}
+                <c-cf.field.group :fields="items" :form="form" :label="title" :layout="layout" :nullify="nullify" />
+            {% elif kind == 'display' %}
+                <c-cf.field.display :label="title" :value="items.0" :layout="layout" />
+            {% endif %}
         {% endfor %}
     </div>
 {% endfor %}

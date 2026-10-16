@@ -1,10 +1,41 @@
-{% cotton:vars id active %}
+<c-vars
+    name=""
+    id=""
+    checked
+    disabled
+    title=""
+    icon=""
+    badge=""
+    input=""
+    class=""
+/>
+
+{% if not input %}
+    <label
+        {% if id %}id="{{ id }}"{% endif %}
+        class="tab [--tab-border-color:color-mix(in_oklch,var(--color-base-content)_20%,var(--color-base-100))]"
+    >
+        <input
+            type="radio"
+            name="{{ name }}"
+            {% if checked %}checked="checked"{% endif %}
+            {% if disabled %}disabled{% endif %}
+        >
+        {% if icon %}
+            <c-cfi n="{{ icon }}" size="sm" class="me-2" />
+        {% endif %}
+        {% if title %}{{ title }}{% endif %}
+        {% if badge %}{{ badge }}{% endif %}
+    </label>
+{% else %}
+    {{ input }}
+{% endif %}
 
 <div
-    class="tab-pane{% if active %} show active{% endif %}"
-    id="{{ id }}"
     role="tabpanel"
-    aria-labelledby="{{ id }}-tab"
+    {% if id %}aria-labelledby="{{ id }}"{% endif %}
+    class="tab-content bg-base-100 border-base-content/20 p-6 {% if checked %}tab-active{% endif %} {% if disabled %}tab-disabled{% endif %} {{ class }}"
+    {{ attrs }}
 >
     {{ slot }}
 </div>

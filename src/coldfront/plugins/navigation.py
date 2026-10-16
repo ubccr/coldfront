@@ -7,24 +7,24 @@ from django.urls import reverse_lazy
 from django.utils.text import slugify
 from django.utils.translation import gettext as _
 
-from coldfront.core.choices import ButtonColorChoices
+from coldfront.core.choices import ColorChoices
 from coldfront.navigation import MenuGroup
 
 __all__ = (
     "PluginMenu",
-    "PluginMenuButton",
     "PluginMenuItem",
+    "PluginMenuItemButton",
 )
 
 
 class PluginMenu:
-    icon_class = "fa-solid fa-puzzle-piece"
+    icon = "tablericon.puzzle"
 
-    def __init__(self, label, groups, icon_class=None):
+    def __init__(self, label, groups, icon=None):
         self.label = label
         self.groups = [MenuGroup(label, items) for label, items in groups]
-        if icon_class is not None:
-            self.icon_class = icon_class
+        if icon is not None:
+            self.icon = icon
 
     @property
     def name(self):
@@ -38,7 +38,7 @@ class PluginMenuItem:
 
     Links are specified as Django reverse URL strings suitable for rendering via {% url item.link %}.
     Alternatively, a pre-generated url can be set on the object which will be rendered literally.
-    Buttons are each specified as a list of PluginMenuButton instances.
+    Buttons are each specified as a list of PluginMenuItemButton instances.
     """
 
     _url = None
@@ -72,19 +72,23 @@ class PluginMenuItem:
         self._url = value
 
 
-class PluginMenuButton:
+class PluginMenuItemButton:
     """
-    This class represents a button within a PluginMenuItem. Note that button colors should come from
-    ButtonColorChoices.
+    This class represents a button within a PluginMenuItem. The `icon` is a
+    cotton-icons pack name (heroicon.* / tablericon.* / lucideicon.*). The
+    `variant` is a daisyUI button variant: a ColorChoices color, or "ghost"
+    (the default).
     """
 
-    color = ButtonColorChoices.SECONDARY
     _url = None
 
-    def __init__(self, link, title, icon_class, color=None, permissions=None):
+    def __init__(self, link, title, icon, variant="ghost", permissions=None):
         self.link = link
         self.title = title
-        self.icon_class = icon_class
+        self.icon = icon
+        if variant != "ghost" and variant not in ColorChoices.values():
+            raise ValueError(_("Button variant must be a ColorChoices color or 'ghost'."))
+        self.variant = variant
         if link:
             self._url = reverse_lazy(link)
         if permissions is not None:
@@ -93,10 +97,6 @@ class PluginMenuButton:
             self.permissions = permissions
         else:
             self.permissions = []
-        if color is not None:
-            if color not in ButtonColorChoices.values():
-                raise ValueError(_("Button color must be a choice within ButtonColorChoices."))
-            self.color = color
 
     @property
     def url(self):

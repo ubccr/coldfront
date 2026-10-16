@@ -24,7 +24,6 @@ from coldfront.views.object_actions import (
     AddObject,
     BulkDelete,
     BulkExport,
-    BulkImport,
     CloneObject,
     EditObject,
 )
@@ -40,7 +39,7 @@ class AllocationChangeRequestListView(generic.ObjectListView):
     filterset = filtersets.AllocationChangeRequestFilterSet
     filterset_form = forms.AllocationChangeRequestFilterSetForm
     table = tables.AllocationChangeRequestTable
-    actions = (AddObject, BulkImport, BulkExport, BulkDelete)
+    actions = (AddObject, BulkExport, BulkDelete)
 
 
 @register_model_view(AllocationChangeRequest)

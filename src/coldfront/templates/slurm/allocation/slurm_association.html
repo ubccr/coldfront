@@ -12,7 +12,7 @@
     {% if slurm_association %}
         <c-cf.layout.panels>
             <c-slot name="left">
-                <c-cf.card.fields header="{% trans 'Slurm Association' %}" only>
+                <c-cf.card.fields title="{% trans 'Slurm Association' %}">
                     <c-cf.card.fields.item label="{% trans 'Allocation' %}">
                         {{ slurm_association.allocation|linkify }}
                     </c-cf.card.fields.item>
@@ -59,7 +59,7 @@
 
                     <c-cf.card.fields.item label="{% trans 'QOS Add' %}">
                         {% for qos in slurm_association.qos_add.all %}
-                            <c-cf.ui.badge link="{{ qos.get_absolute_url }}" :value="qos" />
+                            <c-cf.badge href="{{ qos.get_absolute_url }}">{{ qos }}</c-cf.badge>
                         {% empty %}
                             {{ ""|placeholder }}
                         {% endfor %}
@@ -67,23 +67,28 @@
 
                     <c-cf.card.fields.item label="{% trans 'QOS Remove' %}">
                         {% for qos in slurm_association.qos_remove.all %}
-                            <c-cf.ui.badge link="{{ qos.get_absolute_url }}" :value="qos" />
+                            <c-cf.badge href="{{ qos.get_absolute_url }}">{{ qos }}</c-cf.badge>
                         {% empty %}
                             {{ ""|placeholder }}
                         {% endfor %}
                     </c-cf.card.fields.item>
                 </c-cf.card.fields>
 
-                <c-cf.card.tags :object="slurm_association" only />
+                <c-cf.card.tags :object="slurm_association" />
             </c-slot>
 
             <c-slot name="right">
-                <c-cf.card.custom_fields :object="slurm_association" only />
+                <c-cf.card.custom_fields :object="slurm_association" />
             </c-slot>
         </c-cf.layout.panels>
     {% else %}
-        <c-cf.card.alert header="{% trans 'No Slurm Association' %}">
-            {% trans 'This allocation does not have an associated Slurm association.' %}
-        </c-cf.card.alert>
+        <c-cf.card>
+            <c-cf.card.body>
+                <c-cf.alert variant="info" icon="heroicon.information-circle">
+                    <strong>{% trans 'No Slurm Association' %}</strong>
+                    {% trans 'This allocation does not have an associated Slurm association.' %}
+                </c-cf.alert>
+            </c-cf.card.body>
+        </c-cf.card>
     {% endif %}
 {% endblock %}

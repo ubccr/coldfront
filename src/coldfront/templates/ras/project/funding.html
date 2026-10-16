@@ -4,11 +4,10 @@
 {% block extra_controls %}
     {% if perms.ras.change_project %}
         <c-cf.button
-            type="link"
-            url="{% url 'ras:project_add_funding' pk=object.pk %}?return_url={% url 'ras:project_funding' pk=object.pk %}"
-            label="{% trans 'Add Funding' %}"
-            icon="fa-solid fa-plus"
-            css_class="btn-primary"
-        />
+            as="a"
+            href="{% url 'ras:project_add_funding' pk=object.pk %}?return_url={% url 'ras:project_funding' pk=object.pk %}"
+            icon="heroicon.plus"
+            variant="primary"
+        >{% trans "Add Funding" %}</c-cf.button>
     {% endif %}
 {% endblock extra_controls %}

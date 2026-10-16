@@ -5,13 +5,13 @@
 {% block content %}
     <c-cf.layout.panels>
         <c-slot name="left">
-            <c-cf.card.fields :object="object" only>
+            <c-cf.card.fields :object="object">
                 <c-cf.card.fields.item label="{% trans 'Invoice' %}">
                     {{ object.invoice|linkify }}
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label="{% trans 'Line Type' %}">
-                    <c-cf.ui.badge value="{{ object.get_line_type_display }}" :bg_color="object.get_status_color" />
+                    <c-cf.badge variant="{{ object.get_status_color }}">{{ object.get_line_type_display }}</c-cf.badge>
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label="{% trans 'Source' %}">

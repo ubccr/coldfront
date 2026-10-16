@@ -1,7 +1,5 @@
 {% extends 'generic/base.html' %}
-{% load crispy_forms_tags %}
 {% load i18n %}
-{% load render_table from django_tables2 %}
 
 {% comment %}
 Blocks:
@@ -20,44 +18,49 @@ Context:
     {% trans "Delete" %} {{ table.rows|length }} {{ model|meta:"verbose_name_plural"|bettertitle }}?
 {% endblock %}
 
-{% block tabs %}
-    <c-cf.tabs>
-        <c-cf.tabs.tab id="delete-form" label="{% trans 'Bulk Delete' %}" active />
-        <c-cf.tabs.tab id="object-list" label="{% trans 'Selected Objects' %}">
-            <c-cf.ui.badge value="{{ table.rows|length }}" />
-        </c-cf.tabs.tab>
-    </c-cf.tabs>
-{% endblock tabs %}
-
-{% block alerts %}
-    <c-cf.alert.messages :form="form" only />
-{% endblock %}
-
 {% block content %}
-    {# Confirmation form #}
-    <c-cf.tabs.content id="delete-form" active>
-        <c-cf.confirm
-            submit_label="{% trans 'Delete' %} {{ table.rows|length }} {{ model|meta:'verbose_name_plural' }}"
-            :return_url="return_url"
-        >
-            <c-slot name="title">{% trans "Confirm Bulk Deletion" %}</c-slot>
-            <c-slot name="message">
-                {% blocktrans trimmed with count=table.rows|length type_plural=model|meta:"verbose_name_plural" %}
-                    The following operation will delete <strong>{{ count }}</strong> {{ type_plural }}. Please carefully
-                    review the selected objects and confirm this action.
-                {% endblocktrans %}
-            </c-slot>
-        </c-cf.confirm>
-    </c-cf.tabs.content>
-    {# /Confirmation form #}
+    <c-cf.tabs name="delete-tabs" role="group">
+        {# Confirmation form tab — handle + panel #}
+        <c-cf.tabs.content name="delete-tabs" id="delete-bulk" title="{% trans 'Bulk Delete' %}" checked>
+            <c-cf.form :form="form">
+                <c-slot name="form_message">
+                    <c-cf.alert variant="error" icon="heroicon.information-circle">
+                        <div>
+                            <h4 class="font-semibold">{% trans "Confirm Bulk Deletion" %}</h4>
+                            {% blocktrans trimmed with count=table.rows|length type_plural=model|meta:"verbose_name_plural" %}
+                                The following operation will delete <strong>{{ count }}</strong> {{ type_plural }}.
+                                Please carefully review the selected objects and confirm this action.
+                            {% endblocktrans %}
+                        </div>
+                    </c-cf.alert>
+                </c-slot>
+                <c-slot name="buttons">
+                    <c-cf.button
+                        as="a"
+                        href='{% if return_url %}{{ return_url }}{% else %}{% action_url model "list" %}{% endif %}'
+                        btnStyle="outline"
+                        label="{% trans 'Cancel' %}"
+                    />
+                    <c-cf.button
+                        type="submit"
+                        name="_confirm"
+                        variant="error"
+                        label="{% trans 'Delete' %} {{ table.rows|length }} {{ model|meta:'verbose_name_plural' }}"
+                    />
+                </c-slot>
+            </c-cf.form>
+        </c-cf.tabs.content>
+        {# /Confirmation form tab #}
 
-    {# Selected objects list #}
-    <c-cf.tabs.content id="object-list">
-        <div class="card">
-            <div class="table-responsive">
-                <c-cf.table :table="table" />
-            </div>
-        </div>
-    </c-cf.tabs.content>
-    {# /Selected objects list #}
+        {# Selected objects tab — handle + panel #}
+        <c-cf.tabs.content name="delete-tabs" id="delete-selected" title="{% trans 'Selected Objects' %}">
+            <c-slot name="badge"><c-cf.badge
+                    variant="error"
+                    size="sm"
+                    class="ml-1"
+                >{{ table.rows|length }}</c-cf.badge></c-slot>
+            <c-cf.table :table="table" />
+        </c-cf.tabs.content>
+        {# /Selected objects tab #}
+    </c-cf.tabs>
 {% endblock content %}

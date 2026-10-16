@@ -105,7 +105,7 @@ class ObjectEditView(GetReturnURLMixin, BaseObjectView):
 
     template_name = "generic/object_edit.html"
     form = None
-    form_component_name = "cf.form"
+    form_component_name = "cf.form.fields"
 
     def dispatch(self, request, *args, **kwargs):
         # Determine required permission based on whether we are editing an existing object
@@ -328,7 +328,7 @@ class ObjectDeleteView(GetReturnURLMixin, BaseObjectView):
     Delete a single object.
     """
 
-    template_name = "generic/object_delete.html"
+    template_name = "generic/partials/object_delete.html"
 
     def get_required_permission(self):
         return get_permission_for_model(self.queryset.model, "delete")
@@ -386,6 +386,7 @@ class ObjectDeleteView(GetReturnURLMixin, BaseObjectView):
         """
         obj = self.get_object(**kwargs)
         form = DeleteForm(instance=obj, initial=request.GET)
+        form_url = get_action_url(self.queryset.model, action="delete", kwargs={"pk": obj.pk})
 
         try:
             dependent_objects = self._get_dependent_objects(obj)
@@ -394,28 +395,14 @@ class ObjectDeleteView(GetReturnURLMixin, BaseObjectView):
         except RestrictedError as e:
             return self._handle_protected_objects(obj, e.restricted_objects, request, e)
 
-        # If this is an HTMX request, return only the rendered deletion form as modal content
-        if htmx_partial(request):
-            form_url = get_action_url(self.queryset.model, action="delete", kwargs={"pk": obj.pk})
-            return HttpResponse(
-                render_component(
-                    request,
-                    "cf.form.delete",
-                    object=obj,
-                    object_type=self.queryset.model._meta.verbose_name,
-                    form=form,
-                    form_url=form_url,
-                    dependent_objects=dependent_objects,
-                    **self.get_extra_context(request, obj),
-                )
-            )
-
         return render(
             request,
             self.template_name,
             {
                 "object": obj,
+                "object_type": self.queryset.model._meta.verbose_name,
                 "form": form,
+                "form_url": form_url,
                 "return_url": self.get_return_url(request, obj),
                 "dependent_objects": dependent_objects,
                 **self.get_extra_context(request, obj),
@@ -548,7 +535,7 @@ class ObjectChildrenView(ObjectView, ActionsMixin, TableMixin):
             return HttpResponse(
                 render_component(
                     request,
-                    "cf.table.htmx",
+                    "cf.table",
                     table=table,
                     model=self.child_model,
                 )
@@ -591,7 +578,7 @@ class ObjectFlowView(GetReturnURLMixin, BaseObjectView):
 
     template_name = "generic/object_flow.html"
     form = None
-    form_component_name = "cf.form"
+    form_component_name = "cf.form.fields"
     flow = None
     action = None
 
@@ -680,7 +667,7 @@ class ObjectFlowView(GetReturnURLMixin, BaseObjectView):
         # If the form is being displayed within a "modal" widget,
         # use the appropriate component
         if request.GET.get("_modal"):
-            return HttpResponse(render_component(request, "cf.modal.transition", context))
+            return HttpResponse(render(request, "generic/partials/object_transition.html", context))
 
         # If this is an HTMX request, return only the rendered form HTML
         if htmx_partial(request):
@@ -783,7 +770,7 @@ class ObjectFlowView(GetReturnURLMixin, BaseObjectView):
 
         # Form was submitted via a "modal" widget
         if "_modal" in request.POST:
-            return HttpResponse(render_component(request, "cf.modal.transition", context))
+            return HttpResponse(render(request, "generic/partials/object_transition.html", context))
 
         return render(request, self.template_name, context)
 
@@ -793,9 +780,8 @@ class ObjectConfirmationView(GetReturnURLMixin, BaseObjectView):
     Display a confirmation dialog before performing an action.
     """
 
-    template_name = "generic/object_confirm.html"
+    template_name = "generic/partials/object_confirm.html"
     form = ConfirmationForm
-    form_component_name = "cf.form.confirm"
     action = "edit"
     action_label = "Modify"
 
@@ -805,23 +791,7 @@ class ObjectConfirmationView(GetReturnURLMixin, BaseObjectView):
     def get(self, request, *args, **kwargs):
         obj = self.get_object(**kwargs)
         form = self.form(instance=obj, initial=request.GET)
-
-        # If this is an HTMX request, return only the rendered form as modal content
-        if htmx_partial(request):
-            form_url = get_action_url(self.queryset.model, action=self.action, kwargs={"pk": obj.pk})
-            return HttpResponse(
-                render_component(
-                    request,
-                    self.form_component_name,
-                    object=obj,
-                    object_type=self.queryset.model._meta.verbose_name,
-                    form=form,
-                    form_url=form_url,
-                    action=self.action,
-                    action_label=self.action_label,
-                    **self.get_extra_context(request, obj),
-                )
-            )
+        form_url = get_action_url(self.queryset.model, action=self.action, kwargs={"pk": obj.pk})
 
         return render(
             request,
@@ -830,6 +800,7 @@ class ObjectConfirmationView(GetReturnURLMixin, BaseObjectView):
                 "object": obj,
                 "object_type": self.queryset.model._meta.verbose_name,
                 "form": form,
+                "form_url": form_url,
                 "return_url": self.get_return_url(request, obj),
                 "action": self.action,
                 "action_label": self.action_label,

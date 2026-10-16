@@ -6,7 +6,7 @@
 {% block content %}
     <c-cf.layout.panels>
         <c-slot name="left">
-            <c-cf.card.fields :object="object" only>
+            <c-cf.card.fields :object="object">
                 <c-cf.card.fields.item label="{% trans 'Key' %}">
                     {{ object.key }}
                 </c-cf.card.fields.item>
@@ -30,11 +30,11 @@
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label="{% trans 'Enabled' %}">
-                    <c-cf.ui.checkmark :value="object.enabled" />
+                    <c-cf.checkmark :value="object.enabled" />
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label="{% trans 'Write Enabled' %}">
-                    <c-cf.ui.checkmark :value="object.write_enabled" />
+                    <c-cf.checkmark :value="object.write_enabled" />
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label="{% trans 'Description' %}">
@@ -43,8 +43,8 @@
             </c-cf.card.fields>
         </c-slot>
         <c-slot name="right">
-            <c-cf.card header="{% trans 'Token Example' %}">
-                <div class="card-body">
+            <c-cf.card title="{% trans 'Token Example' %}">
+                <c-cf.card.body>
                     <pre id="token-example">
 curl -X GET \
   -H "Authorization: {{ object.get_auth_header_prefix }}<mark>&lt;TOKEN&gt;</mark>" \
@@ -52,7 +52,7 @@ curl -X GET \
   -H "Accept: application/json; indent=4" \
   {{ request.scheme }}://{{ request.get_host }}/api/
 </pre>
-                </div>
+                </c-cf.card.body>
             </c-cf.card>
         </c-slot>
     </c-cf.layout.panels>

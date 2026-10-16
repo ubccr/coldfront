@@ -1,10 +1,32 @@
 {% load i18n %}
 
-{% cotton:vars :request="request" %}
-{% cotton:vars :perms="perms" %}
-{% cotton:vars show_paginator=True %}
-{% cotton:vars table %}
+<c-vars
+    table
+    actions
+    model
+    link
+    id="object_list"
+    show_paginator=True
+    title=""
+/>
 
 <c-cf.card>
-    <c-cf.table :table="table" :show_paginator="show_paginator" only />
+    {% if title %}
+        <c-slot name="title">
+            {{ title }}
+        </c-slot>
+    {% endif %}
+    {% if link %}
+        <div
+            class="htmx-container"
+            hx-get="{{ link }}"
+            hx-target="this"
+            hx-trigger="load"
+            hx-select=".htmx-container"
+            hx-swap="outerHTML"
+        >
+        </div>
+    {% else %}
+        <c-cf.table :table="table" :actions="actions" :model="model" :id="id" :show_paginator="show_paginator" />
+    {% endif %}
 </c-cf.card>

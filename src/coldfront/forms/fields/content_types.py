@@ -6,6 +6,7 @@
 from django import forms
 
 from coldfront.core.models import ObjectType
+from coldfront.forms import widgets
 
 __all__ = (
     "ContentTypeChoiceField",
@@ -32,6 +33,7 @@ class ContentTypeChoiceField(ContentTypeChoiceMixin, forms.ModelChoiceField):
     """
 
     def __init__(self, queryset, *args, **kwargs):
+        kwargs.setdefault("widget", widgets.AlpineSelectWidget())
         super().__init__(queryset, *args, **kwargs)
 
 

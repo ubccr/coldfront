@@ -22,10 +22,11 @@ OBJECTCHANGE_REQUEST_ID = """
 PLUGIN_IS_INSTALLED = """
 {% if record.is_local %}
     {% if record.is_loaded %}
-        <span class="text-success">{% cotton cf.ui.checkmark :value="True" /%}</span>
+        <span class="text-success">{% cotton cf.checkmark :value="True" /%}</span>
     {% else %}
-        <span class="text-danger"><i class="fa-solid fa-triangle-exclamation" data-bs-toggle="tooltip" title="Could not load plugin. Version may be incompa
-tible. Min version: {{ record.coldfront_min_version }}, max version: {{ record.coldfront_max_version }}"></i></span>
+        <span class="tooltip" data-tip="Could not load plugin. Version may be incompatible. Min version: {{ record.coldfront_min_version }}, max version: {{ record.coldfront_max_version }}">
+            <span class="text-error">{% cotton cf.cfi n="heroicon.exclamation-triangle" size="sm" /%}</span>
+        </span>
     {% endif %}
 {% else %}
     <span class="text-muted">&mdash;</span>
@@ -37,7 +38,7 @@ PLUGIN_NAME_TEMPLATE = """
 {% if record.icon_url %}
     <img class="plugin-icon" src="{{ record.icon_url }}">
 {% else %}
-    <span><i class="fa-solid fa-puzzle-piece"></i></span>
+    <span>{% cotton cf.cfi n="heroicon.puzzle-piece" size="sm" /%}</span>
 {% endif %}
 <a href="{% url 'core:plugin' record.config_name %}">{{ record.title_long }}</a>
 """

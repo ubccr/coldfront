@@ -9,7 +9,7 @@ from django.utils.translation import gettext_lazy as _
 from coldfront.core.choices import CustomFieldUIEditableChoices
 from coldfront.core.models import ObjectType, Tag
 from coldfront.forms.fields import CommentField, DynamicModelChoiceField, DynamicModelMultipleChoiceField, JSONField
-from coldfront.forms.mixins import ChangelogMessageMixin, CustomFieldsMixin, HorizontalFormMixin
+from coldfront.forms.mixins import ChangelogMessageMixin, CustomFieldsMixin
 from coldfront.tenancy.models import Tenant, TenantGroup
 
 
@@ -46,7 +46,7 @@ class TenancyBulkEditForm(forms.Form):
     )
 
 
-class ColdFrontModelBulkEditForm(HorizontalFormMixin, ChangelogMessageMixin, CustomFieldsMixin, BulkEditForm):
+class ColdFrontModelBulkEditForm(ChangelogMessageMixin, CustomFieldsMixin, BulkEditForm):
     """
     Base form for modifying multiple ColdFront objects (of the same type) in bulk via the UI.
     Adds support for custom fields and adding/removing tags.

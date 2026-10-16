@@ -8,7 +8,7 @@
 {% block content %}
     <c-cf.layout.panels>
         <c-slot name="left">
-            <c-cf.card.fields :object="object" only>
+            <c-cf.card.fields :object="object">
                 <c-cf.card.fields.item label="{% trans 'Username' %}">
                     {{ object.username }}
                 </c-cf.card.fields.item>
@@ -30,17 +30,17 @@
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label="{% trans 'Active' %}">
-                    <c-cf.ui.checkmark :value="object.is_active" />
+                    <c-cf.checkmark :value="object.is_active" />
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label="{% trans 'Superuser' %}">
-                    <c-cf.ui.checkmark :value="object.is_superuser" />
+                    <c-cf.checkmark :value="object.is_superuser" />
                 </c-cf.card.fields.item>
             </c-cf.card.fields>
         </c-slot>
 
         <c-slot name="right">
-            <c-cf.card.list header="{% trans 'Assigned Groups' %}" only>
+            <c-cf.card.list title="{% trans 'Assigned Groups' %}">
                 {% for group in object.groups.all %}
                     <c-cf.card.list.item link="{% url 'users:group' pk=group.pk %}">
                         {{ group }}
@@ -52,7 +52,7 @@
                 {% endfor %}
             </c-cf.card.list>
 
-            <c-cf.card.list header="{% trans 'Assigned Permissions' %}" only>
+            <c-cf.card.list title="{% trans 'Assigned Permissions' %}">
                 {% for perm in object.object_permissions.all %}
                     <c-cf.card.list.item link="{% url 'users:objectpermission' pk=perm.pk %}">
                         {{ perm }}
@@ -67,17 +67,20 @@
 
         {% if perms.core.view_objectchange %}
             <c-slot name="bottom">
-                <c-cf.card.table :table="changelog_table" show_paginator=False only>
-                    <c-slot name="header">
+                <c-cf.card.table :table="changelog_table" show_paginator=False>
+                    <c-slot name="title">
                         {% trans "Recent Activity" %}
-                        <div class="card-actions">
-                            <a
+                        <c-cf.card.actions>
+                            <c-cf.button
+                                as="a"
                                 href="{% url 'core:objectchange_list' %}?user_id={{ user.pk }}"
-                                class="btn btn-ghost-primary btn-sm"
-                            >
-                                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i> {% trans "View All" %}
-                            </a>
-                        </div>
+                                icon="heroicon.arrow-right"
+                                icon.size="sm"
+                                btnStyle="ghost"
+                                variant="primary"
+                                size="sm"
+                            >{% trans "View All" %}</c-cf.button>
+                        </c-cf.card.actions>
                     </c-slot>
                 </c-cf.card.table>
             </c-slot>

@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
+import re
 from urllib.parse import quote
 
 from django import template
@@ -20,13 +21,69 @@ from coldfront.users.permissions import get_permission_for_model
 register = template.Library()
 
 
-@register.filter
-def get_bound_field(form, field_name):
+@register.simple_tag
+def parse_icon(attrs=""):
     """
-    Return the bound field for a given field name from a form.
-    Usage: {{ form|get_bound_field:field_name }}
+    Parse icon dot-notation attributes from a cotton attrs string.
+
+    Supports:
+        icon="name"              → icon name, line style, start position
+        icon.fill="name"         → icon name, fill style
+        icon.end="name"          → icon name, end position
+        icon.fill.end="name"     → icon name, fill style, end position
+        icon.end.fill="name"     → icon name, fill style, end position
+        icon.class="classes"     → additional CSS classes for the icon
+        icon.variant="variant"   → cotton-icons variant (heroicon/tablericon)
+        icon.size="sm"           → cotton-icons size (xs/sm/md/lg/xl)
+
+    Usage:
+        {% parse_icon attrs as i %}
+        {{ i.name }}  {{ i.fill }}  {{ i.end }}  {{ i.css_class }}  {{ i.variant }}  {{ i.size }}
+
+    Returns:
+        dict with keys: name (str), fill (bool), end (bool), css_class (str), variant (str), size (str)
     """
-    return form[field_name]
+    result = {
+        "name": "",
+        "fill": False,
+        "end": False,
+        "css_class": "",
+        "variant": "",
+        "size": "",
+    }
+
+    if not attrs:
+        return result
+
+    s = str(attrs)
+
+    # Extract icon.class="..."
+    class_match = re.search(r'\bicon\.class=["\']([^"\']*)["\']', s)
+    if class_match:
+        result["css_class"] = class_match.group(1)
+
+    # Extract icon.variant="..."
+    variant_match = re.search(r'\bicon\.variant=["\']([^"\']*)["\']', s)
+    if variant_match:
+        result["variant"] = variant_match.group(1)
+
+    # Extract icon.size="..."
+    size_match = re.search(r'\bicon\.size=["\']([^"\']*)["\']', s)
+    if size_match:
+        result["size"] = size_match.group(1)
+
+    # Extract the main icon attribute: icon[.fill][.end]="name"
+    # Matches: icon="x", icon.fill="x", icon.end="x", icon.fill.end="x", icon.end.fill="x"
+    # Does NOT match icon.class="x" or icon.variant="x" because .class/.variant
+    # are not .fill or .end.
+    main_match = re.search(r'\bicon((?:\.(?:fill|end))*)\s*=["\']([^"\']*)["\']', s)
+    if main_match:
+        modifiers = main_match.group(1) or ""
+        result["name"] = main_match.group(2)
+        result["fill"] = ".fill" in modifiers
+        result["end"] = ".end" in modifiers
+
+    return result
 
 
 @register.inclusion_tag("builtins/customfield_value.html")

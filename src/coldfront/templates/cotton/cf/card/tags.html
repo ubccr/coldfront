@@ -1,12 +1,15 @@
 {% load i18n %}
-<c-cf.card header='{% trans "Tags" %}'>
-    <div class="card-body">
+<c-cf.card title='{% trans "Tags" %}'>
+    <c-cf.card.body>
         {% with viewname=object|validated_viewname:"list" %}
             {% for tag in object.tags.all %}
-                <c-cf.ui.tag :tag="tag" :viewname="viewname" only />
+                <c-cf.badge
+                    variant="{{ tag.color }}"
+                    href="{% if viewname %}{% url viewname %}?tag={{ tag.slug }}{% endif %}"
+                >{{ tag }}</c-cf.badge>
             {% empty %}
                 <span class="text-muted">{% trans "No tags assigned" %}</span>
             {% endfor %}
         {% endwith %}
-    </div>
+    </c-cf.card.body>
 </c-cf.card>

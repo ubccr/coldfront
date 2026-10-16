@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from crispy_forms.layout import Fieldset
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
@@ -33,7 +32,7 @@ from coldfront.forms.fields import (
     ContentTypeMultipleChoiceField,
     DynamicModelMultipleChoiceField,
 )
-from coldfront.forms.layouts import DateTime
+from coldfront.forms.layout import FieldSet
 from coldfront.users.models import User
 from coldfront.utils.forms import add_blank_choice
 
@@ -41,13 +40,15 @@ from coldfront.utils.forms import add_blank_choice
 class SavedFilterFilterForm(PrimaryModelFilterSetForm):
     model = SavedFilter
     fieldsets = (
-        Fieldset(
-            "Saved Filter",
+        FieldSet(
+            "q",
+        ),
+        FieldSet(
             "object_type_id",
             "enabled",
             "shared",
             "weight",
-            name=_("Attributes"),
+            name=_("Saved Filter"),
         ),
     )
     object_type_id = ContentTypeMultipleChoiceField(
@@ -84,9 +85,12 @@ class JobFilterForm(PrimaryModelFilterSetForm):
     )
 
     fieldsets = (
-        Fieldset(
-            "Job",
+        FieldSet(
+            "q",
+        ),
+        FieldSet(
             "status",
+            name=_("Job"),
         ),
     )
 
@@ -105,10 +109,13 @@ class TagFilterForm(PrimaryModelFilterSetForm):
     )
 
     fieldsets = (
-        Fieldset(
-            "Tag",
+        FieldSet(
+            "q",
+        ),
+        FieldSet(
             "content_type_id",
             "for_object_type_id",
+            name=_("Tag"),
         ),
     )
 
@@ -140,16 +147,19 @@ class ObjectChangeFilterForm(PrimaryModelFilterSetForm):
     )
 
     fieldsets = (
-        Fieldset(
-            "Time",
-            DateTime("time_before"),
-            DateTime("time_after"),
+        FieldSet(
+            "q",
         ),
-        Fieldset(
-            "Attributes",
+        FieldSet(
+            "time_before",
+            "time_after",
+            name=_("Time"),
+        ),
+        FieldSet(
             "action",
             "user_id",
             "changed_object_type_id",
+            name=_("Attributes"),
         ),
     )
 
@@ -157,13 +167,15 @@ class ObjectChangeFilterForm(PrimaryModelFilterSetForm):
 class TableConfigFilterForm(PrimaryModelFilterSetForm):
     model = TableConfig
     fieldsets = (
-        Fieldset(
-            "Table Config",
+        FieldSet(
+            "q",
+        ),
+        FieldSet(
             "object_type_id",
             "enabled",
             "shared",
             "weight",
-            name=_("Attributes"),
+            name=_("Table Config"),
         ),
     )
     object_type_id = ContentTypeMultipleChoiceField(
@@ -196,9 +208,12 @@ class CustomFieldChoiceSetFilterForm(PrimaryModelFilterSetForm):
     choice = forms.CharField(required=False)
 
     fieldsets = (
-        Fieldset(
-            "Choices",
+        FieldSet(
+            "q",
+        ),
+        FieldSet(
             "choice",
+            name=_("Choices"),
         ),
     )
 
@@ -272,31 +287,34 @@ class CustomFieldFilterForm(PrimaryModelFilterSetForm):
     )
 
     fieldsets = (
-        Fieldset(
-            "Attributes",
+        FieldSet(
+            "q",
+        ),
+        FieldSet(
             "object_type_id",
             "type",
             "group_name",
             "weight",
             "required",
             "unique",
+            name=_("Attributes"),
         ),
-        Fieldset(
-            "Type Options",
+        FieldSet(
             "choice_set_id",
             "related_object_type_id",
+            name=_("Type Options"),
         ),
-        Fieldset(
-            "Behavior",
+        FieldSet(
             "ui_visible",
             "ui_editable",
             "is_cloneable",
+            name=_("Behavior"),
         ),
-        Fieldset(
-            "Validation",
+        FieldSet(
             "validation_minimum",
             "validation_maximum",
             "validation_regex",
+            name=_("Validation"),
         ),
     )
 
@@ -304,12 +322,15 @@ class CustomFieldFilterForm(PrimaryModelFilterSetForm):
 class CustomLinkFilterForm(PrimaryModelFilterSetForm):
     model = CustomLink
     fieldsets = (
-        Fieldset(
-            _("Attributes"),
+        FieldSet(
+            "q",
+        ),
+        FieldSet(
             "object_type_id",
             "enabled",
             "new_window",
             "weight",
+            name=_("Attributes"),
         ),
     )
     object_type_id = ContentTypeMultipleChoiceField(
@@ -364,15 +385,18 @@ class CommentEntryFilterForm(PrimaryModelFilterSetForm):
 
     model = CommentEntry
     fieldsets = (
-        Fieldset(
-            "Comment Entry",
-            DateTime("created_before"),
-            DateTime("created_after"),
-            "created_by_id",
+        FieldSet(
+            "q",
         ),
-        Fieldset(
-            "Attributes",
+        FieldSet(
+            "created_before",
+            "created_after",
+            "created_by_id",
+            name=_("Comment Entry"),
+        ),
+        FieldSet(
             "assigned_object_type_id",
             "kind",
+            name=_("Attributes"),
         ),
     )

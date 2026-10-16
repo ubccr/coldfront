@@ -8,14 +8,13 @@ import json
 from io import StringIO
 
 import yaml
-from crispy_forms.helper import FormHelper
 from django import forms
 from django.utils.translation import gettext as _
 
 from coldfront.constants import CSV_DELIMITERS
 from coldfront.core.choices import CSVDelimiterChoices, ImportFormatChoices, ImportMethodChoices
 from coldfront.forms.fields import CSVModelChoiceField, DynamicModelChoiceField, QueryField
-from coldfront.forms.mixins import ChangelogMessageMixin, HorizontalFormMixin
+from coldfront.forms.mixins import ChangelogMessageMixin
 from coldfront.forms.utils import parse_csv
 from coldfront.models.features import ChangeLoggingMixin
 from coldfront.tenancy.models import Tenant, TenantGroup
@@ -64,13 +63,13 @@ class TableConfigForm(forms.Form):
     available_columns = forms.MultipleChoiceField(
         choices=[],
         required=False,
-        widget=forms.SelectMultiple(attrs={"size": 10, "class": "form-select"}),
+        widget=forms.SelectMultiple(attrs={"size": 10, "class": "no-alpine-select h-64"}),
         label=_("Available Columns"),
     )
     columns = forms.MultipleChoiceField(
         choices=[],
         required=False,
-        widget=forms.SelectMultiple(attrs={"size": 10, "class": "form-select select-all"}),
+        widget=forms.SelectMultiple(attrs={"size": 10, "class": "no-alpine-select h-64", "data-select-all": True}),
         label=_("Selected Columns"),
     )
 
@@ -89,11 +88,11 @@ class TableConfigForm(forms.Form):
         return self.table.__class__.__name__
 
 
-class BulkImportForm(HorizontalFormMixin, ChangelogMessageMixin, forms.Form):
+class BulkImportForm(ChangelogMessageMixin, forms.Form):
     import_method = forms.ChoiceField(choices=ImportMethodChoices, required=False)
     data = forms.CharField(
         required=False,
-        widget=forms.Textarea(attrs={"class": "font-monospace"}),
+        widget=forms.Textarea(attrs={"class": "font-mono"}),
         help_text=_("Enter object data in CSV, JSON or YAML format."),
     )
     upload_file = forms.FileField(label=_("Data file"), required=False)
@@ -255,18 +254,6 @@ class BulkDeleteForm(ConfirmationForm):
         # Hide the changelog_message filed if the model doesn't support change logging
         if model is None or not issubclass(model, ChangeLoggingMixin):
             self.fields.pop("changelog_message")
-
-    @property
-    def helper(self):
-        """
-        crispy forms helper which defines the form rendering behavior.
-        """
-        helper = FormHelper()
-        helper.form_class = "form-horizontal"
-        helper.form_tag = False
-        helper.label_class = "col-lg-3 text-end"
-        helper.field_class = "col-lg-6"
-        return helper
 
 
 class TenancyForm(forms.Form):

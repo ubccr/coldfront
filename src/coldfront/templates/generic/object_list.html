@@ -27,115 +27,129 @@ Context:
 {% block title %}{{ model|meta:"verbose_name_plural"|title }}{% endblock %}
 
 {% block controls %}
-    <div class="btn-list">
+    <div class="flex flex-wrap items-center gap-2 justify-end">
         {% plugin_list_buttons model %}
         {% block extra_controls %}{% endblock %}
         {% action_buttons actions model %}
     </div>
 {% endblock controls %}
 
-{% block tabs %}
-    <c-cf.tabs>
-        <c-cf.tabs.tab id="object-list" label="{% trans 'Results' %}" active>
-            <c-cf.ui.badge css_class="total-object-count" only>
-                <c-slot
-                    name="value"
-                >{% if table.page.paginator.count %}{{ table.page.paginator.count }}{% else %}{{ total_count|default:"0" }}{% endif %}</c-slot>
-            </c-cf.ui.badge>
-        </c-cf.tabs.tab>
-        {% if filter_form %}
-            <c-cf.tabs.tab id="filters-form" label="{% trans 'Filters' %}">
-                {% if filter_form %}<c-cf.ui.badge
-                        :value="{{ filter_form.changed_data|length }}"
-                        bg_color="primary"
-                        only
-                    />{% endif %}
-            </c-cf.tabs.tab>
-        {% endif %}
-    </c-cf.tabs>
-{% endblock tabs %}
-
 {% block content %}
-    {# Object list tab #}
-    <c-cf.tabs.content id="object-list" active>
-        {# Applied filters #}
-        {% if filter_form %}
-            {% applied_filters model filter_form request.GET %}
-        {% endif %}
-
-        {# Object table controls #}
-        <c-cf.table.controls
-            :table="table"
-            table_modal="ObjectTable_config"
-            :table_configs="table_configs"
-            :filter_form="filter_form"
-            only
-        />
-
-        <form method="post" class="form form-horizontal">
-            {% csrf_token %}
-            {# "Select all" form #}
-            {% if table.paginator.num_pages > 1 %}
-                <div id="select-all-box" class="d-none card d-print-none">
-                    <div class="form col-md-12">
-                        <div class="card-body d-flex justify-content-between">
-                            <div class="form-check">
-                                <input type="checkbox" id="select-all" name="_all" class="form-check-input">
-                                <label for="select-all" class="form-check-label">
-                                    {% blocktrans trimmed with count=table.page.paginator.count object_type_plural=table.data.verbose_name_plural %}
-                                        Select <strong>all <span class="total-object-count">{{ count }}</span>
-                                            {{ object_type_plural }}</strong> matching query
-                                    {% endblocktrans %}
-                                </label>
-                            </div>
-                            <div class="bulk-action-buttons">
-                                {% action_buttons actions model multi=True %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    <c-cf.tabs name="object-list-tabs" role="group">
+        {# Results tab — handle + panel #}
+        <c-cf.tabs.content name="object-list-tabs" id="results" title="{% trans 'Results' %}" checked>
+            <c-slot name="badge">
+                <c-cf.badge variant="warning" class="ml-1 total-object-count" size="sm">
+                    {% if table.page.paginator.count %}{{ table.page.paginator.count }}{% else %}{{ total_count|default:"0" }}{% endif %}
+                </c-cf.badge>
+            </c-slot>
+            {# Applied filters #}
+            {% if filter_form %}
+                {% applied_filters model filter_form request.GET %}
             {% endif %}
 
-            <div class="form form-horizontal">
+            {# Object table controls #}
+            <c-cf.table.controls
+                :table="table"
+                table_modal="ObjectTable_config"
+                :table_configs="table_configs"
+                :filter_form="filter_form"
+            />
+
+            <form method="post">
                 {% csrf_token %}
-                <input
-                    type="hidden"
-                    name="return_url"
-                    value="{% if return_url %}{{ return_url }}{% else %}{{ request.path }}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}{% endif %}"
-                >
+                <div>
+                    <input
+                        type="hidden"
+                        name="return_url"
+                        value="{% if return_url %}{{ return_url }}{% else %}{{ request.path }}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}{% endif %}"
+                    >
 
-                {# Warn of any missing prerequisite objects #}
-                {% if prerequisite_model %}
-                    <c-cf.alert.missing_prereqs :model="model" :prerequisite_model="prerequisite_model" only />
-                {% endif %}
+                    {# Warn of any missing prerequisite objects #}
+                    {% if prerequisite_model %}
+                        <c-cf.alert
+                            class="m-4"
+                            direction="horizontal"
+                            variant="warning"
+                            icon="heroicon.exclamation-triangle"
+                        >
+                            <span>
+                                {% blocktrans trimmed with model=model|meta:"verbose_name" prerequisite_model=prerequisite_model|meta:"verbose_name" %}
+                                    Before you can add a {{ model }} you must first create a <strong
+                                    >{{ prerequisite_model }}</strong>.
+                                {% endblocktrans %}
+                            </span>
+                            <c-slot name="actions">
+                                <c-cf.button
+                                    as="a"
+                                    variant="primary"
+                                    icon="heroicon.plus"
+                                    href="{% action_url prerequisite_model 'add' %}{% if request.path %}?return_url={{ request.path }}{% endif %}"
+                                >{% trans "Add" %}</c-cf.button>
+                            </c-slot>
+                        </c-cf.alert>
+                    {% endif %}
 
-                {# Objects table #}
-                <c-cf.card.table.htmx :table="table" only />
-                {# /Objects table #}
+                    {# Objects table #}
+                    <c-cf.card.table :table="table" :actions="actions" :model="model" :id="id" :show_paginator="True" />
+                    {# /Objects table #}
 
-                {# Form buttons #}
-                <div class="btn-list d-print-none">
-                    {% block bulk_buttons %}
-                        {% if table.rows %}
-                            <div class="bulk-action-buttons">
-                                {% action_buttons actions model multi=True %}
-                            </div>
-                        {% endif %}
-                    {% endblock %}
+                    {# Form buttons #}
+                    <div class="flex flex-wrap items-center gap-2 print:hidden">
+                        {% block bulk_buttons %}
+                            {% if table.rows %}
+                                <div class="bulk-action-buttons">
+                                    {% action_buttons actions model multi=True %}
+                                </div>
+                            {% endif %}
+                        {% endblock %}
+                    </div>
+                    {# /Form buttons #}
                 </div>
-                {# /Form buttons #}
-            </div>
-        </form>
-    </c-cf.tabs.content>
-    {# /Object list tab #}
-
-    {# Filters tab #}
-    {% if filter_form %}
-        <c-cf.tabs.content id="filters-form">
-            <c-cf.form.filters :filter_form="filter_form" only />
+            </form>
         </c-cf.tabs.content>
-    {% endif %}
-    {# /Filters tab #}
+        {# /Results tab #}
+
+        {# Filters tab — handle + panel #}
+        {% if filter_form %}
+            <c-cf.tabs.content name="object-list-tabs" id="filters" title="{% trans 'Filters' %}">
+                <c-slot name="badge">
+                    {% if filter_form.changed_data %}
+                        <c-cf.badge
+                            variant="warning"
+                            class="ml-1"
+                            size="sm"
+                        >{{ filter_form.changed_data|length }}</c-cf.badge>
+                    {% endif %}
+                </c-slot>
+                <c-cf.form method="get" action="." :form="filter_form">
+                    <c-slot name="hidden">
+                        {% if return_url %}
+                            <input type="hidden" name="return_url" value="{{ return_url }}">
+                        {% endif %}
+                    </c-slot>
+                    <c-slot name="buttons">
+                        <c-cf.button
+                            type="button"
+                            variant="error"
+                            btnStyle="outline"
+                            icon="tablericon.filter-off"
+                            data-reset=""
+                            data-reset-preserve="return_url"
+                            label="{% trans 'Reset' %}"
+                        />
+                        <c-cf.button
+                            type="submit"
+                            variant="primary"
+                            icon="heroicon.magnifying-glass"
+                            label="{% trans 'Search' %}"
+                        />
+                    </c-slot>
+                </c-cf.form>
+            </c-cf.tabs.content>
+        {% endif %}
+        {# /Filters tab #}
+    </c-cf.tabs>
 {% endblock content %}
 
 {% block modals %}

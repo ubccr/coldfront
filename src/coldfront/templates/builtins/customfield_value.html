@@ -4,9 +4,9 @@
 {% elif customfield.type == 'longtext' and value %}
     {{ value|markdown }}
 {% elif customfield.type == 'boolean' and value == True %}
-    <c-cf.ui.checkmark :value="value" true_label="True" only />
+    <c-cf.checkmark :value="value" true_label="True" />
 {% elif customfield.type == 'boolean' and value == False %}
-    <c-cf.ui.checkmark :value="value" false_label="False" only />
+    <c-cf.checkmark :value="value" false_label="False" />
 {% elif customfield.type == 'date' and value %}
     {{ value|isodate }}
 {% elif customfield.type == 'datetime' and value %}
@@ -26,7 +26,10 @@
 {% elif value %}
     {{ value }}
 {% elif customfield.required %}
-    <span class="text-warning"><i class="fa-solid fa-exclamation"></i> {% trans "Not defined" %}</span>
+    <span class="text-warning">
+        <c-cfi n="heroicon.exclamation-triangle" size="sm" class="me-1" />
+        {% trans "Not defined" %}
+    </span>
 {% else %}
     {{ ''|placeholder }}
 {% endif %}

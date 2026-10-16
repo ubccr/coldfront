@@ -17,7 +17,7 @@ from . import Menu, MenuGroup, MenuItem, get_model_item
 
 ORGANIZATION_MENU = Menu(
     label=_("Organization"),
-    icon_class="fa-solid fa-sitemap",
+    icon="tablericon.network",
     groups=(
         MenuGroup(
             label=_("Tenancy"),
@@ -31,7 +31,7 @@ ORGANIZATION_MENU = Menu(
 
 ALLOCATIONS_MENU = Menu(
     label=_("Allocations"),
-    icon_class="fa-solid fa-list-check",
+    icon="tablericon.list-check",
     groups=(
         MenuGroup(
             label=_("Projects"),
@@ -56,7 +56,7 @@ ALLOCATIONS_MENU = Menu(
 
 RESOURCES_MENU = Menu(
     label=_("Resources"),
-    icon_class="fa-solid fa-server",
+    icon="tablericon.server",
     groups=(
         MenuGroup(
             label=_("Generic Resources"),
@@ -91,7 +91,7 @@ RESOURCES_MENU = Menu(
 
 CUSTOMIZATION_MENU = Menu(
     label=_("Customization"),
-    icon_class="fa-solid fa-sliders",
+    icon="tablericon.settings-2",
     groups=(
         MenuGroup(
             label=_("Customization"),
@@ -109,7 +109,7 @@ CUSTOMIZATION_MENU = Menu(
 
 ADMIN_MENU = Menu(
     label=_("Admin"),
-    icon_class="fa-solid fa-screwdriver-wrench",
+    icon="tablericon.tools",
     groups=(
         MenuGroup(
             label=_("Authentication"),
@@ -147,7 +147,7 @@ ADMIN_MENU = Menu(
 
 BILLING_MENU = Menu(
     label=_("Billing"),
-    icon_class="fa-solid fa-receipt",
+    icon="tablericon.receipt",
     groups=(
         MenuGroup(
             label=_("Invoices"),
@@ -188,7 +188,7 @@ def get_menus():
     if registry["plugins"]["menu_items"]:
         # Build the default plugins menu
         groups = [MenuGroup(label=label, items=items) for label, items in registry["plugins"]["menu_items"].items()]
-        plugins_menu = Menu(label=_("Plugins"), icon_class="fa-solid fa-puzzle-piece", groups=groups)
+        plugins_menu = Menu(label=_("Plugins"), icon="tablericon.puzzle", groups=groups)
         menus.append(plugins_menu)
 
     # Add the admin menu last

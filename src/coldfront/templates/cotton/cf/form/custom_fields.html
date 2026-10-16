@@ -1,0 +1,29 @@
+{% comment %}
+Renders the Custom Fields section (form.custom_field_groups) as headed groups
+of custom-field fields. Custom field data lives in JSON and is rendered via
+the per-field CustomField widget - c-cf.field dispatches those to Django's
+widget template (render_field_with_aria).
+{% endcomment %}
+{% load form_helpers i18n %}
+
+<c-vars
+    :form="form"
+    layout="inline"
+/>
+
+<fieldset class="mt-4">
+    <legend class="mb-4 block pb-2 text-lg font-semibold text-base-content sm:ms-52">
+        {% trans "Custom Fields" %}
+    </legend>
+
+    {% for group, fields in form.custom_field_groups.items %}
+        {% if group %}
+            <h3 class="mb-3 text-lg font-semibold">{{ group }}</h3>
+        {% endif %}
+        {% for name in fields %}
+            {% with field=form|get_bound_field:name %}
+                <c-cf.field :field="field" :layout="layout" />
+            {% endwith %}
+        {% endfor %}
+    {% endfor %}
+</fieldset>

@@ -34,18 +34,54 @@ def _render_table_action_buttons(record, user, request):
         html += render_component(
             request,
             action.template_name,
-            url=url,
-            title=action.label,
-            small=True,
-            type="link",
+            {
+                "as": "a",
+                "href": url,
+                "icon": action.icon,
+                "icon.class": action.icon_class,
+                "icon.size": "sm",
+                "variant": action.variant,
+                "size": "sm",
+                "btnStyle": "outline",
+                "label": "",
+                "modifier": "square",
+            },
         )
 
     return html
 
 
+def _table_extra_actions(record, user, request):
+    """
+    Render approve/deny/activate actions for an allocation row.
+    """
+    actions = get_permitted_transition_actions(record, user)
+    return_url = quote(request.get_full_path())
+
+    extra_actions = []
+    for action in actions:
+        if action.name not in ALLOWED_TABLE_BUTTONS:
+            continue
+        url = action.get_url(record)
+        if not url:
+            continue
+        url += f"?return_url={return_url}"
+        extra_actions.append(
+            {
+                "title": action.label,
+                "icon": action.icon,
+                "url": url,
+                "css_class": action.variant,
+            }
+        )
+
+    return extra_actions
+
+
 class AllocationTable(TenancyColumnsMixin, PrimaryModelTable):
     actions = columns.ActionsColumn(
-        extra_buttons=_render_table_action_buttons,
+        # extra_buttons=_render_table_action_buttons,
+        extra_actions=_table_extra_actions,
     )
 
     slug = tables.Column(

@@ -12,7 +12,7 @@
     {% if storage_quota %}
         <c-cf.layout.panels>
             <c-slot name="left">
-                <c-cf.card.fields header="{% trans 'Storage Quota' %}" only>
+                <c-cf.card.fields title="{% trans 'Storage Quota' %}">
                     <c-cf.card.fields.item label="{% trans 'Allocation' %}">
                         {{ storage_quota.allocation|linkify }}
                     </c-cf.card.fields.item>
@@ -88,16 +88,21 @@
                     </c-cf.card.fields.item>
                 </c-cf.card.fields>
 
-                <c-cf.card.tags :object="storage_quota" only />
+                <c-cf.card.tags :object="storage_quota" />
             </c-slot>
 
             <c-slot name="right">
-                <c-cf.card.custom_fields :object="storage_quota" only />
+                <c-cf.card.custom_fields :object="storage_quota" />
             </c-slot>
         </c-cf.layout.panels>
     {% else %}
-        <c-cf.card.alert header="{% trans 'No Storage Quota' %}">
-            {% trans 'This allocation does not have an associated storage quota.' %}
-        </c-cf.card.alert>
+        <c-cf.card>
+            <c-cf.card.body>
+                <c-cf.alert variant="info" icon="heroicon.information-circle">
+                    <strong>{% trans 'No Storage Quota' %}</strong>
+                    {% trans 'This allocation does not have an associated storage quota.' %}
+                </c-cf.alert>
+            </c-cf.card.body>
+        </c-cf.card>
     {% endif %}
 {% endblock %}

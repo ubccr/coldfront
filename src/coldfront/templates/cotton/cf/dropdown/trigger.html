@@ -1,0 +1,10 @@
+{% comment %}
+DaisyUI dropdown trigger. Renders an element (default div) with tabindex/role
+for keyboard access.
+{% endcomment %}
+
+<c-vars class="" as="div" />
+
+<{{ as }} tabindex="0" role="button" class="{{ class }}" {{ attrs }}>
+    {{ slot }}
+</{{ as }}>

@@ -1,0 +1,20 @@
+{% comment %}
+DaisyUI card actions — the footer action region, with a justify alignment prop.
+{% endcomment %}
+
+<c-vars
+    class=""
+    justify=""
+    :justifyClasses="{
+        'start': 'justify-start',
+        'center': 'justify-center',
+        'end': 'justify-end',
+        'between': 'justify-between',
+        'around': 'justify-around',
+        'evenly': 'justify-evenly'
+    }"
+/>
+
+<div class="card-actions {{ justifyClasses|get_dict_item:justify }} {{ class }}" {{ attrs }}>
+    {{ slot }}
+</div>

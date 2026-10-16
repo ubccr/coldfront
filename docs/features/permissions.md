@@ -21,7 +21,7 @@ permission. They operate similarly to Django ORM queries.
 
 ## Roles
 
-ColdFront adds a Roles feature that extends the NetBox permission model.
+ColdFront adds a Roles feature that extends the permission model.
 Roles let you define named sets of permissions that can be assigned to
 users or groups. This makes it easier to manage permissions for common
 job functions such as "Center Director" or "Principal Investigator".

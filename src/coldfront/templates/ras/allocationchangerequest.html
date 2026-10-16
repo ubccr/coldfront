@@ -30,10 +30,10 @@
 {% block content %}
     <c-cf.layout.panels>
         <c-slot name="left">
-            <c-cf.card.fields only>
-                <c-slot name="header">
+            <c-cf.card.fields>
+                <c-slot name="title">
                     {% trans "Change Request" %}
-                    <c-cf.ui.badge value="{{ object.status|title }}" :bg_color="object.get_status_color" />
+                    <c-cf.badge variant="{{ object.get_status_color }}">{{ object.status|title }}</c-cf.badge>
                 </c-slot>
 
                 <c-cf.card.fields.item label="{% trans 'Allocation' %}">
@@ -55,52 +55,50 @@
         </c-slot>
 
         <c-slot name="right">
-            <c-cf.card.custom_fields :object="object" only />
-            <c-cf.card.tags :object="object" only />
+            <c-cf.card.custom_fields :object="object" />
+            <c-cf.card.tags :object="object" />
         </c-slot>
     </c-cf.layout.panels>
 
     {# ---- Proposed Changes Diff ---- #}
-    <c-cf.layout.row>
+    <c-cf.layout.row cols="2">
         <c-cf.layout.col>
             <c-cf.card
-                header="{% if object.status == "applied" %}{% trans 'Original values' %}{% else %}{% trans 'Current Values' %}{% endif %}"
-                only
+                title="{% if object.status == "applied" %}{% trans 'Original values' %}{% else %}{% trans 'Current Values' %}{% endif %}"
             >
-                <div class="card-body">
+                <c-cf.card.body>
                     {% if pre_change_data %}
                         {% spaceless %}
-                            <pre class="change-data">
+                            <pre class="rounded-none p-0">
                                 {% for k, v in pre_change_data.items %}
-                                    <span{% if k in diff_removed %} class="removed"{% endif %}>{{ k }}: {{ v|json }}</span>
+                                    <span class="block w-full px-4{% if k in diff_removed %} bg-error/15{% endif %}">{{ k }}: {{ v|json }}</span>
                                 {% endfor %}
                             </pre>
                         {% endspaceless %}
                     {% else %}
                         <span class="text-muted">{% trans "None" %}</span>
                     {% endif %}
-                </div>
+                </c-cf.card.body>
             </c-cf.card>
         </c-cf.layout.col>
 
         <c-cf.layout.col>
             <c-cf.card
-                header="{% if object.status == "applied" %}{% trans 'Changed values' %}{% else %}{% trans 'Requested Changes' %}{% endif %}"
-                only
+                title="{% if object.status == "applied" %}{% trans 'Changed values' %}{% else %}{% trans 'Requested Changes' %}{% endif %}"
             >
-                <div class="card-body">
+                <c-cf.card.body>
                     {% if post_change_data %}
                         {% spaceless %}
-                            <pre class="change-data">
+                            <pre class="rounded-none p-0">
                                 {% for k, v in post_change_data.items %}
-                                    <span{% if k in diff_added %} class="added"{% endif %}>{{ k }}: {{ v|json }}</span>
+                                    <span class="block w-full px-4{% if k in diff_added %} bg-success/15{% endif %}">{{ k }}: {{ v|json }}</span>
                                 {% endfor %}
                             </pre>
                         {% endspaceless %}
                     {% else %}
                         <span class="text-muted">{% trans "None" %}</span>
                     {% endif %}
-                </div>
+                </c-cf.card.body>
             </c-cf.card>
         </c-cf.layout.col>
     </c-cf.layout.row>

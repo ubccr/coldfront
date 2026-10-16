@@ -1,0 +1,16 @@
+{% comment %}
+Help text for a form field. Props: id (the help div id, e.g. auto_id_helptext),
+content. Rendered below the control.
+{% endcomment %}
+
+<c-vars
+    id=""
+    content=""
+    class=""
+/>
+
+{% if content %}
+    <div {% if id %}id="{{ id }}"{% endif %} class="text-muted mt-1.5 text-sm{{ class }}">
+        {{ content }}
+    </div>
+{% endif %}

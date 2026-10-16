@@ -4,7 +4,7 @@
 {% block content %}
     <c-cf.layout.panels>
         <c-slot name="left">
-            <c-cf.card.fields :object="object" only>
+            <c-cf.card.fields :object="object">
                 <c-cf.card.fields.item label="{% trans 'Name' %}">
                     {{ object.name }}
                 </c-cf.card.fields.item>
@@ -23,17 +23,17 @@
 
                 <c-cf.card.fields.item label="{% trans 'Enabled' %}">
                     {% if object.enabled %}
-                        <c-cf.ui.badge bg_color="success" value="{% trans 'Yes' %}" />
+                        <c-cf.badge variant="success">{% trans 'Yes' %}</c-cf.badge>
                     {% else %}
-                        <c-cf.ui.badge bg_color="danger" value="{% trans 'No' %}" />
+                        <c-cf.badge variant="error">{% trans 'No' %}</c-cf.badge>
                     {% endif %}
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label="{% trans 'Shared' %}">
                     {% if object.shared %}
-                        <c-cf.ui.badge bg_color="success" value="{% trans 'Yes' %}" />
+                        <c-cf.badge variant="success">{% trans 'Yes' %}</c-cf.badge>
                     {% else %}
-                        <c-cf.ui.badge bg_color="danger" value="{% trans 'No' %}" />
+                        <c-cf.badge variant="error">{% trans 'No' %}</c-cf.badge>
                     {% endif %}
                 </c-cf.card.fields.item>
 
@@ -44,7 +44,7 @@
         </c-slot>
 
         <c-slot name="right">
-            <c-cf.card.list header="{% trans 'Assigned Object Types' %}" only>
+            <c-cf.card.list title="{% trans 'Assigned Object Types' %}">
                 {% for object_type in object.object_types.all %}
                     <c-cf.card.list.item>
                         {{ object_type }}
@@ -56,7 +56,7 @@
                 {% endfor %}
             </c-cf.card.list>
 
-            <c-cf.card header="{% trans 'Parameters' %}">
+            <c-cf.card title="{% trans 'Parameters' %}">
                 <pre class="pre-scrollable">{{ object.parameters|json }}</pre>
             </c-cf.card>
         </c-slot>

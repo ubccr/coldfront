@@ -13,8 +13,10 @@ from django.forms.fields import JSONField as _JSONField
 from django.utils.translation import gettext_lazy as _
 from djmoney.forms import MoneyField as DjangoMoneyField
 
+from coldfront.core.choices import ColorChoices
 from coldfront.forms import widgets
 from coldfront.models.utils import get_default_currency
+from coldfront.utils.forms import add_blank_choice
 
 
 class SimpleArrayField(forms.CharField):
@@ -26,7 +28,7 @@ class SimpleArrayField(forms.CharField):
     def __init__(self, base_field=None, delimiter=",", *args, **kwargs):
         self.base_field = base_field or forms.CharField()
         self.delimiter = delimiter
-        kwargs.setdefault("widget", forms.TextInput(attrs={"class": "form-control"}))
+        kwargs.setdefault("widget", forms.TextInput(attrs={"class": "input"}))
         kwargs.setdefault("required", False)
         super().__init__(*args, **kwargs)
 
@@ -66,14 +68,15 @@ class SlugField(forms.SlugField):
         super().__init__(label=label, help_text=help_text, **kwargs)
 
         self.slug_source = slug_source
+        self.widget = widgets.SlugWidget()
 
     def get_bound_field(self, form, field_name):
-        self.widget.attrs["slug-source"] = self.slug_source
+        self.widget.attrs["slug_source"] = self.slug_source
 
         if prefix := form.prefix:
             if self.slug_source and not self.slug_source.startswith(f"{prefix}-"):
                 self.slug_source = f"{prefix}-{self.slug_source}"
-                self.widget.attrs["slug-source"] = self.slug_source
+                self.widget.attrs["slug_source"] = self.slug_source
 
         return super().get_bound_field(form, field_name)
 
@@ -108,7 +111,7 @@ class JSONField(_JSONField):
         super().__init__(*args, **kwargs)
 
         self.widget.attrs["placeholder"] = ""
-        self.widget.attrs["class"] = "font-monospace"
+        self.widget.attrs["class"] = "font-mono"
         if not self.help_text:
             self.help_text = _('Enter context data in <a href="https://json.org/">JSON</a> format.')
 
@@ -132,10 +135,7 @@ class CommentField(forms.CharField):
 
     widget = widgets.MarkdownWidget
     label = _("Comments")
-    help_text = _(
-        '<i class="fa-solid fa-circle-info"></i> '
-        '<a href="{url}" target="_blank" tabindex="-1">Markdown</a> syntax is supported'
-    ).format(url="#")
+    help_text = _("Markdown syntax is supported")
 
     def __init__(self, *, label=label, help_text=help_text, required=False, **kwargs):
         super().__init__(label=label, help_text=help_text, required=required, **kwargs)
@@ -143,12 +143,7 @@ class CommentField(forms.CharField):
 
 class MoneyField(DjangoMoneyField):
     """
-    A django-money amount + currency field rendered as a Bootstrap input-group.
-
-    Keeps the MultiValueField contract (POST keys ``amount_awarded_0`` /
-    ``amount_awarded_1``) while swapping django-money's default ``MoneyWidget``
-    for ``MoneyWidget`` so the amount input and currency select sit
-    side-by-side in a single row.
+    A django-money amount + currency field rendered as a joined input group.
     """
 
     def __init__(self, *args, **kwargs):
@@ -158,3 +153,31 @@ class MoneyField(DjangoMoneyField):
             currency_widget=self.fields[1].widget,
             default_currency=get_default_currency(),
         )
+
+
+class BooleanSelectField(forms.BooleanField):
+    """
+    A boolean field rendered as a yes/no select instead of a checkbox.
+    """
+
+    def __init__(self, labels=None, *args, **kwargs):
+        kwargs["required"] = False
+        super().__init__(*args, **kwargs)
+
+        self.widget = widgets.BooleanSelectWidget(
+            labels=labels,
+        )
+
+
+class ColorChoiceField(forms.ChoiceField):
+    """
+    A choice field with color badge swatches.
+    """
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("choices", add_blank_choice(ColorChoices))
+        kwargs.setdefault(
+            "widget",
+            widgets.AlpineSelectWidget(searchable=False, attrs={"data-cf-color": "1"}),
+        )
+        super().__init__(*args, **kwargs)

@@ -6,8 +6,6 @@
 import logging
 import time
 
-from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Layout
 from django import forms
 from django.core.validators import EMPTY_VALUES
 from django.db import models as dj_models
@@ -292,29 +290,24 @@ class AllocationExtensionFormMixin:
         return result
 
 
+class AutoSetWidgetsMixin:
+    """
+    Deprecated no-op. Widgets are now determined entirely by the cotton
+    components (c-cf.field dispatches by widget type); kept as an empty base
+    only so unconverted apps still import. Removed once all apps are converted.
+    """
+
+    pass
+
+
 class HorizontalFormMixin:
     """
-    Mixin for horizontal form layouts with crispy
+    Deprecated no-op. Crispy horizontal form layout is replaced by the cotton
+    ``c-cf.field`` inline layout; kept as an empty base only so unconverted
+    apps still import. Removed once all apps are converted.
     """
 
-    @property
-    def helper(self):
-        """
-        crispy forms helper which defines the form rendering behavior.
-        """
-        helper = FormHelper()
-        helper.form_tag = False
-        helper.form_class = "form-horizontal"
-        helper.label_class = "col-lg-3 text-end"
-        helper.field_class = "col-lg-6"
-        helper.layout = self.get_layout()
-        return helper
-
-    def get_layout(self):
-        """
-        The crispy layout for the form. Sub-classes can override for custom layout
-        """
-        return Layout(*self.fieldsets)
+    pass
 
 
 class TagsMixin(forms.Form):

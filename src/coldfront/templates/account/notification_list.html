@@ -5,29 +5,29 @@
 
 {% block extra_controls %}
     {% if not archive and table.rows %}
-        <form method="post" class="d-inline">
+        <form method="post">
             {% csrf_token %}
             <input type="hidden" name="action" value="mark_all_read">
             <c-cf.button
+                as="button"
                 type="submit"
-                label="{% trans 'Mark All as Read' %}"
-                icon="fa-solid fa-check-double"
-                css_class="btn-outline-primary"
-                small
-            />
+                variant="primary"
+                icon.class="text-xl"
+                icon="heroicon.check-badge"
+            >{% trans 'Mark All as Read' %}</c-cf.button>
         </form>
     {% endif %}
     {% if table.rows %}
-        <form method="post" class="d-inline">
+        <form method="post">
             {% csrf_token %}
             <input type="hidden" name="action" value="delete_all">
             <c-cf.button
+                as="button"
                 type="submit"
-                label="{% trans 'Delete All' %}"
-                icon="fa-solid fa-trash-can"
-                css_class="btn-outline-danger"
-                small
-            />
+                icon.class="text-xl"
+                variant="error"
+                icon="heroicon.trash"
+            >{% trans 'Delete All' %}</c-cf.button>
         </form>
     {% endif %}
 {% endblock %}

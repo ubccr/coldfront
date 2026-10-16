@@ -76,10 +76,8 @@ INSTALLED_APPS = [
 ]
 
 INSTALLED_APPS += [
-    "crispy_forms",
-    "crispy_bootstrap5",
-    "django_vite",
     "django_htmx",
+    "cotton_icons",
     "django_tables2",
     "django_jsonform",
     "django_cotton.apps.SimpleAppConfig",
@@ -227,8 +225,15 @@ if len(SITE_TEMPLATES) > 0:
     else:
         raise ImproperlyConfigured("SITE_TEMPLATES should be a path to a directory")
 
-CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
-CRISPY_TEMPLATE_PACK = "bootstrap5"
+# django-tables2 default render_table template
+DJANGO_TABLES2_TEMPLATE = "generic/table.html"
+
+# Smart Isolation: cotton components are isolated from parent-template context
+# (no accidental leaks) but still receive context-processor output (request,
+# user, settings, registry, ...). All components are prop-driven as a result:
+# anything a component needs from the view (object, models, form, ...) must be
+# passed explicitly.
+COTTON_ISOLATE_BY_DEFAULT = True
 
 # This allows us to override Django's stock form widget templates
 FORM_RENDERER = "django.forms.renderers.TemplatesSetting"
@@ -236,16 +241,6 @@ FORM_RENDERER = "django.forms.renderers.TemplatesSetting"
 SETTINGS_EXPORT = []
 
 STATIC_URL = f"/{BASE_PATH}static/"
-
-DJANGO_VITE = {
-    "default": {
-        "dev_mode": ENV.bool("DJANGO_VITE_DEV_MODE", default=False),
-        "dev_server_port": ENV.int("DJANGO_VITE_SERVER_PORT", default=5173),
-    }
-}
-
-if DEBUG and not DJANGO_VITE["default"]["dev_mode"]:
-    DJANGO_VITE["default"]["manifest_path"] = PROJECT_ROOT("coldfront/static/bundles/manifest.json")
 
 STATIC_ROOT = ENV.str("STATIC_ROOT", default=PROJECT_ROOT("static_root"))
 STATICFILES_DIRS = [

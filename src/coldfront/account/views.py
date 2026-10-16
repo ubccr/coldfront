@@ -111,11 +111,13 @@ class HtmxLogoutView(LogoutView):
         logger.info(f"User {request.user} has logged out")
         messages.info(request, _("You have logged out."))
         redirect_to = self.get_success_url()
-        if redirect_to != request.get_full_path():
+        if request.headers.get("HX-Request"):
+            # htmx: return 204 + HX-Redirect so htmx follows the redirect
             response = HttpResponse(status=204)
             response["HX-Redirect"] = redirect_to
             return response
-        return super().get(request, *args, **kwargs)
+        # Plain form POST: return a normal 302 redirect so the browser navigates
+        return HttpResponseRedirect(redirect_to)
 
 
 #

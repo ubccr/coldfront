@@ -5,5 +5,10 @@
     {% if billing_sources_warning %}
         <div class="alert alert-warning">{{ billing_sources_warning }}</div>
     {% endif %}
-    <c-cf.form :form="form" />
+    <c-cf.form :form="form">
+        <c-slot name="buttons">
+            <c-cf.button as="a" href="{{ return_url }}" btnStyle="outline" label="{% trans 'Cancel' %}" />
+            <c-cf.button type="submit" name="_update" variant="primary" label="{% trans 'Save' %}" />
+        </c-slot>
+    </c-cf.form>
 {% endblock form %}

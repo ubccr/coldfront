@@ -1,0 +1,27 @@
+{% load i18n %}
+{% load buttons %}
+
+<c-cf.form :form="form" :action="request.path" method="post" wrapper_class="" layout="stacked">
+    <c-slot name="form_message">
+        <c-cf.modal.title :icon="action.icon" :icon_variant="action.variant" id="htmxModal_title">
+            {{ action.label }} {{ object }}
+        </c-cf.modal.title>
+    </c-slot>
+
+    <c-slot name="buttons">
+        <c-cf.button
+            as="div"
+            btnStyle="outline"
+            icon="heroicon.x-mark"
+            icon.class="text.xl"
+            onclick="this.closest('.modal').close()"
+        >{% trans "Cancel" %}</c-cf.button>
+        <c-cf.button
+            as="button"
+            type="submit"
+            :variant="action.variant"
+            :icon="action.icon"
+            :icon.class="action.icon_class"
+        >{{ action.label }}</c-cf.button>
+    </c-slot>
+</c-cf.form>

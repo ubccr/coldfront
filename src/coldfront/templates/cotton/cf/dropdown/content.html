@@ -1,0 +1,13 @@
+{% comment %}
+DaisyUI dropdown content panel. Renders the dropdown-content menu container.
+{% endcomment %}
+
+<c-vars class="" />
+
+<div
+    tabindex="0"
+    class="dropdown-content bg-base-100 rounded-box p-2 shadow-xl border border-base-content/50 {{ class }}"
+    {{ attrs }}
+>
+    {{ slot }}
+</div>

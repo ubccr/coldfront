@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from crispy_forms.layout import Fieldset
 from django import forms
 from django.core.validators import EMPTY_VALUES
 from django.utils.translation import gettext_lazy as _
@@ -10,8 +9,9 @@ from django.utils.translation import gettext_lazy as _
 from coldfront.core.models import ObjectType
 from coldfront.forms import PrimaryModelForm
 from coldfront.forms.fields import CommentField
+from coldfront.forms.layout import FieldSet
 from coldfront.forms.mixins import AllocationExtensionFormMixin
-from coldfront.forms.widgets import HTMXSelectWidget
+from coldfront.forms.widgets import RefreshSelectWidget
 from coldfront.ras.models import Allocation
 from coldfront.ras.models.change_requests import (
     AllocationChangeRequest,
@@ -34,7 +34,7 @@ class AllocationChangeRequestForm(AllocationExtensionFormMixin, PrimaryModelForm
         label=_("Allocation"),
         queryset=Allocation.objects.all(),
         required=True,
-        widget=HTMXSelectWidget(),
+        widget=RefreshSelectWidget(),
     )
 
     class Meta:
@@ -176,30 +176,20 @@ class AllocationChangeRequestForm(AllocationExtensionFormMixin, PrimaryModelForm
     @property
     def fieldsets(self):
         fieldsets = [
-            Fieldset(
-                _("Change Request"),
+            FieldSet(
                 "allocation",
                 "justification",
+                name=_("Change Request"),
             ),
         ]
 
         # Extension days fieldset
         if "extension_days" in self.fields:
-            fieldsets.append(
-                Fieldset(
-                    _("Extension"),
-                    "extension_days",
-                )
-            )
+            fieldsets.append(FieldSet("extension_days", name=_("Extension")))
 
         # Attribute fields
         if self.attr_fields:
-            fieldsets.append(
-                Fieldset(
-                    _("Attribute Changes"),
-                    *self.attr_fields,
-                )
-            )
+            fieldsets.append(FieldSet(*self.attr_fields, name=_("Attribute Changes")))
 
         # Extension fieldsets
         for entry in self._extension_field_map:
@@ -207,7 +197,7 @@ class AllocationChangeRequestForm(AllocationExtensionFormMixin, PrimaryModelForm
             ext_names = [f"ext_{entry['model']._meta.model_name}_{fn}" for fn in entry["field_names"]]
             rel_names = [rel["form_field_name"] for rel in entry["related_fields"]]
             if ext_names or rel_names:
-                fieldsets.append(Fieldset(header, *(ext_names + rel_names)))
+                fieldsets.append(FieldSet(*(ext_names + rel_names), name=header))
 
         return fieldsets
 
@@ -226,9 +216,7 @@ class AllocationChangeRequestReviewForm(PrimaryModelForm):
 
     @property
     def fieldsets(self):
-        from crispy_forms.layout import Layout
-
-        return Layout("comments")
+        return [FieldSet("comments")]
 
     def save(self, commit=True):
         instance = super().save(commit=False)
@@ -265,9 +253,7 @@ class AllocationChangeRequestApplyForm(PrimaryModelForm):
 
     @property
     def fieldsets(self):
-        from crispy_forms.layout import Layout
-
-        return Layout("comments")
+        return [FieldSet("comments")]
 
     def save(self, commit=True):
         instance = super().save(commit=False)

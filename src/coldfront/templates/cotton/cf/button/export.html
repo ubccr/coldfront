@@ -1,30 +1,24 @@
 {% load i18n %}
 
-<c-vars label="{% trans 'Export' %}" />
-
-<div class="dropdown">
-    <button
-        type="button"
-        class="btn btn-info dropdown-toggle"
-        data-bs-toggle="dropdown"
-        aria-haspopup="true"
-        aria-expanded="false"
+<c-cf.dropdown alignment="end">
+    <c-cf.dropdown.trigger
+        as="button"
+        class="btn btn-info"
+        aria-label='{% trans "Export" %}'
     >
-        <i class="fa-solid fa-download" aria-hidden="true"></i> {{ label }}
-    </button>
-    <ul class="dropdown-menu dropdown-menu-end">
-        <li>
-            <a
+        <c-cfi n="heroicon.arrow-down-tray" /> {{ label }} <c-cfi n="heroicon.chevron-down" />
+    </c-cf.dropdown.trigger>
+    <c-cf.dropdown.content class="border-info/50">
+        <c-cf.menu class="p-1">
+            <c-cf.menu.item
                 id="export_current_view"
-                class="dropdown-item"
                 href="?{% if url_params %}{{ url_params }}&{% endif %}export=table"
-            >{% trans "Current View" %}</a>
-        </li>
-        <li>
-            <a
-                class="dropdown-item"
-                href="?{% if url_params %}{{ url_params }}&{% endif %}export"
-            >{% trans "All Data" %} ({{ data_format }})</a>
-        </li>
-    </ul>
-</div>
+            >
+                {% trans "Current View" %}
+            </c-cf.menu.item>
+            <c-cf.menu.item href="?{% if url_params %}{{ url_params }}&{% endif %}export">
+                {% trans "All Data" %} ({{ data_format }})
+            </c-cf.menu.item>
+        </c-cf.menu>
+    </c-cf.dropdown.content>
+</c-cf.dropdown>

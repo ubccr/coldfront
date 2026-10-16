@@ -1,0 +1,154 @@
+# SPDX-FileCopyrightText: (C) University at Buffalo
+#
+# SPDX-License-Identifier: Apache-2.0
+
+import django.db.models.deletion
+import taggit.managers
+from django.conf import settings
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+    initial = True
+
+    dependencies = [
+        ("core", "0001_initial"),
+        ("storage", "0001_initial"),
+        ("tenancy", "0001_initial"),
+        ("users", "0001_initial"),
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+    ]
+
+    operations = [
+        migrations.AddField(
+            model_name="storagequota",
+            name="owning_group",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="storage_quotas",
+                to="users.group",
+                verbose_name="owning group",
+            ),
+        ),
+        migrations.AddField(
+            model_name="storagequota",
+            name="owning_user",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="storage_quotas_as_owner",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="owning user",
+            ),
+        ),
+        migrations.AddField(
+            model_name="storagequota",
+            name="tags",
+            field=taggit.managers.TaggableManager(
+                help_text="A comma-separated list of tags.",
+                through="core.TaggedItem",
+                to="core.Tag",
+                verbose_name="Tags",
+            ),
+        ),
+        migrations.AddField(
+            model_name="storageresource",
+            name="clusters",
+            field=models.ManyToManyField(
+                related_name="storage_resources", to="storage.storagecluster", verbose_name="clusters"
+            ),
+        ),
+        migrations.AddField(
+            model_name="storageresource",
+            name="tags",
+            field=taggit.managers.TaggableManager(
+                help_text="A comma-separated list of tags.",
+                through="core.TaggedItem",
+                to="core.Tag",
+                verbose_name="Tags",
+            ),
+        ),
+        migrations.AddField(
+            model_name="storageresource",
+            name="tenant",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="storage_resources",
+                to="tenancy.tenant",
+                verbose_name="tenant",
+            ),
+        ),
+        migrations.AddField(
+            model_name="storagequota",
+            name="storage",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="quotas",
+                to="storage.storageresource",
+                verbose_name="storage resource",
+            ),
+        ),
+        migrations.AddField(
+            model_name="storagesnapshotpolicy",
+            name="cluster",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="snapshot_policies",
+                to="storage.storagecluster",
+                verbose_name="cluster",
+            ),
+        ),
+        migrations.AddField(
+            model_name="storagesnapshotpolicy",
+            name="tags",
+            field=taggit.managers.TaggableManager(
+                help_text="A comma-separated list of tags.",
+                through="core.TaggedItem",
+                to="core.Tag",
+                verbose_name="Tags",
+            ),
+        ),
+        migrations.AddField(
+            model_name="storagequota",
+            name="snapshot_policy",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="quotas",
+                to="storage.storagesnapshotpolicy",
+                verbose_name="snapshot policy",
+            ),
+        ),
+        migrations.AddConstraint(
+            model_name="storagecluster",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("capacity_bytes", None), ("capacity_bytes__gt", 0), _connector="OR"),
+                name="storage_storagecluster_capacity_must_be_null_or_positive",
+            ),
+        ),
+        migrations.AddConstraint(
+            model_name="storageresource",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("capacity_bytes", None), ("capacity_bytes__gt", 0), _connector="OR"),
+                name="storage_storageresource_capacity_must_be_null_or_positive",
+            ),
+        ),
+        migrations.AddConstraint(
+            model_name="storagesnapshotpolicy",
+            constraint=models.UniqueConstraint(
+                fields=("cluster", "name"), name="storage_storagesnapshotpolicy_unique_cluster_name"
+            ),
+        ),
+        migrations.AddConstraint(
+            model_name="storagequota",
+            constraint=models.UniqueConstraint(
+                fields=("path", "storage"), name="storage_storagequota_unique_path_per_storage"
+            ),
+        ),
+    ]

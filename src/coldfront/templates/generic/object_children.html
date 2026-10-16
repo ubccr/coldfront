@@ -28,13 +28,12 @@ Context:
             :table_modal="table_config"
             :table_configs="table_configs"
             :filter_form="filter_form"
-            only
         />
     {% endblock table_controls %}
     <form method="post">
         {% csrf_token %}
-        <c-cf.card.table.htmx :table="table" only />
-        <div class="d-print-none mt-2">
+        <c-cf.card.table :table="table" />
+        <div class="mt-2 print:hidden">
             {% block bulk_controls %}
                 {% if table.rows %}
                     {% action_buttons actions model multi=True return_url=request.path %}

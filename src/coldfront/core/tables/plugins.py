@@ -37,11 +37,11 @@ class PluginVersionTable(BaseTable):
 class CatalogPluginTable(BaseTable):
     title_long = columns.TemplateColumn(template_code=PLUGIN_NAME_TEMPLATE, verbose_name=_("Name"))
     author = tables.Column(accessor=tables.A("author__name"), verbose_name=_("Author"))
-    is_local = columns.BooleanColumn(false_mark=None, verbose_name=_("Local"))
+    is_local = columns.BooleanColumn(verbose_name=_("Local"))
     is_installed = columns.TemplateColumn(
         accessor=tables.A("is_loaded"), verbose_name=_("Active"), template_code=PLUGIN_IS_INSTALLED
     )
-    is_certified = columns.BooleanColumn(false_mark=None, verbose_name=_("Certified"))
+    is_certified = columns.BooleanColumn(verbose_name=_("Certified"))
     created_at = columns.DateTimeColumn(verbose_name=_("Published"))
     updated_at = columns.DateTimeColumn(verbose_name=_("Updated"))
     installed_version = tables.Column(verbose_name=_("Installed Version"))

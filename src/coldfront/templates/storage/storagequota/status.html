@@ -6,13 +6,13 @@
     {% for diff in diffs %}
         <c-cf.layout.row>
             <c-cf.layout.col>
-                <c-cf.card.fields only>
-                    <c-slot name="header">
+                <c-cf.card.fields>
+                    <c-slot name="title">
                         {{ diff.name }}
                         {% if diff.diff_added == diff.diff_removed %}
-                            <c-cf.ui.checkmark :value="diff.quota_exists" />
+                            <c-cf.checkmark :value="diff.quota_exists" />
                         {% else %}
-                            <c-cf.ui.checkmark :value="False" />
+                            <c-cf.checkmark :value="False" />
                         {% endif %}
                     </c-slot>
 
@@ -55,34 +55,34 @@
             </c-cf.layout.col>
 
             <c-cf.layout.col>
-                <c-cf.card header="{% trans 'Pending Changes' %}" only>
-                    <div class="card-body">
+                <c-cf.card title="{% trans 'Pending Changes' %}">
+                    <c-cf.card.body>
                         {% if not diff.quota_exists and not diff.path_exists %}
-                            <span class="text-muted" style="margin-left: 10px">
-                                <c-cf.ui.checkmark :value="False" /> {% trans "Quota and Path not found" %}
+                            <span class="ml-2 text-muted">
+                                <c-cf.checkmark :value="False" /> {% trans "Quota and Path not found" %}
                             </span>
                         {% elif diff.diff_added == diff.diff_removed %}
-                            <span class="text-muted" style="margin-left: 10px">
+                            <span class="ml-2 text-muted">
                                 {% trans "No changes" %}
                             </span>
                         {% else %}
                             {% if not diff.quota_exists %}
-                                <p><c-cf.ui.checkmark :value="False" /> {% trans "Quota not found" %}</p>
+                                <p><c-cf.checkmark :value="False" /> {% trans "Quota not found" %}</p>
                             {% elif not diff.path_exists %}
-                                <p><c-cf.ui.checkmark :value="False" /> {% trans "Path not found" %}</p>
+                                <p><c-cf.checkmark :value="False" /> {% trans "Path not found" %}</p>
                             {% endif %}
-                            <pre class="change-diff change-removed">{{ diff.diff_removed|json }}</pre>
-                            <pre class="change-diff change-added">{{ diff.diff_added|json }}</pre>
+                            <pre class="bg-error/15">{{ diff.diff_removed|json }}</pre>
+                            <pre class="bg-success/15">{{ diff.diff_added|json }}</pre>
                         {% endif %}
-                    </div>
+                    </c-cf.card.body>
                 </c-cf.card>
             </c-cf.layout.col>
         </c-cf.layout.row>
     {% empty %}
         <c-cf.layout.row>
             <c-cf.layout.col>
-                <span class="text-muted" style="margin-left: 10px">
-                    {% blocktrans with clusters=cluster_names|join:',' %}No backends configured for clusters:
+                <span class="ml-2 text-muted">
+                    {% blocktrans trimmed with clusters=cluster_names|join:',' %}No backends configured for clusters:
                         {{ clusters }}
                     {% endblocktrans %}
                 </span>

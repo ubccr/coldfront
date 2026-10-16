@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from crispy_forms.layout import Fieldset, Layout
 from django import forms
 from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import gettext_lazy as _
@@ -25,7 +24,7 @@ from coldfront.billing.models import (
 )
 from coldfront.core.choices import CommentKindChoices
 from coldfront.core.models import CommentEntry, ObjectType
-from coldfront.forms import ColdFrontModelForm, ColdFrontModelImportForm, PrimaryModelForm, PrimaryModelImportForm
+from coldfront.forms import ColdFrontModelImportForm, PrimaryModelForm, PrimaryModelImportForm
 from coldfront.forms.fields import (
     CommentField,
     CSVContentTypeObjectField,
@@ -37,8 +36,8 @@ from coldfront.forms.fields import (
 from coldfront.forms.fields.bytes import BytesField
 from coldfront.forms.fields.content_types import ContentTypeChoiceField
 from coldfront.forms.fields.csv import CSVChoiceField
-from coldfront.forms.mixins import HorizontalFormMixin
-from coldfront.forms.widgets import HTMXSelectWidget
+from coldfront.forms.layout import FieldSet
+from coldfront.forms.widgets import RefreshSelectWidget
 from coldfront.registry import billing_scope_types, get_billing_sources
 from coldfront.users.models import User
 from coldfront.users.querysets import RestrictedQuerySet
@@ -113,18 +112,18 @@ class InvoiceForm(PrimaryModelForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Invoice"),
+            FieldSet(
                 "slug",
                 "owner",
                 "source_types",
                 "description",
+                name=_("Invoice"),
             ),
-            Fieldset(
-                _("Period"),
+            FieldSet(
                 "start_date",
                 "end_date",
                 "due_date",
+                name=_("Period"),
             ),
         ]
 
@@ -194,7 +193,7 @@ class InvoiceImportForm(PrimaryModelImportForm):
         ]
 
 
-class InvoiceLineItemForm(ColdFrontModelForm):
+class InvoiceLineItemForm(PrimaryModelForm):
     invoice = forms.ModelChoiceField(
         queryset=Invoice.objects.all(),
         label=_("Invoice"),
@@ -260,24 +259,24 @@ class InvoiceLineItemForm(ColdFrontModelForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Invoice Line Item"),
+            FieldSet(
                 "invoice",
                 "line_type",
                 "description",
+                name=_("Invoice Line Item"),
             ),
-            Fieldset(
-                _("Source"),
+            FieldSet(
                 "source_object_type",
                 "source_object_id",
+                name=_("Source"),
             ),
-            Fieldset(
-                _("Pricing"),
+            FieldSet(
                 "quantity",
                 "unit",
                 "unit_format",
                 "unit_price",
                 "amount",
+                name=_("Pricing"),
             ),
         ]
 
@@ -345,14 +344,14 @@ class BillingScopeFormMixin(forms.Form):
     scope_object_type = ContentTypeChoiceField(
         queryset=ObjectType.objects.none(),
         required=True,
-        widget=HTMXSelectWidget(),
+        widget=RefreshSelectWidget(),
         label=_("Scope type"),
         help_text=_("Content type of the rate scope (e.g. a StorageResource or SlurmCluster)."),
     )
     scope_object_id = forms.ChoiceField(
         choices=[],
         required=True,
-        widget=HTMXSelectWidget(),
+        widget=RefreshSelectWidget(),
         label=_("Scope object"),
         help_text=_("Select the object to scope this rate to. Options are filtered by the scope type."),
     )
@@ -467,8 +466,7 @@ class RateForm(BillingScopeFormMixin, PrimaryModelForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Rate"),
+            FieldSet(
                 "name",
                 "scope_object_type",
                 "scope_object_id",
@@ -477,11 +475,12 @@ class RateForm(BillingScopeFormMixin, PrimaryModelForm):
                 "amount",
                 "charge_basis",
                 "description",
+                name=_("Rate"),
             ),
-            Fieldset(
-                _("Effective Dates"),
+            FieldSet(
                 "effective_start",
                 "effective_end",
+                name=_("Effective Dates"),
             ),
         ]
 
@@ -590,8 +589,7 @@ class FreeAllowanceForm(BillingScopeFormMixin, PrimaryModelForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Free Allowance"),
+            FieldSet(
                 "name",
                 "owner",
                 "scope_object_type",
@@ -600,11 +598,12 @@ class FreeAllowanceForm(BillingScopeFormMixin, PrimaryModelForm):
                 "quantity_total",
                 "used",
                 "description",
+                name=_("Free Allowance"),
             ),
-            Fieldset(
-                _("Period"),
+            FieldSet(
                 "start_date",
                 "end_date",
+                name=_("Period"),
             ),
         ]
 
@@ -670,14 +669,14 @@ class DiscountForm(BillingScopeFormMixin, PrimaryModelForm):
     scope_object_type = ContentTypeChoiceField(
         queryset=ObjectType.objects.none(),
         required=False,
-        widget=HTMXSelectWidget(),
+        widget=RefreshSelectWidget(),
         label=_("Scope type"),
         help_text=_("Content type of the discount scope (e.g. a StorageResource or SlurmCluster)."),
     )
     scope_object_id = forms.ChoiceField(
         choices=[],
         required=False,
-        widget=HTMXSelectWidget(),
+        widget=RefreshSelectWidget(),
         label=_("Scope object"),
         help_text=_("Select the object to scope this discount to. Leave empty for a global discount."),
     )
@@ -708,8 +707,7 @@ class DiscountForm(BillingScopeFormMixin, PrimaryModelForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Discount"),
+            FieldSet(
                 "name",
                 "owner",
                 "scope_object_type",
@@ -717,6 +715,7 @@ class DiscountForm(BillingScopeFormMixin, PrimaryModelForm):
                 "type",
                 "value",
                 "description",
+                name=_("Discount"),
             ),
         ]
 
@@ -767,7 +766,7 @@ class InvoiceTransitionFormMixin(forms.Form):
 
     Provides a single optional comments field and records any comment as a
     CommentEntry on the invoice, mirroring the Allocation review forms. Unlike
-    ``ColdFrontModelForm`` it carries no tags or changelog-message fields.
+    ``PrimaryModelForm`` it carries no tags or changelog-message fields.
     """
 
     comments = CommentField()
@@ -778,7 +777,7 @@ class InvoiceTransitionFormMixin(forms.Form):
 
     @property
     def fieldsets(self):
-        return Layout("comments")
+        return [FieldSet("comments")]
 
     def save(self, commit=True):
         instance = super().save(commit=False)
@@ -798,7 +797,7 @@ class InvoiceTransitionFormMixin(forms.Form):
             )
 
 
-class InvoiceTransitionForm(InvoiceTransitionFormMixin, HorizontalFormMixin, forms.ModelForm):
+class InvoiceTransitionForm(InvoiceTransitionFormMixin, forms.ModelForm):
     """
     Empty form used by status transitions that need no user input (e.g. void).
     """
@@ -820,14 +819,14 @@ class InvoiceTransitionForm(InvoiceTransitionFormMixin, HorizontalFormMixin, for
     @property
     def fieldsets(self):
         return [
-            Layout(
+            FieldSet(
                 "owner",
                 "comments",
             ),
         ]
 
 
-class InvoiceFinalizeForm(InvoiceTransitionFormMixin, HorizontalFormMixin, forms.ModelForm):
+class InvoiceFinalizeForm(InvoiceTransitionFormMixin, forms.ModelForm):
     """
     Finalize transition: block if the invoice has no valid charge lines.
     """
@@ -849,7 +848,7 @@ class InvoiceFinalizeForm(InvoiceTransitionFormMixin, HorizontalFormMixin, forms
             )
 
 
-class PaymentForm(InvoiceTransitionFormMixin, HorizontalFormMixin, forms.ModelForm):
+class PaymentForm(InvoiceTransitionFormMixin, forms.ModelForm):
     payment_date = forms.DateTimeField(
         label=_("Payment date"),
         required=False,
@@ -872,4 +871,11 @@ class PaymentForm(InvoiceTransitionFormMixin, HorizontalFormMixin, forms.ModelFo
 
     @property
     def fieldsets(self):
-        return Layout("payment_date", "payment_amount", "payment_method", "comments")
+        return [
+            FieldSet(
+                "payment_date",
+                "payment_amount",
+                "payment_method",
+                "comments",
+            ),
+        ]

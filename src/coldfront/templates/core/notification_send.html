@@ -4,24 +4,12 @@
 {% block title %}{% trans "Send Notification" %}{% endblock %}
 
 {% block content %}
-    <div class="m-4">
-        <form action="." method="post" class="object-edit">
-            <div id="form_fields">
-                {% block form %}
-                    <c-cf.form :form="form" />
-                {% endblock form %}
-            </div>
-
-            <div class="col-lg-9 text-end">
-                {% block buttons %}
-                    <a href="{% url 'home' %}" class="btn btn-outline-secondary btn-float">{% trans "Cancel" %}</a>
-                    <div class="btn-group" role="group" aria-label='{% trans "Actions" %}'>
-                        <button type="submit" name="send" class="btn btn-primary">
-                            {% trans "Send" %}
-                        </button>
-                    </div>
-                {% endblock buttons %}
-            </div>
-        </form>
-    </div>
+    <c-cf.form :form="form" action="." method="post">
+        <c-slot name="buttons">
+            <a href="{% url 'home' %}" class="btn btn-outline">{% trans "Cancel" %}</a>
+            <button type="submit" name="send" class="btn btn-primary">
+                {% trans "Send" %}
+            </button>
+        </c-slot>
+    </c-cf.form>
 {% endblock %}

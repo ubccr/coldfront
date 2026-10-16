@@ -1,7 +1,7 @@
 {% load i18n %}
 
 {% if object.schema %}
-    <c-cf.card.code header="{% trans 'Allocation Attribute Schema' %}">
+    <c-cf.card.code title="{% trans 'Allocation Attribute Schema' %}">
         {{ object.schema|json }}
     </c-cf.card.code>
 {% endif %}

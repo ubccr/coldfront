@@ -8,8 +8,7 @@ Blocks:
   - controls:   Control elements displayed between the header and content
   - tabs:       Page tabs
   - content:    Primary page content
-    - form:     Content within the <form> element
-    - buttons:  Form submission buttons
+    - form:     The c-cf.form call (form tag + fields + buttons slot)
   - modals:     Any pre-loaded modals
 
 Context:
@@ -19,35 +18,24 @@ Context:
 {% endcomment %}
 
 {% block title %}
-    {{ object }}
+    {{ flow.label }} {{ action.label }} {{ object }}
 {% endblock title %}
 
-{% block tabs %}
-    <c-cf.tabs>
-        <c-cf.tabs.tab id="edit-form" label="{{ flow.label }} {{ action.label }}" active />
-    </c-cf.tabs>
-{% endblock tabs %}
-
 {% block content %}
-    <c-cf.tabs.content id="edit-form" active>
-        {% block object_info %}
-        {% endblock %}
-
-        <form action="" method="post" enctype="multipart/form-data" class="object-edit mt-5">
-            <div id="form_fields" hx-disinherit="hx-select hx-swap">
-                {% block form %}
-                    <c-cf.form :form="form" />
-                {% endblock form %}
-            </div>
-
-            <div class="col-lg-9 text-end">
-                {% block buttons %}
-                    <a href="{{ return_url }}" class="btn btn-outline-secondary btn-float">{% trans "Cancel" %}</a>
-                    {% action_buttons action object type="submit" %}
-                {% endblock buttons %}
-            </div>
-        </form>
-    </c-cf.tabs.content>
+    {% block form %}
+        <c-cf.form :form="form">
+            <c-slot name="buttons">
+                <c-cf.button as="a" href="{{ return_url }}" btnStyle="outline" label="{% trans 'Cancel' %}" />
+                <c-cf.button
+                    as="button"
+                    type="submit"
+                    variant="{{ action.variant }}"
+                    icon="{{ action.icon }}"
+                    icon.class="{{ action.icon_class }}"
+                >{{ action.label }}</c-cf.button>
+            </c-slot>
+        </c-cf.form>
+    {% endblock form %}
 {% endblock content %}
 
 {% block modals %}

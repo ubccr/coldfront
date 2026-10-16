@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from crispy_forms.layout import Fieldset
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
@@ -12,6 +11,7 @@ from coldfront.forms import (
     PrimaryModelBulkEditForm,
 )
 from coldfront.forms.fields import JSONField
+from coldfront.forms.layout import FieldSet
 from coldfront.forms.widgets import BulkEditNullBooleanSelect
 from coldfront.slurm.choices import (
     SlurmAdminLevelChoices,
@@ -77,12 +77,11 @@ class SlurmQOSBulkEditForm(OrganizationalModelBulkEditForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Slurm QOS"),
+            FieldSet(
                 "description",
+                name=_("Slurm QOS"),
             ),
-            Fieldset(
-                _("Limits"),
+            FieldSet(
                 "priority",
                 "max_submit_jobs_per_user",
                 "max_jobs_per_user",
@@ -91,6 +90,7 @@ class SlurmQOSBulkEditForm(OrganizationalModelBulkEditForm):
                 "max_wall_duration_per_job",
                 "limit_factor",
                 "grace_time",
+                name=_("Limits"),
             ),
         ]
 
@@ -148,19 +148,19 @@ class SlurmClusterBulkEditForm(AllocatableResourceBulkEditForm, PrimaryModelBulk
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Slurm Cluster"),
+            FieldSet(
                 "description",
                 "locked",
                 "schema",
+                name=_("Slurm Cluster"),
             ),
-            Fieldset(
-                _("Slurm Accounting"),
+            FieldSet(
                 "default_qos",
                 "qos_list",
                 "fairshare",
                 "features",
                 "classification",
+                name=_("Slurm Accounting"),
             ),
         ]
 
@@ -282,8 +282,7 @@ class SlurmPartitionBulkEditForm(AllocatableResourceBulkEditForm, PrimaryModelBu
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Slurm Partition"),
+            FieldSet(
                 "cluster",
                 "description",
                 "locked",
@@ -295,17 +294,18 @@ class SlurmPartitionBulkEditForm(AllocatableResourceBulkEditForm, PrimaryModelBu
                 "state",
                 "preempt_mode",
                 "def_mem_per_cpu",
+                name=_("Slurm Partition"),
             ),
-            Fieldset(
-                _("Limits"),
+            FieldSet(
                 "max_time",
+                name=_("Limits"),
             ),
-            Fieldset(
-                _("Access Control"),
+            FieldSet(
                 "allow_qos",
                 "qos",
                 "allow_groups",
                 "allow_accounts",
+                name=_("Access Control"),
             ),
         ]
 
@@ -342,13 +342,13 @@ class SlurmAccountBulkEditForm(PrimaryModelBulkEditForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Slurm Account"),
+            FieldSet(
                 "cluster",
                 "description",
                 "fairshare",
                 "qos_add",
                 "qos_remove",
+                name=_("Slurm Account"),
             ),
         ]
 
@@ -439,25 +439,25 @@ class SlurmAssociationBulkEditForm(PrimaryModelBulkEditForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Slurm Association"),
+            FieldSet(
                 "slurm_account",
                 "parent",
                 "default_qos",
                 "fairshare",
+                name=_("Slurm Association"),
             ),
-            Fieldset(
-                _("Limits"),
+            FieldSet(
                 "max_jobs",
                 "max_submit_jobs",
                 "max_tres_per_job",
                 "max_tres_mins_per_job",
                 "max_wall_duration_per_job",
+                name=_("Limits"),
             ),
-            Fieldset(
-                _("QOS Configuration"),
+            FieldSet(
                 "qos_add",
                 "qos_remove",
+                name=_("QOS Configuration"),
             ),
         ]
 
@@ -512,12 +512,12 @@ class SlurmUserBulkEditForm(PrimaryModelBulkEditForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Slurm User"),
+            FieldSet(
                 "cluster",
                 "default_account",
                 "default_wckey",
                 "default_qos",
                 "admin_level",
+                name=_("Slurm User"),
             ),
         ]

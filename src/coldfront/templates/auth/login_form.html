@@ -1,14 +1,12 @@
-{% load crispy_forms_tags %}
+{% load i18n %}
 
 <form method="post" action="{% url 'login' %}?next={{request.GET.next}}">
     {% csrf_token %}
-    {{ form|crispy }}
-    <div class="d-grid gap-2">
-        <c-cf.button
-            type="submit"
-            label="Log In"
-            icon="fas fa-sign-in-alt"
-            css_class="btn-primary"
-        />
-    </div>
+    <c-cf.form.fields :form="form" layout="stacked" />
+    <c-cf.button
+        type="submit"
+        variant="primary"
+        icon="tablericon.login"
+        class="mt-4 w-full"
+    >{% trans "Log In" %}</c-cf.button>
 </form>

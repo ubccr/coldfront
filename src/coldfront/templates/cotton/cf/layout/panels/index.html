@@ -1,5 +1,6 @@
 {% load plugins %}
-<c-cf.layout.row>
+<c-vars left="" right="" bottom="" />
+<c-cf.layout.row cols="2">
     <c-cf.layout.col>
         {{ left }}
         {% if object %}
@@ -14,12 +15,12 @@
     </c-cf.layout.col>
 </c-cf.layout.row>
 {% if bottom %}
-    <c-cf.layout.row>
+    <c-cf.layout.row class="mt-4">
         <c-cf.layout.col>
             {{ bottom }}
         </c-cf.layout.col>
-        {% if object %}
-            {% plugin_full_width_page object %}
-        {% endif %}
     </c-cf.layout.row>
+{% endif %}
+{% if object %}
+    {% plugin_full_width_page object %}
 {% endif %}

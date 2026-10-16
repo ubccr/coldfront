@@ -7,8 +7,7 @@ Blocks:
   - controls:   Control elements displayed between the header and content
   - tabs:       Page tabs
   - content:    Primary page content
-    - form:     Content within the <form> element
-    - buttons:  Form submission buttons
+    - form:     The c-cf.form call (form tag + fields + buttons slot)
   - modals:     Any pre-loaded modals
 
 Context:
@@ -28,63 +27,46 @@ Context:
 {% endblock title %}
 
 {% block controls %}
-    <div class="btn-list">
+    <div class="flex flex-wrap items-center justify-end gap-2">
         {# Link to model documentation #}
         {% if settings.DOCS_ROOT and object.docs_url %}
-            <a
+            <c-cf.button
+                as="a"
                 href="{{ object.docs_url }}"
                 target="_blank"
-                class="btn btn-outline-secondary"
+                btnStyle="outline"
                 title='{% trans "View model documentation" %}'
-            >
-                <i class="fa-solid fa-life-ring"></i> {% trans "Help" %}
-            </a>
+                icon="tablericon.lifebuoy"
+                label="{% trans 'Help' %}"
+            />
         {% endif %}
     </div>
 {% endblock controls %}
 
-{% block tabs %}
-    <c-cf.tabs>
-        <c-cf.tabs.tab
-            id="edit-form"
-            label="{% if object.pk %}{% trans 'Edit' %}{% else %}{% trans 'Create' %}{% endif %}"
-            active
-        />
-    </c-cf.tabs>
-{% endblock tabs %}
-
 {% block content %}
-    <c-cf.tabs.content id="edit-form" active>
-        <form action="" method="post" enctype="multipart/form-data" class="object-edit mt-5">
-            <div id="form_fields" hx-disinherit="hx-select hx-swap">
-                {% block form %}
-                    <c-cf.form :form="form" />
-                {% endblock form %}
-            </div>
-
-            <div class="col-lg-9 text-end">
-                {% block buttons %}
-                    <a href="{{ return_url }}" class="btn btn-outline-secondary btn-float">{% trans "Cancel" %}</a>
-                    {% if object.pk %}
-                        <button type="submit" name="_update" class="btn btn-primary">
-                            {% trans "Save" %}
+    {% block form %}
+        <c-cf.form :form="form">
+            <c-slot name="buttons">
+                <c-cf.button as="a" href="{{ return_url }}" btnStyle="outline" label="{% trans 'Cancel' %}" />
+                {% if object.pk %}
+                    <button type="submit" name="_update" class="btn btn-primary">
+                        {% trans "Save" %}
+                    </button>
+                {% else %}
+                    <div class="join" role="group" aria-label='{% trans "Actions" %}'>
+                        <button type="submit" name="_create" class="btn btn-primary join-item">
+                            {% trans "Create" %}
                         </button>
-                    {% else %}
-                        <div class="btn-group" role="group" aria-label='{% trans "Actions" %}'>
-                            <button type="submit" name="_create" class="btn btn-primary">
-                                {% trans "Create" %}
-                            </button>
-                            <button type="submit" name="_addanother" class="btn btn-outline-primary btn-float">
-                                {% trans "Create & Add Another" %}
-                            </button>
-                        </div>
-                    {% endif %}
-                {% endblock buttons %}
-            </div>
-        </form>
-    </c-cf.tabs.content>
+                        <button type="submit" name="_addanother" class="btn btn-outline btn-primary join-item">
+                            {% trans "Create & Add Another" %}
+                        </button>
+                    </div>
+                {% endif %}
+            </c-slot>
+        </c-cf.form>
+    {% endblock form %}
 {% endblock content %}
 
 {% block modals %}
-    <c-cf.modal.htmx size="lg" />
+    <c-cf.modal.htmx boxClass="max-w-3xl" />
 {% endblock %}

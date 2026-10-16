@@ -3,11 +3,12 @@
 {% load buttons %}
 
 {% block extra_controls %}
-    <c-cf.button css_class="btn-info" url="?download=true" icon="fa-solid fa-download" type="link" label="Export" />
+    <c-cf.button as="a" href="?download=true" variant="info" icon="heroicon.arrow-down-tray" title="Export"
+    >Export</c-cf.button>
 {% endblock extra_controls %}
 
 {% block content %}
-    <c-cf.card.code header="{% trans 'Partition Config' %}">
+    <c-cf.card.code title="{% trans 'Partition Config' %}">
         {{ section }}
     </c-cf.card.code>
 {% endblock %}

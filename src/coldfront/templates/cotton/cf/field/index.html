@@ -1,0 +1,73 @@
+{% comment %}
+Unified form field renderer. Wraps a bound field's control in a
+label/help/errors layout. The control itself is rendered by Django's own
+widget template via render_field_with_aria, which wires WAI-ARIA
+(aria-describedby / aria-invalid) + the daisyUI error class onto the control
+and mirrors field data onto Alpine select widgets. The trio (Alpine combobox
+select, toggle, date picker) lives in their widget templates
+(widgets/alpine_select.html, django/forms/widgets/{checkbox,date,datetime,time}.html).
+
+Props:
+  field         the bound field (BoundField)
+  layout        "inline" (label left, control right, default) or "stacked"
+  nullify       if true and field.name in form.nullable_fields, render the
+                nullable (set-to-None) checkbox alongside the field
+  show_label    render the label (default true)
+  show_help     render help_text (default true)
+  show_errors   render field errors (default true)
+  wrapper_class extra classes on the wrapper
+  label_class   extra classes on the label
+  control_class extra classes on the control wrapper
+
+Render: every bound field's control is rendered by Django's own widget
+template via render_field_with_aria, which wires ARIA + the daisyUI error
+class onto the control and mirrors field data onto Alpine select widgets.
+
+Error ids follow Django's convention ({ auto_id }_errors); help ids use
+{ auto_id }_helptext.
+{% endcomment %}
+{% load form_helpers %}
+
+<c-vars
+    :field="field"
+    :form="form"
+    layout="inline"
+    :nullify="False"
+    :show_label="True"
+    :show_help="True"
+    :show_errors="True"
+    wrapper_class=""
+    label_class=""
+    control_class=""
+/>
+
+{% if field.is_hidden %}
+    {{ field }}
+{% elif nullify and field.name in form.nullable_fields %}
+    <c-cf.field.nullify :field="field" :layout="layout" />
+{% else %}
+    {% with help_id=field.auto_id|add:"_helptext" errors_id=field.auto_id|add:"_errors" %}
+        <div
+            class="{% if layout == 'stacked' %}form-control w-full mb-4{% else %}grid grid-cols-[12rem_1fr] items-start gap-4 mb-4{% endif %}{{ wrapper_class }}"
+            {{ attrs }}
+        >
+            {% if show_label and field.label %}
+                <c-cf.label
+                    :for="field.id_for_label"
+                    label="{% if field.label %}{{ field.label }}{% else %}{{ field.name }}{% endif %}"
+                    :required="field.field.required"
+                    class="{% if layout == 'stacked' %}mb-2 block{% else %}sm:text-right sm:pt-2{% endif %} {{ label_class }}"
+                />
+            {% endif %}
+            <div class="{% if layout == 'stacked' %}w-full{% endif %}{{ control_class }}">
+                {% render_field_with_aria field show_help=show_help show_errors=show_errors %}
+                {% if show_help and field.help_text %}
+                    <c-cf.help-text id="{{ help_id }}" content="{{ field.help_text }}" />
+                {% endif %}
+                {% if show_errors %}
+                    <c-cf.field-error :field="field" />
+                {% endif %}
+            </div>
+        </div>
+    {% endwith %}
+{% endif %}

@@ -1,0 +1,73 @@
+{% comment %}
+DaisyUI menu item (type: link/title/submenu-details/submenu-toggle). Renders a
+li inside a ul.menu. Other attrs pass through to the link element.
+{% endcomment %}
+
+<c-vars
+    class=""
+    type="link"
+    title=""
+    size=""
+    disabled
+    active
+    href
+    open
+    titleSlot=""
+/>
+
+{# Determine item type and render accordingly #}
+{% if type == "title" %}
+    <li class="menu-title {% if size %}menu-{{ size }}{% endif %} {{ class }}">
+        {% if slot %}
+            {{ slot }}
+        {% else %}
+            {{ title }}
+        {% endif %}
+    </li>
+{% elif type == "submenu-details" %}
+    <li class="{% if size %}menu-{{ size }}{% endif %} {% if disabled %}menu-disabled{% endif %} {{ class }}">
+        <details {% if open %}open{% endif %}>
+            {% if titleSlot %}
+                {{ titleSlot }}
+            {% else %}
+                <summary class="{% if active %}menu-active{% endif %}">
+                    {{ title|default:"Submenu" }}
+                </summary>
+            {% endif %}
+            <ul class="menu-dropdown">
+                {{ slot }}
+            </ul>
+        </details>
+    </li>
+{% elif type == "submenu-toggle" %}
+    <li class="{% if size %}menu-{{ size }}{% endif %} {% if disabled %}menu-disabled{% endif %} {{ class }}">
+        {% if titleSlot %}
+            {{ titleSlot }}
+        {% else %}
+            <a
+                class="menu-dropdown-toggle {% if active %}menu-active{% endif %} {% if open %}menu-dropdown-show{% endif %}"
+                {{ attrs }}
+            >
+                {{ title|default:"Submenu" }}
+            </a>
+        {% endif %}
+        <ul class="menu-dropdown {% if open %}menu-dropdown-show{% endif %}">
+            {{ slot }}
+        </ul>
+    </li>
+{% else %}
+    {# Default: regular link item #}
+    <li class="{% if size %}menu-{{ size }}{% endif %} {% if disabled %}menu-disabled{% endif %} {{ class }}">
+        <a
+            {% if href %}href="{{ href }}"{% endif %}
+            class="{% if active %}menu-active{% endif %} {% if open %}menu-dropdown-show{% endif %}"
+            {{ attrs }}
+        >
+            {% if slot %}
+                {{ slot }}
+            {% else %}
+                {{ title }}
+            {% endif %}
+        </a>
+    </li>
+{% endif %}

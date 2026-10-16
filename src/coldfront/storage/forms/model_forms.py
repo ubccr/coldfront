@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from crispy_forms.layout import Fieldset
 from django import forms
 from django.core.exceptions import ValidationError
 from django.db.models import Sum
@@ -11,6 +10,7 @@ from django.utils.translation import gettext_lazy as _
 from coldfront.forms import PrimaryModelForm, PrimaryModelImportForm, TenancyForm, TenancyImportForm
 from coldfront.forms.fields import CSVModelChoiceField, CSVModelMultipleChoiceField, DynamicModelChoiceField, JSONField
 from coldfront.forms.fields.bytes import BytesField
+from coldfront.forms.layout import FieldSet
 from coldfront.ras.models import Allocation
 from coldfront.storage.models import StorageCluster, StorageQuota, StorageResource, StorageSnapshotPolicy
 from coldfront.users.models import Group, User
@@ -49,21 +49,21 @@ class StorageResourceForm(TenancyForm, PrimaryModelForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Storage Resource"),
+            FieldSet(
                 "name",
                 "description",
                 "locked",
                 "schema",
+                name=_("Storage Resource"),
             ),
-            Fieldset(
-                _("Backend"),
+            FieldSet(
                 "clusters",
                 "path_template",
+                name=_("Backend"),
             ),
-            Fieldset(
-                _("Capacity"),
+            FieldSet(
                 "capacity_bytes",
+                name=_("Capacity"),
             ),
         ]
 
@@ -146,15 +146,15 @@ class StorageClusterForm(PrimaryModelForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Storage Cluster"),
+            FieldSet(
                 "name",
                 "description",
                 "backend_path",
+                name=_("Storage Cluster"),
             ),
-            Fieldset(
-                _("Capacity"),
+            FieldSet(
                 "capacity_bytes",
+                name=_("Capacity"),
             ),
         ]
 
@@ -191,12 +191,6 @@ class StorageQuotaForm(PrimaryModelForm):
     storage = forms.ModelChoiceField(
         queryset=StorageResource.objects.all(),
         label=_("Storage Resource"),
-    )
-
-    clusters = forms.ModelMultipleChoiceField(
-        queryset=StorageCluster.objects.all(),
-        required=False,
-        label=_("Clusters"),
     )
 
     snapshot_policy = forms.ModelChoiceField(
@@ -257,8 +251,7 @@ class StorageQuotaForm(PrimaryModelForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Storage Quota"),
+            FieldSet(
                 "allocation",
                 "storage",
                 "clusters",
@@ -266,19 +259,20 @@ class StorageQuotaForm(PrimaryModelForm):
                 "owning_user",
                 "owning_group",
                 "path_mode",
+                name=_("Storage Quota"),
             ),
-            Fieldset(
-                _("Limits"),
+            FieldSet(
                 "hard_limit_bytes",
                 "soft_limit_bytes",
                 "hard_limit_files",
                 "soft_limit_files",
                 "grace_period",
                 "share_type",
+                name=_("Limits"),
             ),
-            Fieldset(
-                _("Snapshot Policy"),
+            FieldSet(
                 "snapshot_policy",
+                name=_("Snapshot Policy"),
             ),
         ]
 
@@ -380,14 +374,14 @@ class StorageSnapshotPolicyForm(PrimaryModelForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Snapshot Policy"),
+            FieldSet(
                 "cluster",
                 "name",
                 "description",
                 "interval",
                 "retention_days",
                 "extra_config",
+                name=_("Snapshot Policy"),
             ),
         ]
 

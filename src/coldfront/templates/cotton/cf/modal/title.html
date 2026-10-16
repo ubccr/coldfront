@@ -1,0 +1,28 @@
+<c-vars
+    icon=""
+    icon_variant=""
+    :variantClasses="{
+        'primary': 'text-primary',
+        'secondary': 'text-secondary',
+        'accent': 'text-accent',
+        'neutral': 'text-neutral',
+        'info': 'text-info',
+        'success': 'text-success',
+        'warning': 'text-warning',
+        'error': 'text-error'
+    }"
+    id=""
+    class=""
+/>
+
+<div class="m-4 flex items-center gap-4">
+    {% if icon %}
+        <div class="flex-shrink-0">
+            <c-cfi n="{{ icon }}" class="h-12 w-12 {{ variantClasses|get_dict_item:icon_variant }}" />
+        </div>
+    {% endif %}
+
+    <h3 {% if id %}id="{{ id }}"{% endif %} class="text-lg font-semibold {{ class }}" {{ attrs }}>
+        {{ slot }}
+    </h3>
+</div>

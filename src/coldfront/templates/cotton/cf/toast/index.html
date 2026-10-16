@@ -1,0 +1,27 @@
+{% comment %}
+DaisyUI toast container (class, horizontal, vertical). Positions a stack of
+alerts in a corner of the viewport.
+{% endcomment %}
+
+<c-vars
+    class=""
+    horizontal=""
+    :horizontalClasses="{
+        'start': 'toast-start',
+        'center': 'toast-center',
+        'end': 'toast-end'
+    }"
+    vertical=""
+    :verticalClasses="{
+        'top': 'toast-top',
+        'middle': 'toast-middle',
+        'bottom': 'toast-bottom'
+    }"
+/>
+
+<div
+    class="toast {{ horizontalClasses|get_dict_item:horizontal }} {{ verticalClasses|get_dict_item:vertical }} {{ class }}"
+    {{ attrs }}
+>
+    {{ slot }}
+</div>

@@ -1,0 +1,11 @@
+<div class="vc relative border-none m-0 p-0 w-full !min-w-0">
+    <input
+        type="text"
+        role="combobox"
+        name="{{ widget.name }}"
+        {% if widget.value != None %}value="{{ widget.value|stringformat:'s' }}"{% endif %}
+        {% include "django/forms/widgets/attrs.html" %}
+        readonly
+        class="input w-full datetime-picker{% if 'class' in widget.attrs %} {{ widget.attrs.class }}{% endif %}"
+    >
+</div>

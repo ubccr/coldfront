@@ -2,12 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from crispy_forms.layout import Fieldset
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from coldfront.forms import NestedGroupModelFilterSetForm, PrimaryModelFilterSetForm
 from coldfront.forms.fields import DynamicModelMultipleChoiceField, TagFilterField
+from coldfront.forms.layout import FieldSet
 from coldfront.tenancy.models import Tenant, TenantGroup
 
 
@@ -17,10 +17,13 @@ class TenantGroupFilterSetForm(NestedGroupModelFilterSetForm):
     tag = TagFilterField(model)
 
     fieldsets = (
-        Fieldset(
-            "Tenant Group",
-            "parent_id",
+        FieldSet(
+            "q",
             "tag",
+        ),
+        FieldSet(
+            "parent_id",
+            name=_("Tenant Group"),
         ),
     )
 
@@ -35,10 +38,13 @@ class TenantFilterSetForm(PrimaryModelFilterSetForm):
     tag = TagFilterField(model)
 
     fieldsets = (
-        Fieldset(
-            "Tenant",
-            "group_id",
+        FieldSet(
+            "q",
             "tag",
+        ),
+        FieldSet(
+            "group_id",
+            name=_("Tenant"),
         ),
     )
 

@@ -1,25 +1,84 @@
-{% if type == "link" %}
-    <a
-        title="{% if title %}{{ title }}{% else %}{{ label }}{% endif %}"
-        href="{{ url }}"
-        class="btn {%if small %}btn-sm{%endif%} {{ css_class }}"
-    >
-        <i class="{{ icon }}" aria-hidden="true"></i> {{ label }}
-    </a>
-{% else %}
-    <button
-        title="{% if title %}{{ title }}{% else %}{{ label }}{% endif %}"
-        class="btn {{ css_class }}"
-        {% if type == "submit" %}
-            type="submit"
-        {% elif type == "modal" %}
-            type="button"
-            data-bs-toggle="modal"
-            data-bs-target="#htmx-modal"
-            hx-get="{{ url }}?_modal=True"
-            hx-target="#htmx-modal-content"
-        {% endif %}
-    >
-        <i class="{{ icon }}"></i> {{ label }}
-    </button>
-{% endif %}
+{% comment %}
+DaisyUI button component. Props: as, variant, btnStyle, behavior, size, modifier,
+icon (with icon.class, icon.variant), class. Icons render through c-cfi using the
+cotton-icons packs (heroicon/tablericon/lucideicon). daisyUI class mappings are
+hardcoded; icon parsing lives in the coldfront builtins.
+{% endcomment %}
+
+<c-vars
+    as="button"
+    variant=""
+    btnStyle=""
+    behavior=""
+    size="md"
+    modifier=""
+    class=""
+    label=""
+    :variantClasses="{
+        'neutral': 'btn-neutral',
+        'primary': 'btn-primary',
+        'secondary': 'btn-secondary',
+        'accent': 'btn-accent',
+        'info': 'btn-info',
+        'success': 'btn-success',
+        'warning': 'btn-warning',
+        'error': 'btn-error'
+    }"
+    :styleClasses="{
+        'outline': 'btn-outline',
+        'dash': 'btn-dash',
+        'soft': 'btn-soft',
+        'ghost': 'btn-ghost',
+        'link': 'btn-link'
+    }"
+    :behaviorClasses="{
+        'active': 'btn-active',
+        'disabled': 'btn-disabled'
+    }"
+    :sizeClasses="{
+        'xs': 'btn-xs',
+        'sm': 'btn-sm',
+        'md': 'btn-md',
+        'lg': 'btn-lg',
+        'xl': 'btn-xl'
+    }"
+    :modifierClasses="{
+        'wide': 'btn-wide',
+        'block': 'btn-block',
+        'square': 'btn-square',
+        'circle': 'btn-circle'
+    }"
+/>
+
+{% parse_icon attrs as i %}
+
+<{{ as }}
+    class="
+        {% if btnStyle != 'bare' %}btn{% endif %}
+        {{ variantClasses|get_dict_item:variant }}
+        {{ styleClasses|get_dict_item:btnStyle }}
+        {{ behaviorClasses|get_dict_item:behavior }}
+        {{ sizeClasses|get_dict_item:size }}
+        {{ modifierClasses|get_dict_item:modifier }}
+        {{ class }}
+    "
+    {{ attrs|strip_icon_attrs }}
+>
+    {% if i.name and not i.end %}
+        <c-cfi
+            n="{{ i.name }}"
+            class="{{ i.css_class }}"
+            variant="{{ i.variant }}"
+            size="{{ i.size }}"
+        />
+    {% endif %}
+    {% if label %}{{ label }}{% else %}{{ slot }}{% endif %}
+    {% if i.name and i.end %}
+        <c-cfi
+            n="{{ i.name }}"
+            class="{{ i.css_class }}"
+            variant="{{ i.variant }}"
+            size="{{ i.size }}"
+        />
+    {% endif %}
+</{{ as }}>

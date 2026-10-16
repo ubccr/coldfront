@@ -14,11 +14,13 @@ class GenerateObject(ObjectAction):
 
     name = "generate"
     label = _("Generate")
+    icon = "tablericon.wand"
+    variant = "primary"
+    modal = True
     multi = False
     transition = "generate"
     url_kwargs = ["pk"]
     permissions_required = {"generate"}
-    template_name = "cf.button.generate"
 
 
 class InvoiceObject(ObjectAction):
@@ -28,11 +30,13 @@ class InvoiceObject(ObjectAction):
 
     name = "invoice"
     label = _("Invoice")
+    icon = "heroicon.document-text"
+    variant = "success"
+    modal = True
     multi = False
     transition = "finalize"
     url_kwargs = ["pk"]
     permissions_required = {"finalize"}
-    template_name = "cf.button.invoice"
 
 
 class PayObject(ObjectAction):
@@ -42,11 +46,13 @@ class PayObject(ObjectAction):
 
     name = "pay"
     label = _("Pay")
+    icon = "tablericon.currency-dollar"
+    variant = "success"
+    modal = True
     multi = False
     transition = "pay"
     url_kwargs = ["pk"]
     permissions_required = {"pay"}
-    template_name = "cf.button.pay"
 
 
 class VoidObject(ObjectAction):
@@ -56,11 +62,13 @@ class VoidObject(ObjectAction):
 
     name = "void"
     label = _("Void")
+    icon = "tablericon.forbid"
+    variant = "error"
+    modal = True
     multi = False
     transition = "void"
     url_kwargs = ["pk"]
     permissions_required = {"void"}
-    template_name = "cf.button.void"
 
 
 class ExportPdfObject(ObjectAction):
@@ -70,7 +78,9 @@ class ExportPdfObject(ObjectAction):
 
     name = "pdf"
     label = _("Export PDF")
+    icon = "tablericon.file-type-pdf"
+    variant = "secondary"
+    as_ = "a"
     multi = False
     url_kwargs = ["pk"]
     permissions_required = {"view"}
-    template_name = "cf.button.pdf"

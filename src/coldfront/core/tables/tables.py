@@ -133,7 +133,6 @@ class CustomFieldChoiceSetTable(ColdFrontTable):
     )
     order_alphabetically = columns.BooleanColumn(
         verbose_name=_("Order Alphabetically"),
-        false_mark=None,
     )
 
     class Meta(ColdFrontTable.Meta):
@@ -162,11 +161,9 @@ class CustomFieldTable(ColdFrontTable):
     )
     required = columns.BooleanColumn(
         verbose_name=_("Required"),
-        false_mark=None,
     )
     unique = columns.BooleanColumn(
         verbose_name=_("Validate Uniqueness"),
-        false_mark=None,
     )
     ui_visible = columns.ChoiceFieldColumn(
         verbose_name=_("Visible"),
@@ -191,7 +188,6 @@ class CustomFieldTable(ColdFrontTable):
     )
     is_cloneable = columns.BooleanColumn(
         verbose_name=_("Is Cloneable"),
-        false_mark=None,
     )
     validation_minimum = tables.Column(
         verbose_name=_("Minimum Value"),
@@ -320,7 +316,6 @@ class SavedFilterTable(ColdFrontTable):
     )
     shared = columns.BooleanColumn(
         verbose_name=_("Shared"),
-        false_mark=None,
     )
     parameters = tables.TemplateColumn(
         template_code="""{{ value|json }}""",
@@ -371,7 +366,9 @@ class CustomLinkTable(ColdFrontTable):
     )
     new_window = columns.BooleanColumn(
         verbose_name=_("New Window"),
-        false_mark=None,
+    )
+    button_variant = columns.ColorColumn(
+        verbose_name=_("Button variant"),
     )
 
     class Meta(ColdFrontTable.Meta):
@@ -386,7 +383,7 @@ class CustomLinkTable(ColdFrontTable):
             "link_url",
             "weight",
             "group_name",
-            "button_class",
+            "button_variant",
             "new_window",
             "created",
             "last_updated",
@@ -397,7 +394,7 @@ class CustomLinkTable(ColdFrontTable):
             "object_types",
             "enabled",
             "group_name",
-            "button_class",
+            "button_variant",
             "new_window",
         )
 
@@ -477,7 +474,6 @@ class TableConfigTable(ColdFrontTable):
     )
     shared = columns.BooleanColumn(
         verbose_name=_("Shared"),
-        false_mark=None,
     )
 
     class Meta(ColdFrontTable.Meta):

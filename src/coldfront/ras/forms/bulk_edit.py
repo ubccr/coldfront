@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from crispy_forms.layout import Fieldset
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
@@ -11,6 +10,8 @@ from coldfront.forms import (
     OrganizationalModelBulkEditForm,
     PrimaryModelBulkEditForm,
 )
+from coldfront.forms.fields import ColorChoiceField
+from coldfront.forms.layout import FieldSet
 from coldfront.ras.choices import AllocationStatusChoices, ResourceStatusChoices
 from coldfront.ras.models import Allocation, Project, ProjectUser, Resource, ResourceType
 from coldfront.users.models import Group, User
@@ -22,8 +23,7 @@ from coldfront.utils.forms import add_blank_choice
 
 
 class ResourceTypeBulkEditForm(OrganizationalModelBulkEditForm):
-    color = forms.CharField(
-        max_length=100,
+    color = ColorChoiceField(
         required=False,
         label=_("Color"),
     )
@@ -37,10 +37,10 @@ class ResourceTypeBulkEditForm(OrganizationalModelBulkEditForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Resource Type"),
+            FieldSet(
                 "description",
                 "color",
+                name=_("Resource Type"),
             ),
         ]
 
@@ -82,17 +82,17 @@ class ResourceBulkEditForm(AllocatableResourceBulkEditForm, PrimaryModelBulkEdit
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Resource"),
+            FieldSet(
                 "description",
                 "locked",
                 "schema",
+                name=_("Resource"),
             ),
-            Fieldset(
-                _("Resource Type & Status"),
+            FieldSet(
                 "resource_type",
                 "status",
                 "parent",
+                name=_("Resource Type & Status"),
             ),
         ]
 
@@ -126,11 +126,11 @@ class ProjectBulkEditForm(OrganizationalModelBulkEditForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Project"),
+            FieldSet(
                 "description",
                 "owner",
                 "group",
+                name=_("Project"),
             ),
         ]
 
@@ -152,9 +152,9 @@ class ProjectUserBulkEditForm(PrimaryModelBulkEditForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Project User"),
+            FieldSet(
                 "project",
+                name=_("Project User"),
             ),
         ]
 
@@ -209,20 +209,20 @@ class AllocationBulkEditForm(PrimaryModelBulkEditForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Allocation"),
+            FieldSet(
                 "description",
                 "project",
                 "owner",
                 "status",
+                name=_("Allocation"),
             ),
-            Fieldset(
-                _("Dates"),
+            FieldSet(
                 "start_date",
                 "end_date",
+                name=_("Dates"),
             ),
-            Fieldset(
-                _("Text"),
+            FieldSet(
                 "justification",
+                name=_("Text"),
             ),
         ]

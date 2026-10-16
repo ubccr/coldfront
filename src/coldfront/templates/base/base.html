@@ -1,36 +1,22 @@
 {% load django_htmx %}
 {% load i18n %}
 {% load static %}
-{% load django_vite %}
 
 <!DOCTYPE html>
 <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <script>
-            (function() {
-              var theme = localStorage.getItem('theme');
-              var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-              document.documentElement.setAttribute('data-bs-theme', theme || (prefersDark ? 'dark' : 'light'));
-            })();
-        </script>
+        <c-cf.mode-toggle.head />
         <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/apple-touch-icon.png' %}">
         <link rel="shortcut icon" type="image/png" href="{% static 'images/favicon.ico' %}">
         <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32x32.png' %}">
         <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon-16x16.png' %}">
-        {% if settings.DJANGO_VITE.default.dev_mode %}
-            {% vite_hmr_client %}
-            {% vite_asset "coldfront.ts" %}
-        {% else %}
-            <link rel="stylesheet" href='{% static "coldfront.css" %}?v={{ settings.VERSION }}'>
-            <script type="module" crossorigin="" src='{% static "coldfront.js" %}?v={{ settings.VERSION }}'></script>
-        {% endif %}
+        <link rel="stylesheet" href="{% static 'coldfront.css' %}?v={{ settings.VERSION }}">
+        <script type="module" crossorigin src="{% static 'coldfront.js' %}?v={{ settings.VERSION }}"></script>
         <link rel="manifest" href="{% static 'site.webmanifest' %}">
         <link rel="stylesheet" href="{% static 'css/coldfront-site.css' %}">
-        {% django_htmx_script %}
-
-        <script type="text/javascript">
+        <script>
             window.CSRF_TOKEN = "{{ csrf_token }}";
         </script>
         {# Page title #}
@@ -40,14 +26,24 @@
         {% block head %}{% endblock %}
     </head>
 
-    <body>
+    <body hx-headers='{"x-csrftoken": "{{ csrf_token }}"}' class="text-base-content">
+        {# Skip link — first focusable element, bypasses sidebar nav to main content #}
+        <a
+            href="#main-content"
+            class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:p-3 focus:bg-base-100 focus:text-base-content focus:rounded-field focus:shadow-lg focus:ring-2"
+        >
+            {% trans "Skip to main content" %}
+        </a>
+
         {# Page layout #}
         {% block layout %}{% endblock %}
 
         {% block javascript %}
         {% endblock %}
 
-        {# Toast Alerts #}
-        <c-cf.alert.messages :messages="messages" :form="form" only />
+        {# Toast Alerts — live region wrapper stays stable while htmx swaps #django-messages #}
+        <div role="status" aria-label="Notifications">
+            <c-cf.toast.messages :form="form" />
+        </div>
     </body>
 </html>

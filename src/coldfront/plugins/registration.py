@@ -9,7 +9,7 @@ from django.utils.translation import gettext_lazy as _
 
 from coldfront.registry import registry
 
-from .navigation import PluginMenu, PluginMenuButton, PluginMenuItem
+from .navigation import PluginMenu, PluginMenuItem, PluginMenuItemButton
 from .templates import PluginTemplateExtension
 
 __all__ = (
@@ -65,9 +65,9 @@ def register_menu_items(section_name, class_list):
                 _("{menu_link} must be an instance of coldfront.plugins.PluginMenuItem").format(menu_link=menu_link)
             )
         for button in menu_link.buttons:
-            if not isinstance(button, PluginMenuButton):
+            if not isinstance(button, PluginMenuItemButton):
                 raise TypeError(
-                    _("{button} must be an instance of coldfront.plugins.PluginMenuButton").format(button=button)
+                    _("{button} must be an instance of coldfront.plugins.PluginMenuItemButton").format(button=button)
                 )
 
     registry["plugins"]["menu_items"][section_name] = class_list

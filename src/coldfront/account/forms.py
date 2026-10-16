@@ -2,15 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from crispy_forms.layout import Layout
 from django.contrib.auth.forms import PasswordChangeForm as _PasswordChangeForm
 
-from coldfront.forms.mixins import HorizontalFormMixin
+from coldfront.forms.layout import FieldSet
 
 
-class PasswordChangeForm(HorizontalFormMixin, _PasswordChangeForm):
+class PasswordChangeForm(_PasswordChangeForm):
     fieldsets = (
-        Layout(
+        FieldSet(
             "old_password",
             "new_password1",
             "new_password2",

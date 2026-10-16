@@ -25,9 +25,9 @@
 {% block subtitle %}{% endblock %}
 
 {% block content %}
-    <c-cf.layout.row>
+    <c-cf.layout.row cols="2">
         <c-cf.layout.col>
-            <c-cf.card.fields header='{% trans "Change" %}' only>
+            <c-cf.card.fields title='{% trans "Change" %}'>
                 <c-cf.card.fields.item label="{% trans 'Time' %}">
                     {{ object.time|isodatetime }}
                 </c-cf.card.fields.item>
@@ -69,36 +69,55 @@
         </c-cf.layout.col>
 
         <c-cf.layout.col>
-            <c-cf.card only>
-                <c-slot name="header">
+            <c-cf.card>
+                <c-slot name="title">
                     {% trans "Difference" %}
-                    <div class="btn-group btn-group-sm d-print-none">
-                        <a
-                            {% if prev_change %}
+                    <div class="join print:hidden">
+                        {% if prev_change %}
+                            <c-cf.button
+                                as="a"
                                 href="{% url 'core:objectchange' pk=prev_change.pk %}"
-                            {% else %}
+                                icon="heroicon.chevron-left"
+                                btnStyle="outline"
+                                size="sm"
+                                class="join-item"
+                            >{% trans "Previous" %}</c-cf.button>
+                        {% else %}
+                            <c-cf.button
+                                as="a"
+                                btnStyle="outline"
+                                size="sm"
+                                class="join-item"
+                                behavior="disabled"
                                 disabled
-                            {% endif %}
-                            class="btn btn-outline-secondary"
-                        >
-                            <i class="fa fa-chevron-left" aria-hidden="true"></i> {% trans "Previous" %}
-                        </a>
-                        <a
-                            {% if next_change %}
+                            >{% trans "Previous" %}</c-cf.button>
+                        {% endif %}
+                        {% if next_change %}
+                            <c-cf.button
+                                as="a"
                                 href="{% url 'core:objectchange' pk=next_change.pk %}"
-                            {% else %}
+                                icon="heroicon.chevron-right"
+                                icon.end="true"
+                                btnStyle="outline"
+                                size="sm"
+                                class="join-item"
+                            >{% trans "Next" %}</c-cf.button>
+                        {% else %}
+                            <c-cf.button
+                                as="a"
+                                btnStyle="outline"
+                                size="sm"
+                                class="join-item"
+                                behavior="disabled"
                                 disabled
-                            {% endif %}
-                            class="btn btn-outline-secondary"
-                        >
-                            {% trans "Next" %} <i class="fa fa-chevron-right" aria-hidden="true"></i>
-                        </a>
+                            >{% trans "Next" %}</c-cf.button>
+                        {% endif %}
                     </div>
                 </c-slot>
 
-                <div class="card-body">
+                <c-cf.card.body>
                     {% if diff_added == diff_removed %}
-                        <span class="text-muted" style="margin-left: 10px">
+                        <span class="ml-2 text-muted">
                             {% if object.action == 'create' %}
                                 {% trans "Object Created" %}
                             {% elif object.action == 'delete' %}
@@ -108,23 +127,23 @@
                             {% endif %}
                         </span>
                     {% else %}
-                        <pre class="change-diff change-removed">{{ diff_removed|json }}</pre>
-                        <pre class="change-diff change-added">{{ diff_added|json }}</pre>
+                        <pre class="bg-error/15">{{ diff_removed|json }}</pre>
+                        <pre class="bg-success/15">{{ diff_added|json }}</pre>
                     {% endif %}
-                </div>
+                </c-cf.card.body>
             </c-cf.card>
         </c-cf.layout.col>
     </c-cf.layout.row>
 
-    <c-cf.layout.row>
+    <c-cf.layout.row cols="2">
         <c-cf.layout.col>
-            <c-cf.card header="{% trans 'Pre-Change Data' %}" only>
-                <div class="card-body">
+            <c-cf.card title="{% trans 'Pre-Change Data' %}">
+                <c-cf.card.body>
                     {% if object.prechange_data %}
                         {% spaceless %}
-                            <pre class="change-data">
+                            <pre class="rounded-none p-0">
               {% for k, v in object.prechange_data_clean.items %}
-                <span{% if k in diff_removed %} class="removed"{% endif %}>{{ k }}: {{ v|json }}</span>
+                <span class="block w-full px-4{% if k in diff_removed %} bg-error/15{% endif %}">{{ k }}: {{ v|json }}</span>
               {% endfor %}
             </pre>
                         {% endspaceless %}
@@ -135,44 +154,45 @@
                     {% else %}
                         <span class="text-muted">{% trans "None" %}</span>
                     {% endif %}
-                </div>
+                </c-cf.card.body>
             </c-cf.card>
         </c-cf.layout.col>
 
         <c-cf.layout.col>
-            <c-cf.card header="{% trans 'Post-Change Data' %}" only>
-                <div class="card-body">
+            <c-cf.card title="{% trans 'Post-Change Data' %}">
+                <c-cf.card.body>
                     {% if object.postchange_data %}
                         {% spaceless %}
-                            <pre class="change-data">
+                            <pre class="rounded-none p-0">
               {% for k, v in object.postchange_data_clean.items %}
-                <span{% if k in diff_added %} class="added"{% endif %}>{{ k }}: {{ v|json }}</span>
+                <span class="block w-full px-4{% if k in diff_added %} bg-success/15{% endif %}">{{ k }}: {{ v|json }}</span>
               {% endfor %}
             </pre>
                         {% endspaceless %}
                     {% else %}
                         <span class="text-muted">{% trans "None" %}</span>
                     {% endif %}
-                </div>
+                </c-cf.card.body>
             </c-cf.card>
         </c-cf.layout.col>
     </c-cf.layout.row>
 
     <c-cf.layout.row>
         <c-cf.layout.col>
-            <c-cf.card.table :table="related_changes_table" :show_paginator=False only>
-                <c-slot name="header">
+            <c-cf.card.table :table="related_changes_table" :show_paginator=False>
+                <c-slot name="title">
                     {% trans "Related Changes" %}
                     {% if related_changes_count > related_changes_table.rows|length %}
-                        <div class="float-end">
-                            <a
+                        <div class="flex justify-end">
+                            <c-cf.button
+                                as="a"
                                 href="{% url 'core:objectchange_list' %}?request_id={{ object.request_id }}"
-                                class="btn btn-primary"
+                                variant="primary"
                             >
                                 {% blocktrans trimmed with count=related_changes_count|add:"1" %}
                                     See All {{ count }} Changes
                                 {% endblocktrans %}
-                            </a>
+                            </c-cf.button>
                         </div>
                     {% endif %}
                 </c-slot>

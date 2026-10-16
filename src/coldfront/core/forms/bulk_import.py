@@ -7,11 +7,11 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from coldfront.core.choices import (
+    ColorChoices,
     CommentKindChoices,
     CustomFieldTypeChoices,
     CustomFieldUIEditableChoices,
     CustomFieldUIVisibleChoices,
-    CustomLinkButtonClassChoices,
 )
 from coldfront.core.models import (
     CommentEntry,
@@ -176,9 +176,9 @@ class CustomLinkImportForm(CSVModelForm):
         queryset=ObjectType.objects.public(),
         help_text=_("One or more assigned object types"),
     )
-    button_class = CSVChoiceField(
-        label=_("Button class"),
-        choices=CustomLinkButtonClassChoices,
+    button_variant = CSVChoiceField(
+        label=_("Button variant"),
+        choices=ColorChoices,
         required=False,
         help_text=_("Button color class"),
     )
@@ -193,7 +193,7 @@ class CustomLinkImportForm(CSVModelForm):
             "link_url",
             "weight",
             "group_name",
-            "button_class",
+            "button_variant",
             "new_window",
         )
 

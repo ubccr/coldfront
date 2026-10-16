@@ -8,9 +8,7 @@ CUSTOM_ATTRIBUTES = """
 
 RESOURCES_LIST = """
 {% for r in value.all %}
-<span class="badge" style="color: {{ r.resource_type.color|fgcolor }}; background-color: #{{ r.resource_type.color }}">
-<a href="{{ r.get_absolute_url }}">{{ r }}</a>
-</span>
+{% cotton cf.badge variant="{{ r.resource_type.color|default:'neutral' }}" href="{{ r.get_absolute_url }}" %}{{ r }}{% endcotton %}
 {% empty %}
 {{ ""|placeholder }}
 {% endfor %}

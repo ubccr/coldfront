@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from crispy_forms.layout import Fieldset
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
@@ -12,6 +11,7 @@ from coldfront.forms import (
 )
 from coldfront.forms.fields import JSONField
 from coldfront.forms.fields.bytes import BytesField
+from coldfront.forms.layout import FieldSet
 from coldfront.storage.choices import StorageShareTypeChoices
 from coldfront.storage.models import StorageCluster, StorageQuota, StorageResource, StorageSnapshotPolicy
 from coldfront.users.models import Group, User
@@ -57,20 +57,20 @@ class StorageResourceBulkEditForm(AllocatableResourceBulkEditForm, PrimaryModelB
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Storage Resource"),
+            FieldSet(
                 "description",
                 "locked",
                 "schema",
+                name=_("Storage Resource"),
             ),
-            Fieldset(
-                _("Backend"),
+            FieldSet(
                 "clusters",
                 "path_template",
+                name=_("Backend"),
             ),
-            Fieldset(
-                _("Capacity"),
+            FieldSet(
                 "capacity_bytes",
+                name=_("Capacity"),
             ),
         ]
 
@@ -103,14 +103,14 @@ class StorageClusterBulkEditForm(PrimaryModelBulkEditForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Storage Cluster"),
+            FieldSet(
                 "description",
                 "backend_path",
+                name=_("Storage Cluster"),
             ),
-            Fieldset(
-                _("Capacity"),
+            FieldSet(
                 "capacity_bytes",
+                name=_("Capacity"),
             ),
         ]
 
@@ -207,25 +207,25 @@ class StorageQuotaBulkEditForm(PrimaryModelBulkEditForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Storage Quota"),
+            FieldSet(
                 "clusters",
                 "owning_user",
                 "owning_group",
                 "path_mode",
+                name=_("Storage Quota"),
             ),
-            Fieldset(
-                _("Limits"),
+            FieldSet(
                 "hard_limit_bytes",
                 "soft_limit_bytes",
                 "hard_limit_files",
                 "soft_limit_files",
                 "grace_period",
                 "share_type",
+                name=_("Limits"),
             ),
-            Fieldset(
-                _("Snapshot Policy"),
+            FieldSet(
                 "snapshot_policy",
+                name=_("Snapshot Policy"),
             ),
         ]
 
@@ -275,12 +275,12 @@ class StorageSnapshotPolicyBulkEditForm(PrimaryModelBulkEditForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Snapshot Policy"),
+            FieldSet(
                 "cluster",
                 "description",
                 "interval",
                 "retention_days",
                 "extra_config",
+                name=_("Snapshot Policy"),
             ),
         ]

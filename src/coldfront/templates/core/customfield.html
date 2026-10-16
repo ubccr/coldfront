@@ -4,7 +4,7 @@
 {% block content %}
     <c-cf.layout.panels>
         <c-slot name="left">
-            <c-cf.card.fields :object="object" only>
+            <c-cf.card.fields :object="object">
                 <c-cf.card.fields.item label="{% trans 'Name' %}">
                     {{ object.name }}
                 </c-cf.card.fields.item>
@@ -29,15 +29,15 @@
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label="{% trans 'Required' %}">
-                    <c-cf.ui.checkmark :value="object.required" />
+                    <c-cf.checkmark :value="object.required" />
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label="{% trans 'Must be Unique' %}">
-                    <c-cf.ui.checkmark :value="object.unique" />
+                    <c-cf.checkmark :value="object.unique" />
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label="{% trans 'Cloneable' %}">
-                    <c-cf.ui.checkmark :value="object.is_cloneable" />
+                    <c-cf.checkmark :value="object.is_cloneable" />
                 </c-cf.card.fields.item>
 
                 {% if object.choice_set %}
@@ -59,7 +59,7 @@
                 </c-cf.card.fields.item>
             </c-cf.card.fields>
 
-            <c-cf.card.fields header="{% trans 'Behavior' %}" only>
+            <c-cf.card.fields title="{% trans 'Behavior' %}">
                 <c-cf.card.fields.item label="{% trans 'Search Weight' %}">
                     {% if object.search_weight %}
                         {{ object.search_weight }}
@@ -91,7 +91,7 @@
         </c-slot>
 
         <c-slot name="right">
-            <c-cf.card.list header='{% trans "Object Types" %}' only>
+            <c-cf.card.list title='{% trans "Object Types" %}'>
                 {% for ct in object.object_types.all %}
                     <c-cf.card.list.item>
                         {{ ct }}
@@ -99,7 +99,7 @@
                 {% endfor %}
             </c-cf.card.list>
 
-            <c-cf.card.fields header="{% trans 'Validation Rules' %}" only>
+            <c-cf.card.fields title="{% trans 'Validation Rules' %}">
                 <c-cf.card.fields.item label="{% trans 'Minimum Value' %}">
                     {{ object.validation_minimum|placeholder }}
                 </c-cf.card.fields.item>
@@ -117,7 +117,7 @@
                 </c-cf.card.fields.item>
             </c-cf.card.fields>
 
-            <c-cf.card.list header='{% trans "Related Objects" %}' only>
+            <c-cf.card.list title='{% trans "Related Objects" %}'>
                 {% for qs in related_models %}
                     <c-cf.card.list.item :count="qs.count">
                         {{ qs.model|meta:"verbose_name_plural"|bettertitle }}

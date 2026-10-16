@@ -2,12 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from crispy_forms.layout import Fieldset
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.forms import ColdFrontModelFilterSetForm, ColdFrontModelForm, CSVModelForm
+from coldfront.forms import ColdFrontModelFilterSetForm, CSVModelForm, PrimaryModelForm
 from coldfront.forms.fields import CSVModelChoiceField
+from coldfront.forms.layout import FieldSet
 from coldfront.ras.models import Project, ProjectInvite
 
 __all__ = (
@@ -25,7 +25,7 @@ PROJECT_INVITE_STATUS_CHOICES = (
 )
 
 
-class ProjectInviteForm(ColdFrontModelForm):
+class ProjectInviteForm(PrimaryModelForm):
     """Create/edit a single project invite (one email address per invite)."""
 
     project = forms.ModelChoiceField(
@@ -42,10 +42,10 @@ class ProjectInviteForm(ColdFrontModelForm):
         ]
 
     fieldsets = (
-        Fieldset(
-            _("Project Invite"),
+        FieldSet(
             "email",
             "project",
+            name=_("Project Invite"),
         ),
     )
 
@@ -89,9 +89,12 @@ class ProjectInviteFilterSetForm(ColdFrontModelFilterSetForm):
     )
 
     fieldsets = (
-        Fieldset(
-            _("Invite"),
+        FieldSet(
+            "q",
+        ),
+        FieldSet(
             "project_id",
             "status",
+            name=_("Invite"),
         ),
     )

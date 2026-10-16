@@ -28,16 +28,16 @@ class TagTestCase(ViewTestCases.PrimaryObjectViewTestCase):
         cls.form_data = {
             "name": "Tag X",
             "slug": "tag-x",
-            "color": "c0c0c0",
+            "color": "neutral",
             "object_types": [tenant_ct.pk],
             "weight": 11,
         }
 
         cls.csv_data = (
             "name,slug,color,description,object_types,weight",
-            "Tag 4,tag-4,ff0000,Fourth tag,ras.project,0",
-            "Tag 5,tag-5,00ff00,Fifth tag,'ras.project,tenancy.tenant',1111",
-            "Tag 6,tag-6,0000ff,Sixth tag,ras.allocation,0",
+            "Tag 4,tag-4,primary,Fourth tag,ras.project,0",
+            "Tag 5,tag-5,error,Fifth tag,'ras.project,tenancy.tenant',1111",
+            "Tag 6,tag-6,secondary,Sixth tag,ras.allocation,0",
         )
 
         cls.csv_update_data = (

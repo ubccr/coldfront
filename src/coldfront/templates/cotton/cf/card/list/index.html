@@ -1,5 +1,10 @@
+<c-vars title="" />
+
 <c-cf.card>
-    <ul class="list-group list-group-flush" role="presentation">
+    <c-slot name="title">
+        {% if title %}{{ title }}{% endif %}
+    </c-slot>
+    <ul role="presentation">
         {{ slot }}
     </ul>
 </c-cf.card>

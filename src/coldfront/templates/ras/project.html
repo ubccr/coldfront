@@ -4,17 +4,19 @@
 {% block extra_controls %}
     {{ block.super }}
     {% if perms.ras.request_allocation %}
-        <c-cf.button.request
-            url="{% url 'ras:project_allocationrequest' pk=object.pk %}?return_url={% url 'ras:project_allocations' pk=object.pk %}"
-            label='{% trans "Request Allocation" %}'
-        />
+        <c-cf.button
+            as="a"
+            variant="primary"
+            icon="tablericon.git-pull-request"
+            href="{% url 'ras:project_allocationrequest' pk=object.pk %}?return_url={% url 'ras:project_allocations' pk=object.pk %}"
+        >{% trans "Request Allocation" %}</c-cf.button>
     {% endif %}
 {% endblock extra_controls %}
 
 {% block content %}
     <c-cf.layout.panels>
         <c-slot name="left">
-            <c-cf.card.fields :object="object" only>
+            <c-cf.card.fields :object="object">
                 <c-cf.card.fields.item label="{% trans 'Slug' %}">
                     {{ object.slug }}
                 </c-cf.card.fields.item>
@@ -28,11 +30,11 @@
                 </c-cf.card.fields.item>
             </c-cf.card.fields>
 
-            <c-cf.card.tags :object="object" only />
+            <c-cf.card.tags :object="object" />
         </c-slot>
 
         <c-slot name="right">
-            <c-cf.card.custom_fields :object="object" only />
+            <c-cf.card.custom_fields :object="object" />
         </c-slot>
     </c-cf.layout.panels>
 {% endblock %}

@@ -2,19 +2,19 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from crispy_forms.layout import Fieldset
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.forms import ColdFrontModelForm
+from coldfront.forms import PrimaryModelForm
 from coldfront.forms.fields import MoneyField
+from coldfront.forms.layout import FieldSet
 from coldfront.ras.models import Project
 from coldfront.ris.models import Funding, Publication
 
 __all__ = ("FundingForm", "PublicationForm")
 
 
-class PublicationForm(ColdFrontModelForm):
+class PublicationForm(PrimaryModelForm):
     projects = forms.ModelMultipleChoiceField(
         queryset=Project.objects.all(),
         required=True,
@@ -26,10 +26,20 @@ class PublicationForm(ColdFrontModelForm):
         model = Publication
         fields = ["doi", "title", "authors", "year", "journal", "projects"]
 
-    fieldsets = (Fieldset(_("Publication"), "doi", "title", "authors", "year", "journal", "projects"),)
+    fieldsets = (
+        FieldSet(
+            "doi",
+            "title",
+            "authors",
+            "year",
+            "journal",
+            "projects",
+            name=_("Publication"),
+        ),
+    )
 
 
-class FundingForm(ColdFrontModelForm):
+class FundingForm(PrimaryModelForm):
     projects = forms.ModelMultipleChoiceField(
         queryset=Project.objects.all(),
         required=True,
@@ -57,8 +67,7 @@ class FundingForm(ColdFrontModelForm):
         ]
 
     fieldsets = (
-        Fieldset(
-            _("Funding"),
+        FieldSet(
             "award_number",
             "funding_agency",
             "title",
@@ -67,5 +76,6 @@ class FundingForm(ColdFrontModelForm):
             "end_date",
             "status",
             "projects",
+            name=_("Funding"),
         ),
     )

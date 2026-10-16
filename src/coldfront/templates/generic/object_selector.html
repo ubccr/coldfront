@@ -1,46 +1,51 @@
-{% load crispy_forms_tags %}
 {% load i18n %}
 
-<div class="modal-header">
-    <h5 class="modal-title">{% trans "Select" %} {{ model|meta:"verbose_name"|bettertitle }}</h5>
-    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-</div>
-<div class="modal-body row">
-    <div class="col-3">
-        <div class="list-group list-group-flush">
+<div
+    x-data="{
+        open: {
             {% for field in form.visible_fields %}
-                <a
-                    href="#"
-                    class="list-group-item list-group-item-action px-0 py-1"
-                    data-bs-toggle="collapse"
-                    data-bs-target=".selector{{ forloop.counter }}"
-                >
-                    <span
-                        class="collapse selector{{ forloop.counter }}{% if forloop.counter < 3 or field.name in form.selector_fields %} show{% endif %}"
-                    ><i class="fa-solid fa-square-check"></i></span>
-                    {{ field.label }}
-                </a>
+            {{ forloop.counter }}: {% if forloop.counter < 3 or field.name in form.selector_fields %}true{% else %}false{% endif %},
             {% endfor %}
-        </div>
-    </div>
-    <div class="col-9">
-        <form
-            hx-get="{% url 'htmx_object_selector' %}?_model={{ model|meta:"label_lower" }}"
-            hx-target="#selector_results"
-            hx-trigger="load, submit, change, keyup from:#id_q delay:500ms"
-        >
-            <input type="hidden" name="_search" value="true">
-            <div class="tab-content p-1">
+        },
+    }"
+>
+    <h2 class="text-lg font-semibold mb-4">
+        {% trans "Select" %} {{ model|meta:"verbose_name"|bettertitle }}
+    </h2>
+    <div class="grid grid-cols-4 gap-4">
+        <div class="col-span-1">
+            <div class="flex flex-col gap-1">
                 {% for field in form.visible_fields %}
-                    <div class="collapse selector{{ forloop.counter }}{% if field.name in form.selector_fields %} show{% endif %}">
-                        {{ field|as_crispy_field }}
-                    </div>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            class="toggle toggle-sm"
+                            x-model="open[{{ forloop.counter }}]"
+                        >
+                        {{ field.label }}
+                    </label>
                 {% endfor %}
             </div>
-            <div class="text-end">
-                <button type="submit" class="btn btn-primary">{% trans "Search" %}</button>
-            </div>
-        </form>
-        <div id="selector_results" class="mt-3" data-selector-target="{{ target_id }}"></div>
+        </div>
+        <div class="col-span-3">
+            <form
+                hx-get="{% url 'htmx_object_selector' %}?_model={{ model|meta:"label_lower" }}"
+                hx-target="#selector_results"
+                hx-trigger="load, submit, change from:select, keyup from:#id_q delay:500ms"
+            >
+                <input type="hidden" name="_search" value="true">
+                <div class="space-y-4">
+                    {% for field in form.visible_fields %}
+                        <div x-show="open[{{ forloop.counter }}]">
+                            <c-cf.field :field="field" layout="stacked" />
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="flex justify-end mt-4">
+                    <c-cf.button type="submit" variant="primary" label="{% trans 'Search' %}" />
+                </div>
+            </form>
+            <div id="selector_results" class="mt-4" data-selector-target="{{ target_id }}"></div>
+        </div>
     </div>
 </div>

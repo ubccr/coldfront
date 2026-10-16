@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from crispy_forms.layout import Fieldset, Layout
 from django import forms
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
@@ -23,9 +22,9 @@ from coldfront.forms.fields import (
     CSVModelChoiceField,
     DynamicModelChoiceField,
 )
-from coldfront.forms.layouts import DateTime
-from coldfront.forms.mixins import AllocationExtensionFormMixin, HorizontalFormMixin
-from coldfront.forms.widgets import HTMXSelectWidget
+from coldfront.forms.layout import DisplayField, FieldSet, GroupFields
+from coldfront.forms.mixins import AllocationExtensionFormMixin
+from coldfront.forms.widgets import RefreshSelectWidget
 from coldfront.ras.choices import get_resource_object_choices
 from coldfront.ras.models import Allocation, Project
 from coldfront.users.models import User
@@ -38,7 +37,7 @@ class AllocationBaseForm(AllocationExtensionFormMixin, PrimaryModelForm):
     resource_object = forms.ChoiceField(
         choices=[],
         label=_("Resource"),
-        widget=HTMXSelectWidget(),
+        widget=RefreshSelectWidget(),
         help_text=_("Select a resources for this allocation request"),
     )
 
@@ -221,12 +220,12 @@ class AllocationRequestForm(AllocationBaseForm):
     @property
     def fieldsets(self):
         fieldsets = [
-            Fieldset(
-                "Allocation Request",
+            FieldSet(
                 "project",
                 "resource_object",
                 *self.attr_fields,
                 "justification",
+                name=_("Allocation Request"),
             ),
         ]
         # Add extension fieldsets
@@ -234,23 +233,11 @@ class AllocationRequestForm(AllocationBaseForm):
             header = _(f"{entry['model']._meta.verbose_name.title()} Details")
             field_names = [f"ext_{entry['model']._meta.model_name}_{fn}" for fn in entry["field_names"]]
             if field_names:
-                fieldsets.append(Fieldset(header, *field_names))
+                fieldsets.append(FieldSet(*field_names, name=header))
         return fieldsets
 
 
-class AllocationReviewForm(HorizontalFormMixin, forms.ModelForm):
-    project = forms.ModelChoiceField(
-        label=_("Project"),
-        queryset=Project.objects.all(),
-        required=False,
-        disabled=True,
-    )
-    owner = forms.ModelChoiceField(
-        queryset=User.objects.all(),
-        label=_("Owner"),
-        required=False,
-        disabled=True,
-    )
+class AllocationReviewForm(forms.ModelForm):
     comments = CommentField()
 
     def __init__(self, *args, **kwargs):
@@ -259,17 +246,14 @@ class AllocationReviewForm(HorizontalFormMixin, forms.ModelForm):
 
     class Meta:
         model = Allocation
-        fields = [
-            "project",
-            "owner",
-        ]
+        fields = []
 
     @property
     def fieldsets(self):
         return [
-            Layout(
-                "project",
-                "owner",
+            FieldSet(
+                DisplayField("project"),
+                DisplayField("owner", label="Owner"),
                 "comments",
             ),
         ]
@@ -359,25 +343,26 @@ class AllocationForm(AllocationBaseForm, TenancyForm, PrimaryModelForm):
     @property
     def fieldsets(self):
         fieldsets = [
-            Fieldset(
-                _("Resource"),
+            FieldSet(
                 "resource_object",
                 *self.attr_fields,
+                name=_("Resource"),
             ),
-            Fieldset(
-                _("Allocation"),
+            FieldSet(
                 "slug",
                 "status",
                 "project",
                 "owner",
-                DateTime("start_date"),
-                DateTime("end_date"),
+                GroupFields("start_date", "end_date", label="Dates"),
+                # "start_date",
+                # "end_date",
                 "description",
                 "justification",
+                name=_("Allocation"),
             ),
-            Fieldset(
-                _("Comments"),
+            FieldSet(
                 "comments",
+                name=_("Comments"),
             ),
         ]
         # Add extension fieldsets
@@ -385,7 +370,21 @@ class AllocationForm(AllocationBaseForm, TenancyForm, PrimaryModelForm):
             header = _(f"{entry['model']._meta.verbose_name.title()} Details")
             field_names = [f"ext_{entry['model']._meta.model_name}_{fn}" for fn in entry["field_names"]]
             if field_names:
-                fieldsets.append(Fieldset(header, *field_names))
+                fieldsets.append(FieldSet(*field_names, name=header))
+
+        fieldsets.append(
+            FieldSet(
+                "tenant_group",
+                "tenant",
+                name=_("Tenant"),
+            ),
+        )
+        fieldsets.append(
+            FieldSet(
+                "tags",
+                name=_("Tags"),
+            ),
+        )
         return fieldsets
 
 
@@ -436,23 +435,23 @@ class AllocationActivateForm(AllocationBaseForm, PrimaryModelForm):
     @property
     def fieldsets(self):
         fieldsets = [
-            Fieldset(
-                _("Resource"),
+            FieldSet(
                 "resource_object",
                 *self.attr_fields,
+                name=_("Resource"),
             ),
-            Fieldset(
-                _("Allocation"),
+            FieldSet(
                 "project",
                 "owner",
-                DateTime("start_date"),
-                DateTime("end_date"),
+                "start_date",
+                "end_date",
                 "description",
                 "justification",
+                name=_("Allocation"),
             ),
-            Fieldset(
-                _("Comments"),
+            FieldSet(
                 "comments",
+                name=_("Comments"),
             ),
         ]
         # Add extension fieldsets
@@ -460,7 +459,7 @@ class AllocationActivateForm(AllocationBaseForm, PrimaryModelForm):
             header = _(f"{entry['model']._meta.verbose_name.title()} Details")
             field_names = [f"ext_{entry['model']._meta.model_name}_{fn}" for fn in entry["field_names"]]
             if field_names:
-                fieldsets.append(Fieldset(header, *field_names))
+                fieldsets.append(FieldSet(*field_names, name=header))
         return fieldsets
 
 

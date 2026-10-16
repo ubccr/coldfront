@@ -5,7 +5,6 @@
 
 import json
 
-from crispy_forms.layout import Fieldset
 from django import forms
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
@@ -32,13 +31,13 @@ from coldfront.forms.fields import (
     SimpleArrayField,
     SlugField,
 )
-from coldfront.forms.layouts import Slug
-from coldfront.forms.mixins import ChangelogMessageMixin, HorizontalFormMixin
+from coldfront.forms.layout import FieldSet
+from coldfront.forms.mixins import ChangelogMessageMixin
 from coldfront.tables.utils import get_table_for_model
 from coldfront.utils.forms import get_field_value
 
 
-class TableConfigForm(HorizontalFormMixin, ChangelogMessageMixin, forms.ModelForm):
+class TableConfigForm(ChangelogMessageMixin, forms.ModelForm):
     object_type = ContentTypeChoiceField(
         label=_("Object type"),
         queryset=ObjectType.objects.all(),
@@ -52,12 +51,12 @@ class TableConfigForm(HorizontalFormMixin, ChangelogMessageMixin, forms.ModelFor
     available_columns = SimpleArrayField(
         base_field=forms.CharField(),
         required=False,
-        widget=forms.SelectMultiple(attrs={"size": 10, "class": "form-select"}),
+        widget=forms.SelectMultiple(attrs={"size": 10, "class": "no-alpine-select h-64"}),
         label=_("Available Columns"),
     )
     columns = SimpleArrayField(
         base_field=forms.CharField(),
-        widget=forms.SelectMultiple(attrs={"size": 10, "class": "form-select select-all"}),
+        widget=forms.SelectMultiple(attrs={"size": 10, "class": "no-alpine-select h-64", "data-select-all": True}),
         label=_("Selected Columns"),
     )
 
@@ -111,8 +110,7 @@ class TableConfigForm(HorizontalFormMixin, ChangelogMessageMixin, forms.ModelFor
         return None
 
     fieldsets = (
-        Fieldset(
-            _("Table Configuration"),
+        FieldSet(
             "name",
             "object_type",
             "table",
@@ -121,12 +119,12 @@ class TableConfigForm(HorizontalFormMixin, ChangelogMessageMixin, forms.ModelFor
             "enabled",
             "shared",
             "ordering",
+            name=_("Table Configuration"),
         ),
-        Fieldset(_("Columns"), "available_columns", "columns"),
     )
 
 
-class SavedFilterForm(HorizontalFormMixin, ChangelogMessageMixin, forms.ModelForm):
+class SavedFilterForm(ChangelogMessageMixin, forms.ModelForm):
     slug = SlugField()
     object_types = ContentTypeMultipleChoiceField(
         label=_("Object types"),
@@ -139,17 +137,20 @@ class SavedFilterForm(HorizontalFormMixin, ChangelogMessageMixin, forms.ModelFor
         exclude = ("user",)
 
     fieldsets = (
-        Fieldset(
-            _("Saved Filter"),
+        FieldSet(
             "name",
-            Slug("slug"),
+            "slug",
             "object_types",
             "description",
             "weight",
             "enabled",
             "shared",
+            name=_("Saved Filter"),
         ),
-        Fieldset(_("Parameters"), "parameters"),
+        FieldSet(
+            "parameters",
+            name=_("Parameters"),
+        ),
     )
 
     def __init__(self, *args, initial=None, **kwargs):
@@ -161,7 +162,7 @@ class SavedFilterForm(HorizontalFormMixin, ChangelogMessageMixin, forms.ModelFor
         super().__init__(*args, initial=initial, **kwargs)
 
 
-class TagForm(HorizontalFormMixin, ChangelogMessageMixin, forms.ModelForm):
+class TagForm(ChangelogMessageMixin, forms.ModelForm):
     slug = SlugField()
     object_types = ContentTypeMultipleChoiceField(
         label=_("Object types"),
@@ -181,19 +182,19 @@ class TagForm(HorizontalFormMixin, ChangelogMessageMixin, forms.ModelForm):
         ]
 
     fieldsets = (
-        Fieldset(
-            _("Tag"),
+        FieldSet(
             "name",
-            Slug("slug"),
+            "slug",
             "color",
             "weight",
             "description",
             "object_types",
+            name=_("Tag"),
         ),
     )
 
 
-class CustomFieldChoiceSetForm(HorizontalFormMixin, ChangelogMessageMixin, forms.ModelForm):
+class CustomFieldChoiceSetForm(ChangelogMessageMixin, forms.ModelForm):
     choices = JSONFormField(
         schema=CustomFieldChoiceSet.CHOICES_SCHEMA,
         help_text=mark_safe(
@@ -212,17 +213,17 @@ class CustomFieldChoiceSetForm(HorizontalFormMixin, ChangelogMessageMixin, forms
         ]
 
     fieldsets = (
-        Fieldset(
-            _("Custom Field Choice Set"),
+        FieldSet(
             "name",
             "description",
             "choices",
             "order_alphabetically",
+            name=_("Custom Field Choice Set"),
         ),
     )
 
 
-class CustomFieldForm(HorizontalFormMixin, ChangelogMessageMixin, forms.ModelForm):
+class CustomFieldForm(ChangelogMessageMixin, forms.ModelForm):
     object_types = ContentTypeMultipleChoiceField(
         label=_("Object types"),
         queryset=ObjectType.objects.with_feature("custom_fields"),
@@ -250,8 +251,7 @@ class CustomFieldForm(HorizontalFormMixin, ChangelogMessageMixin, forms.ModelFor
     comments = forms.CharField(required=False)
 
     fieldsets = (
-        Fieldset(
-            _("Custom Field"),
+        FieldSet(
             "object_types",
             "name",
             "label",
@@ -261,9 +261,9 @@ class CustomFieldForm(HorizontalFormMixin, ChangelogMessageMixin, forms.ModelFor
             "required",
             "unique",
             "default",
+            name=_("Custom Field"),
         ),
-        Fieldset(
-            _("Behavior"),
+        FieldSet(
             "search_weight",
             "filter_logic",
             "ui_visible",
@@ -271,6 +271,7 @@ class CustomFieldForm(HorizontalFormMixin, ChangelogMessageMixin, forms.ModelFor
             "required_action",
             "weight",
             "is_cloneable",
+            name=_("Behavior"),
         ),
     )
 
@@ -288,7 +289,7 @@ class CustomFieldForm(HorizontalFormMixin, ChangelogMessageMixin, forms.ModelFor
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # Mimic HTMXSelect()
+        # Mimic RefreshSelect()
         self.fields["type"].widget.attrs.update(
             {
                 "hx-get": ".",
@@ -311,7 +312,10 @@ class CustomFieldForm(HorizontalFormMixin, ChangelogMessageMixin, forms.ModelFor
         ):
             self.fieldsets = (
                 self.fieldsets[0],
-                Fieldset(_("Validation"), "validation_regex"),
+                FieldSet(
+                    "validation_regex",
+                    name=_("Validation"),
+                ),
                 *self.fieldsets[1:],
             )
         else:
@@ -321,7 +325,11 @@ class CustomFieldForm(HorizontalFormMixin, ChangelogMessageMixin, forms.ModelFor
         if field_type in (CustomFieldTypeChoices.TYPE_INTEGER, CustomFieldTypeChoices.TYPE_DECIMAL):
             self.fieldsets = (
                 self.fieldsets[0],
-                Fieldset(_("Validation"), "validation_minimum", "validation_maximum"),
+                FieldSet(
+                    "validation_minimum",
+                    "validation_maximum",
+                    name=_("Validation"),
+                ),
                 *self.fieldsets[1:],
             )
         else:
@@ -332,10 +340,10 @@ class CustomFieldForm(HorizontalFormMixin, ChangelogMessageMixin, forms.ModelFor
         if field_type in (CustomFieldTypeChoices.TYPE_OBJECT, CustomFieldTypeChoices.TYPE_MULTIOBJECT):
             self.fieldsets = (
                 self.fieldsets[0],
-                Fieldset(
-                    _("Related Object"),
+                FieldSet(
                     "related_object_type",
                     "related_object_filter",
+                    name=_("Related Object"),
                 ),
                 *self.fieldsets[1:],
             )
@@ -347,9 +355,9 @@ class CustomFieldForm(HorizontalFormMixin, ChangelogMessageMixin, forms.ModelFor
         if field_type in (CustomFieldTypeChoices.TYPE_SELECT, CustomFieldTypeChoices.TYPE_MULTISELECT):
             self.fieldsets = (
                 self.fieldsets[0],
-                Fieldset(
-                    _("Choices"),
+                FieldSet(
                     "choice_set",
+                    name=_("Choices"),
                 ),
                 *self.fieldsets[1:],
             )
@@ -357,7 +365,7 @@ class CustomFieldForm(HorizontalFormMixin, ChangelogMessageMixin, forms.ModelFor
             del self.fields["choice_set"]
 
 
-class CustomLinkForm(HorizontalFormMixin, ChangelogMessageMixin, forms.ModelForm):
+class CustomLinkForm(ChangelogMessageMixin, forms.ModelForm):
     object_types = ContentTypeMultipleChoiceField(
         label=_("Object types"),
         queryset=ObjectType.objects.with_feature("custom_links"),
@@ -367,8 +375,8 @@ class CustomLinkForm(HorizontalFormMixin, ChangelogMessageMixin, forms.ModelForm
         model = CustomLink
         fields = "__all__"
         widgets = {
-            "link_text": forms.Textarea(attrs={"class": "font-monospace"}),
-            "link_url": forms.Textarea(attrs={"class": "font-monospace"}),
+            "link_text": forms.Textarea(attrs={"class": "font-mono"}),
+            "link_url": forms.Textarea(attrs={"class": "font-mono"}),
         }
         help_texts = {
             "link_text": _("Jinja2 template code for link text. Reference the object as {{ object }}."),
@@ -376,20 +384,20 @@ class CustomLinkForm(HorizontalFormMixin, ChangelogMessageMixin, forms.ModelForm
         }
 
     fieldsets = (
-        Fieldset(
-            _("Custom Link"),
+        FieldSet(
             "name",
             "object_types",
             "weight",
             "group_name",
-            "button_class",
+            "button_variant",
             "enabled",
             "new_window",
+            name=_("Custom Link"),
         ),
-        Fieldset(
-            _("Templates"),
+        FieldSet(
             "link_text",
             "link_url",
+            name=_("Templates"),
         ),
     )
 
@@ -416,11 +424,11 @@ class CommentEntryForm(ColdFrontModelForm):
         }
 
     fieldsets = (
-        Fieldset(
-            _("Add Comments"),
+        FieldSet(
             "assigned_object_type",
             "assigned_object_id",
             "kind",
             "comments",
+            name=_("Add Comments"),
         ),
     )

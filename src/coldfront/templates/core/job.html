@@ -4,15 +4,13 @@
 {% block content %}
     <c-cf.layout.panels>
         <c-slot name="left">
-            <c-cf.card.fields :object="object" only>
+            <c-cf.card.fields :object="object">
                 <c-cf.card.fields.item label="{% trans 'Name' %}">
                     {{ object.name }}
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label="{% trans 'Status' %}">
-                    <c-cf.ui.badge :value="object.get_status_color" bg_color="blue" only>
-                        <c-slot name="value">{{ object.get_status_display }}</c-slot>
-                    </c-cf.ui.badge>
+                    <c-cf.badge variant="info">{{ object.get_status_display }}</c-cf.badge>
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label="{% trans 'Created' %}">
@@ -60,24 +58,24 @@
         </c-slot>
 
         <c-slot name="right">
-            <c-cf.card only>
-                <c-slot name="header">{% trans "Data" %}</c-slot>
-                <div class="card-body">
+            <c-cf.card>
+                <c-slot name="title">{% trans "Data" %}</c-slot>
+                <c-cf.card.body>
                     {% if object.data %}
                         <pre>{{ object.data|json }}</pre>
                     {% else %}
                         <span class="text-muted">{% trans "None" %}</span>
                     {% endif %}
-                </div>
+                </c-cf.card.body>
             </c-cf.card>
         </c-slot>
 
         <c-slot name="bottom">
-            <c-cf.card only>
-                <c-slot name="header">{% trans "Log Entries" %}</c-slot>
-                <div class="card-body">
+            <c-cf.card>
+                <c-slot name="title">{% trans "Log Entries" %}</c-slot>
+                <c-cf.card.body>
                     {% if object.log_entries %}
-                        <table class="table table-hover">
+                        <table class="table">
                             <thead>
                                 <tr>
                                     <th>{% trans "Timestamp" %}</th>
@@ -91,16 +89,16 @@
                                         <td>{{ entry.timestamp }}</td>
                                         <td>
                                             {% if entry.level == "ERROR" %}
-                                                <span class="badge bg-danger">{{ entry.level }}</span>
+                                                <c-cf.badge variant="error">{{ entry.level }}</c-cf.badge>
                                             {% elif entry.level == "WARNING" %}
-                                                <span class="badge bg-warning text-dark">{{ entry.level }}</span>
+                                                <c-cf.badge variant="warning">{{ entry.level }}</c-cf.badge>
                                             {% elif entry.level == "INFO" %}
-                                                <span class="badge bg-info text-dark">{{ entry.level }}</span>
+                                                <c-cf.badge variant="info">{{ entry.level }}</c-cf.badge>
                                             {% else %}
-                                                <span class="badge bg-secondary">{{ entry.level }}</span>
+                                                <c-cf.badge variant="secondary">{{ entry.level }}</c-cf.badge>
                                             {% endif %}
                                         </td>
-                                        <td class="font-monospace">{{ entry.message }}</td>
+                                        <td class="font-mono">{{ entry.message }}</td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
@@ -108,7 +106,7 @@
                     {% else %}
                         <span class="text-muted">{% trans "No log entries" %}</span>
                     {% endif %}
-                </div>
+                </c-cf.card.body>
             </c-cf.card>
         </c-slot>
     </c-cf.layout.panels>

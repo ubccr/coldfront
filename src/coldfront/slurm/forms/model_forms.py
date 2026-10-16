@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from crispy_forms.layout import Fieldset
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
@@ -14,13 +13,14 @@ from coldfront.forms.fields import (
     CSVMultipleChoiceField,
     JSONField,
 )
+from coldfront.forms.layout import FieldSet
 from coldfront.slurm.choices import (
     SlurmPriorityFlagsChoices,
     SlurmPriorityTypeChoices,
     SlurmPriorityUsageResetPeriodChoices,
 )
 from coldfront.slurm.models import SlurmAccount, SlurmAssociation, SlurmCluster, SlurmPartition, SlurmQOS, SlurmUser
-from coldfront.users.models.users import Group
+from coldfront.utils.forms import add_blank_choice
 
 
 class SlurmQOSForm(PrimaryModelForm):
@@ -43,13 +43,12 @@ class SlurmQOSForm(PrimaryModelForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Slurm QOS"),
+            FieldSet(
                 "name",
                 "description",
+                name=_("Slurm QOS"),
             ),
-            Fieldset(
-                _("Limits"),
+            FieldSet(
                 "priority",
                 "max_submit_jobs_per_user",
                 "max_jobs_per_user",
@@ -58,6 +57,7 @@ class SlurmQOSForm(PrimaryModelForm):
                 "max_wall_duration_per_job",
                 "limit_factor",
                 "grace_time",
+                name=_("Limits"),
             ),
         ]
 
@@ -98,20 +98,8 @@ class SlurmClusterForm(TenancyForm, PrimaryModelForm):
         ),
     )
 
-    default_qos = forms.ModelChoiceField(
-        queryset=SlurmQOS.objects.all(),
-        required=False,
-        label=_("Default QOS"),
-    )
-
-    qos_list = forms.ModelMultipleChoiceField(
-        queryset=SlurmQOS.objects.all(),
-        required=False,
-        label=_("QOS List"),
-    )
-
     priority_flags = forms.MultipleChoiceField(
-        choices=SlurmPriorityFlagsChoices,
+        choices=add_blank_choice(SlurmPriorityFlagsChoices),
         required=False,
         label=_("Priority Flags"),
         help_text=_("Raw PriorityFlags from slurm.conf. Used to derive billing_mode (MAX_TRES / MAX_TRES_GRES)."),
@@ -142,28 +130,28 @@ class SlurmClusterForm(TenancyForm, PrimaryModelForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Slurm Cluster"),
+            FieldSet(
                 "name",
                 "description",
                 "locked",
                 "schema",
+                name=_("Slurm Cluster"),
             ),
-            Fieldset(
-                _("Slurm Accounting"),
+            FieldSet(
                 "default_qos",
                 "qos_list",
                 "fairshare",
                 "features",
                 "classification",
+                name=_("Slurm Accounting"),
             ),
-            Fieldset(
-                _("Billing & Enforcement"),
+            FieldSet(
                 "priority_flags",
                 "priority_type",
                 "priority_decay_half_life",
                 "priority_usage_reset_period",
                 "enforce_su_limits",
+                name=_("Billing & Enforcement"),
             ),
         ]
 
@@ -231,16 +219,6 @@ class SlurmPartitionForm(PrimaryModelForm):
         help_text=_("Enter a valid JSON schema to define supported allocation attributes."),
     )
 
-    allow_qos = forms.ModelMultipleChoiceField(
-        queryset=SlurmQOS.objects.all(),
-        required=False,
-        label=_("Allowed QOS"),
-        help_text=_(
-            "QOS whitelist for admission control. Only jobs requesting one of "
-            "these QOSes are permitted to submit to this partition. "
-            "Maps to AllowQOS in slurm.conf."
-        ),
-    )
     qos = forms.ModelChoiceField(
         queryset=SlurmQOS.objects.all(),
         required=False,
@@ -250,27 +228,6 @@ class SlurmPartitionForm(PrimaryModelForm):
             "memory) apply to every job in this partition. The partition "
             "QOS and the job's QOS are both enforced — the stricter limit "
             "wins. Maps to QOS in slurm.conf."
-        ),
-    )
-
-    allow_groups = forms.ModelMultipleChoiceField(
-        queryset=Group.objects.all(),
-        required=False,
-        label=_("Allowed Groups"),
-        help_text=_(
-            "Restrict partition access to specific ColdFront Groups. Users "
-            "must be in one of these groups to submit allocations to this "
-            "partition. Maps to AllowGroups in slurm.conf."
-        ),
-    )
-
-    allow_accounts = forms.ModelMultipleChoiceField(
-        queryset=SlurmAccount.objects.all(),
-        required=False,
-        label=_("Allowed Accounts"),
-        help_text=_(
-            "Restrict which SlurmAccounts can submit jobs to this partition. "
-            "When set, only associations under one of these accounts are permitted."
         ),
     )
 
@@ -307,8 +264,7 @@ class SlurmPartitionForm(PrimaryModelForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Slurm Partition"),
+            FieldSet(
                 "cluster",
                 "name",
                 "slug",
@@ -326,19 +282,20 @@ class SlurmPartitionForm(PrimaryModelForm):
                 "preempt_mode",
                 "def_mem_per_cpu",
                 "def_mem_per_node",
+                name=_("Slurm Partition"),
             ),
-            Fieldset(
-                _("Limits"),
+            FieldSet(
                 "max_time",
                 "tres_billing_weights",
+                name=_("Limits"),
             ),
-            Fieldset(
-                _("Access Control"),
+            FieldSet(
                 "allow_qos",
                 "deny_qos",
                 "qos",
                 "allow_groups",
                 "allow_accounts",
+                name=_("Access Control"),
             ),
         ]
 
@@ -386,19 +343,6 @@ class SlurmAccountForm(PrimaryModelForm):
         label=_("Cluster"),
     )
 
-    qos_add = forms.ModelMultipleChoiceField(
-        queryset=SlurmQOS.objects.all(),
-        required=False,
-        label=_("QOS Add"),
-        help_text=_("QOSes to add to this account via QOS+= in the dump format."),
-    )
-    qos_remove = forms.ModelMultipleChoiceField(
-        queryset=SlurmQOS.objects.all(),
-        required=False,
-        label=_("QOS Remove"),
-        help_text=_("QOSes to remove from this account via QOS-= in the dump format."),
-    )
-
     class Meta:
         model = SlurmAccount
         fields = [
@@ -415,8 +359,7 @@ class SlurmAccountForm(PrimaryModelForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Slurm Account"),
+            FieldSet(
                 "cluster",
                 "name",
                 "description",
@@ -424,6 +367,7 @@ class SlurmAccountForm(PrimaryModelForm):
                 "service_units",
                 "qos_add",
                 "qos_remove",
+                name=_("Slurm Account"),
             ),
         ]
 
@@ -505,26 +449,26 @@ class SlurmAssociationForm(PrimaryModelForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Slurm Association"),
+            FieldSet(
                 "allocation",
                 "slurm_account",
                 "parent",
                 "default_qos",
                 "fairshare",
+                name=_("Slurm Association"),
             ),
-            Fieldset(
-                _("Limits"),
+            FieldSet(
                 "max_jobs",
                 "max_submit_jobs",
                 "max_tres_per_job",
                 "max_tres_mins_per_job",
                 "max_wall_duration_per_job",
+                name=_("Limits"),
             ),
-            Fieldset(
-                _("QOS Configuration"),
+            FieldSet(
                 "qos_add",
                 "qos_remove",
+                name=_("QOS Configuration"),
             ),
         ]
 
@@ -652,14 +596,14 @@ class SlurmUserForm(PrimaryModelForm):
     @property
     def fieldsets(self):
         return [
-            Fieldset(
-                _("Slurm User"),
+            FieldSet(
                 "user",
                 "cluster",
                 "default_account",
                 "default_wckey",
                 "default_qos",
                 "admin_level",
+                name=_("Slurm User"),
             ),
         ]
 

@@ -4,7 +4,7 @@
 {% block content %}
     <c-cf.layout.panels>
         <c-slot name="left">
-            <c-cf.card.fields header="{% trans 'Custom Field Choice Set' %}" only>
+            <c-cf.card.fields title="{% trans 'Custom Field Choice Set' %}">
                 <c-cf.card.fields.item label="{% trans 'Name' %}">
                     {{ object.name }}
                 </c-cf.card.fields.item>
@@ -18,7 +18,7 @@
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label="{% trans 'Order Alphabetically' %}">
-                    <c-cf.ui.checkmark :value="object.order_alphabetically" />
+                    <c-cf.checkmark :value="object.order_alphabetically" />
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label="{% trans 'Used by' %}">
@@ -32,7 +32,7 @@
         </c-slot>
 
         <c-slot name="right">
-            <c-cf.card.fields header="{% trans 'Choices' %}" only>
+            <c-cf.card.fields title="{% trans 'Choices' %}">
                 <c-cf.card.fields.item label="{% trans 'Label' %}">
                     {% trans 'Value' %}
                 </c-cf.card.fields.item>
@@ -44,7 +44,7 @@
                 {% endfor %}
 
                 <c-slot name="footer">
-                    <c-cf.table.paginator :page="choices" only />
+                    <c-cf.table.paginator :page="choices" />
                 </c-slot>
             </c-cf.card.fields>
         </c-slot>

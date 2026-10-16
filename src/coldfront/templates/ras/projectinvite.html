@@ -4,7 +4,7 @@
 {% block content %}
     <c-cf.layout.panels>
         <c-slot name="left">
-            <c-cf.card.fields :object="object" only>
+            <c-cf.card.fields :object="object">
                 <c-cf.card.fields.item label="{% trans 'Email' %}">
                     {{ object.email }}
                 </c-cf.card.fields.item>
@@ -30,7 +30,7 @@
         </c-slot>
 
         <c-slot name="right">
-            <c-cf.card.fields header="{% trans 'Project' %}" only>
+            <c-cf.card.fields title="{% trans 'Project' %}">
                 <c-cf.card.fields.item label="{% trans 'Name' %}">
                     {{ object.project|linkify }}
                 </c-cf.card.fields.item>

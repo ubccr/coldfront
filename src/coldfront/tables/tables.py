@@ -46,7 +46,7 @@ class BaseTable(tables.Table):
 
         * User configuration (column preferences)
         * Automatic prefetching of related objects
-        * BS5 styling
+        * daisyUI table styling
 
     :param user: Personalize table display for the given user (optional). Has no effect if AnonymousUser is passed.
     """
@@ -55,7 +55,10 @@ class BaseTable(tables.Table):
 
     class Meta:
         attrs = {
-            "class": "table table-hover object-list",
+            "class": "table",
+        }
+        row_attrs = {
+            "class": "hover:bg-base-300",
         }
 
     def __init__(self, *args, user=None, **kwargs):
@@ -311,7 +314,7 @@ class SearchTable(tables.Table):
 
     class Meta:
         attrs = {
-            "class": "table table-hover object-list",
+            "class": "table",
         }
         empty_text = _(EMPTY_TABLE_TEXT)
 

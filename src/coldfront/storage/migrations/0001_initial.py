@@ -4,7 +4,6 @@
 
 import django.db.models.deletion
 import taggit.managers
-from django.conf import settings
 from django.db import migrations, models
 
 import coldfront.core.utils
@@ -16,82 +15,11 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ("core", "0003_job_cron_schedule"),
-        ("ras", "0003_projectinvite"),
-        ("tenancy", "0001_initial"),
-        ("users", "0001_initial"),
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+        ("core", "0001_initial"),
+        ("ras", "0001_initial"),
     ]
 
     operations = [
-        migrations.CreateModel(
-            name="StorageCluster",
-            fields=[
-                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
-                ("created", models.DateTimeField(auto_now_add=True, null=True, verbose_name="created")),
-                ("last_updated", models.DateTimeField(auto_now=True, null=True, verbose_name="last updated")),
-                (
-                    "custom_field_data",
-                    models.JSONField(blank=True, default=dict, encoder=coldfront.core.utils.CustomFieldJSONEncoder),
-                ),
-                ("name", models.CharField(max_length=100, unique=True, verbose_name="name")),
-                ("description", models.TextField(blank=True, verbose_name="description")),
-                (
-                    "backend_path",
-                    models.CharField(
-                        blank=True,
-                        default=None,
-                        help_text="Dotted Python path to a StorageBackend subclass, e.g. 'coldfront.storage.backends.vast.VastBackend'. Leave empty for clusters with no backend (sync jobs will skip them).",
-                        max_length=500,
-                        null=True,
-                        verbose_name="backend path",
-                    ),
-                ),
-                (
-                    "capacity_bytes",
-                    models.PositiveBigIntegerField(
-                        blank=True,
-                        default=None,
-                        help_text="Total storage capacity of this cluster in bytes. Leave empty for unlimited.",
-                        null=True,
-                        verbose_name="capacity",
-                    ),
-                ),
-                (
-                    "allocated_bytes",
-                    models.PositiveBigIntegerField(
-                        default=0,
-                        editable=False,
-                        help_text="Sum of hard_limit_bytes for all active quotas on this cluster. Updated automatically.",
-                        verbose_name="allocated",
-                    ),
-                ),
-                (
-                    "used_bytes",
-                    models.PositiveBigIntegerField(
-                        default=0,
-                        editable=False,
-                        help_text="Sum of actual usage from all active quotas on this cluster. Updated by sync.",
-                        verbose_name="used",
-                    ),
-                ),
-                (
-                    "tags",
-                    taggit.managers.TaggableManager(
-                        help_text="A comma-separated list of tags.",
-                        through="core.TaggedItem",
-                        to="core.Tag",
-                        verbose_name="Tags",
-                    ),
-                ),
-            ],
-            options={
-                "verbose_name": "storage cluster",
-                "verbose_name_plural": "storage clusters",
-                "ordering": ["name"],
-            },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
-        ),
         migrations.CreateModel(
             name="StorageResource",
             fields=[
@@ -158,32 +86,6 @@ class Migration(migrations.Migration):
                         verbose_name="used",
                     ),
                 ),
-                (
-                    "clusters",
-                    models.ManyToManyField(
-                        related_name="storage_resources", to="storage.storagecluster", verbose_name="clusters"
-                    ),
-                ),
-                (
-                    "tags",
-                    taggit.managers.TaggableManager(
-                        help_text="A comma-separated list of tags.",
-                        through="core.TaggedItem",
-                        to="core.Tag",
-                        verbose_name="Tags",
-                    ),
-                ),
-                (
-                    "tenant",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="storage_resources",
-                        to="tenancy.tenant",
-                        verbose_name="tenant",
-                    ),
-                ),
             ],
             options={
                 "verbose_name": "storage resource",
@@ -224,13 +126,63 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 ("extra_config", models.JSONField(blank=True, default=dict, verbose_name="extra configuration")),
+            ],
+            options={
+                "verbose_name": "storage snapshot policy",
+                "verbose_name_plural": "storage snapshot policies",
+                "ordering": ["cluster__name", "name"],
+            },
+            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+        ),
+        migrations.CreateModel(
+            name="StorageCluster",
+            fields=[
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("created", models.DateTimeField(auto_now_add=True, null=True, verbose_name="created")),
+                ("last_updated", models.DateTimeField(auto_now=True, null=True, verbose_name="last updated")),
                 (
-                    "cluster",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="snapshot_policies",
-                        to="storage.storagecluster",
-                        verbose_name="cluster",
+                    "custom_field_data",
+                    models.JSONField(blank=True, default=dict, encoder=coldfront.core.utils.CustomFieldJSONEncoder),
+                ),
+                ("name", models.CharField(max_length=100, unique=True, verbose_name="name")),
+                ("description", models.TextField(blank=True, verbose_name="description")),
+                (
+                    "backend_path",
+                    models.CharField(
+                        blank=True,
+                        default=None,
+                        help_text="Dotted Python path to a StorageBackend subclass, e.g. 'coldfront.storage.backends.vast.VastBackend'. Leave empty for clusters with no backend (sync jobs will skip them).",
+                        max_length=500,
+                        null=True,
+                        verbose_name="backend path",
+                    ),
+                ),
+                (
+                    "capacity_bytes",
+                    models.PositiveBigIntegerField(
+                        blank=True,
+                        default=None,
+                        help_text="Total storage capacity of this cluster in bytes. Leave empty for unlimited.",
+                        null=True,
+                        verbose_name="capacity",
+                    ),
+                ),
+                (
+                    "allocated_bytes",
+                    models.PositiveBigIntegerField(
+                        default=0,
+                        editable=False,
+                        help_text="Sum of hard_limit_bytes for all active quotas on this cluster. Updated automatically.",
+                        verbose_name="allocated",
+                    ),
+                ),
+                (
+                    "used_bytes",
+                    models.PositiveBigIntegerField(
+                        default=0,
+                        editable=False,
+                        help_text="Sum of actual usage from all active quotas on this cluster. Updated by sync.",
+                        verbose_name="used",
                     ),
                 ),
                 (
@@ -244,9 +196,9 @@ class Migration(migrations.Migration):
                 ),
             ],
             options={
-                "verbose_name": "storage snapshot policy",
-                "verbose_name_plural": "storage snapshot policies",
-                "ordering": ["cluster__name", "name"],
+                "verbose_name": "storage cluster",
+                "verbose_name_plural": "storage clusters",
+                "ordering": ["name"],
             },
             bases=(coldfront.models.deletion.DeleteMixin, models.Model),
         ),
@@ -337,57 +289,6 @@ class Migration(migrations.Migration):
                         blank=True, related_name="quotas", to="storage.storagecluster", verbose_name="clusters"
                     ),
                 ),
-                (
-                    "owning_group",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="storage_quotas",
-                        to="users.group",
-                        verbose_name="owning group",
-                    ),
-                ),
-                (
-                    "owning_user",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="storage_quotas_as_owner",
-                        to=settings.AUTH_USER_MODEL,
-                        verbose_name="owning user",
-                    ),
-                ),
-                (
-                    "tags",
-                    taggit.managers.TaggableManager(
-                        help_text="A comma-separated list of tags.",
-                        through="core.TaggedItem",
-                        to="core.Tag",
-                        verbose_name="Tags",
-                    ),
-                ),
-                (
-                    "storage",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.PROTECT,
-                        related_name="quotas",
-                        to="storage.storageresource",
-                        verbose_name="storage resource",
-                    ),
-                ),
-                (
-                    "snapshot_policy",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="quotas",
-                        to="storage.storagesnapshotpolicy",
-                        verbose_name="snapshot policy",
-                    ),
-                ),
             ],
             options={
                 "verbose_name": "storage quota",
@@ -395,31 +296,5 @@ class Migration(migrations.Migration):
                 "ordering": ["allocation__slug"],
             },
             bases=(coldfront.models.deletion.DeleteMixin, models.Model),
-        ),
-        migrations.AddConstraint(
-            model_name="storagecluster",
-            constraint=models.CheckConstraint(
-                condition=models.Q(("capacity_bytes", None), ("capacity_bytes__gt", 0), _connector="OR"),
-                name="storage_storagecluster_capacity_must_be_null_or_positive",
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="storageresource",
-            constraint=models.CheckConstraint(
-                condition=models.Q(("capacity_bytes", None), ("capacity_bytes__gt", 0), _connector="OR"),
-                name="storage_storageresource_capacity_must_be_null_or_positive",
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="storagesnapshotpolicy",
-            constraint=models.UniqueConstraint(
-                fields=("cluster", "name"), name="storage_storagesnapshotpolicy_unique_cluster_name"
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="storagequota",
-            constraint=models.UniqueConstraint(
-                fields=("path", "storage"), name="storage_storagequota_unique_path_per_storage"
-            ),
         ),
     ]

@@ -1,35 +1,31 @@
 {% extends 'base/layout.html' %}
 
 {% block header %}
-    <div class="page-header m-0">
+    <div class="mb-6 print:hidden">
         {{ block.super }}
 
         {% block page-header %}
-            <div class="container-fluid mt-2 d-print-none">
-                <div class="d-flex justify-content-between">
-                    {# Title #}
-                    <div>
-                        <h1 class="page-title">{% block title %}{% endblock title %}</h1>
-                        {% block subtitle %}{% endblock %}
-                    </div>
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                {# Title #}
+                <div class="min-w-0 break-words flex-1">
+                    <h1 class="text-2xl font-semibold text-base-content">{% block title %}{% endblock title %}</h1>
+                    {% block subtitle %}{% endblock %}
+                </div>
 
-                    {# Controls #}
-                    <div class="d-print-none">
-                        {% block controls %}
-                            <div class="btn-list">
-                                {% block control-buttons %}{% endblock %}
-                            </div>
-                        {% endblock controls %}
-                    </div>
+                {# Controls #}
+                <div class="shrink-0">
+                    {% block controls %}
+                        <div class="flex flex-wrap items-center justify-end gap-2">
+                            {% block control-buttons %}{% endblock %}
+                        </div>
+                    {% endblock controls %}
                 </div>
             </div>
         {% endblock %}
 
         {# Tabs #}
-        <div class="page-tabs mt-3">
-            <div class="container-fluid">
-                {% block tabs %}{% endblock %}
-            </div>
+        <div class="mt-3">
+            {% block tabs %}{% endblock %}
         </div>
     </div>
 {% endblock header %}

@@ -43,7 +43,7 @@ class TestCase(_TestCase):
         Context manager that wraps subTest with automatic cleanup.
         All database changes within the context will be rolled back.
         """
-        sid = transaction.savepoint()
+        sid = transaction.savepoint_create()
 
         try:
             with self.subTest(**params):

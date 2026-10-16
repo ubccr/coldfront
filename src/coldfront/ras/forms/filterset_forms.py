@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from crispy_forms.layout import Fieldset
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
@@ -14,7 +13,7 @@ from coldfront.forms.fields import (
     DynamicModelMultipleChoiceField,
     TagFilterField,
 )
-from coldfront.forms.layouts import Date
+from coldfront.forms.layout import FieldSet
 from coldfront.ras.choices import AllocationChangeRequestStatusChoices, AllocationStatusChoices, ResourceStatusChoices
 from coldfront.ras.models import (
     Allocation,
@@ -38,10 +37,13 @@ class ResourceTypeFilterSetForm(OrganizationalModelFilterSetForm):
     tag = TagFilterField(model)
 
     fieldsets = (
-        Fieldset(
-            "Resource Type",
-            "color",
+        FieldSet(
+            "q",
             "tag",
+        ),
+        FieldSet(
+            "color",
+            name=_("Resource Type"),
         ),
     )
 
@@ -66,17 +68,20 @@ class ResourceFilterSetForm(TenancyFilterSetForm, PrimaryModelFilterSetForm):
     tag = TagFilterField(model)
 
     fieldsets = (
-        Fieldset(
-            _("Resource"),
+        FieldSet(
+            "q",
+            "tag",
+        ),
+        FieldSet(
             "resource_type_id",
             "status",
             "parent_id",
-            "tag",
+            name=_("Resource"),
         ),
-        Fieldset(
-            _("Tenant"),
+        FieldSet(
             "tenant_group_id",
             "tenant_id",
+            name=_("Tenant"),
         ),
     )
 
@@ -96,16 +101,19 @@ class ProjectFilterSetForm(TenancyFilterSetForm, OrganizationalModelFilterSetFor
     tag = TagFilterField(model)
 
     fieldsets = (
-        Fieldset(
-            _("Project"),
-            "owner",
-            "group_id",
+        FieldSet(
+            "q",
             "tag",
         ),
-        Fieldset(
-            _("Tenant"),
+        FieldSet(
+            "owner",
+            "group_id",
+            name=_("Project"),
+        ),
+        FieldSet(
             "tenant_group_id",
             "tenant_id",
+            name=_("Tenant"),
         ),
     )
 
@@ -144,20 +152,23 @@ class AllocationFilterSetForm(TenancyFilterSetForm, PrimaryModelFilterSetForm):
     tag = TagFilterField(model)
 
     fieldsets = (
-        Fieldset(
-            _("Allocation"),
+        FieldSet(
+            "q",
+            "tag",
+        ),
+        FieldSet(
             "project_id",
             "resource_object_type_id",
             "status",
             "owner",
-            Date("start_date"),
-            Date("end_date"),
-            "tag",
+            "start_date",
+            "end_date",
+            name=_("Allocation"),
         ),
-        Fieldset(
-            _("Tenant"),
+        FieldSet(
             "tenant_group_id",
             "tenant_id",
+            name=_("Tenant"),
         ),
     )
 
@@ -181,11 +192,14 @@ class AllocationChangeRequestFilterSetForm(PrimaryModelFilterSetForm):
     )
 
     fieldsets = (
-        Fieldset(
-            _("Change Request"),
+        FieldSet(
+            "q",
+        ),
+        FieldSet(
             "allocation_id",
             "status",
             "requested_by_id",
+            name=_("Change Request"),
         ),
     )
 
@@ -205,10 +219,13 @@ class ProjectUserFilterSetForm(PrimaryModelFilterSetForm):
     tag = TagFilterField(model)
 
     fieldsets = (
-        Fieldset(
-            _("User"),
+        FieldSet(
+            "q",
+            "tag",
+        ),
+        FieldSet(
             "project_id",
             "user_id",
-            "tag",
+            name=_("User"),
         ),
     )

@@ -149,17 +149,18 @@ Plugins can register navigation menu items with optional action buttons.
 ```python
 # myplugin/navigation.py
 from django.utils.translation import gettext as _
-from coldfront.plugins.navigation import PluginMenu, PluginMenuButton, PluginMenuItem
+from coldfront.plugins.navigation import PluginMenu, PluginMenuItem, PluginMenuItemButton
 
 items = (
     PluginMenuItem(
         link="plugins:myplugin:my_model_list",
         link_text="Item 1",
         buttons=(
-            PluginMenuButton(
+            PluginMenuItemButton(
                 link="plugins:myplugin:my_model_add",
                 title="Add",
-                icon_class="mdi mdi-plus-thick",
+                icon="heroicon.plus",
+                variant="primary",
             ),
         ),
     ),
@@ -185,16 +186,16 @@ menu_items = items
 | `auth_required` | If True, user must be authenticated |
 | `staff_only` | If True, only staff users can see the link |
 | `permissions` | List of required permissions |
-| `buttons` | List of PluginMenuButton instances |
+| `buttons` | List of PluginMenuItemButton instances |
 
-### PluginMenuButton Attributes
+### PluginMenuItemButton Attributes
 
 | Attribute | Description |
 |---|---|
 | `link` | Django reverse URL string for the button |
 | `title` | Button tooltip text |
-| `icon_class` | Icon CSS class (e.g., `mdi mdi-plus-thick`) |
-| `color` | Button color from ButtonColorChoices |
+| `icon` | Icon name (e.g., `heroicon.plus`, `tablericon.server`) |
+| `variant` | button variant color: a `ColorChoices` color, or `ghost` (default) |
 | `permissions` | List of required permissions |
 
 ## Template Content

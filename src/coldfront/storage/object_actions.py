@@ -13,6 +13,8 @@ class SyncQuotaAction(ObjectAction):
 
     name = "sync"
     label = _("Sync Quota")
-    template_name = "cf.button.sync"
+    icon = "tablericon.refresh"
+    variant = "info"
+    modal = True
     url_kwargs = ["pk"]
     permissions_required = {"change"}

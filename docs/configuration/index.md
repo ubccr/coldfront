@@ -46,8 +46,6 @@ These settings are defined in `src/coldfront/config/base.py`.
 | `SITE_TEMPLATES` | `""` | Path to custom template directory |
 | `SITE_STATIC` | `""` | Path to custom static files directory |
 | `STATIC_ROOT` | `static_root` | Directory for collected static files |
-| `DJANGO_VITE_DEV_MODE` | `False` | Enable Vite dev server mode |
-| `DJANGO_VITE_SERVER_PORT` | `5173` | Vite dev server port |
 | `COLDFRONT_TASKS_BACKEND` | `db` | Background task queue backend. `db` queues via the Job model (ORM). `rq` queues via Redis |
 
 ## Database Settings
@@ -157,16 +155,30 @@ These settings are defined in `src/coldfront/config/email.py`.
 
 | Variable | Default | Description |
 |---|---|---|
-| `EMAIL_ENABLED` | `False` | Enable email notifications |
-| `EMAIL_HOST` | `localhost` | SMTP server host |
-| `EMAIL_PORT` | `25` | SMTP server port |
-| `EMAIL_HOST_USER` | `""` | SMTP username |
-| `EMAIL_HOST_PASSWORD` | `""` | SMTP password |
-| `EMAIL_USE_TLS` | `False` | Use TLS for SMTP |
-| `EMAIL_TIMEOUT` | `3` | SMTP timeout in seconds |
+| `MAILER_BACKEND` | `django.core.mail.backends.smtp.EmailBackend` | Mail backend for the `default` mailer |
+| `MAILER_HOST` | `localhost` | SMTP server host |
+| `MAILER_PORT` | `25` | SMTP server port |
+| `MAILER_USER` | `""` | SMTP username |
+| `MAILER_PASSWORD` | `""` | SMTP password |
+| `MAILER_USE_TLS` | `False` | Use TLS for SMTP |
+| `MAILER_TIMEOUT` | `3` | SMTP timeout in seconds |
 | `EMAIL_SUBJECT_PREFIX` | `[ColdFront]` | Subject prefix for emails |
 | `EMAIL_SENDER` | `""` | Sender email address |
 | `EMAIL_SIGNATURE` | `""` | Email signature |
+
+The SMTP variables are combined into the `MAILERS` setting (Django 6.1) as the `default` mailer:
+
+```python
+MAILERS = {
+    "default": {
+        "BACKEND": <MAILER_BACKEND>,
+        "OPTIONS": {
+            "host": <MAILER_HOST>, "port": <MAILER_PORT>, "username": <MAILER_USER>,
+            "password": <MAILER_PASSWORD>, "use_tls": <MAILER_USE_TLS>, "timeout": <MAILER_TIMEOUT>,
+        },
+    },
+}
+```
 
 ## Slurm Settings
 

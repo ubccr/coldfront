@@ -7,8 +7,8 @@
 {% endblock %}
 
 {% block message %}
-    {% blocktrans with project_name=project.name center_name=settings.CENTER_NAME %}You have been invited to join the
-        project
+    {% blocktrans trimmed with project_name=project.name center_name=settings.CENTER_NAME %}You have been invited to
+        join the project
         {{ project_name }} at {{ center_name }}. To accept this invitation, click the link below and login:
     {% endblocktrans %}
 {% endblock %}
@@ -18,7 +18,7 @@
 {% endblock %}
 
 {% block footer_message %}
-    {% blocktrans with expire=expire_date|naturaltime %}
+    {% blocktrans trimmed with expire=expire_date|naturaltime %}
         This invitation will expire {{ expire }}. If you were not expecting this invitation, you can safely ignore this
         email.
     {% endblocktrans %}

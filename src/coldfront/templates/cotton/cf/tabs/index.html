@@ -1,3 +1,24 @@
-<ul class="nav nav-tabs" role="presentation">
+<c-vars
+    style="lift"
+    placement="top"
+    size="md"
+    name="tabs"
+    role="tablist"
+    class=""
+/>
+
+<div
+    role="{{ role }}"
+    {% if role == 'group' %}aria-label="{{ name }}"{% endif %}
+    class="
+        tabs
+        {% if style == 'border' %}tabs-border{% elif style == 'lift' %}tabs-lift{% elif style == 'box' %}tabs-box{% endif %}
+        {% if placement == 'bottom' %}tabs-bottom{% endif %}
+        {% if size == 'xs' %}tabs-xs{% elif size == 'sm' %}tabs-sm{% elif size == 'md' %}tabs-md{% elif size == 'lg' %}tabs-lg{% elif size == 'xl' %}tabs-xl{% endif %}
+        {{ class }}
+    "
+    {{ attrs }}
+>
     {{ slot }}
-</ul>
+    <span class="grow border-b border-base-content/20"></span>
+</div>

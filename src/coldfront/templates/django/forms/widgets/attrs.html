@@ -1,0 +1,3 @@
+{# Skip "class" attribute, which is handled on the widget template directly so the daisyUI base class merges with any widget-set class without duplication. #}
+{% for name, value in widget.attrs.items %}{% if name != 'class' %}{% if value is not False %}
+            {{ name }}{% if value is not True %}="{{ value|stringformat:'s' }}"{% endif %}{% endif %}{% endif %}{% endfor %}

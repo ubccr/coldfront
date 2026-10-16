@@ -1,7 +1,15 @@
 {% load tabs %}
 
 {% for tab in tabs %}
-    <c-cf.tabs.tab link href="{{ tab.url }}" label="{{ tab.label }}" :active="tab.is_active">
-        <c-cf.ui.badge :value="tab.badge" />
+    <c-cf.tabs.tab link href="{{ tab.url }}" title="{{ tab.label }}" :active="tab.is_active">
+        {% if tab.badge %}
+            <c-slot name="badge">
+                <c-cf.badge
+                    variant="warning"
+                    class="ml-1"
+                    size="sm"
+                >{{ tab.badge }}</c-cf.badge>
+            </c-slot>
+        {% endif %}
     </c-cf.tabs.tab>
 {% endfor %}

@@ -1,0 +1,47 @@
+{% comment %}
+DaisyUI modal component (class, id, placement, open, size, boxClass, withBackdrop,
+withCloseBtn, closeBtnPosition). Renders a native <dialog> with a modal box, an
+optional close button, and an optional backdrop.
+{% endcomment %}
+
+<c-vars
+    class=""
+    id=""
+    placement="middle"
+    open
+    size=""
+    boxClass=""
+    withBackdrop
+    withCloseBtn
+    closeBtnPosition="top-right"
+    :placementClasses="{
+        'top': 'modal-top',
+        'middle': 'modal-middle',
+        'bottom': 'modal-bottom',
+        'start': 'modal-start',
+        'end': 'modal-end',
+        'open': 'modal-open'
+    }"
+/>
+
+<dialog
+    id="{{ id }}"
+    {% if id %}aria-labelledby="{{ id }}_title"{% endif %}
+    class="modal {{ placementClasses|get_dict_item:placement }} {% if open %}modal-open{% endif %} {{ class }}"
+    {{ attrs }}
+>
+    {% if not box %}
+        <c-cf.modal.box :size="size" :class="boxClass">
+            {% if withCloseBtn %}
+                <c-cf.modal.close :position="closeBtnPosition" />
+            {% endif %}
+            {{ slot }}
+        </c-cf.modal.box>
+    {% else %}
+        {{ box }}
+    {% endif %}
+
+    {% if withBackdrop %}
+        <c-cf.modal.backdrop />
+    {% endif %}
+</dialog>

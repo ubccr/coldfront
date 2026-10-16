@@ -148,7 +148,7 @@ class ObjectListView(BaseMultiObjectView, ActionsMixin, TableMixin):
             return HttpResponse(
                 render_component(
                     request,
-                    "cf.table.htmx",
+                    "cf.table",
                     table=table,
                     actions=actions,
                     model=model,

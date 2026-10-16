@@ -1,52 +1,29 @@
 {% load i18n %}
 
-<div class="modal fade" tabindex="-1" id="{{ table_name }}_config">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">{% trans "Table Configuration" %}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form
-                class="form-horizontal userconfigform"
-                data-url="{% url 'users-api:userconfig-list' %}"
-                data-config-root="tables.{{ form.table_name }}"
-            >
-                <div class="modal-body row">
-                    <div class="col-5 text-center">
-                        {{ form.available_columns.label }}
-                        {{ form.available_columns }}
-                    </div>
-                    <div class="col-2 d-flex align-items-center">
-                        <div>
-                            <a tabindex="0" class="btn btn-success btn-sm w-100 my-2" id="add_columns">
-                                <i class="fa-solid fa-arrow-right"></i> {% trans "Add" %}
-                            </a>
-                            <a tabindex="0" class="btn btn-danger btn-sm w-100 my-2" id="remove_columns">
-                                <i class="fa-solid fa-arrow-left"></i> {% trans "Remove" %}
-                            </a>
-                        </div>
-                    </div>
-                    <div class="col-5 text-center">
-                        {{ form.columns.label }}
-                        {{ form.columns }}
-                        <a tabindex="0" class="btn btn-primary btn-sm mt-2 move-option-up" data-target="columns">
-                            <i class="fa-solid fa-arrow-up"></i> {% trans "Move Up" %}
-                        </a>
-                        <a tabindex="0" class="btn btn-primary btn-sm mt-2 move-option-down" data-target="columns">
-                            <i class="fa-solid fa-arrow-down"></i> {% trans "Move Down" %}
-                        </a>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-outline-danger" id="reset_tableconfig" value="Reset">
-                        {% trans "Reset" %}
-                    </button>
-                    <button type="submit" class="btn btn-primary" id="save_tableconfig" value="Save">
-                        {% trans "Save" %}
-                    </button>
-                </div>
-            </form>
-        </div>
+<c-cf.modal id="{{ table_name }}_config" boxClass="max-w-3xl" withCloseBtn>
+    <div class="flex items-center justify-between border-b border-base-200 px-6 py-4">
+        <h5 id="{{ table_name }}_config_title" class="text-lg font-semibold">{% trans "Table Configuration" %}</h5>
     </div>
-</div>
+    <form
+        class="userconfigform"
+        data-url="{% url 'users-api:userconfig-list' %}"
+        data-config-root="tables.{{ form.table_name }}"
+    >
+        <c-cf.table.columns-picker :form="form" class="p-6" />
+        <div class="flex justify-end gap-2 border-t border-base-200 px-6 py-4">
+            <c-cf.button
+                type="submit"
+                variant="error"
+                btnStyle="outline"
+                id="reset_tableconfig"
+                value="Reset"
+            >{% trans "Reset" %}</c-cf.button>
+            <c-cf.button
+                type="submit"
+                variant="primary"
+                id="save_tableconfig"
+                value="Save"
+            >{% trans "Save" %}</c-cf.button>
+        </div>
+    </form>
+</c-cf.modal>

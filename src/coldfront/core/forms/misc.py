@@ -3,13 +3,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from crispy_forms.layout import Layout
 from django import forms
 from django.utils.translation import gettext_lazy as _
 from generic_notifications.registry import registry
 
 from coldfront.forms.fields.dynamic import DynamicModelMultipleChoiceField
-from coldfront.forms.mixins import HorizontalFormMixin
+from coldfront.forms.layout import FieldSet
 from coldfront.users.models import Group, User
 
 
@@ -18,10 +17,10 @@ class RenderMarkdownForm(forms.Form):
     Provides basic validation for markup to be rendered.
     """
 
-    text = forms.CharField(label=_("Text"), required=False)
+    comments = forms.CharField(label=_("Text"), required=False)
 
 
-class AdminNotificationForm(HorizontalFormMixin, forms.Form):
+class AdminNotificationForm(forms.Form):
     """
     Form for superusers to send notifications to users.
     """
@@ -58,7 +57,7 @@ class AdminNotificationForm(HorizontalFormMixin, forms.Form):
     )
 
     fieldsets = (
-        Layout(
+        FieldSet(
             "notify_all",
             "users",
             "groups",

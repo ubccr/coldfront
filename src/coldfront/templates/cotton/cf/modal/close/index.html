@@ -1,0 +1,41 @@
+{% comment %}
+DaisyUI modal close button — a positioned circle button that closes the dialog
+natively via form[method=dialog].
+{% endcomment %}
+
+<c-vars
+    class=""
+    variant=""
+    position="top-right"
+    :variantClasses="{
+        'neutral': 'btn-neutral',
+        'primary': 'btn-primary',
+        'secondary': 'btn-secondary',
+        'accent': 'btn-accent',
+        'info': 'btn-info',
+        'success': 'btn-success',
+        'warning': 'btn-warning',
+        'error': 'btn-error'
+    }"
+    :positionClasses="{
+        'top-right': 'right-2 top-2',
+        'top-left': 'left-2 top-2',
+        'bottom-right': 'right-2 bottom-2',
+        'bottom-left': 'left-2 bottom-2'
+    }"
+/>
+
+{% load i18n %}
+<form method="dialog">
+    <button
+        class="btn btn-sm btn-circle btn-ghost absolute {{ positionClasses|get_dict_item:position }} {{ variantClasses|get_dict_item:variant }} {{ class }}"
+        aria-label="{% trans 'Close' %}"
+        {{ attrs }}
+    >
+        {% if slot %}
+            {{ slot }}
+        {% else %}
+            ✕
+        {% endif %}
+    </button>
+</form>

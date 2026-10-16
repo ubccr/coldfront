@@ -1,7 +1,5 @@
 {% extends 'generic/base.html' %}
-{% load crispy_forms_tags %}
 {% load i18n %}
-{% load render_table from django_tables2 %}
 
 {% comment %}
 Blocks:
@@ -20,69 +18,49 @@ Context:
     {% trans "Editing" %} {{ table.rows|length }} {{ model|meta:"verbose_name_plural"|bettertitle }}
 {% endblock %}
 
-{% block tabs %}
-    <c-cf.tabs>
-        <c-cf.tabs.tab id="edit-form" label="{% trans 'Bulk Edit' %}" active />
-        <c-cf.tabs.tab id="object-list" label="{% trans 'Selected Objects' %}">
-            <c-cf.ui.badge value="{{ table.rows|length }}" />
-        </c-cf.tabs.tab>
-    </c-cf.tabs>
-{% endblock tabs %}
-
-{% block alerts %}
-    <c-cf.alert.messages :form="form" only />
-{% endblock %}
-
 {% block content %}
-    {# Edit form #}
-    <c-cf.tabs.content id="edit-form" active>
-        <form action="" method="post" class="form form-horizontal mt-5">
-            <div id="form_fields">
-                {% csrf_token %}
-                {% if request.POST.return_url %}
-                    <input type="hidden" name="return_url" value="{{ request.POST.return_url }}">
-                {% endif %}
-                {% for field in form.hidden_fields %}
-                    {{ field|as_crispy_field }}
-                {% endfor %}
+    <c-cf.tabs name="edit-tabs" role="group">
+        {# Edit form tab — handle + panel #}
+        <c-cf.tabs.content name="edit-tabs" id="edit-bulk" title="{% trans 'Bulk Edit' %}" checked>
+            <c-cf.form :form="form" :nullify="True">
+                <c-slot name="hidden">
+                    {% if request.POST.return_url %}
+                        <input type="hidden" name="return_url" value="{{ request.POST.return_url }}">
+                    {% endif %}
+                </c-slot>
+                <c-slot name="fields">
+                    <div id="form_fields" hx-disinherit="hx-select hx-swap">
+                        {# Render visible fields with nullable support #}
+                        <c-cf.form.fields :form="form" :nullify="True" />
 
-                {# Render visible fields with nullable support #}
-                {% if form.fieldsets %}
-                    <c-cf.form.fieldsets :form="form" />
-                {% else %}
-                    {% for field in form.visible_fields %}
-                        {% if field.name in form.meta_fields %}
-                            {# Skip meta fields - they're rendered separately #}
-                        {% elif field.name in form.nullable_fields %}
-                            <c-cf.field.nullify :field="field" :form="form" />
-                        {% else %}
-                            {{ field|as_crispy_field }}
+                        {# Meta fields #}
+                        {% if form.changelog_message %}
+                            <c-cf.field :field="form.changelog_message" />
                         {% endif %}
-                    {% endfor %}
-                {% endif %}
+                    </div>
+                </c-slot>
+                <c-slot name="buttons">
+                    <c-cf.button
+                        as="a"
+                        href="{{ return_url }}"
+                        btnStyle="outline"
+                        label="{% trans 'Cancel' %}"
+                    />
+                    <c-cf.button type="submit" name="_apply" variant="primary" label="{% trans 'Apply' %}" />
+                </c-slot>
+            </c-cf.form>
+        </c-cf.tabs.content>
+        {# /Edit form tab #}
 
-                {# Meta fields #}
-                {% if form.changelog_message %}
-                    {{ form.changelog_message|as_crispy_field }}
-                {% endif %}
-
-                {# Form buttons #}
-                <div class="col-lg-9 text-end">
-                    <a href="{{ return_url }}" class="btn btn-outline-secondary">{% trans "Cancel" %}</a>
-                    <button type="submit" name="_apply" class="btn btn-primary">{% trans "Apply" %}</button>
-                </div>
-            </div>
-        </form>
-    </c-cf.tabs.content>
-    {# /Edit form #}
-
-    {# Selected objects list #}
-    <c-cf.tabs.content id="object-list">
-        <div class="card">
-            <div class="table-responsive">
-                <c-cf.table :table="table" />
-            </div>
-        </div>
-    </c-cf.tabs.content>
-    {# /Selected objects list #}
+        {# Selected objects tab — handle + panel #}
+        <c-cf.tabs.content name="edit-tabs" id="edit-selected" title="{% trans 'Selected Objects' %}">
+            <c-slot name="badge"><c-cf.badge
+                    variant="warning"
+                    size="sm"
+                    class="ml-1"
+                >{{ table.rows|length }}</c-cf.badge></c-slot>
+            <c-cf.table :table="table" />
+        </c-cf.tabs.content>
+        {# /Selected objects tab #}
+    </c-cf.tabs>
 {% endblock content %}

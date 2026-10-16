@@ -1,54 +1,53 @@
 {% load i18n %}
-<div class="markdown-widget">
-    <ul class="nav nav-pills mb-1">
-        <li class="nav-item" role="presentation">
-            <button
-                class="nav-link active"
-                id="{{ widget.name }}-input-tab"
-                data-bs-toggle="tab"
-                data-bs-target="#{{ widget.name }}-input"
-                type="button"
-                role="tab"
-                aria-controls="{{ widget.name }}-input"
-                aria-selected="true"
-            >
-                {% trans "Write" %}
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button
-                hx-target="#{{ widget.name }}-preview"
-                hx-swap="innerHTML"
-                hx-post="{% url 'core:render_markdown' %}"
-                class="nav-link preview-button"
-                id="{{ widget.name }}-markdown-preview-tab"
-                data-bs-toggle="tab"
-                data-bs-target="#{{ widget.name }}-markdown-preview"
-                type="button"
-                role="tab"
-                aria-controls="{{ widget.name }}-markdown-preview"
-                aria-selected="false"
-            >
-                {% trans "Preview" %}
-            </button>
-        </li>
-    </ul>
-    <div class="tab-content text-bg-body rounded-bottom">
-        <div
-            class="tab-pane show active"
-            id="{{ widget.name }}-input"
-            role="tabpanel"
-            aria-labelledby="{{ widget.name }}-input-tab"
+<div class="tabs tabs-lift" role="tablist">
+    {# Write tab — handle + panel #}
+    <label
+        class="tab [--tab-border-color:color-mix(in_oklch,var(--color-base-content)_20%,var(--color-base-100))]"
+        id="{{ widget.name }}-input-tab"
+        role="tab"
+    >
+        <input
+            type="radio"
+            name="md-{{ widget.name }}"
+            checked
+            aria-selected="true"
         >
-            {% include "django/forms/widgets/textarea.html" %}
-        </div>
-        <div
-            class="tab-pane show"
-            id="{{ widget.name }}-markdown-preview"
-            role="tabpanel"
-            aria-labelledby="{{ widget.name }}-markdown-preview-tab"
-        >
-            <div id="{{ widget.name }}-preview" class="preview px-3 py-2 border-1"></div>
-        </div>
+        {% trans "Write" %}
+    </label>
+    <div
+        class="tab-content bg-base-100 border-base-content/20 p-6 tab-active"
+        id="{{ widget.name }}-input"
+        role="tabpanel"
+        aria-labelledby="{{ widget.name }}-input-tab"
+    >
+        {% include "django/forms/widgets/textarea.html" %}
     </div>
+    {# /Write tab #}
+
+    {# Preview tab — handle + panel #}
+    <label
+        class="tab [--tab-border-color:color-mix(in_oklch,var(--color-base-content)_20%,var(--color-base-100))]"
+        id="{{ widget.name }}-markdown-preview-tab"
+        role="tab"
+    >
+        <input
+            type="radio"
+            name="md-{{ widget.name }}"
+            hx-post="{% url 'core:render_markdown' %}"
+            hx-trigger="change"
+            hx-target="#{{ widget.name }}-preview"
+            hx-swap="innerHTML"
+            aria-selected="false"
+        >
+        {% trans "Preview" %}
+    </label>
+    <div
+        class="tab-content bg-base-100 border-base-content/20 p-6"
+        id="{{ widget.name }}-markdown-preview"
+        role="tabpanel"
+        aria-labelledby="{{ widget.name }}-markdown-preview-tab"
+    >
+        <div id="{{ widget.name }}-preview" class="preview min-h-48 p-3 w-full border border-base-content/20"></div>
+    </div>
+    {# /Preview tab #}
 </div>

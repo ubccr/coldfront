@@ -1,0 +1,70 @@
+{% comment %}
+DaisyUI badge component (variant, style, size, class, href, title). Renders a
+span.badge, or an <a> styled as a badge when href is set. Icons render through
+c-cfi.
+{% endcomment %}
+
+<c-vars
+    class=""
+    variant="secondary"
+    style=""
+    size="md"
+    href=""
+    title=""
+    :variantClasses="{
+        'neutral': 'badge-neutral',
+        'primary': 'badge-primary',
+        'secondary': 'badge-secondary',
+        'accent': 'badge-accent',
+        'info': 'badge-info',
+        'success': 'badge-success',
+        'warning': 'badge-warning',
+        'error': 'badge-error'
+    }"
+    :styleClasses="{
+        'outline': 'badge-outline',
+        'dash': 'badge-dash',
+        'soft': 'badge-soft',
+        'ghost': 'badge-ghost'
+    }"
+    :sizeClasses="{
+        'xs': 'badge-xs',
+        'sm': 'badge-sm',
+        'md': 'badge-md',
+        'lg': 'badge-lg',
+        'xl': 'badge-xl'
+    }"
+/>
+
+{% parse_icon attrs as i %}
+
+{% if href %}
+    <a
+        href="{{ href }}"
+        {% if title %}title="{{ title }}"{% endif %}
+        class="badge {{ variantClasses|get_dict_item:variant }} {{ styleClasses|get_dict_item:style }} {{ sizeClasses|get_dict_item:size }} hover:brightness-95 transition-all {{ class }}"
+        {{ attrs|strip_icon_attrs }}
+    >
+        {% if i.name and not i.end %}
+            <c-cfi n="{{ i.name }}" class="{{ i.css_class }}" />
+        {% endif %}
+        {{ slot }}
+        {% if i.name and i.end %}
+            <c-cfi n="{{ i.name }}" class="{{ i.css_class }}" />
+        {% endif %}
+    </a>
+{% else %}
+    <span
+        {% if title %}title="{{ title }}"{% endif %}
+        class="badge {{ variantClasses|get_dict_item:variant }} {{ styleClasses|get_dict_item:style }} {{ sizeClasses|get_dict_item:size }} {{ class }}"
+        {{ attrs|strip_icon_attrs }}
+    >
+        {% if i.name and not i.end %}
+            <c-cfi n="{{ i.name }}" class="{{ i.css_class }}" />
+        {% endif %}
+        {{ slot }}
+        {% if i.name and i.end %}
+            <c-cfi n="{{ i.name }}" class="{{ i.css_class }}" />
+        {% endif %}
+    </span>
+{% endif %}

@@ -1,26 +1,31 @@
-{% load crispy_forms_tags %}
+{% comment %}
+Wrapper around c-cf.field that adds a "Set to None" checkbox for fields listed
+in form.nullable_fields. The nullable checkbox is written to the form's
+_nullify field list so the nullable-field machinery can clear the value.
+{% endcomment %}
 {% load i18n %}
 
-{% cotton:vars :field="field" %}
-{% cotton:vars :form="form" %}
+<c-vars
+    :field="field"
+    :form="form"
+    layout="inline"
+/>
 
-{{ field|as_crispy_field }}
+<c-cf.field :field="field" :form="form" :layout="layout" />
 {% if field.name in form.nullable_fields %}
-    <div class="mb-3 row">
-        <div class="col-lg-3">&nbsp;</div>
-        <div class="col-lg-6">
-            <div class="form-check">
-                <input
-                    type="checkbox"
-                    class="form-check-input"
-                    name="_nullify"
-                    value="{{ field.name }}"
-                    id="nullify_{{ field.id_for_label }}"
-                >
-                <label class="form-check-label small text-muted" for="nullify_{{ field.id_for_label }}">
-                    {% trans "Set to None" %}
-                </label>
-            </div>
+    <div class="mb-3 sm:flex sm:items-center sm:gap-4">
+        <div class="sm:w-48 sm:shrink-0"></div>
+        <div class="flex items-center gap-2">
+            <input
+                type="checkbox"
+                class="checkbox"
+                name="_nullify"
+                value="{{ field.name }}"
+                id="nullify_{{ field.id_for_label }}"
+            >
+            <label class="text-muted text-sm" for="nullify_{{ field.id_for_label }}">
+                {% trans "Set to None" %}
+            </label>
         </div>
     </div>
 {% endif %}

@@ -1,0 +1,26 @@
+{% comment %}
+DaisyUI menu component (direction, size, class). Renders a ul.menu list.
+{% endcomment %}
+
+<c-vars
+    class=""
+    direction="vertical"
+    size="md"
+    :directionClasses="{
+        'vertical': 'menu-vertical',
+        'horizontal': 'menu-horizontal'
+    }"
+    :sizeClasses="{
+        'lg': 'menu-lg',
+        'md': 'menu-md',
+        'sm': 'menu-sm',
+        'xs': 'menu-xs'
+    }"
+/>
+
+<ul
+    class="menu {{ directionClasses|get_dict_item:direction }} {{ sizeClasses|get_dict_item:size }} {{ class }}"
+    {{ attrs }}
+>
+    {{ slot }}
+</ul>

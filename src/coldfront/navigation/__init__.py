@@ -27,10 +27,10 @@ __all__ = (
 class MenuItemButton:
     link: str
     title: str
-    icon_class: str
+    icon: str
     _url: Optional[str] = None
     permissions: Optional[Sequence[str]] = ()
-    color: Optional[str] = None
+    variant: Optional[str] = "ghost"
 
     def __post_init__(self):
         if self.link:
@@ -77,7 +77,7 @@ class MenuGroup:
 @dataclass
 class Menu:
     label: str
-    icon_class: str
+    icon: str
     groups: Sequence[MenuGroup]
 
     @property
@@ -108,7 +108,7 @@ def get_model_buttons(app_label, model_name, actions=("add",)):
             MenuItemButton(
                 link=f"{app_label}:{model_name}_add",
                 title="Add",
-                icon_class="fa-solid fa-plus",
+                icon="heroicon.plus",
                 permissions=[f"{app_label}.add_{model_name}"],
             )
         )
@@ -117,7 +117,7 @@ def get_model_buttons(app_label, model_name, actions=("add",)):
             MenuItemButton(
                 link=f"{app_label}:{model_name}_bulk_import",
                 title="Import",
-                icon_class="fa-solid fa-upload",
+                icon="heroicon.arrow-up-tray",
                 permissions=[f"{app_label}.add_{model_name}"],
             )
         )

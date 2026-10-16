@@ -1,8 +1,48 @@
-{% cotton:vars type="warning" %}
+{% comment %}
+DaisyUI alert component (class, variant, alertStyle, direction, icon, actions).
+Renders an alert box with an optional icon (via c-cfi) and an optional actions
+named slot.
+{% endcomment %}
 
-<div class="alert alert-{{ type }}" role="alert">
-    <span class="text-{{ type }} fs-1">
-        <i class="fa-solid fa-triangle-exclamation"></i>
-    </span>
+<c-vars
+    class=""
+    variant=""
+    :variantClasses="{
+        'info': 'alert-info',
+        'success': 'alert-success',
+        'warning': 'alert-warning',
+        'error': 'alert-error'
+    }"
+    alertStyle=""
+    :styleClasses="{
+        'outline': 'alert-outline',
+        'dash': 'alert-dash',
+        'soft': 'alert-soft'
+    }"
+    direction=""
+    :directionClasses="{
+        'vertical': 'alert-vertical',
+        'horizontal': 'alert-horizontal'
+    }"
+    actions=""
+/>
+
+{% parse_icon attrs as i %}
+
+<div
+    role="alert"
+    class="alert {{ variantClasses|get_dict_item:variant }} {{ styleClasses|get_dict_item:alertStyle }} {{ directionClasses|get_dict_item:direction }} {{ class }}"
+    {{ attrs|strip_icon_attrs }}
+>
+    {% if i.name %}
+        <c-cfi n="{{ i.name }}" class="text-lg {{ i.css_class }}" />
+    {% endif %}
+
     {{ slot }}
+
+    {% if actions %}
+        <div>
+            {{ actions }}
+        </div>
+    {% endif %}
 </div>

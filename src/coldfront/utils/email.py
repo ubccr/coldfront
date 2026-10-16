@@ -38,4 +38,4 @@ def send_email_template(context, template, subject, to):
     )
 
     msg.attach_alternative(html_content, "text/html")
-    msg.send()
+    msg.send(using="default")

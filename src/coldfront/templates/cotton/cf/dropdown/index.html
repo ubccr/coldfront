@@ -1,0 +1,30 @@
+{% comment %}
+DaisyUI dropdown component (placement, alignment, hover, open, class) with
+daisyUI class mappings hardcoded. placement="bottom" (daisyUI default) needs
+no class, so the prop defaults to "".
+{% endcomment %}
+
+<c-vars
+    class=""
+    placement=""
+    alignment=""
+    hover
+    open
+    :placementClasses="{
+        'top': 'dropdown-top',
+        'left': 'dropdown-left',
+        'right': 'dropdown-right'
+    }"
+    :alignmentClasses="{
+        'start': 'dropdown-start',
+        'center': 'dropdown-center',
+        'end': 'dropdown-end'
+    }"
+/>
+
+<div
+    class="dropdown {{ placementClasses|get_dict_item:placement }} {{ alignmentClasses|get_dict_item:alignment }}{% if hover %} dropdown-hover{% endif %}{% if open %} dropdown-open{% endif %} {{ class }}"
+    {{ attrs }}
+>
+    {{ slot }}
+</div>

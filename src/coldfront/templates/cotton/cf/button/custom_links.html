@@ -1,0 +1,63 @@
+{% comment %}
+DaisyUI custom links component — renders non-grouped links as buttons and
+grouped links as dropdowns. Receives `links` (list of {text, link, new_window,
+variant, disabled, error}) and `groups` (list of {name, variant, links[]}) from
+the `custom_links` templatetag. Variants are daisyUI colors (`ColorChoices`).
+Error links render disabled with a warning icon + tooltip.
+{% endcomment %}
+
+<c-vars
+    links
+    groups
+/>
+
+<div class="flex flex-wrap gap-2">
+    {% for item in links %}
+        {% if item.disabled %}
+            <c-cf.button
+                variant="secondary"
+                btnStyle="outline"
+                behavior="disabled"
+                disabled="disabled"
+                size="sm"
+                icon="heroicon.triangle-exclamation"
+                icon.size="sm"
+                title="{{ item.error }}"
+                aria-label="{{ item.name }}"
+            >{{ item.name }}</c-cf.button>
+        {% else %}
+            <c-cf.button
+                as="a"
+                href="{{ item.link }}"
+                size="sm"
+                variant="{{ item.variant }}"
+                target="{{ item.new_window|yesno:'_blank,' }}"
+            >{{ item.text }}</c-cf.button>
+        {% endif %}
+    {% endfor %}
+
+    {% for group in groups %}
+        <c-cf.dropdown alignment="end">
+            <c-cf.dropdown.trigger class="btn btn-sm btn-{{ group.variant }}">
+                {{ group.name }} <c-cfi n="heroicon.chevron-down" size="sm" />
+            </c-cf.dropdown.trigger>
+            <c-cf.dropdown.content>
+                <c-cf.menu class="p-1">
+                    {% for item in group.links %}
+                        {% if item.disabled %}
+                            <c-cf.menu.item disabled="disabled">
+                                <c-cfi n="heroicon.triangle-exclamation" size="sm" class="me-1" />
+                                {{ item.name }}
+                            </c-cf.menu.item>
+                        {% else %}
+                            <c-cf.menu.item
+                                href="{{ item.link }}"
+                                target="{{ item.new_window|yesno:'_blank,' }}"
+                            >{{ item.text }}</c-cf.menu.item>
+                        {% endif %}
+                    {% endfor %}
+                </c-cf.menu>
+            </c-cf.dropdown.content>
+        </c-cf.dropdown>
+    {% endfor %}
+</div>

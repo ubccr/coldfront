@@ -5,22 +5,23 @@
 
 from django.utils.translation import gettext as _
 
-from coldfront.plugins.navigation import PluginMenu, PluginMenuButton, PluginMenuItem
+from coldfront.plugins.navigation import PluginMenu, PluginMenuItem, PluginMenuItemButton
 
 items = (
     PluginMenuItem(
         link="plugins:dummy_plugin:dummy_model_list",
         link_text="Item 1",
         buttons=(
-            PluginMenuButton(
+            PluginMenuItemButton(
                 link="plugins:dummy_plugin:dummy_model_add",
                 title="Button 1",
-                icon_class="fa-solid fa-plus",
+                icon="heroicon.plus",
+                variant="primary",
             ),
-            PluginMenuButton(
+            PluginMenuItemButton(
                 link="plugins:dummy_plugin:dummy_model_add",
                 title="Button 2",
-                icon_class="fa-solid fa-plus",
+                icon="heroicon.plus",
             ),
         ),
     ),

@@ -4,7 +4,7 @@
 {% block content %}
     <c-cf.layout.panels>
         <c-slot name="left">
-            <c-cf.card.fields :object="object" only>
+            <c-cf.card.fields :object="object">
                 <c-cf.card.fields.item label="{% trans 'Allocation' %}">
                     {{ object.allocation|linkify }}
                 </c-cf.card.fields.item>
@@ -51,7 +51,7 @@
 
                 <c-cf.card.fields.item label="{% trans 'QOS Add' %}">
                     {% for qos in object.qos_add.all %}
-                        <c-cf.ui.badge link="{{ qos.get_absolute_url }}" :value="qos" />
+                        <c-cf.badge href="{{ qos.get_absolute_url }}">{{ qos }}</c-cf.badge>
                     {% empty %}
                         {{ ""|placeholder }}
                     {% endfor %}
@@ -59,18 +59,18 @@
 
                 <c-cf.card.fields.item label="{% trans 'QOS Remove' %}">
                     {% for qos in object.qos_remove.all %}
-                        <c-cf.ui.badge link="{{ qos.get_absolute_url }}" :value="qos" />
+                        <c-cf.badge href="{{ qos.get_absolute_url }}">{{ qos }}</c-cf.badge>
                     {% empty %}
                         {{ ""|placeholder }}
                     {% endfor %}
                 </c-cf.card.fields.item>
             </c-cf.card.fields>
 
-            <c-cf.card.tags :object="object" only />
+            <c-cf.card.tags :object="object" />
         </c-slot>
 
         <c-slot name="right">
-            <c-cf.card.custom_fields :object="object" only />
+            <c-cf.card.custom_fields :object="object" />
         </c-slot>
     </c-cf.layout.panels>
 {% endblock %}

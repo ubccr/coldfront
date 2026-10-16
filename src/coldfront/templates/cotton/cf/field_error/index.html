@@ -1,0 +1,18 @@
+{% comment %}
+Field errors for a bound form field. Props: field. Renders the errors list in a
+div whose id follows Django's convention ({ auto_id }_errors) so it can be
+referenced by aria-describedby.
+{% endcomment %}
+
+<c-vars
+    :field="field"
+    class=""
+/>
+
+{% if field.errors %}
+    <div id="{{ field.auto_id }}_errors" class="text-error mt-1.5 text-sm{{ class }}" role="alert">
+        {% for error in field.errors %}
+            <p>{{ error }}</p>
+        {% endfor %}
+    </div>
+{% endif %}

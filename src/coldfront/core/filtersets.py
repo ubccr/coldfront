@@ -393,7 +393,7 @@ class CustomLinkFilterSet(ChangeLoggedModelFilterSet):
             "weight",
             "group_name",
             "new_window",
-            "button_class",
+            "button_variant",
         )
 
     def search(self, queryset, name, value):

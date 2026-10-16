@@ -1,0 +1,29 @@
+{% load i18n %}
+
+<c-cf.form :form="form">
+    <c-slot name="form_message">
+        <c-cf.modal.title icon="heroicon.exclamation-triangle" icon_variant="primary" id="htmxModal_title">
+            {% trans 'Confirm' %}
+        </c-cf.modal.title>
+        <c-cf.modal.description>
+            {% blocktrans trimmed %}
+                Are you sure you want to <strong class="text-primary">{{ action }}</strong> {{ object_type }}
+                <strong>{{ object }}</strong>?
+            {% endblocktrans %}
+        </c-cf.modal.description>
+    </c-slot>
+
+    <c-slot name="buttons">
+        <c-cf.button
+            as="div"
+            btnStyle="outline"
+            onclick="this.closest('.modal').close()"
+            label="{% trans 'Cancel' %}"
+        />
+        <c-cf.button
+            type="submit"
+            variant="primary"
+            label="{% trans 'Confirm' %}"
+        />
+    </c-slot>
+</c-cf.form>

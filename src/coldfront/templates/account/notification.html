@@ -4,23 +4,20 @@
 {% block title %}{% trans "Notification" %}{% endblock %}
 
 {% block tabs %}
-    <div class="mb-3">
-        <div class="nav-tabs">
-            <ul class="nav nav-tabs" role="presentation">
-                <li class="nav-item" role="presentation">
-                    <a class="nav-link" href="{% url 'account:notification_list' %}">
-                        {% trans "Show All" %}
-                    </a>
-                </li>
-            </ul>
-        </div>
-    </div>
+    <c-cf.tabs>
+        <c-cf.tabs.tab
+            link
+            href="{% url 'account:notification_list' %}"
+            title="{% trans 'Show All' %}"
+            active
+        />
+    </c-cf.tabs>
 {% endblock %}
 
 {% block content %}
     <c-cf.layout.panels>
         <c-slot name="left">
-            <c-cf.card.fields header="{% trans 'Notification Details' %}" only>
+            <c-cf.card.fields title="{% trans 'Notification Details' %}">
                 <c-cf.card.fields.item label="{% trans 'Subject' %}">
                     {{ notification.get_subject }}
                 </c-cf.card.fields.item>
@@ -46,13 +43,13 @@
                 {% if notification.url %}
                     <c-cf.card.fields.item label="{% trans 'Link' %}">
                         <c-cf.button
-                            type="link"
-                            url="{{ notification.url }}"
-                            label="{% trans 'View Related' %}"
-                            icon="fa-solid fa-arrow-up-right-from-square"
-                            css_class="btn-outline-primary"
-                            small
-                        />
+                            as="a"
+                            href="{{ notification.url }}"
+                            icon="heroicon.arrow-top-right-on-square"
+                            variant="primary"
+                            btnStyle="outline"
+                            size="sm"
+                        >{% trans "View Related" %}</c-cf.button>
                     </c-cf.card.fields.item>
                 {% endif %}
             </c-cf.card.fields>

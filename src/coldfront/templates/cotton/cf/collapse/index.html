@@ -1,0 +1,31 @@
+{% comment %}
+DaisyUI collapse component (class, title, open, style). Renders a collapse with
+a checkbox toggle, title (prop or titleSlot named slot), and content region.
+{% endcomment %}
+
+<c-vars
+    class=""
+    title=""
+    open
+    style=""
+    :styleClasses="{
+        'arrow': 'collapse-arrow',
+        'plus': 'collapse-plus'
+    }"
+    titleSlot=""
+/>
+
+<div
+    class="collapse {{ styleClasses|get_dict_item:style }} {% if open %}collapse-open{% endif %} {{ class }}"
+    {{ attrs }}
+>
+    <input type="checkbox" {% if open %}checked{% endif %} {% if title %}aria-label="{{ title }}"{% endif %}>
+    {% if title %}
+        <div class="collapse-title font-semibold">{{ title }}</div>
+    {% else %}
+        {{ titleSlot }}
+    {% endif %}
+    <div class="collapse-content">
+        {{ slot }}
+    </div>
+</div>

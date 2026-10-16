@@ -1,0 +1,54 @@
+{% load i18n %}
+
+<c-cf.form :form="form">
+    <c-slot name="form_message">
+        <c-cf.modal.title icon="heroicon.trash" icon_variant="error" id="htmxModal_title">
+            {% trans 'Confirm Deletion' %}
+        </c-cf.modal.title>
+        <c-cf.modal.description>
+            {% blocktrans trimmed %}
+                Are you sure you want to <strong class="text-error">delete</strong> {{ object_type }}
+                <strong>{{ object }}</strong>?
+            {% endblocktrans %}
+        </c-cf.modal.description>
+        {% if dependent_objects %}
+            <p>{% trans "The following objects will be deleted as a result of this action." %}</p>
+            <div class="mt-4 space-y-2">
+                {% for model, instances in dependent_objects.items %}
+                    {% with object_count=instances|length %}
+                        <c-cf.collapse
+                            class="bg-base-200 rounded-box"
+                            title="{{ object_count }} {% if object_count == 1 %}{{ model|meta:'verbose_name' }}{% else %}{{ model|meta:'verbose_name_plural' }}{% endif %}"
+                        >
+                            <div class="space-y-1">
+                                {% for instance in instances %}
+                                    {% with url=instance.get_absolute_url %}
+                                        <a
+                                            {% if url %}href="{{ url }}"{% endif %}
+                                            class="link link-hover"
+                                        >{{ instance }}</a>
+                                    {% endwith %}
+                                {% endfor %}
+                            </div>
+                        </c-cf.collapse>
+                    {% endwith %}
+                {% endfor %}
+            </div>
+        {% endif %}
+    </c-slot>
+
+    <c-slot name="buttons">
+        <c-cf.button
+            as="div"
+            btnStyle="outline"
+            onclick="this.closest('.modal').close()"
+            label="{% trans 'Cancel' %}"
+        />
+        <c-cf.button
+            type="submit"
+            variant="error"
+            icon="heroicon.trash"
+            label="{% trans 'Delete' %}"
+        />
+    </c-slot>
+</c-cf.form>

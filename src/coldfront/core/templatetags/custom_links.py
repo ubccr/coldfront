@@ -4,38 +4,21 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from django import template
-from django.utils.html import escape
 from django.utils.safestring import mark_safe
+from django_cotton import render_component
 
-from coldfront.core.choices import button_class
 from coldfront.core.models import CustomLink
 
 register = template.Library()
-
-LINK_BUTTON = '<a href="{}"{} class="btn btn-sm btn-{}">{}</a>\n'
-
-GROUP_BUTTON = """
-<div class="dropdown">
-    <button
-        class="btn btn-sm btn-{} dropdown-toggle"
-        type="button"
-        data-bs-toggle="dropdown"
-        aria-expanded="false">
-        {}
-    </button>
-    <ul class="dropdown-menu dropdown-menu-end">
-        {}
-    </ul>
-</div>
-"""
-
-GROUP_LINK = '<li><a class="dropdown-item" href="{}"{}>{}</a></li>\n'
 
 
 @register.simple_tag(takes_context=True)
 def custom_links(context, obj):
     """
     Render all applicable custom links for the given object.
+
+    Builds a plain data structure and delegates the markup to the
+    `c-cf.button.custom_links` cotton component.
     """
 
     from coldfront.core.models import ObjectType
@@ -53,49 +36,39 @@ def custom_links(context, obj):
         "user": context["user"],
         "perms": context["perms"],
     }
-    template_code = ""
-    group_names = {}
+
+    links = []  # non-grouped links
+    groups = {}  # group name -> {name, variant, links[]}
 
     for cl in custom_links:
-        # Organize custom links by group
-        if cl.group_name and cl.group_name in group_names:
-            group_names[cl.group_name].append(cl)
-        elif cl.group_name:
-            group_names[cl.group_name] = [cl]
+        item = {
+            "variant": cl.button_variant,
+            "new_window": cl.new_window,
+            "name": cl.name,
+        }
+        try:
+            rendered = cl.render(link_context)
+            if not rendered:
+                continue
+            item["text"] = rendered["text"]
+            item["link"] = rendered["link"]
+        except Exception as e:
+            item["disabled"] = True
+            item["error"] = str(e)
 
-        # Add non-grouped links
-        else:
-            btn_class = button_class(cl.button_class)
-            try:
-                if rendered := cl.render(link_context):
-                    template_code += LINK_BUTTON.format(
-                        rendered["link"], rendered["link_target"], btn_class, rendered["text"]
-                    )
-            except Exception as e:
-                template_code += (
-                    f'<a class="btn btn-sm btn-outline-secondary" disabled="disabled" title="{e}">'
-                    f'<i class="fa-solid fa-triangle-exclamation"></i> {cl.name}</a>\n'
-                )
-
-    # Add grouped links to template
-    for group, links in group_names.items():
-        links_rendered = []
-
-        for cl in links:
-            try:
-                if rendered := cl.render(link_context):
-                    links_rendered.append(
-                        GROUP_LINK.format(rendered["link"], rendered["link_target"], rendered["text"])
-                    )
-            except Exception as e:
-                links_rendered.append(
-                    f'<li><a class="dropdown-item" disabled="disabled" title="{e}">'
-                    f'<span class="text-muted"><i class="fa-solid fa-triangle-exclamation"></i> {cl.name}</span></a></li>'
-                )
-
-        if links_rendered:
-            template_code += GROUP_BUTTON.format(
-                button_class(links[0].button_class), escape(group), "".join(links_rendered)
+        if cl.group_name:
+            group = groups.setdefault(
+                cl.group_name,
+                {"name": cl.group_name, "variant": cl.button_variant, "links": []},
             )
+            group["links"].append(item)
+        else:
+            links.append(item)
 
-    return mark_safe(template_code)
+    return mark_safe(
+        render_component(
+            context["request"],
+            "cf.button.custom_links",
+            {"links": links, "groups": list(groups.values())},
+        )
+    )

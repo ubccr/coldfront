@@ -5,9 +5,7 @@
 
 SEARCH_RESULT_ATTRS = """
 {% for name, value in record.display_attrs.items %}
-  <span class="badge text-bg-secondary"
-      {% if value|length > 40 %} data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ value }}"{% endif %}
-    >
+  {% cotton cf.badge variant="secondary" %}
     {{ name|bettertitle }}:
     {% with url=value.get_absolute_url %}
       {% if url %}<a href="{{ url }}">{% endif %}
@@ -18,6 +16,6 @@ SEARCH_RESULT_ATTRS = """
       {% endif %}
       {% if url %}</a>{% endif %}
     {% endwith %}
-  </span>
+  {% endcotton %}
 {% endfor %}
 """

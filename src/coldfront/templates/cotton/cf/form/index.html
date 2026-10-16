@@ -1,31 +1,71 @@
-{% load crispy_forms_tags %}
+{% comment %}
+Unified form component: owns the wrapper div, <form> tag, csrf token, hidden
+inputs, fields, and the buttons row. Renders the fields via c-cf.form.fields
+(or a caller-provided fields slot for custom layouts).
+
+Props:
+  form                the form to render
+  action              form action (default "" = current URL)
+  method              form method (default post)
+  layout              "inline" (default) or "stacked" (used for filter panels)
+  nullify             render nullable (set-to-None) checkboxes for fields in
+                      form.nullable_fields
+  show_custom_fields  render the Custom Fields section
+  wrapper_class       extra classes on the outer wrapper div
+  class               extra classes on the <form> element (appended to mt-5)
+  form_message        optional info alert rendered above the fields
+  buttons             named slot: form action buttons
+  fields              named slot: custom field markup (overrides c-cf.form.fields)
+  hidden              named slot: extra hidden inputs (return_url, import_method, etc.)
+
+Extra (un-declared) attrs render on the <form> element (hx-* etc.).
+{% endcomment %}
 {% load i18n %}
 
-{% cotton:vars show_custom_fields=True %}
+<c-vars
+    :form="form"
+    action=""
+    method="post"
+    layout="inline"
+    :nullify="False"
+    :show_custom_fields="True"
+    wrapper_class="space-y-4 max-w-5xl mx-auto"
+    class=""
+    form_message=""
+    buttons=""
+    fields=""
+    hidden=""
+/>
 
-{% if form_message %}
-    <div class="row">
-        <div class="col-6 offset-3 mb-3 h4">
-            <c-cf.alert type="info">{{ form_message }}</c-cf.alert>
+<div class="{{ wrapper_class }}">
+    <form
+        action="{{ action }}"
+        method="{{ method }}"
+        {% if form.is_multipart %}enctype="multipart/form-data"{% endif %}
+        class="mt-5 {{ class }}"
+        {{ attrs }}
+    >
+        {% if method == "post" %}{% csrf_token %}{% endif %}
+        {{ hidden }}
+        {% if form_message %}
+            <div class="mb-5">
+                {{ form_message }}
+            </div>
+        {% endif %}
+        {% if fields %}
+            {{ fields }}
+        {% else %}
+            <div id="form_fields" hx-disinherit="hx-select hx-swap">
+                <c-cf.form.fields
+                    :form="form"
+                    :layout="layout"
+                    :nullify="nullify"
+                    :show_custom_fields="show_custom_fields"
+                />
+            </div>
+        {% endif %}
+        <div class="flex justify-end gap-2 mt-4">
+            {{ buttons }}
         </div>
-    </div>
-{% endif %}
-
-{% crispy form %}
-
-{% if show_custom_fields and form.custom_fields %}
-    <fieldset>
-        <legend class="col-9 offset-3">{% trans "Custom Fields" %}</legend>
-
-        {% for group, fields in form.custom_field_groups.items %}
-            {% if group %}
-                <div class="row">
-                    <h3 class="col-9 offset-3 mb-3 h4">{{ group }}</h3>
-                </div>
-            {% endif %}
-            {% for name in fields %}
-                {{ form|getfield:name|as_crispy_field }}
-            {% endfor %}
-        {% endfor %}
-    </fieldset>
-{% endif %}
+    </form>
+</div>

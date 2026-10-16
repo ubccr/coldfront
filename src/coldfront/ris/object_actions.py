@@ -25,26 +25,22 @@ class UnlinkChildren(ObjectAction):
 
     url_name = None
     label = _("Remove Selected")
+    icon = "heroicon.trash"
+    variant = "error"
+    type = "submit"
+    submit_name = "_delete"
     multi = True
     permissions_required = {"unlink"}
-    template_name = "cf.button.bulk_delete"
 
     @classmethod
     def render(cls, context, obj, **kwargs):
         request = context["request"]
         # obj is the child model class; the parent Project is in context.
         project = context["object"]
-        ctx = {
-            "perms": context["perms"],
-            "request": request,
-            "url": reverse(cls.url_name, kwargs={"pk": project.pk}),
-            "url_params": cls.get_url_params(context),
-            "label": cls.label,
-            **cls.get_context(context, obj),
-            **kwargs,
-        }
-
-        return render_component(request, cls.template_name, ctx)
+        url = reverse(cls.url_name, kwargs={"pk": project.pk})
+        attrs = cls.build_attrs(context, obj, url)
+        attrs.update(**kwargs)
+        return render_component(request, cls.template_name, attrs)
 
 
 class UnlinkPublications(UnlinkChildren):

@@ -1,4 +1,4 @@
-{% extends 'generic/object.html' %}
+{% extends 'core/base.html' %}
 {% load i18n %}
 
 {% block title %}{{ plugin.title_long }}{% endblock %}
@@ -11,8 +11,8 @@
 {% endblock breadcrumbs %}
 
 {% block subtitle %}
-    <span class="text-secondary fs-5">
-        <c-cf.ui.checkmark :value="plugin.is_local" />
+    <span class="inline-flex items-center text-secondary text-lg">
+        <c-cf.checkmark :value="plugin.is_local" /> &nbsp;
         {% if plugin.is_local %}
             v{{ plugin.installed_version }} {% trans "installed" %}
         {% else %}
@@ -23,16 +23,12 @@
 
 {% block controls %}{% endblock %}
 
-{% block tabs %}
-    <c-cf.tabs>
-        <c-cf.tabs.tab id="overview" label="{% trans 'Overview' %}" active />
-    </c-cf.tabs>
-{% endblock tabs %}
+{% block tabs %}{% endblock tabs %}
 
 {% block content %}
     <c-cf.layout.panels>
         <c-slot name="left">
-            <c-cf.card.fields header="{% trans 'Plugin Details' %}" only>
+            <c-cf.card.fields title="{% trans 'Plugin Details' %}">
                 <c-cf.card.fields.item label="{% trans 'Name' %}">
                     {{ plugin.title_long }}
                 </c-cf.card.fields.item>
@@ -58,13 +54,13 @@
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label="{% trans 'Local' %}">
-                    <c-cf.ui.checkmark :value="plugin.is_local" />
+                    <c-cf.checkmark :value="plugin.is_local" />
                 </c-cf.card.fields.item>
             </c-cf.card.fields>
         </c-slot>
 
         <c-slot name="right">
-            <c-cf.card.table :table="table" header="{% trans 'Version History' %}" />
+            <c-cf.card.table :table="table" title="{% trans 'Version History' %}" />
         </c-slot>
     </c-cf.layout.panels>
 {% endblock %}

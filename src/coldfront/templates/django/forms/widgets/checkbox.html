@@ -1,0 +1,10 @@
+{# Include a hidden field of the same name so unchecked checkboxes are always submitted. #}
+<input type="hidden" name="{{ widget.name }}" value="">
+<input
+    type="checkbox"
+    name="{{ widget.name }}"
+    {% if widget.value != None %}value="{{ widget.value|stringformat:'s' }}"{% endif %}
+    {% include "django/forms/widgets/attrs.html" %}
+    {% if widget.required %}aria-required="true"{% endif %}
+    class="toggle toggle-success toggle-md{% if 'class' in widget.attrs %} {{ widget.attrs.class }}{% endif %}"
+>

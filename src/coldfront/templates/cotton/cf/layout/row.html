@@ -1,3 +1,11 @@
-<div class="row {{ css_class }}">
+<c-vars
+    cols="1"
+    class=""
+/>
+
+<div
+    {{ attrs }}
+    class="grid grid-cols-1 gap-4 {% if cols == '2' %}lg:grid-cols-2{% elif cols == '3' %}lg:grid-cols-3{% elif cols == '4' %}lg:grid-cols-4{% endif %} {{ class }}"
+>
     {{ slot }}
 </div>

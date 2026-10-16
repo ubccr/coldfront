@@ -214,7 +214,7 @@ class InvoiceLineItem(ChangeLoggedModel):
     source; free-allowance, discount, and credit lines carry negative amounts.
 
     The ``source`` is a GenericForeignKey to the billing source (e.g. a
-    ``StorageQuota`` or ``SlurmAccount``), wired up in later phases.
+    ``StorageQuota`` or ``SlurmAccount``).
     """
 
     invoice = models.ForeignKey(
@@ -423,9 +423,6 @@ class Rate(PrimaryModel):
     def unit_display(self):
         return _unit_display(self.unit_format, self.unit)
 
-    def get_status_color(self):
-        return "green"
-
 
 class FreeAllowance(PrimaryModel):
     """
@@ -503,9 +500,6 @@ class FreeAllowance(PrimaryModel):
 
     def __str__(self):
         return self.name
-
-    def get_status_color(self):
-        return "green"
 
     @property
     def quantity_display(self):
@@ -599,6 +593,3 @@ class Discount(PrimaryModel):
 
     def __str__(self):
         return self.name
-
-    def get_status_color(self):
-        return "green"

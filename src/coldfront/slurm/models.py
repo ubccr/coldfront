@@ -193,9 +193,6 @@ class SlurmQOS(OrganizationalModel):
         verbose_name = _("slurm qos")
         verbose_name_plural = _("slurm qos")
 
-    def get_status_color(self):
-        return "green"
-
 
 class SlurmCluster(AllocatableResourceMixin, PrimaryModel):
     """
@@ -351,9 +348,6 @@ class SlurmCluster(AllocatableResourceMixin, PrimaryModel):
 
     def __str__(self):
         return self.name
-
-    def get_status_color(self):
-        return "green"
 
     def clean(self):
         """Validate priority_flags against the PriorityFlags choiceset."""
@@ -625,9 +619,6 @@ class SlurmPartition(AllocatableResourceMixin, PrimaryModel):
     def __str__(self):
         return f"{self.name} ({self.cluster.name})"
 
-    def get_status_color(self):
-        return "green"
-
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(f"{self.cluster.name}-{self.name}")
@@ -728,9 +719,6 @@ class SlurmAccount(PrimaryModel):
 
     def __str__(self):
         return f"{self.name} ({self.cluster.name})"
-
-    def get_status_color(self):
-        return "green"
 
     def remaining_sus(self):
         """SU remaining for this account: grant minus consumed usage.
@@ -956,9 +944,6 @@ class SlurmAssociation(AllocationExtensionMixin, PrimaryModel):
         acct = self.slurm_account
         return f"Association {acct.name if acct else '?'} -> {self.allocation}"
 
-    def get_status_color(self):
-        return "green"
-
 
 class SlurmUser(PrimaryModel):
     """
@@ -1047,9 +1032,6 @@ class SlurmUser(PrimaryModel):
 
     def __str__(self):
         return f"{self.user.username} ({self.cluster.name})"
-
-    def get_status_color(self):
-        return "green"
 
 
 class SlurmAccountUsage(BaseModel):

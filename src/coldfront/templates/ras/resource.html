@@ -9,13 +9,12 @@
 {% block content %}
     <c-cf.layout.panels>
         <c-slot name="left">
-            <c-cf.card.fields :object="object" only>
+            <c-cf.card.fields :object="object">
                 <c-cf.card.fields.item label="{% trans 'Resource Type' %}">
-                    <c-cf.ui.badge
-                        link="{{ object.resource_type.get_absolute_url }}"
-                        :value="object.resource_type"
-                        :color="object.resource_type.color"
-                    />
+                    <c-cf.badge
+                        variant="{{ object.resource_type.color }}"
+                        href="{{ object.resource_type.get_absolute_url }}"
+                    >{{ object.resource_type }}</c-cf.badge>
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label="{% trans 'Description' %}">
@@ -23,23 +22,23 @@
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label="{% trans 'Status' %}">
-                    <c-cf.ui.badge :value="object.status" :bg_color="object.get_status_color" />
+                    <c-cf.badge variant="{{ object.get_status_color }}">{{ object.status }}</c-cf.badge>
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label="{% trans 'Locked' %}">
-                    <c-cf.ui.checkmark :value="object.locked" />
+                    <c-cf.checkmark :value="object.locked" />
                 </c-cf.card.fields.item>
             </c-cf.card.fields>
 
-            <c-cf.card.tags :object="object" only />
-            <c-cf.card.related_objects :object="object" :models="related_models" only />
+            <c-cf.card.tags :object="object" />
+            <c-cf.card.related_objects :object="object" :models="related_models" />
         </c-slot>
 
         <c-slot name="right">
-            <c-cf.card.custom_fields :object="object" only />
+            <c-cf.card.custom_fields :object="object" />
         </c-slot>
         <c-slot name="bottom">
-            <c-cf.card.schema :object="object" only />
+            <c-cf.card.schema :object="object" />
         </c-slot>
     </c-cf.layout.panels>
 {% endblock %}

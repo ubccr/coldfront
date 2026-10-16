@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import django.db.models.deletion
-from django.conf import settings
 from django.db import migrations, models
 
 import coldfront.models.deletion
@@ -12,23 +10,9 @@ import coldfront.models.deletion
 class Migration(migrations.Migration):
     initial = True
 
-    dependencies = [
-        ("users", "0001_initial"),
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-    ]
+    dependencies = []
 
     operations = [
-        migrations.CreateModel(
-            name="UserToken",
-            fields=[],
-            options={
-                "verbose_name": "token",
-                "proxy": True,
-                "indexes": [],
-                "constraints": [],
-            },
-            bases=("users.token",),
-        ),
         migrations.CreateModel(
             name="ThirdPartyAccount",
             fields=[
@@ -71,21 +55,11 @@ class Migration(migrations.Migration):
                         verbose_name="last synced",
                     ),
                 ),
-                (
-                    "user",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE,
-                        related_name="third_party_accounts",
-                        to=settings.AUTH_USER_MODEL,
-                        verbose_name="user",
-                    ),
-                ),
             ],
             options={
                 "verbose_name": "third-party account",
                 "verbose_name_plural": "third-party accounts",
                 "ordering": ("provider",),
-                "unique_together": {("provider", "account_id"), ("user", "provider")},
             },
             bases=(coldfront.models.deletion.DeleteMixin, models.Model),
         ),

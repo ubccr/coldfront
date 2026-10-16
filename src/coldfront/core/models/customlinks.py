@@ -11,9 +11,10 @@ from django.db import models
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.core.choices import CustomLinkButtonClassChoices
+from coldfront.core.choices import ColorChoices
 from coldfront.models import ChangeLoggedModel
 from coldfront.models.features import CloningMixin
+from coldfront.models.fields import ColorField
 from coldfront.utils.html import clean_html
 from coldfront.utils.jinja2 import render_jinja2
 
@@ -57,12 +58,10 @@ class CustomLink(CloningMixin, ChangeLoggedModel):
         blank=True,
         help_text=_("Links with the same group will appear as a dropdown menu"),
     )
-    button_class = models.CharField(
-        verbose_name=_("button class"),
-        max_length=30,
-        choices=CustomLinkButtonClassChoices,
-        default=CustomLinkButtonClassChoices.DEFAULT,
-        help_text=_("The class of the first link in a group will be used for the dropdown button"),
+    button_variant = ColorField(
+        verbose_name=_("button variant"),
+        default=ColorChoices.SECONDARY,
+        help_text=_("The variant color of the button. The first link in a group will be used for the dropdown button"),
     )
     new_window = models.BooleanField(
         verbose_name=_("new window"),
@@ -75,7 +74,7 @@ class CustomLink(CloningMixin, ChangeLoggedModel):
         "enabled",
         "weight",
         "group_name",
-        "button_class",
+        "button_variant",
         "new_window",
     )
 

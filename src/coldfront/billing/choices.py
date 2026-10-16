@@ -19,7 +19,7 @@ class InvoiceStatusChoices(ChoiceSet):
         (STATUS_DRAFT, _("Draft"), "secondary"),
         (STATUS_INVOICED, _("Invoiced"), "primary"),
         (STATUS_PAID, _("Paid"), "success"),
-        (STATUS_VOID, _("Void"), "danger"),
+        (STATUS_VOID, _("Void"), "error"),
     ]
 
 

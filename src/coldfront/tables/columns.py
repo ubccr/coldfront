@@ -20,6 +20,7 @@ from django.utils.dateparse import parse_date
 from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
+from django_cotton import render_component
 from django_tables2.columns import library
 from django_tables2.utils import Accessor
 
@@ -109,29 +110,32 @@ class DateTimeColumn(tables.Column):
 #
 
 
-class BooleanColumn(tables.Column):
+def render_boolean(request, value):
     """
-    Custom implementation of BooleanColumn to render a nicely-formatted checkmark or X icon instead of a Unicode
-    character.
+    Render a boolean value through the shared `c-cf.checkmark` component.
+
+    The component handles all three states: None → em-dash placeholder, true →
+    check icon, false → X icon. Requires a request for cotton's RequestContext.
+    """
+    return mark_safe(render_component(request, "cf.checkmark", {"value": value}))
+
+
+class BooleanColumn(tables.TemplateColumn):
+    """
+    Custom implementation of BooleanColumn to render a checkmark or X icon
+    through the shared `c-cf.checkmark` component instead of a Unicode character.
     """
 
-    TRUE_MARK = mark_safe('<span class="text-success"><i class="fa-solid fa-square-check"></i></span>')
-    FALSE_MARK = mark_safe('<span class="text-danger"><i class="fa-solid fa-rectangle-xmark"></i></span>')
-    EMPTY_MARK = mark_safe('<span class="text-muted">&mdash;</span>')  # Placeholder
+    template_code = """
+    {% cotton cf.checkmark :value="value" /%}
+    """
 
-    def __init__(self, *args, true_mark=TRUE_MARK, false_mark=FALSE_MARK, **kwargs):
-        self.true_mark = true_mark
-        self.false_mark = false_mark
-        super().__init__(*args, **kwargs)
-
-    def render(self, value):
-        if value is None:
-            return self.EMPTY_MARK
-        if value and self.true_mark:
-            return self.true_mark
-        if not value and self.false_mark:
-            return self.false_mark
-        return self.EMPTY_MARK
+    def __init__(self, *args, **kwargs):
+        super().__init__(
+            self.template_code,
+            *args,
+            **kwargs,
+        )
 
     def value(self, value):
         return str(value)
@@ -140,6 +144,11 @@ class BooleanColumn(tables.Column):
 class ToggleColumn(tables.CheckBoxColumn):
     """
     Extend CheckBoxColumn to add a "toggle all" checkbox in the column header.
+
+    Each row checkbox gets an accessible name ("Select <record>") via
+    ``td__input`` — ``computed_values`` resolves the callable against the row
+    ``record`` so screen readers announce which object is being selected
+    (WCAG 4.1.2). The header toggle-all checkbox carries its own aria-label.
     """
 
     def __init__(self, *args, **kwargs):
@@ -148,20 +157,28 @@ class ToggleColumn(tables.CheckBoxColumn):
         if "attrs" not in kwargs:
             kwargs["attrs"] = {
                 "th": {
-                    "class": "w-1",
+                    "class": "w-10",
                     "aria-label": _("Select all"),
                 },
                 "td": {
-                    "class": "w-1",
+                    "class": "w-10",
                 },
-                "input": {"class": "form-check-input"},
+                "input": {"class": "checkbox checkbox-xs"},
+                "td__input": {
+                    "class": "checkbox checkbox-xs",
+                    "aria-label": lambda record, value: _("Select %s") % record,
+                },
             }
         super().__init__(*args, default=default, visible=visible, **kwargs)
 
     @property
     def header(self):
         title_text = _("Toggle all")
-        return format_html('<input type="checkbox" class="toggle form-check-input" title="{}" />', title_text)
+        return format_html(
+            '<input type="checkbox" class="cf-toggle-all checkbox checkbox-xs" title="{}" aria-label="{}" />',
+            title_text,
+            title_text,
+        )
 
 
 class MPTTColumn(tables.TemplateColumn):
@@ -171,13 +188,15 @@ class MPTTColumn(tables.TemplateColumn):
 
     template_code = """
         {% if not table.order_by %}
-          {% for i in record.level|as_range %}<i class="fa-regular fa-circle-dot"></i>{% endfor %}
+          {% for i in record.level|as_range %}{% cotton cf.cfi n="tablericon.circle-dot" size="xs" /%}{% endfor %}
         {% endif %}
         <a href="{{ record.get_absolute_url }}">{{ record.name }}</a>
     """
 
     def __init__(self, *args, **kwargs):
-        super().__init__(template_code=self.template_code, attrs={"td": {"class": "text-nowrap"}}, *args, **kwargs)
+        super().__init__(
+            template_code=self.template_code, attrs={"td": {"class": "whitespace-nowrap"}}, *args, **kwargs
+        )
 
     def value(self, value):
         return value
@@ -226,7 +245,7 @@ class TagColumn(tables.TemplateColumn):
 
     template_code = """
     {% for tag in value.all %}
-        {% cotton cf.ui.badge :value="tag" :link="{% url url_name %}?tag={{ tag.slug }}" :color="tag.color" only /%}
+        {% cotton cf.badge variant="{{ tag.color }}" href="{% url url_name %}?tag={{ tag.slug }}" %}{{ tag }}{% endcotton %}
     {% empty %}
         <span class="text-muted">&mdash;</span>
     {% endfor %}
@@ -263,18 +282,35 @@ class ActionsColumn(tables.Column):
         direct button link and icon (default: True)
     """
 
-    attrs = {"td": {"class": "text-end text-nowrap noprint p-1"}}
+    # The column header is intentionally blank (icon-only actions); give the
+    # empty <th> an accessible name so screen readers announce the column
+    # (WCAG 4.1.2).
+    attrs = {
+        "td": {"class": "text-end whitespace-nowrap print:hidden p-1"},
+        "th": {"class": "w-10", "aria-label": _("Actions")},
+    }
     empty_values = ()
     actions = {
-        "edit": ActionsItem("Edit", "pencil", "change", "warning"),
-        "delete": ActionsItem("Delete", "trash-can", "delete", "danger"),
-        "changelog": ActionsItem("Changelog", "history", "change"),
+        "edit": ActionsItem("Edit", "heroicon.pencil", "change", "primary"),
+        "delete": ActionsItem("Delete", "heroicon.trash", "delete", "error"),
+        "changelog": ActionsItem("Changelog", "heroicon.clock", "change", "info"),
     }
 
-    def __init__(self, *args, actions=("edit", "delete", "changelog"), extra_buttons="", split_actions=True, **kwargs):
+    def __init__(
+        self,
+        *args,
+        actions=("edit", "delete", "changelog"),
+        extra_buttons="",
+        extra_actions=None,
+        split_actions=True,
+        **kwargs,
+    ):
+        # The actions column has no underlying sortable field, so it is never orderable.
+        kwargs.setdefault("orderable", False)
         super().__init__(*args, **kwargs)
 
         self.extra_buttons = extra_buttons
+        self.extra_actions = extra_actions
         self.split_actions = split_actions
 
         # Determine which actions to enable
@@ -293,64 +329,39 @@ class ActionsColumn(tables.Column):
         if not isinstance(record, model) or not getattr(record, "pk", None):
             return ""
 
-        if request := getattr(table, "context", {}).get("request"):
-            return_url = request.GET.get("return_url", request.get_full_path())
-            url_appendix = f"?return_url={quote(return_url)}"
-        else:
-            url_appendix = ""
+        # render_component needs a request (for RequestContext); tables rendered through
+        # views always carry one in table.context.
+        request = getattr(table, "context", {}).get("request")
+        if request is None:
+            return ""
+        return_url = request.GET.get("return_url", request.get_full_path())
+        url_appendix = f"?return_url={quote(return_url)}"
 
-        html = ""
-
-        # Compile actions menu
-        button = None
-        dropdown_class = "secondary"
-        dropdown_links = []
         user = getattr(request, "user", AnonymousUser())
-        for idx, (action, attrs) in enumerate(self.actions.items()):
+
+        # Compile the permission-visible actions into render-ready items.
+        items = []
+        for action, attrs in self.actions.items():
             permission = get_permission_for_model(model, attrs.permission)
             if attrs.permission is None or user.has_perm(permission):
                 url = get_action_url(model, action=action, kwargs={"pk": record.pk})
+                items.append(
+                    {
+                        "title": attrs.title,
+                        "icon": attrs.icon,
+                        "url": url + url_appendix,
+                        "css_class": attrs.css_class,
+                    }
+                )
 
-                # Render a separate button if a) only one action exists, or b) if split_actions is True
-                if len(self.actions) == 1 or (self.split_actions and idx == 0):
-                    dropdown_class = attrs.css_class
-                    button = (
-                        f'<a class="btn btn-sm btn-{attrs.css_class}" href="{url}{url_appendix}" title="{attrs.title}" type="button" '
-                        f'aria-label="{attrs.title}">'
-                        f'<i class="fa-solid fa-{attrs.icon}"></i></a>'
-                    )
-
-                # Add dropdown menu items
-                else:
-                    dropdown_links.append(
-                        f'<li><a class="dropdown-item" href="{url}{url_appendix}">'
-                        f'<i class="fa-solid fa-{attrs.icon}"></i> {attrs.title}</a></li>'
-                    )
-
-        # Create the actions dropdown menu
-        toggle_text = _("Toggle Dropdown")
-        if button and dropdown_links:
-            html += (
-                f'<span class="btn-group dropdown">'
-                f"  {button}"
-                f'  <a class="btn btn-sm btn-{dropdown_class} dropdown-toggle" type="button" data-bs-toggle="dropdown" '
-                f'style="padding-left: 2px">'
-                f'  <span class="visually-hidden">{toggle_text}</span></a>'
-                f'  <ul class="dropdown-menu">{"".join(dropdown_links)}</ul>'
-                f"</span>"
-            )
-        elif button:
-            html += button
-        elif dropdown_links:
-            html += (
-                f'<span class="btn-group dropdown">'
-                f'  <a class="btn btn-sm btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">'
-                f'  <span class="visually-hidden">{toggle_text}</span></a>'
-                f'  <ul class="dropdown-menu">{"".join(dropdown_links)}</ul>'
-                f"</span>"
-            )
+        if self.extra_actions:
+            if callable(self.extra_actions):
+                extra_actions = self.extra_actions(record, user, request)
+                if isinstance(extra_actions, (list, tuple)):
+                    items.extend(extra_actions)
 
         # Render any extra buttons from template code or a callable
+        extra_html = ""
         if self.extra_buttons:
             if callable(self.extra_buttons):
                 extra_html = self.extra_buttons(record, user, request)
@@ -359,37 +370,48 @@ class ActionsColumn(tables.Column):
                 context = getattr(table, "context", Context())
                 context.update({"record": record})
                 extra_html = template.render(context)
-            html = extra_html + html
 
-        return mark_safe(html)
+        return mark_safe(
+            render_component(
+                request,
+                "cf.table.actions_column",
+                {
+                    "items": items,
+                    "split_actions": self.split_actions,
+                    "extra_buttons": extra_html,
+                },
+            )
+        )
 
 
-class ColorColumn(tables.Column):
+class ColorColumn(tables.TemplateColumn):
     """
-    Display an arbitrary color value, specified in RRGGBB format.
+    Display a badge variant value as a pill swatch.
     """
 
-    def render(self, value):
-        return format_html('<span class="color-label" style="background-color: #{}">&nbsp;</span>', value)
+    template_code = """
+       {% cotton cf.badge variant="{{ value|default:'neutral' }}" %}{{ value|title }}{% endcotton %}
+"""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(template_code=self.template_code, *args, **kwargs)
 
     def value(self, value):
-        return f"#{value}"
+        return value
 
 
 class ColoredLabelColumn(tables.TemplateColumn):
     """
-    Render a related object as a colored label. The related object must have a `color` attribute (specifying
-    an RRGGBB value) and a `get_absolute_url()` method.
+    Render a related object as a badge variant label. The related object must have a `color`
+    attribute (specifying a daisyUI badge variant) and a `get_absolute_url()` method.
     """
 
     template_code = """
-  {% if value %}
-  <span class="badge" style="color: {{ value.color|fgcolor }}; background-color: #{{ value.color }}">
-    <a href="{{ value.get_absolute_url }}">{{ value }}</a>
-  </span>
-{% else %}
-  &mdash;
-{% endif %}
+      {% if value %}
+         {% cotton cf.badge variant="{{ value.color|default:'neutral' }}" %}{{ value }}{% endcotton %}
+      {% else %}
+         &mdash;
+      {% endif %}
 """
 
     def __init__(self, *args, **kwargs):
@@ -492,7 +514,7 @@ class ChoiceFieldColumn(tables.Column):
             except AttributeError:
                 bg_color = self.DEFAULT_BG_COLOR
 
-        return format_html('<span class="badge text-bg-{}">{}</span>', bg_color, value)
+        return format_html('<span class="badge badge-{}">{}</span>', bg_color, value)
 
     def value(self, value):
         return value
@@ -585,10 +607,16 @@ class ArrayColumn(tables.Column):
         return ", ".join(value)
 
 
-class CustomFieldColumn(tables.Column):
+class CustomFieldColumn(tables.TemplateColumn):
     """
     Display custom fields in the appropriate format.
     """
+
+    # Per-type rendering is handled in render(); this only satisfies
+    # TemplateColumn's template requirement and is never rendered.
+    template_code = "{% comment %}Rendered by CustomFieldColumn.render(){}{% endcomment %}"
+
+    empty_values = (None, "")
 
     def __init__(self, customfield, *args, **kwargs):
         self.customfield = customfield
@@ -599,7 +627,11 @@ class CustomFieldColumn(tables.Column):
         if customfield.type in (CustomFieldTypeChoices.TYPE_OBJECT, CustomFieldTypeChoices.TYPE_MULTIOBJECT):
             kwargs["orderable"] = False
 
-        super().__init__(*args, **kwargs)
+        super().__init__(
+            self.template_code,
+            *args,
+            **kwargs,
+        )
 
     @staticmethod
     def _linkify_item(item):
@@ -607,11 +639,12 @@ class CustomFieldColumn(tables.Column):
             return f'<a href="{item.get_absolute_url()}">{escape(item)}</a>'
         return escape(item)
 
-    def render(self, value):
-        if self.customfield.type == CustomFieldTypeChoices.TYPE_BOOLEAN and value is True:
-            return mark_safe('<i class="fa-solid fa-square-check text-success"></i>')
-        if self.customfield.type == CustomFieldTypeChoices.TYPE_BOOLEAN and value is False:
-            return mark_safe('<i class="fa-solid fa-rectangle-xmark text-danger"></i>')
+    def render(self, record, table, value, bound_column, **kwargs):
+        if self.customfield.type == CustomFieldTypeChoices.TYPE_BOOLEAN:
+            request = getattr(table, "context", {}).get("request")
+            if request is None:
+                return ""
+            return render_boolean(request, value)
         if self.customfield.type == CustomFieldTypeChoices.TYPE_SELECT:
             return self.customfield.get_choice_label(value)
         if self.customfield.type == CustomFieldTypeChoices.TYPE_MULTISELECT:

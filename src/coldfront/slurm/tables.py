@@ -82,7 +82,7 @@ class SlurmPartitionTable(PrimaryModelTable):
         verbose_name=_("Name"),
         linkify=True,
     )
-    cluster = columns.ColoredLabelColumn(
+    cluster = tables.Column(
         verbose_name=_("Cluster"),
         linkify=True,
     )
@@ -125,7 +125,7 @@ class SlurmAccountTable(PrimaryModelTable):
         verbose_name=_("Name"),
         linkify=True,
     )
-    cluster = columns.ColoredLabelColumn(
+    cluster = tables.Column(
         verbose_name=_("Cluster"),
     )
     service_units = tables.Column(
@@ -222,7 +222,7 @@ class SlurmAssociationTable(PrimaryModelTable):
         linkify=("slurm:slurmassociation", {"pk": tables.A("id")}),
         verbose_name=_("Allocation"),
     )
-    slurm_account = columns.ColoredLabelColumn(
+    slurm_account = tables.Column(
         verbose_name=_("Slurm Account"),
     )
     resource_object = tables.Column(
@@ -256,10 +256,10 @@ class SlurmUserTable(PrimaryModelTable):
         verbose_name=_("User"),
     )
 
-    cluster = columns.ColoredLabelColumn(
+    cluster = tables.Column(
         verbose_name=_("Cluster"),
     )
-    default_account = columns.ColoredLabelColumn(
+    default_account = tables.Column(
         verbose_name=_("Default Account"),
     )
     tags = columns.TagColumn(

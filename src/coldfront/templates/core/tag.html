@@ -4,13 +4,13 @@
 {% block content %}
     <c-cf.layout.panels>
         <c-slot name="left">
-            <c-cf.card.fields :object="object" only>
+            <c-cf.card.fields :object="object">
                 <c-cf.card.fields.item label="{% trans 'Description' %}">
                     {{ object.description|placeholder }}
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label="{% trans 'Color' %}">
-                    <c-cf.ui.color_label :hex="object.color" />
+                    <c-cf.badge variant="{{ object.color }}">{{ object.color }}</c-cf.badge>
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label="{% trans 'Weight' %}">
@@ -24,7 +24,7 @@
         </c-slot>
 
         <c-slot name="right">
-            <c-cf.card.list header='{% trans "Allowed Object Types" %}' only>
+            <c-cf.card.list title='{% trans "Allowed Object Types" %}'>
                 {% for ct in object.object_types.all %}
                     <c-cf.card.list.item>
                         {{ ct }}
@@ -36,7 +36,7 @@
                 {% endfor %}
             </c-cf.card.list>
 
-            <c-cf.card.list header='{% trans "Tagged Item Types" %}' only>
+            <c-cf.card.list title='{% trans "Tagged Item Types" %}'>
                 {% for object_type in object_types %}
                     {% action_url object_type.content_type.model_class 'list' as list_url %}
                     <c-cf.card.list.item
@@ -50,7 +50,7 @@
         </c-slot>
 
         <c-slot name="bottom">
-            <c-cf.card.table :table="taggeditem_table" header='{% trans "Tagged Objects" %}' only />
+            <c-cf.card.table :table="taggeditem_table" title='{% trans "Tagged Objects" %}' />
         </c-slot>
     </c-cf.layout.panels>
 {% endblock %}

@@ -1,0 +1,13 @@
+<c-vars storage_key="theme" default="system" />
+
+{% comment %}Place in <head> before the stylesheet. Sets daisyUI data-theme before
+   first paint (no flash). Keep storage_key + default in sync with c-cf.mode-toggle.{% endcomment %}
+<script>
+    (function () {
+        try {
+            var mode = localStorage.getItem("{{ storage_key }}") || "{{ default }}";
+            var dark = mode === "dark" || (mode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+            document.documentElement.setAttribute("data-theme", dark ? "cfdark" : "cflight");
+        } catch (e) {}
+    })();
+</script>

@@ -4,7 +4,7 @@
 {% block content %}
     <c-cf.layout.panels>
         <c-slot name="left">
-            <c-cf.card.fields :object="object" only>
+            <c-cf.card.fields :object="object">
                 <c-cf.card.fields.item label="{% trans 'Name' %}">
                     {{ object.name }}
                 </c-cf.card.fields.item>
@@ -27,17 +27,17 @@
 
                 <c-cf.card.fields.item label="{% trans 'Enabled' %}">
                     {% if object.enabled %}
-                        <c-cf.ui.badge bg_color="success" value="{% trans 'Yes' %}" />
+                        <c-cf.badge variant="success">{% trans 'Yes' %}</c-cf.badge>
                     {% else %}
-                        <c-cf.ui.badge bg_color="danger" value="{% trans 'No' %}" />
+                        <c-cf.badge variant="error">{% trans 'No' %}</c-cf.badge>
                     {% endif %}
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label="{% trans 'Shared' %}">
                     {% if object.shared %}
-                        <c-cf.ui.badge bg_color="success" value="{% trans 'Yes' %}" />
+                        <c-cf.badge variant="success">{% trans 'Yes' %}</c-cf.badge>
                     {% else %}
-                        <c-cf.ui.badge bg_color="danger" value="{% trans 'No' %}" />
+                        <c-cf.badge variant="error">{% trans 'No' %}</c-cf.badge>
                     {% endif %}
                 </c-cf.card.fields.item>
 
@@ -48,7 +48,7 @@
         </c-slot>
 
         <c-slot name="right">
-            <c-cf.card.list header="{% trans 'Columns Displayed' %}" only>
+            <c-cf.card.list title="{% trans 'Columns Displayed' %}">
                 {% for name in object.columns %}
                     <c-cf.card.list.item>
                         {% with column=columns|dict_get:name %}
@@ -58,14 +58,14 @@
                 {% endfor %}
             </c-cf.card.list>
 
-            <c-cf.card.list header="{% trans 'Ordering' %}" only>
+            <c-cf.card.list title="{% trans 'Ordering' %}">
                 {% for column_name, ascending in object.ordering_items %}
                     <c-cf.card.list.item>
                         {% with column=columns|dict_get:column_name %}
                             {% if ascending %}
-                                <i class="fa-solid fa-arrow-down"></i>
+                                <c-cfi n="heroicon.arrow-down" size="sm" class="align-middle" />
                             {% else %}
-                                <i class="fa-solid fa-arrow-up"></i>
+                                <c-cfi n="heroicon.arrow-up" size="sm" class="align-middle" />
                             {% endif %}
                             {{ column.verbose_name }}
                         {% endwith %}

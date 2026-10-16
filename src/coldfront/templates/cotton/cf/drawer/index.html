@@ -1,0 +1,43 @@
+{% comment %}
+DaisyUI drawer wrapper. Renders the drawer checkbox, side panel, and content
+region. Named slots: sideContent, checkbox, side, content.
+{% endcomment %}
+
+<c-vars
+    drawerId="drawer"
+    class=""
+    end
+    open
+    sideClass=""
+    overlayClass=""
+    content=""
+    sideContent=""
+/>
+
+<div
+    class="drawer {% if end %}drawer-end{% endif %} {% if open %}drawer-open{% endif %} {{ class }}"
+    {{ attrs }}
+>
+    {% if not checkbox %}
+        <c-cf.drawer.checkbox :id="drawerId" />
+    {% else %}
+        {{ checkbox }}
+    {% endif %}
+
+    {% if sideContent %}
+        <c-cf.drawer.side class="{{ sideClass }}">
+            <c-cf.drawer.overlay :for="drawerId" class="{{ overlayClass }}" />
+            {{ sideContent }}
+        </c-cf.drawer.side>
+    {% elif side %}
+        {{ side }}
+    {% endif %}
+
+    {% if not content %}
+        <c-cf.drawer.content>
+            {{ slot }}
+        </c-cf.drawer.content>
+    {% else %}
+        {{ content }}
+    {% endif %}
+</div>

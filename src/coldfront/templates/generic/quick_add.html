@@ -1,32 +1,23 @@
 {% load i18n %}
 
-<div class="modal-header">
-    <h2 class="modal-title">
-        {% trans "Quick Add" %} {{ model|meta:"verbose_name"|bettertitle }}
-    </h2>
-    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-</div>
-<div class="modal-body row">
-    <form
-        hx-post="{% action_url model 'add' %}?_quickadd=True&target={{ request.GET.target }}"
-        hx-target="#htmx-modal-content"
-        hx-disinherit="hx-select hx-swap"
-        enctype="multipart/form-data"
-    >
-        {% csrf_token %}
-        <c-cf.form :form="form" />
-        <div class="text-end">
-            <button
-                type="button"
-                class="btn btn-outline-secondary btn-float"
-                data-bs-dismiss="modal"
-                aria-label="Cancel"
-            >
-                {% trans "Cancel" %}
-            </button>
-            <button type="submit" name="_quickadd" class="btn btn-primary">
-                {% trans "Create" %}
-            </button>
-        </div>
-    </form>
-</div>
+<h2 class="text-lg font-semibold mb-4">
+    {% trans "Quick Add" %} {{ model|meta:"verbose_name"|bettertitle }}
+</h2>
+<c-cf.form
+    :form="form"
+    wrapper_class=""
+    hx-post="{% action_url model 'add' %}?_quickadd=True&target={{ request.GET.target }}"
+    hx-target="#htmxModal-content"
+    hx-disinherit="hx-select hx-swap"
+>
+    <c-slot name="buttons">
+        <c-cf.button
+            type="button"
+            btnStyle="outline"
+            onclick="htmxModal.close()"
+            aria-label="{% trans 'Cancel' %}"
+            label="{% trans 'Cancel' %}"
+        />
+        <c-cf.button type="submit" name="_quickadd" variant="primary" label="{% trans 'Create' %}" />
+    </c-slot>
+</c-cf.form>

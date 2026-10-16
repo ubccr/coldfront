@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from crispy_forms.layout import Fieldset
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
@@ -22,6 +21,7 @@ from coldfront.billing.models import (
 )
 from coldfront.forms import ColdFrontModelFilterSetForm, PrimaryModelFilterSetForm
 from coldfront.forms.fields import DynamicModelMultipleChoiceField, TagFilterField
+from coldfront.forms.layout import FieldSet
 from coldfront.ras.models import Project
 from coldfront.users.models import User
 
@@ -54,12 +54,15 @@ class InvoiceFilterSetForm(PrimaryModelFilterSetForm):
     tag = TagFilterField(model)
 
     fieldsets = (
-        Fieldset(
-            _("Invoice"),
+        FieldSet(
+            "q",
+            "tag",
+        ),
+        FieldSet(
             "owner",
             "projects_id",
             "status",
-            "tag",
+            name=_("Invoice"),
         ),
     )
 
@@ -83,11 +86,14 @@ class InvoiceLineItemFilterSetForm(ColdFrontModelFilterSetForm):
     )
 
     fieldsets = (
-        Fieldset(
-            _("Invoice Line Item"),
+        FieldSet(
+            "q",
+        ),
+        FieldSet(
             "invoice_id",
             "line_type",
             "unit_format",
+            name=_("Invoice Line Item"),
         ),
     )
 
@@ -112,12 +118,15 @@ class RateFilterSetForm(PrimaryModelFilterSetForm):
     tag = TagFilterField(model)
 
     fieldsets = (
-        Fieldset(
-            _("Rate"),
+        FieldSet(
+            "q",
+            "tag",
+        ),
+        FieldSet(
             "unit_format",
             "charge_basis",
             "project_id",
-            "tag",
+            name=_("Rate"),
         ),
     )
 
@@ -142,12 +151,15 @@ class FreeAllowanceFilterSetForm(PrimaryModelFilterSetForm):
     tag = TagFilterField(model)
 
     fieldsets = (
-        Fieldset(
-            _("Free Allowance"),
+        FieldSet(
+            "q",
+            "tag",
+        ),
+        FieldSet(
             "owner",
             "project_id",
             "unit_format",
-            "tag",
+            name=_("Free Allowance"),
         ),
     )
 
@@ -172,11 +184,14 @@ class DiscountFilterSetForm(PrimaryModelFilterSetForm):
     tag = TagFilterField(model)
 
     fieldsets = (
-        Fieldset(
-            _("Discount"),
+        FieldSet(
+            "q",
+            "tag",
+        ),
+        FieldSet(
             "owner",
             "project_id",
             "type",
-            "tag",
+            name=_("Discount"),
         ),
     )

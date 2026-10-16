@@ -11,7 +11,7 @@ from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from coldfront.core.models import ObjectType
-from coldfront.plugins.navigation import PluginMenu, PluginMenuButton, PluginMenuItem
+from coldfront.plugins.navigation import PluginMenu, PluginMenuItem, PluginMenuItemButton
 from coldfront.plugins.utils import get_plugin_config
 from coldfront.registry import registry
 from coldfront.utils.testing import APITestCase
@@ -199,7 +199,7 @@ class PluginNavigationTest(TestCase):
 
     def test_plugin_menu_item_independent_buttons(self):
         item1 = PluginMenuItem(link="test1", link_text="Test 1")
-        button = PluginMenuButton(link="button1", title="Button 1", icon_class="fa-solid fa-test")
+        button = PluginMenuItemButton(link="button1", title="Button 1", icon="heroicon.plus")
         item1.buttons.append(button)
 
         item2 = PluginMenuItem(link="test2", link_text="Test 2")
@@ -210,10 +210,10 @@ class PluginNavigationTest(TestCase):
         self.assertEqual(item2.buttons, [])
 
     def test_plugin_menu_button_independent_permissions(self):
-        button1 = PluginMenuButton(link="button1", title="Button 1", icon_class="fa-solid fa-test")
+        button1 = PluginMenuItemButton(link="button1", title="Button 1", icon="heroicon.plus")
         button1.permissions.append("leaked_permission")
 
-        button2 = PluginMenuButton(link="button2", title="Button 2", icon_class="fa-solid fa-test")
+        button2 = PluginMenuItemButton(link="button2", title="Button 2", icon="heroicon.plus")
 
         self.assertIsNot(button1.permissions, button2.permissions)
         self.assertEqual(button1.permissions, ["leaked_permission"])
