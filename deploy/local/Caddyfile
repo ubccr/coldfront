@@ -1,4 +1,4 @@
-https://localhost {
+http://localhost {
     # Okay for develoment use only
     tls internal {
         on_demand
