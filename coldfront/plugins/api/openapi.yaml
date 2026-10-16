@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: RTS Coldfront API
-  version: 2026.10.08
+  version: 2026.10.16
   description: HPC Project Management portal
 paths:
   /api/allocation-change-requests/:

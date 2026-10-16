@@ -226,6 +226,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             "id",
             "title",
             "school",
+            "use_case",
             "pi",
             "status",
             "project_users",
