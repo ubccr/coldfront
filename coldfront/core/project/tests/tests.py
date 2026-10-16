@@ -10,7 +10,7 @@ from coldfront.core.project.models import (
     ProjectAttributeType,
     ProjectPermission,
     ProjectStatusChoice,
-    ProjectUseCaseChoice,
+    # ProjectUseCaseChoice,
     ProjectUser,
 )
 from coldfront.core.test_helpers.factories import (
@@ -53,6 +53,7 @@ class TestProject(TestCase):
                 "title": "Angular momentum in QGP holography",
                 "description": "We want to estimate the quark chemical potential of a rotating sample of plasma.",
                 "school": school,
+                "use_case": "Research",
                 "status": status,
                 "force_review": True,
             }
@@ -64,6 +65,7 @@ class TestProject(TestCase):
                 "title": "P4 attempt",
                 "description": "desc",
                 "school": school.pk,
+                "use_case": "Research",
             }
 
             self.user = user
@@ -83,6 +85,7 @@ class TestProject(TestCase):
                 title=f"Existing {i}",
                 description="d",
                 school=self.data.initial_fields["school"],
+                use_case="Research",
                 status=ProjectStatusChoice.objects.get(name="New"),
             )
 
@@ -94,6 +97,7 @@ class TestProject(TestCase):
             "title": "P4 attempt",
             "description": "desc",
             "school": self.data.initial_fields["school"].pk,
+            "use_case": "Research"
         }
 
         resp = self.client.post(reverse("project-create"), data=post_data)
@@ -222,6 +226,23 @@ class TestProject(TestCase):
         with self.assertRaises(Project.DoesNotExist):
             Project.objects.get(pk=project_obj.pk)
         self.assertEqual(0, len(Project.objects.all()))
+
+    def test_use_case_invalid(self):
+        invalid_use_case = "Fun"
+        valid_use_case = "Instruction"
+        
+        project_obj = self.data.unsaved_object
+        
+        project_obj.use_case = invalid_use_case
+        with self.assertRaises(ValidationError):
+            project_obj.clean_fields()
+        
+        project_obj.use_case = valid_use_case
+        project_obj.clean_fields()
+        project_obj.save()
+        
+        retrieved_obj = Project.objects.get(pk=project_obj.pk)
+        self.assertEqual(valid_use_case, retrieved_obj.use_case)
 
     def test_project_manager_assignment(self):
         # Step 1: Save the project

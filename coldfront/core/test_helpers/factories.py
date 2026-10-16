@@ -32,7 +32,7 @@ from coldfront.core.project.models import (
     ProjectAttributeType,
     ProjectStatusChoice,
     ProjectUser,
-    ProjectUseCaseChoice,
+    # ProjectUseCaseChoice,
     ProjectUserRoleChoice,
     ProjectUserStatusChoice,
 )
@@ -129,14 +129,14 @@ class ProjectStatusChoiceFactory(DjangoModelFactory):
     name = FuzzyChoice(project_status_choice_names)
 
 
-class ProjectUseCaseChoiceFactory(DjangoModelFactory):
-    class Meta:
-        model = ProjectUseCaseChoice
-        django_get_or_create = ("name",)
+# class ProjectUseCaseChoiceFactory(DjangoModelFactory):
+#     class Meta:
+#         model = ProjectUseCaseChoice
+#         django_get_or_create = ("name",)
 
-    # randomly generate names from list of default values
-    name = FuzzyChoice(project_use_case_choice_names)
-    pk = factory.Sequence(int)
+#     # randomly generate names from list of default values
+#     name = FuzzyChoice(project_use_case_choice_names)
+#     pk = factory.Sequence(int)
 
 
 class ProjectFactory(DjangoModelFactory):
@@ -147,7 +147,7 @@ class ProjectFactory(DjangoModelFactory):
     pi = SubFactory(UserFactory)
     title = factory.Faker("project_title")
     description = factory.Faker("sentence")
-    use_case = SubFactory(ProjectUseCaseChoiceFactory)
+    use_case = FuzzyChoice(project_use_case_choice_names)
     school = SubFactory(SchoolFactory)
     status = SubFactory(ProjectStatusChoiceFactory)
     force_review = False

@@ -48,31 +48,31 @@ class ProjectStatusChoice(TimeStampedModel):
         return (self.name,)
 
 
-class ProjectUseCaseChoice(TimeStampedModel):
-    """Indicates the intended use case of the project, e.g. Research, Education, Instruction
+# class ProjectUseCaseChoice(TimeStampedModel):
+#     """Indicates the intended use case of the project, e.g. Research, Education, Instruction
 
-    Attributes:
-        name (str): name of project use case choice
-    """
+#     Attributes:
+#         name (str): name of project use case choice
+#     """
 
-    class Meta:
-        ordering = ("name",)
+#     class Meta:
+#         ordering = ("name",)
 
-    class ProjectUseCaseChoiceManager(models.Manager):
-        def get_by_natural_key(self, name):
-            return self.get(name=name)
+#     class ProjectUseCaseChoiceManager(models.Manager):
+#         def get_by_natural_key(self, name):
+#             return self.get(name=name)
 
-    name = models.CharField(max_length=64, unique=True)
-    objects = ProjectUseCaseChoiceManager()
+#     name = models.CharField(max_length=64, unique=True)
+#     objects = ProjectUseCaseChoiceManager()
 
-    # create the default choice first in the management script
-    DEFAULT_PRIMARY_KEY = 0
+#     # create the default choice first in the management script
+#     DEFAULT_PRIMARY_KEY = 0
 
-    def __str__(self):
-        return self.name
+#     def __str__(self):
+#         return self.name
 
-    def natural_key(self):
-        return (self.name,)
+#     def natural_key(self):
+#         return (self.name,)
 
 
 class Project(TimeStampedModel):
@@ -83,7 +83,7 @@ class Project(TimeStampedModel):
         pi (User): represents the User object of the project's PI
         description (str): description of the project
         school (School): represents a school for this project
-        use_case (ProjectUseCaseChoice): indicates the use case of this project, e.g. Research, Instruction, etc.
+        use_case (enum): indicates the use case of this project, e.g. Research, Instruction, etc.
         status (ProjectStatusChoice): represents the ProjectStatusChoice of this project
         force_review (bool): indicates whether or not to force a review for the project
         requires_review (bool): indicates whether or not the project requires review
@@ -109,6 +109,12 @@ class Project(TimeStampedModel):
 We do not have information about your research. Please provide a detailed description of your work and update your school. Thank you!
         """
 
+    class ProjectUseCaseChoice(models.TextChoices):
+        RESEARCH = "Research"
+        INSTRUCTION = "Instruction"
+        EXPERIMENTATION = "Experimentation"
+        OTHER = "Other"
+
     title = models.CharField(
         max_length=255,
     )
@@ -126,9 +132,7 @@ We do not have information about your research. Please provide a detailed descri
         ],
     )
     school = models.ForeignKey(School, on_delete=models.CASCADE, default=School.DEFAULT_PK)
-    use_case = models.ForeignKey(
-        ProjectUseCaseChoice, on_delete=models.CASCADE, default=ProjectUseCaseChoice.DEFAULT_PRIMARY_KEY
-    )
+    use_case = models.CharField(choices=ProjectUseCaseChoice, default=ProjectUseCaseChoice.OTHER)
     status = models.ForeignKey(ProjectStatusChoice, on_delete=models.CASCADE)
     force_review = models.BooleanField(default=False)
     requires_review = models.BooleanField(default=True)

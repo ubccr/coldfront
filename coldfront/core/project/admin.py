@@ -13,7 +13,7 @@ from coldfront.core.project.models import (
     ProjectAttributeUsage,
     ProjectReview,
     ProjectStatusChoice,
-    ProjectUseCaseChoice,
+    # ProjectUseCaseChoice,
     ProjectUser,
     ProjectUserMessage,
     ProjectUserRoleChoice,
@@ -25,9 +25,9 @@ from coldfront.core.project.models import (
 class ProjectStatusChoiceAdmin(admin.ModelAdmin):
     list_display = ("name",)
 
-@admin.register(ProjectUseCaseChoice)
-class ProjectUseCaseChoiceAdmin(admin.ModelAdmin):
-    list_display = ("name",)
+# @admin.register(ProjectUseCaseChoice)
+# class ProjectUseCaseChoiceAdmin(admin.ModelAdmin):
+#     list_display = ("name",)
 
 @admin.register(ProjectUserRoleChoice)
 class ProjectUserRoleChoiceAdmin(admin.ModelAdmin):
