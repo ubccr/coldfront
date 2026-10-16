@@ -245,5 +245,5 @@ def send_expiry_emails():
                 "Allocation(s) have expired",
                 "email/admin_allocation_expired.txt",
                 admin_template_context,
-                [EMAIL_ADMIN_LIST],
+                EMAIL_ADMIN_LIST,
             )
