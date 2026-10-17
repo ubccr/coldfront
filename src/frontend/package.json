@@ -20,14 +20,15 @@
         "@biomejs/biome": "^2.5.15",
         "@tailwindcss/cli": "^4.3.3",
         "@types/alpinejs": "^3.17.0",
-        "@types/bun": "^1.4.2",
+        "@types/bun": "^1.4.3",
         "typescript": "~5.9.3"
     },
     "dependencies": {
         "@alpinejs/collapse": "^3.17.4",
         "@alpinejs/focus": "^3.17.4",
         "alpinejs": "^3.17.4",
-        "daisyui": "^5.7.47",
+        "chart.js": "^4.5.1",
+        "daisyui": "^5.7.50",
         "htmx.org": "^2.0.11",
         "tailwindcss": "^4.3.3",
         "vanilla-calendar-pro": "^3.4.0"

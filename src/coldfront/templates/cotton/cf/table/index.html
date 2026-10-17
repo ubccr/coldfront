@@ -1,28 +1,29 @@
-{% load render_table from django_tables2 %}
-{% load i18n %}
+{% comment %}
+DaisyUI table component (size, zebra, pinRows, pinCols, class). Renders a
+static <table> wrapper — content is plain HTML table markup in the slot
+(thead/tbody/tr/th/td). For django-tables2 objects use c-cf.dtable instead.
+{% endcomment %}
 
 <c-vars
-    id="object_list"
-    show_paginator=True
-    table
+    class=""
+    size="md"
+    zebra
+    pinRows
+    pinCols
+    :sizeClasses="{
+        'xs': 'table-xs',
+        'sm': 'table-sm',
+        'md': 'table-md',
+        'lg': 'table-lg',
+        'xl': 'table-xl',
+    }"
 />
 
-{% if table.rows %}
-    <div class="htmx-container" id="{{ id }}">
-        {% render_table table %}
-        {% if show_paginator %}
-            <c-cf.table.paginator :table="table" :paginator="table.paginator" :page="table.page" />
-        {% endif %}
-    </div>
-{% else %}
-    <c-cf.card.body class="htmx-container text-muted">
-        {% if table.empty_text %}{{ table.empty_text }}{% else %}{% trans "None" %}{% endif %}
-    </c-cf.card.body>
-{% endif %}
-
-{% if request.htmx %}
-    {# Include the updated object count for display elsewhere on the page #}
-    {% if not table.embedded %}
-        <div hx-swap-oob="innerHTML:.total-object-count">{{ table.rows|length }}</div>
-    {% endif %}
-{% endif %}
+<div class="overflow-x-auto min-h-50">
+    <table
+        class="table {{ sizeClasses|get_dict_item:size }} {% if zebra %}table-zebra{% endif %} {% if pinRows %}table-pin-rows{% endif %} {% if pinCols %}table-pin-cols{% endif %} {{ class }}"
+        {{ attrs }}
+    >
+        {{ slot }}
+    </table>
+</div>

@@ -1,0 +1,10 @@
+{% comment %}
+DaisyUI timeline end (class, box). Content positioned at the end side of a
+timeline item. box applies timeline-box styling.
+{% endcomment %}
+
+<c-vars class="" box />
+
+<div class="timeline-end {% if box %}timeline-box{% endif %} {{ class }}" {{ attrs }}>
+    {{ slot }}
+</div>

@@ -1,0 +1,20 @@
+{% comment %}
+DaisyUI avatar group (spacing, class). Renders the avatar-group container that
+overlaps multiple c-cf.avatar children. spacing controls the overlap amount.
+{% endcomment %}
+
+<c-vars
+    class=""
+    spacing="tight"
+    :spacingClasses="{
+        'wide': '',
+        'normal': '-space-x-2',
+        'tight': '-space-x-6',
+        'tighter': '-space-x-8',
+        'tightest': '-space-x-12',
+    }"
+/>
+
+<div class="avatar-group {{ spacingClasses|get_dict_item:spacing }} {{ class }}" {{ attrs }}>
+    {{ slot }}
+</div>

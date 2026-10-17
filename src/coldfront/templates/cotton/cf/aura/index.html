@@ -1,0 +1,33 @@
+{% comment %}
+DaisyUI aura component (class, variant, size). Animated conic-gradient glow
+border wrapping any element. variant selects the glow colour style
+(dual/rainbow/holo/gold/silver/glow); size sets the glow spread.
+{% endcomment %}
+
+<c-vars
+    class=""
+    variant=""
+    size="md"
+    :variantClasses="{
+        'dual': 'aura-dual',
+        'rainbow': 'aura-rainbow',
+        'holo': 'aura-holo',
+        'gold': 'aura-gold',
+        'silver': 'aura-silver',
+        'glow': 'aura-glow'
+    }"
+    :sizeClasses="{
+        'xs': 'aura-xs',
+        'sm': 'aura-sm',
+        'md': 'aura-md',
+        'lg': 'aura-lg',
+        'xl': 'aura-xl'
+    }"
+/>
+
+<div
+    class="aura {{ variantClasses|get_dict_item:variant }} {{ sizeClasses|get_dict_item:size }} {{ class }}"
+    {{ attrs }}
+>
+    {{ slot }}
+</div>

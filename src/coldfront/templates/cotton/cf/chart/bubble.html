@@ -1,0 +1,7 @@
+{% comment %}
+DaisyUI bubble chart. Renders a <canvas> via c-cf.chart.instance; charts.ts
+reads the data-cf-chart-* attributes to build a Chart.js bubble chart themed to
+the active daisyUI theme. Datasets use {x, y, r} point objects.
+{% endcomment %}
+
+<c-cf.chart.instance type="bubble" :attrs="attrs" />

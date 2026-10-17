@@ -1,0 +1,56 @@
+<c-vars
+    :user="request.user"
+    :has_projects=False
+    :has_users=False
+    :has_allocations=False
+/>
+
+<div class="flex items-center justify-center gap-2 text-lg">
+    <c-cf.badge icon="tablericon.confetti" variant="success" size="lg">Get Started</c-cf.badge>
+</div>
+<c-cf.timeline class="w-full">
+    <c-cf.timeline.item
+        class="flex-1"
+        first
+        variant="{% if has_projects %}success{% endif %}"
+        icon="{% if has_projects %}heroicon.check-circle{% else %}heroicon.x-circle{% endif %}"
+    >
+        <c-slot name="end">
+            {% if has_projects %}
+                <c-cf.timeline.end box class="bg-success text-success-content">1. Project created</c-cf.timeline.end>
+            {% else %}
+                <c-cf.timeline.end>
+                    <c-cf.button
+                        as="a"
+                        href="{% url 'ras:project_add' %}?return_url={% url 'home' %}"
+                        variant="primary"
+                    >
+                        1. Create a project
+                    </c-cf.button>
+                </c-cf.timeline.end>
+            {% endif %}
+        </c-slot>
+    </c-cf.timeline.item>
+    <c-cf.timeline.item
+        class="flex-1"
+        variant="{% if has_project_users %}success{% endif %}"
+        icon="{% if has_project_users %}heroicon.check-circle{% else %}heroicon.x-circle{% endif %}"
+    >
+        <c-slot name="end">
+            {% if has_project_users %}
+                <c-cf.timeline.end box class="bg-success text-success-content"
+                >2. Project users added</c-cf.timeline.end>
+            {% else %}
+                <c-cf.timeline.end box>2. Add project users</c-cf.timeline.end>
+            {% endif %}
+        </c-slot>
+    </c-cf.timeline.item>
+    <c-cf.timeline.item
+        class="flex-1"
+        last
+        variant="{% if has_allocations %}success{% endif %}"
+        icon="{% if has_allocations %}heroicon.check-circle{% else %}heroicon.x-circle{% endif %}"
+        end="Request an allocation"
+        endBox
+    />
+</c-cf.timeline>

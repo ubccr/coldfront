@@ -25,7 +25,9 @@
                     </div>
                 {% endif %}
 
-                <c-cf.card.table :table="table" :model="model" />
+                <c-cf.card>
+                    <c-cf.dtable :table="table" />
+                </c-cf.card>
 
                 {# Form buttons #}
                 <c-cf.button.list>

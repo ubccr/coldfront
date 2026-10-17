@@ -2,20 +2,17 @@
 {% if applied_filters %}
     <div class="flex flex-wrap items-center gap-1 mb-3">
         {% for filter in applied_filters %}
-            <c-cf.badge variant="primary" href="{{ filter.link_url }}">
-                <c-cfi n="heroicon.x-mark" size="sm" />
+            <c-cf.badge icon="heroicon.x-mark" icon.size="sm" variant="primary" as="a" href="{{ filter.link_url }}">
                 {{ filter.link_text }}
             </c-cf.badge>
         {% endfor %}
         {% if applied_filters|length > 1 %}
-            <c-cf.badge variant="error" href="?">
-                <c-cfi n="tablericon.eraser" size="sm" />
+            <c-cf.badge icon="tablericon.eraser" icon.size="sm" variant="error" as="a" href="?">
                 {% trans "Clear all" %}
             </c-cf.badge>
         {% endif %}
         {% if save_link %}
-            <c-cf.badge variant="success" href="{{ save_link }}">
-                <c-cfi n="heroicon.bookmark" size="sm" />
+            <c-cf.badge icon="heroicon.bookmark" icon.size="sm" variant="success" as="a" href="{{ save_link }}">
                 {% trans "Save" %}
             </c-cf.badge>
         {% endif %}

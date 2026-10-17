@@ -60,7 +60,9 @@
         </c-slot>
 
         <c-slot name="right">
-            <c-cf.card.table :table="table" title="{% trans 'Version History' %}" />
+            <c-cf.card title="{% trans 'Version History' %}">
+                <c-cf.dtable :table="table" />
+            </c-cf.card>
         </c-slot>
     </c-cf.layout.panels>
 {% endblock %}

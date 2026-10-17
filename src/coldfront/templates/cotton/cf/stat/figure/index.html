@@ -1,0 +1,31 @@
+{% comment %}
+DaisyUI stat figure (variant, icon, class). Renders the icon/image region of a
+stat. Icons render through c-cfi.
+{% endcomment %}
+
+<c-vars
+    class=""
+    variant=""
+    :variantClasses="{
+        'primary': 'text-primary',
+        'secondary': 'text-secondary',
+        'accent': 'text-accent',
+        'neutral': 'text-neutral',
+        'info': 'text-info',
+        'success': 'text-success',
+        'warning': 'text-warning',
+        'error': 'text-error'
+    }"
+/>
+
+{% parse_icon attrs as i %}
+
+<div
+    class="stat-figure {{ variantClasses|get_dict_item:variant }} {{ class }}"
+    {{ attrs|strip_icon_attrs }}
+>
+    {% if i.name %}
+        <c-cfi :n="i.name" :class="i.css_class" :size="i.size" />
+    {% endif %}
+    {{ slot }}
+</div>

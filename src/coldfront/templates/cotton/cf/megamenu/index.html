@@ -1,0 +1,34 @@
+{% comment %}
+DaisyUI megamenu component (id, wide, full, size, class). A large horizontal
+menu; each item opens a popover showing a group of links. Renders only the
+megamenu container div + the required megamenu-active indicator span. Items
+are composed by the caller directly in the slot using c-cf.button (which
+forwards popovertarget) and raw <div id="..." popover> pairs. The small-screen
+opener button is also caller-written (e.g. c-cf.button class="sm:hidden"
+popovertarget=id).
+{% endcomment %}
+
+<c-vars
+    class=""
+    id=""
+    wide
+    full
+    size="md"
+    :sizeClasses="{
+        'xs': 'megamenu-xs',
+        'sm': 'megamenu-sm',
+        'md': 'megamenu-md',
+        'lg': 'megamenu-lg',
+        'xl': 'megamenu-xl'
+    }"
+/>
+
+<div
+    class="megamenu max-sm:megamenu-vertical {% if wide %}megamenu-wide{% endif %} {% if full %}megamenu-full{% endif %} {{ sizeClasses|get_dict_item:size }} {{ class }}"
+    id="{{ id }}"
+    popover
+    {{ attrs }}
+>
+    <span class="megamenu-active"></span>
+    {{ slot }}
+</div>

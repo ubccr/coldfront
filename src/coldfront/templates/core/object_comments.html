@@ -2,7 +2,9 @@
 {% load i18n %}
 
 {% block content %}
-    <c-cf.card.table :table="table" />
+    <c-cf.card>
+        <c-cf.dtable :table="table" />
+    </c-cf.card>
     {% if form %}
         <c-cf.form :form="form" action="{% url 'core:commententry_add' %}" method="post" wrapper_class="">
             <c-slot name="buttons">

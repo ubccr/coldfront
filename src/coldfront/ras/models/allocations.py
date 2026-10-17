@@ -7,6 +7,7 @@ from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.core.validators import ValidationError
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from jsonschema.exceptions import ValidationError as JSONValidationError
 
@@ -128,6 +129,15 @@ class Allocation(CommentingMixin, PrimaryModel):
             key = options.get("title", title(name))
             attrs[key] = self.attribute_data.get(name)
         return dict(sorted(attrs.items()))
+
+    @property
+    def expires_in(self):
+        """
+        Number of days before the allocation expires: end_date - now.
+        """
+        if self.end_date is None:
+            return None
+        return (self.end_date - timezone.now()).days
 
     def clean(self):
         super().clean()

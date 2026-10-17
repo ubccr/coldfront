@@ -1,0 +1,18 @@
+{% comment %}
+DaisyUI chat component (class, placement). Container for a single message in a
+conversation thread. Content composes with c-cf.chat.image, c-cf.chat.header,
+c-cf.chat.bubble, and c-cf.chat.footer.
+{% endcomment %}
+
+<c-vars
+    class=""
+    placement="start"
+    :placementClasses="{
+        'start': 'chat-start',
+        'end': 'chat-end'
+    }"
+/>
+
+<div class="chat {{ placementClasses|get_dict_item:placement }} {{ class }}" {{ attrs }}>
+    {{ slot }}
+</div>

@@ -24,14 +24,11 @@ Hosted inside <c-cf.drawer sideContent> from layout.html.
                     >
                         <c-cf.indicator>
                             {% if unread_notifications_count %}
-                                <c-cf.indicator.item shape="none" class="text-error text-xl">●</c-cf.indicator.item>
+                                <c-cf.indicator.item shape="none">
+                                    <c-cf.status variant="error" size="lg" animate="ping" />
+                                </c-cf.indicator.item>
                             {% endif %}
-                            <c-cfi
-                                n="heroicon.user-circle"
-                                w="1.75em"
-                                h="1.75em"
-                                class="shrink-0 text-base-content/60"
-                            />
+                            <c-cfi n="heroicon.user-circle" size="lg" />
                         </c-cf.indicator>
                         <span class="min-w-0 flex-1">
                             <span class="block truncate text-sm font-medium text-base-content">
@@ -46,12 +43,12 @@ Hosted inside <c-cf.drawer sideContent> from layout.html.
                 </c-cf.dropdown.trigger>
 
                 <c-cf.dropdown.content class="w-full z-50">
-                    <c-cf.menu class="w-full">
-                        <div class="flex items-center justify-between gap-3">
-                            <span class="menu-title !px-0 !py-0">{% trans 'Preferences' %}</span>
-                            <c-cf.mode-toggle />
-                        </div>
+                    <div class="ml-2 flex items-center justify-between gap-3">
+                        <span class="menu-title">{% trans 'Theme' %}</span>
+                        <c-cf.mode-toggle />
+                    </div>
 
+                    <c-cf.menu class="w-full">
                         <c-cf.menu.item href="{% url 'account:profile' %}">
                             <c-cfi n="heroicon.user-circle" size="sm" /> {% trans 'Profile' %}
                         </c-cf.menu.item>
@@ -66,15 +63,16 @@ Hosted inside <c-cf.drawer sideContent> from layout.html.
                         <c-cf.menu.item href="{% url 'account:notification_list' %}">
                             <c-cf.indicator>
                                 {% if unread_notifications_count %}
-                                    <c-cf.indicator.item shape="none" class="text-error text-xl"
-                                    >●</c-cf.indicator.item>
+                                    <c-cf.indicator.item shape="none">
+                                        <c-cf.status variant="error" size="md" animate="ping" />
+                                    </c-cf.indicator.item>
                                 {% endif %}
                                 <c-cfi n="heroicon.bell" size="sm" />
                             </c-cf.indicator>
                             {% trans 'Notifications' %}
                         </c-cf.menu.item>
 
-                        <li class="menu-title">{% trans 'About' %}</li>
+                        <c-cf.menu.item type="title">{% trans 'About' %}</c-cf.menu.item>
                         <c-cf.menu.item
                             href="https://github.com/coldfront/coldfront"
                             target="_blank"
@@ -88,8 +86,7 @@ Hosted inside <c-cf.drawer sideContent> from layout.html.
                     {# Logout — plain form POST, no htmx #}
                     <form method="post" action="{% url 'logout' %}" class="mt-2">
                         {% csrf_token %}
-                        <c-cf.button variant="error" class="w-full">
-                            <c-cfi n="heroicon.arrow-right-start-on-rectangle" size="sm" />
+                        <c-cf.button variant="error" icon="tablericon.logout" class="w-full">
                             {% trans 'Log Out' %}
                         </c-cf.button>
                     </form>
@@ -99,12 +96,17 @@ Hosted inside <c-cf.drawer sideContent> from layout.html.
             {# Signed-out footer keeps theme + version reachable #}
             <div class="flex items-center justify-between gap-3">
                 <c-cf.mode-toggle />
-                <a href="https://github.com/coldfront/coldfront" target="_blank" rel="noopener noreferrer">
-                    <c-cf.badge variant="neutral">
-                        <c-cfi n="tablericon.brand-github" size="sm" />
-                        ColdFront v{{ settings.VERSION }}
-                    </c-cf.badge>
-                </a>
+                <c-cf.badge
+                    icon="tablericon.brand-github"
+                    icon.size="sm"
+                    variant="neutral"
+                    as="a"
+                    href="https://github.com/coldfront/coldfront"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    ColdFront v{{ settings.VERSION }}
+                </c-cf.badge>
             </div>
         {% endif %}
     </div>

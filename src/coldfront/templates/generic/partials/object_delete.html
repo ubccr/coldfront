@@ -1,6 +1,6 @@
 {% load i18n %}
 
-<c-cf.form :form="form">
+<c-cf.form :action="form_url" :form="form">
     <c-slot name="form_message">
         <c-cf.modal.title icon="heroicon.trash" icon_variant="error" id="htmxModal_title">
             {% trans 'Confirm Deletion' %}

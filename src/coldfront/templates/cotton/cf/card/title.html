@@ -3,8 +3,13 @@ DaisyUI card title — the standardized card header bar: a full-width title stri
 above the body with the card-title heading.
 {% endcomment %}
 
-<c-vars class="" as="h2" />
+<c-vars class="" as="h2" actions="" />
 
-<div class="rounded-t-[inherit] bg-base-200 border-b border-base-content/50 px-6 py-4 {{ class }}">
+<div class="rounded-t-[inherit] bg-base-200 border-b border-base-content/50 px-6 py-4 flex items-center justify-between gap-2 {{ class }}">
     <{{ as }} class="card-title">{{ slot }}</{{ as }}>
+    {% if actions %}
+        <div class="flex gap-2">
+            {{ actions }}
+        </div>
+    {% endif %}
 </div>

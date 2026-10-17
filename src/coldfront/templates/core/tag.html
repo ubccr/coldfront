@@ -50,7 +50,9 @@
         </c-slot>
 
         <c-slot name="bottom">
-            <c-cf.card.table :table="taggeditem_table" title='{% trans "Tagged Objects" %}' />
+            <c-cf.card title='{% trans "Tagged Objects" %}'>
+                <c-cf.dtable :table="taggeditem_table" />
+            </c-cf.card>
         </c-slot>
     </c-cf.layout.panels>
 {% endblock %}

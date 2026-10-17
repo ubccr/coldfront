@@ -24,7 +24,7 @@ Extra (un-declared) attrs render on the <form> element (hx-* etc.).
 
 <c-vars
     :form="form"
-    action=""
+    action="."
     method="post"
     layout="inline"
     :nullify="False"
@@ -35,6 +35,7 @@ Extra (un-declared) attrs render on the <form> element (hx-* etc.).
     buttons=""
     fields=""
     hidden=""
+    return_url=""
 />
 
 <div class="{{ wrapper_class }}">
@@ -47,6 +48,9 @@ Extra (un-declared) attrs render on the <form> element (hx-* etc.).
     >
         {% if method == "post" %}{% csrf_token %}{% endif %}
         {{ hidden }}
+        {% if return_url %}
+            <input type="hidden" name="return_url" value="{{ return_url }}">
+        {% endif %}
         {% if form_message %}
             <div class="mb-5">
                 {{ form_message }}

@@ -22,12 +22,7 @@ Context:
     <c-cf.tabs name="edit-tabs" role="group">
         {# Edit form tab — handle + panel #}
         <c-cf.tabs.content name="edit-tabs" id="edit-bulk" title="{% trans 'Bulk Edit' %}" checked>
-            <c-cf.form :form="form" :nullify="True">
-                <c-slot name="hidden">
-                    {% if request.POST.return_url %}
-                        <input type="hidden" name="return_url" value="{{ request.POST.return_url }}">
-                    {% endif %}
-                </c-slot>
+            <c-cf.form :form="form" :nullify="True" :return_url="request.POST.return_url">
                 <c-slot name="fields">
                     <div id="form_fields" hx-disinherit="hx-select hx-swap">
                         {# Render visible fields with nullable support #}
@@ -59,7 +54,7 @@ Context:
                     size="sm"
                     class="ml-1"
                 >{{ table.rows|length }}</c-cf.badge></c-slot>
-            <c-cf.table :table="table" />
+            <c-cf.dtable :table="table" />
         </c-cf.tabs.content>
         {# /Selected objects tab #}
     </c-cf.tabs>

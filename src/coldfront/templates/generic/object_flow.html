@@ -23,7 +23,7 @@ Context:
 
 {% block content %}
     {% block form %}
-        <c-cf.form :form="form">
+        <c-cf.form :form="form" :return_url="return_url">
             <c-slot name="buttons">
                 <c-cf.button as="a" href="{{ return_url }}" btnStyle="outline" label="{% trans 'Cancel' %}" />
                 <c-cf.button

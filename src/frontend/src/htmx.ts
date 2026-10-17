@@ -8,6 +8,7 @@ import { initReslug } from "./buttons/reslug";
 import { initDateSelector } from "./dateSelector";
 import { initForm } from "./form";
 import { initToast } from "./toast";
+import { initCharts } from "./charts";
 
 /**
  * Hook into HTMX's event system to reinitialize per-node inits when HTMX swaps
@@ -29,6 +30,7 @@ export function initHtmx(): void {
     initToast(el);
     initDateSelector(el);
     initForm(el);
+    initCharts(el);
 
     // Alpine does not auto-initialize DOM inserted by htmx. Re-initialize any
     // x-data components (e.g. `c-cf.select`) inside the swapped fragment.

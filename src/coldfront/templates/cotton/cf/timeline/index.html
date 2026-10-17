@@ -1,0 +1,22 @@
+{% comment %}
+DaisyUI timeline component (class, direction, compact, snap). Vertical list of
+chronological events. Items render through c-cf.timeline.item.
+{% endcomment %}
+
+<c-vars
+    class=""
+    direction=""
+    compact
+    snap
+    :directionClasses="{
+        'horizontal': 'timeline-horizontal',
+        'vertical': 'timeline-vertical'
+    }"
+/>
+
+<ul
+    class="timeline {{ directionClasses|get_dict_item:direction }} {% if compact %}timeline-compact{% endif %} {% if snap %}timeline-snap-icon{% endif %} {{ class }}"
+    {{ attrs }}
+>
+    {{ slot }}
+</ul>

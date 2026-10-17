@@ -13,6 +13,7 @@
                 <c-cf.card.fields.item label="{% trans 'Resource Type' %}">
                     <c-cf.badge
                         variant="{{ object.resource_type.color }}"
+                        as="a"
                         href="{{ object.resource_type.get_absolute_url }}"
                     >{{ object.resource_type }}</c-cf.badge>
                 </c-cf.card.fields.item>

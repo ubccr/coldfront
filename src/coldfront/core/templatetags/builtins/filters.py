@@ -309,3 +309,13 @@ def strip_icon_attrs(attrs):
     # Clean up whitespace
     s = re.sub(r"\s+", " ", s).strip()
     return mark_safe(s)
+
+
+@register.filter
+def initials(value: str) -> str:
+    parts = str(value).split()
+    if not parts:
+        return ""
+    if len(parts) == 1:
+        return parts[0][0].upper()
+    return (parts[0][0] + parts[-1][0]).upper()

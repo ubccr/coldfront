@@ -1,0 +1,10 @@
+{% comment %}
+DaisyUI list component (as, class). Vertical list container. Rows render
+through c-cf.list.row.
+{% endcomment %}
+
+<c-vars class="" as="ul" />
+
+<{{ as }} class="list {{ class }}" {{ attrs }}>
+    {{ slot }}
+</{{ as }}>

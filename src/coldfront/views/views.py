@@ -7,146 +7,70 @@ from datetime import timedelta
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import render
 from django.utils import timezone
 from django.utils.module_loading import import_string
 from django.views.generic import View
+from generic_notifications.utils import get_notifications
 
 
 class HomeView(LoginRequiredMixin, View):
-    template_name = "home.html"
+    template_name = "home/index.html"
 
     def get(self, request):
-        from coldfront.core.models import ObjectType
+        from coldfront.core.models import CommentEntry
         from coldfront.ras.choices import (
             AllocationChangeRequestStatusChoices,
             AllocationStatusChoices,
         )
-        from coldfront.ras.models import Allocation, AllocationChangeRequest
-        from coldfront.users.querysets import RestrictedQuerySet
+        from coldfront.ras.models import Allocation, AllocationChangeRequest, Project, ProjectUser
 
         user = request.user
         now = timezone.now()
+        expiring_soon_date = now + timedelta(days=30)
 
-        # --- Role detection ---
-        is_pi = user.owned_projects.exists()
-        is_admin = user.is_staff or user.has_perm("ras.change_allocation")
-
-        # --- Common data ---
-        projects = []
-        allocations = []
-        resources = {}
-
-        # --- PI / member projects and allocations ---
-        if user.is_authenticated:
-            for p in user.owned_projects.all():
-                projects.append(p)
-                for a in p.allocations.all():
-                    allocations.append(a)
-            for pu in user.projects.all():
-                p = pu.project
-                if p not in projects:
-                    projects.append(p)
-                for a in p.allocations.all():
-                    if a not in allocations:
-                        allocations.append(a)
-
-        # --- Allocatable resources ---
-        for ot in ObjectType.objects.with_feature("allocatable_resource").order_by("app_label", "model"):
-            model_class = ot.model_class()
-            if model_class is None:
-                continue
-
-            qs = model_class.objects.all()
-            if issubclass(qs.__class__, RestrictedQuerySet):
-                qs = qs.restrict(user, "view")
-
-            if qs.exists():
-                group = model_class._meta.verbose_name_plural.title()
-                if group.startswith("Slurm"):
-                    group = "Slurm"
-                resources[group] = resources.get(group, [])
-
-            for obj in qs:
-                if obj.allocatable(user):
-                    resources[group].append({"name": str(obj), "link": obj.get_absolute_url()})
-
-        # --- Summary stats ---
-        active_allocations = [a for a in allocations if a.status == AllocationStatusChoices.STATUS_ACTIVE]
-        expiring_soon = [
-            a
-            for a in allocations
-            if a.end_date
-            and a.status == AllocationStatusChoices.STATUS_ACTIVE
-            and a.end_date <= now + timedelta(days=30)
-            and a.end_date > now
-        ]
-
-        # --- PI-specific data ---
-        pending_change_requests = []
-        if is_pi:
-            owned_project_ids = user.owned_projects.values_list("pk", flat=True)
-            pending_change_requests = list(
-                AllocationChangeRequest.objects.filter(
-                    allocation__project_id__in=owned_project_ids,
-                    status__in=[
-                        AllocationChangeRequestStatusChoices.STATUS_REQUESTED,
-                        AllocationChangeRequestStatusChoices.STATUS_APPROVED,
-                    ],
-                )
-                .select_related("allocation")
-                .order_by("-created")[:10]
+        stats = {
+            "active_allocations": Allocation.objects.restrict(user, "view")
+            .filter(status=AllocationStatusChoices.STATUS_ACTIVE)
+            .count(),
+            "expiring_soon": Allocation.objects.restrict(user, "view")
+            .filter(status=AllocationStatusChoices.STATUS_ACTIVE, end_date__gt=now, end_date__lt=expiring_soon_date)
+            .count(),
+            "pending_change_requests": AllocationChangeRequest.objects.restrict(user, "view")
+            .filter(
+                Q(status=AllocationChangeRequestStatusChoices.STATUS_REQUESTED)
+                | Q(status=AllocationChangeRequestStatusChoices.STATUS_APPROVED)
             )
+            .count(),
+            "projects": Project.objects.restrict(user, "view").count(),
+            "allocations": Allocation.objects.restrict(user, "view").count(),
+            "resources": len(user.requestable_resources),
+            "project_users": ProjectUser.objects.restrict(user, "view").count(),
+            "project_last_updated": None,
+            "comments": CommentEntry.objects.restrict(user, "view").count(),
+        }
 
-        # --- Admin-specific data ---
-        admin_pending_allocations = []
-        admin_pending_change_requests = []
-        admin_expired_allocations = []
-        if is_admin:
-            admin_pending_allocations = list(
-                Allocation.objects.filter(
-                    status__in=[
-                        AllocationStatusChoices.STATUS_REQUESTED,
-                        AllocationStatusChoices.STATUS_APPROVED,
-                    ],
-                )
-                .select_related("project")
-                .order_by("-created")[:10]
-            )
-            admin_pending_change_requests = list(
-                AllocationChangeRequest.objects.filter(
-                    status__in=[
-                        AllocationChangeRequestStatusChoices.STATUS_REQUESTED,
-                        AllocationChangeRequestStatusChoices.STATUS_APPROVED,
-                    ],
-                )
-                .select_related("allocation")
-                .order_by("-created")[:10]
-            )
-            admin_expired_allocations = list(
-                Allocation.objects.filter(
-                    status=AllocationStatusChoices.STATUS_EXPIRED,
-                )
-                .select_related("project")
-                .order_by("-end_date")[:10]
-            )
+        allocations = list(Allocation.objects.restrict(user, "view").order_by("-last_updated"))[:10]
+        projects = list(Project.objects.restrict(user, "view").order_by("-last_updated"))[:5]
+        comments = CommentEntry.objects.restrict(user, "view").order_by("-created")[:15]
+
+        if len(projects) > 1:
+            stats["project_last_updated"] = projects[0].last_updated
+
+        stats["read_notifications_count"] = get_notifications(user=user).filter(read__isnull=False).count()
 
         return render(
             request,
             self.template_name,
             {
                 "projects": projects,
-                "resources": resources,
                 "allocations": allocations,
-                "active_allocations": active_allocations,
-                "expiring_soon": expiring_soon,
-                "is_pi": is_pi,
-                "is_admin": is_admin,
-                "pending_change_requests": pending_change_requests,
-                "admin_pending_allocations": admin_pending_allocations,
-                "admin_pending_change_requests": admin_pending_change_requests,
-                "admin_expired_allocations": admin_expired_allocations,
+                "notifications": get_notifications(user=user),
+                "comments": comments,
+                "stats": stats,
+                "expiring_soon_date": expiring_soon_date,
             },
         )
 

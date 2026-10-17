@@ -182,18 +182,30 @@ class AllocationExtensionMixin(models.Model):
     @classmethod
     def create_for_allocation(cls, allocation, values=None):
         """
-        Create an extension instance for the given allocation.
+        Create or update an extension instance for the given allocation.
+
+        Because the ``allocation`` FK is unique (one extension per allocation),
+        this reuses an existing instance for the allocation when one exists and
+        updates its requestable fields from ``values``, rather than creating a
+        duplicate (which would trip the unique constraint on edit).  For fresh
+        allocations no instance exists, so one is created from ``values`` (or
+        no values, relying on field defaults).
 
         Override this to provide custom creation logic (e.g., setting defaults
-        or auto-computing field values).  By default, creates an instance with
-        the given values dict (or no values, relying on field defaults).
+        or auto-computing field values).
         """
         kwargs = {}
         if values is not None:
             for field_name in cls.requestable_fields():
                 if field_name in values:
                     kwargs[field_name] = values[field_name]
-        instance = cls(allocation=allocation, **kwargs)
+
+        instance = cls.objects.filter(allocation=allocation).first()
+        if instance is None:
+            instance = cls(allocation=allocation, **kwargs)
+        else:
+            for field_name, value in kwargs.items():
+                setattr(instance, field_name, value)
         instance.full_clean()
         instance.save()
         return instance

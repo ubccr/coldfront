@@ -1,0 +1,28 @@
+{% load render_table from django_tables2 %}
+{% load i18n %}
+
+<c-vars
+    id="object_list"
+    show_paginator=True
+    table
+/>
+
+{% if table.rows %}
+    <div class="htmx-container" id="{{ id }}">
+        {% render_table table %}
+        {% if show_paginator %}
+            <c-cf.dtable.paginator :table="table" :paginator="table.paginator" :page="table.page" />
+        {% endif %}
+    </div>
+{% else %}
+    <c-cf.card.body class="htmx-container text-muted">
+        {% if table.empty_text %}{{ table.empty_text }}{% else %}{% trans "None" %}{% endif %}
+    </c-cf.card.body>
+{% endif %}
+
+{% if request.htmx %}
+    {# Include the updated object count for display elsewhere on the page #}
+    {% if not table.embedded %}
+        <div hx-swap-oob="innerHTML:.total-object-count">{{ table.rows|length }}</div>
+    {% endif %}
+{% endif %}

@@ -9,7 +9,7 @@
         data-url="{% url 'users-api:userconfig-list' %}"
         data-config-root="tables.{{ form.table_name }}"
     >
-        <c-cf.table.columns-picker :form="form" class="p-6" />
+        <c-cf.dtable.columns-picker :form="form" class="p-6" />
         <div class="flex justify-end gap-2 border-t border-base-200 px-6 py-4">
             <c-cf.button
                 type="submit"

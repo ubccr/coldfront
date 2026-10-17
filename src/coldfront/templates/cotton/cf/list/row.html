@@ -1,0 +1,10 @@
+{% comment %}
+DaisyUI list row (as, class). One row in a c-cf.list, laid out horizontally.
+Multiple children are arranged left-to-right; the second child grows by default.
+{% endcomment %}
+
+<c-vars class="" as="li" />
+
+<{{ as }} class="list-row {{ class }}" {{ attrs }}>
+    {{ slot }}
+</{{ as }}>

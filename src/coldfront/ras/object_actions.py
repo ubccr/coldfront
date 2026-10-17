@@ -14,7 +14,7 @@ class RequestObject(ObjectAction):
 
     name = "request"
     label = _("Request")
-    icon = "tablericon.git-pull-request"
+    icon = "lucideicon.ticket-plus"
     variant = "primary"
     as_ = "a"
     multi = False
@@ -30,7 +30,7 @@ class ApproveObject(ObjectAction):
 
     name = "approve"
     label = _("Approve")
-    icon = "heroicon.shield-check"
+    icon = "lucideicon.ticket-check"
     variant = "success"
     modal = True
     multi = False
@@ -46,7 +46,7 @@ class DenyObject(ObjectAction):
 
     name = "deny"
     label = _("Deny")
-    icon = "tablericon.forbid"
+    icon = "lucideicon.ticket-x"
     variant = "error"
     modal = True
     multi = False
@@ -62,7 +62,7 @@ class ActivateObject(ObjectAction):
 
     name = "activate"
     label = _("Activate")
-    icon = "tablericon.player-play"
+    icon = "lucideicon.tickets-plane"
     variant = "primary"
     as_ = "a"
     multi = False
@@ -78,7 +78,7 @@ class RenewObject(ObjectAction):
 
     name = "renew"
     label = _("Renew")
-    icon = "tablericon.refresh"
+    icon = "lucideicon.ticket-percent"
     variant = "primary"
     modal = True
     multi = False
@@ -94,7 +94,7 @@ class RevokeObject(ObjectAction):
 
     name = "revoke"
     label = _("Revoke")
-    icon = "tablericon.player-stop"
+    icon = "lucideicon.ticket-minus"
     variant = "error"
     modal = True
     multi = False
@@ -126,7 +126,7 @@ class ApproveChange(ObjectAction):
 
     name = "approve"
     label = _("Approve Change")
-    icon = "heroicon.check-circle"
+    icon = "tablericon.clock-check"
     variant = "success"
     modal = True
     multi = False
@@ -142,7 +142,7 @@ class DenyChange(ObjectAction):
 
     name = "deny"
     label = _("Deny Change")
-    icon = "tablericon.forbid"
+    icon = "tablericon.clock-x"
     variant = "error"
     modal = True
     multi = False
@@ -158,7 +158,7 @@ class ApplyChange(ObjectAction):
 
     name = "apply"
     label = _("Apply Change")
-    icon = "tablericon.player-play"
+    icon = "tablericon.clock-plus"
     variant = "primary"
     modal = True
     multi = False

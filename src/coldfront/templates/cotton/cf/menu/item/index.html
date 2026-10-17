@@ -17,7 +17,7 @@ li inside a ul.menu. Other attrs pass through to the link element.
 
 {# Determine item type and render accordingly #}
 {% if type == "title" %}
-    <li class="menu-title {% if size %}menu-{{ size }}{% endif %} {{ class }}">
+    <li class="menu-title {% if size %}menu-{{ size }}{% endif %} {{ class }}" {{ attrs }}>
         {% if slot %}
             {{ slot }}
         {% else %}

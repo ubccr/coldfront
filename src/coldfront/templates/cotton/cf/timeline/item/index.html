@@ -1,0 +1,76 @@
+{% comment %}
+DaisyUI timeline item (first, last, start, startBox, end, endBox, variant,
+class, icon). One event in a c-cf.timeline. Automatic hr connectors before
+(unless first) and after (unless last). Convenience start/end text props, or
+named slots startSlot/middleSlot/endSlot that override them. variant colors
+only the hr connector (bg-*) and the middle icon (text-*).
+{% endcomment %}
+
+<c-vars
+    class=""
+    first
+    last
+    start=""
+    startBox
+    end=""
+    endBox
+    variant=""
+    startSlot=""
+    middleSlot=""
+    endSlot=""
+    :variantHrClasses="{
+        'neutral': 'bg-neutral',
+        'primary': 'bg-primary',
+        'secondary': 'bg-secondary',
+        'accent': 'bg-accent',
+        'info': 'bg-info',
+        'success': 'bg-success',
+        'warning': 'bg-warning',
+        'error': 'bg-error'
+    }"
+    :variantIconClasses="{
+        'neutral': 'text-neutral',
+        'primary': 'text-primary',
+        'secondary': 'text-secondary',
+        'accent': 'text-accent',
+        'info': 'text-info',
+        'success': 'text-success',
+        'warning': 'text-warning',
+        'error': 'text-error'
+    }"
+/>
+
+{% parse_icon attrs as i %}
+
+<li class="{{ class }}" {{ attrs|strip_icon_attrs }}>
+    {% if not first %}<hr {% if variant %}class="{{ variantHrClasses|get_dict_item:variant }}"{% endif %}>{% endif %}
+
+    {% if startSlot %}
+        {{ startSlot }}
+    {% elif start %}
+        <div class="timeline-start {% if startBox %}timeline-box{% endif %}">{{ start }}</div>
+    {% endif %}
+
+    {% if middleSlot %}
+        {{ middleSlot }}
+    {% elif i.name %}
+        <div class="timeline-middle">
+            <c-cfi
+                n="{{ i.name }}"
+                class="{{ variantIconClasses|get_dict_item:variant }} {{ i.css_class }}"
+                variant="{{ i.variant }}"
+                size="{{ i.size }}"
+            />
+        </div>
+    {% endif %}
+
+    {% if endSlot %}
+        {{ endSlot }}
+    {% elif end %}
+        <div class="timeline-end {% if endBox %}timeline-box{% endif %}">{{ end }}</div>
+    {% endif %}
+
+    {{ slot }}
+
+    {% if not last %}<hr {% if variant %}class="{{ variantHrClasses|get_dict_item:variant }}"{% endif %}>{% endif %}
+</li>

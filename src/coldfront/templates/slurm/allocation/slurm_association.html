@@ -59,7 +59,7 @@
 
                     <c-cf.card.fields.item label="{% trans 'QOS Add' %}">
                         {% for qos in slurm_association.qos_add.all %}
-                            <c-cf.badge href="{{ qos.get_absolute_url }}">{{ qos }}</c-cf.badge>
+                            <c-cf.badge as="a" href="{{ qos.get_absolute_url }}">{{ qos }}</c-cf.badge>
                         {% empty %}
                             {{ ""|placeholder }}
                         {% endfor %}
@@ -67,7 +67,7 @@
 
                     <c-cf.card.fields.item label="{% trans 'QOS Remove' %}">
                         {% for qos in slurm_association.qos_remove.all %}
-                            <c-cf.badge href="{{ qos.get_absolute_url }}">{{ qos }}</c-cf.badge>
+                            <c-cf.badge as="a" href="{{ qos.get_absolute_url }}">{{ qos }}</c-cf.badge>
                         {% empty %}
                             {{ ""|placeholder }}
                         {% endfor %}

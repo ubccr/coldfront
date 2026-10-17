@@ -535,9 +535,8 @@ class ObjectChildrenView(ObjectView, ActionsMixin, TableMixin):
             return HttpResponse(
                 render_component(
                     request,
-                    "cf.table",
+                    "cf.dtable",
                     table=table,
-                    model=self.child_model,
                 )
             )
 

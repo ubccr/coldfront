@@ -20,6 +20,7 @@ import { initQuickAdd } from "./quickAdd";
 import { initSavedFilterSelect } from "./savedFilters";
 import { initQuickSearch } from "./search";
 import { initRowSelect } from "./table/rowSelect";
+import { initCharts } from "./charts";
 
 declare global {
   interface Window {
@@ -47,6 +48,7 @@ function initDocument(): void {
     initSavedFilterSelect,
     initRowSelect,
     initDropdown,
+    initCharts,
   ]) {
     init();
   }

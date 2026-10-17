@@ -1,0 +1,27 @@
+{% comment %}
+DaisyUI chat bubble (class, variant). Message bubble that displays the chat
+message text. variant maps to chat-bubble-* color classes.
+{% endcomment %}
+
+<c-vars
+    class=""
+    as="div"
+    variant=""
+    :variantClasses="{
+        'primary': 'chat-bubble-primary',
+        'secondary': 'chat-bubble-secondary',
+        'accent': 'chat-bubble-accent',
+        'neutral': 'chat-bubble-neutral',
+        'info': 'chat-bubble-info',
+        'success': 'chat-bubble-success',
+        'warning': 'chat-bubble-warning',
+        'error': 'chat-bubble-error'
+    }"
+/>
+
+<{{ as }}
+    class="chat-bubble {{ variantClasses|get_dict_item:variant }} {% if as == 'a' %}hover:brightness-80 transition-all{% endif %} {{ class }}"
+    {{ attrs }}
+>
+    {{ slot }}
+</{{ as }}>

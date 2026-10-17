@@ -15,7 +15,9 @@
 {% block content %}
     <c-cf.layout.row>
         <c-cf.layout.col>
-            <c-cf.card.table :table="table" />
+            <c-cf.card>
+                <c-cf.dtable :table="table" />
+            </c-cf.card>
         </c-cf.layout.col>
     </c-cf.layout.row>
 {% endblock %}

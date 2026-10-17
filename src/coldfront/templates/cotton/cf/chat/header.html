@@ -1,0 +1,10 @@
+{% comment %}
+DaisyUI chat header (class). Header text displayed above the chat bubble,
+typically showing the sender name and timestamp.
+{% endcomment %}
+
+<c-vars as="div" class="" />
+
+<{{ as }} class="chat-header {% if as == 'a' %}hover:brightness-80 transition-all{% endif %} {{ class }}" {{ attrs }}>
+    {{ slot }}
+</{{ as }}>

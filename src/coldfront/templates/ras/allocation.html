@@ -55,6 +55,7 @@
                 <c-cf.card.fields.item label="{% trans 'Resources' %}">
                     <div>
                         <c-cf.badge
+                            as="a"
                             href="{{ object.resource_object.get_absolute_url }}"
                         >{{ object.resource_object }}</c-cf.badge>
                     </div>

@@ -20,5 +20,7 @@
     {{ attrs }}
 >
     {{ slot }}
-    <span class="grow border-b border-base-content/20"></span>
+    {% if role != "group" %}
+        <span class="grow border-b border-base-content/20"></span>
+    {% endif %}
 </div>

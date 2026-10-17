@@ -18,6 +18,7 @@ from django.core.mail import EmailMessage
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
 from coldfront.users.querysets import RestrictedQuerySet
@@ -147,6 +148,18 @@ class User(AbstractBaseUser, PermissionsMixin):
         """Send an email to this user."""
         email = EmailMessage(subject, message, from_email, [self.email])
         email.send(using="default")
+
+    @cached_property
+    def requestable_resources_by_group(self):
+        from coldfront.models.utils import get_requestable_resources_by_group
+
+        return get_requestable_resources_by_group(self)
+
+    @cached_property
+    def requestable_resources(self):
+        from coldfront.models.utils import get_requestable_resources
+
+        return get_requestable_resources(self)
 
     def __str__(self):
         if not self.get_full_name():

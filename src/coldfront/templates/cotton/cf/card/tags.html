@@ -5,6 +5,7 @@
             {% for tag in object.tags.all %}
                 <c-cf.badge
                     variant="{{ tag.color }}"
+                    as="a"
                     href="{% if viewname %}{% url viewname %}?tag={{ tag.slug }}{% endif %}"
                 >{{ tag }}</c-cf.badge>
             {% empty %}

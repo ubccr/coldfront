@@ -179,7 +179,7 @@
 
     <c-cf.layout.row>
         <c-cf.layout.col>
-            <c-cf.card.table :table="related_changes_table" :show_paginator=False>
+            <c-cf.card>
                 <c-slot name="title">
                     {% trans "Related Changes" %}
                     {% if related_changes_count > related_changes_table.rows|length %}
@@ -196,7 +196,8 @@
                         </div>
                     {% endif %}
                 </c-slot>
-            </c-cf.card.table>
+                <c-cf.dtable :table="related_changes_table" :show_paginator=False />
+            </c-cf.card>
         </c-cf.layout.col>
     </c-cf.layout.row>
 {% endblock %}

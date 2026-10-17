@@ -6,11 +6,11 @@
         <c-slot name="left">
             <c-cf.card.fields :object="object">
                 <c-cf.card.fields.item label="{% trans 'User' %}">
-                    <c-cf.badge href="{{ object.user.get_absolute_url }}">{{ object.user }}</c-cf.badge>
+                    <c-cf.badge as="a" href="{{ object.user.get_absolute_url }}">{{ object.user }}</c-cf.badge>
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label="{% trans 'Cluster' %}">
-                    <c-cf.badge href="{{ object.cluster.get_absolute_url }}">{{ object.cluster }}</c-cf.badge>
+                    <c-cf.badge as="a" href="{{ object.cluster.get_absolute_url }}">{{ object.cluster }}</c-cf.badge>
                 </c-cf.card.fields.item>
 
                 <c-cf.card.fields.item label="{% trans 'Default Account' %}">

@@ -1,0 +1,52 @@
+{% comment %}
+DaisyUI status component (variant, size, animate, class). Renders a small
+status indicator dot (online/offline/error etc.). animate="ping" stacks two
+dots via inline-grid so the animated ping halo overlays a solid base dot;
+animate="bounce" applies animate-bounce to a single dot.
+{% endcomment %}
+
+<c-vars
+    class=""
+    variant=""
+    size="md"
+    animate=""
+    :variantClasses="{
+        'neutral': 'status-neutral',
+        'primary': 'status-primary',
+        'secondary': 'status-secondary',
+        'accent': 'status-accent',
+        'info': 'status-info',
+        'success': 'status-success',
+        'warning': 'status-warning',
+        'error': 'status-error'
+    }"
+    :sizeClasses="{
+        'xs': 'status-xs',
+        'sm': 'status-sm',
+        'md': 'status-md',
+        'lg': 'status-lg',
+        'xl': 'status-xl'
+    }"
+    :animateClasses="{
+        'ping': 'animate-ping',
+        'bounce': 'animate-bounce'
+    }"
+/>
+
+{% if animate == "ping" %}
+    <div class="inline-grid *:[grid-area:1/1]">
+        <div
+            class="status {{ variantClasses|get_dict_item:variant }} {{ sizeClasses|get_dict_item:size }} {{ animateClasses|get_dict_item:animate }} {{ class }}"
+            {{ attrs }}
+        >
+        </div>
+        <div class="status {{ variantClasses|get_dict_item:variant }} {{ sizeClasses|get_dict_item:size }} {{ class }}">
+        </div>
+    </div>
+{% else %}
+    <div
+        class="status {{ variantClasses|get_dict_item:variant }} {{ sizeClasses|get_dict_item:size }} {{ animateClasses|get_dict_item:animate }} {{ class }}"
+        {{ attrs }}
+    >
+    </div>
+{% endif %}

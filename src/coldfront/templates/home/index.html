@@ -1,0 +1,35 @@
+{% extends "generic/base.html" %}
+{% load i18n %}
+{% load humanize %}
+
+{% block title %}
+    {% trans "Welcome back," %}
+    {% if user.get_full_name %}
+        {{ user.get_full_name }}
+    {% else %}
+        {{ user.username }}
+    {% endif %}
+{% endblock %}
+{% block subtitle %}
+    <div class="text-secondary text-sm">
+        {{ settings.CENTER_NAME }}
+    </div>
+{% endblock %}
+
+{% block controls %}
+{% endblock %}
+
+{% block content %}
+    {% block stats %}
+        {% include 'home/stats.html' %}
+    {% endblock %}
+    <c-cf.layout.panels>
+        <c-slot name="left">
+            {% include "home/content.html" %}
+        </c-slot>
+
+        <c-slot name="right">
+            {% include 'home/activity.html' %}
+        </c-slot>
+    </c-cf.layout.panels>
+{% endblock %}

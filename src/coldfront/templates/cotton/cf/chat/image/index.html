@@ -1,0 +1,27 @@
+{% comment %}
+DaisyUI chat image (class, src, alt, size). Avatar displayed alongside the
+chat message. Renders an <img> when src is set, otherwise the slot holds custom
+avatar content. size maps to w-8/w-10/w-12.
+{% endcomment %}
+
+<c-vars
+    class=""
+    src=""
+    alt="Avatar"
+    size="md"
+    :sizeClasses="{
+        'sm': 'w-8',
+        'md': 'w-10',
+        'lg': 'w-12'
+    }"
+/>
+
+<div class="chat-image avatar {{ class }}" {{ attrs }}>
+    <div class="{{ sizeClasses|get_dict_item:size }} rounded-full">
+        {% if src %}
+            <img src="{{ src }}" alt="{{ alt }}">
+        {% else %}
+            {{ slot }}
+        {% endif %}
+    </div>
+</div>

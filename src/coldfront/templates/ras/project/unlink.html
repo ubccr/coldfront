@@ -55,7 +55,9 @@ Context:
         {# Selected objects tab — handle + panel #}
         <c-cf.tabs.content name="unlink-tabs" id="unlink-selected" title="{% trans 'Selected Objects' %}">
             <c-slot name="badge"><c-cf.badge>{{ table.rows|length }}</c-cf.badge></c-slot>
-            <c-cf.card.table :table="table" />
+            <c-cf.card>
+                <c-cf.dtable :table="table" />
+            </c-cf.card>
         </c-cf.tabs.content>
         {# /Selected objects tab #}
     </c-cf.tabs>

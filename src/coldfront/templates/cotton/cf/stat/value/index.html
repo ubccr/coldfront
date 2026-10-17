@@ -1,0 +1,25 @@
+{% comment %}
+DaisyUI stat value (variant, class). Renders the primary metric value, with an
+optional color variant (text-primary etc.).
+{% endcomment %}
+
+<c-vars
+    class=""
+    as="div"
+    variant=""
+    :variantClasses="{
+        'primary': 'text-primary',
+        'secondary': 'text-secondary',
+        'accent': 'text-accent',
+        'neutral': 'text-neutral',
+        'info': 'text-info',
+        'success': 'text-success',
+        'warning': 'text-warning',
+        'error': 'text-error'
+    }"
+/>
+
+<{{ as }}
+    class="stat-value {{ variantClasses|get_dict_item:variant }} {% if as == 'a' %}hover:brightness-80 transition-all{% endif %} {{ class }}"
+    {{ attrs }}
+>{{ slot }}</{{ as }}>

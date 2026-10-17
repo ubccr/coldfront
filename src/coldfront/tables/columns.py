@@ -245,7 +245,7 @@ class TagColumn(tables.TemplateColumn):
 
     template_code = """
     {% for tag in value.all %}
-        {% cotton cf.badge variant="{{ tag.color }}" href="{% url url_name %}?tag={{ tag.slug }}" %}{{ tag }}{% endcotton %}
+        {% cotton cf.badge variant="{{ tag.color }}" as="a" href="{% url url_name %}?tag={{ tag.slug }}" %}{{ tag }}{% endcotton %}
     {% empty %}
         <span class="text-muted">&mdash;</span>
     {% endfor %}
@@ -291,9 +291,9 @@ class ActionsColumn(tables.Column):
     }
     empty_values = ()
     actions = {
-        "edit": ActionsItem("Edit", "heroicon.pencil", "change", "primary"),
+        "edit": ActionsItem("Edit", "lucideicon.pen-square", "change", "primary"),
         "delete": ActionsItem("Delete", "heroicon.trash", "delete", "error"),
-        "changelog": ActionsItem("Changelog", "heroicon.clock", "change", "info"),
+        "changelog": ActionsItem("Changelog", "tablericon.history", "change", "info"),
     }
 
     def __init__(
@@ -374,7 +374,7 @@ class ActionsColumn(tables.Column):
         return mark_safe(
             render_component(
                 request,
-                "cf.table.actions_column",
+                "cf.dtable.actions_column",
                 {
                     "items": items,
                     "split_actions": self.split_actions,

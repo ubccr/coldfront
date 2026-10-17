@@ -17,7 +17,7 @@ from . import Menu, MenuGroup, MenuItem, get_model_item
 
 ORGANIZATION_MENU = Menu(
     label=_("Organization"),
-    icon="tablericon.network",
+    icon="heroicon.building-office-2",
     groups=(
         MenuGroup(
             label=_("Tenancy"),
@@ -31,7 +31,7 @@ ORGANIZATION_MENU = Menu(
 
 ALLOCATIONS_MENU = Menu(
     label=_("Allocations"),
-    icon="tablericon.list-check",
+    icon="lucideicon.tickets",
     groups=(
         MenuGroup(
             label=_("Projects"),
@@ -91,7 +91,7 @@ RESOURCES_MENU = Menu(
 
 CUSTOMIZATION_MENU = Menu(
     label=_("Customization"),
-    icon="tablericon.settings-2",
+    icon="tablericon.settings",
     groups=(
         MenuGroup(
             label=_("Customization"),
@@ -109,7 +109,7 @@ CUSTOMIZATION_MENU = Menu(
 
 ADMIN_MENU = Menu(
     label=_("Admin"),
-    icon="tablericon.tools",
+    icon="tablericon.shield-cog",
     groups=(
         MenuGroup(
             label=_("Authentication"),
@@ -147,7 +147,7 @@ ADMIN_MENU = Menu(
 
 BILLING_MENU = Menu(
     label=_("Billing"),
-    icon="tablericon.receipt",
+    icon="tablericon.building-bank",
     groups=(
         MenuGroup(
             label=_("Invoices"),

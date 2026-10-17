@@ -160,7 +160,7 @@ class AddObject(ObjectAction):
 
     name = "add"
     label = _("Add")
-    icon = "heroicon.plus"
+    icon = "tablericon.plus"
     variant = "primary"
     as_ = "a"
     permissions_required = {"add"}
@@ -192,7 +192,7 @@ class EditObject(ObjectAction):
 
     name = "edit"
     label = _("Edit")
-    icon = "heroicon.pencil"
+    icon = "lucideicon.pen-square"
     variant = "warning"
     as_ = "a"
     permissions_required = {"change"}
@@ -259,7 +259,7 @@ class BulkEdit(ObjectAction):
 
     name = "bulk_edit"
     label = _("Edit Selected")
-    icon = "heroicon.pencil"
+    icon = "lucideicon.pen-square"
     variant = "warning"
     type = "submit"
     submit_name = "_edit"
@@ -287,7 +287,7 @@ class BulkRename(ObjectAction):
 
     name = "bulk_rename"
     label = _("Rename Selected")
-    icon = "heroicon.pencil"
+    icon = "lucideicon.pen-square"
     variant = "warning"
     type = "submit"
     submit_name = "_rename"

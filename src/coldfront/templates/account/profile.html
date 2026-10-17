@@ -54,7 +54,7 @@
 
         {% if perms.core.view_objectchange %}
             <c-slot name="bottom">
-                <c-cf.card.table :table="changelog_table" show_paginator=False>
+                <c-cf.card>
                     <c-slot name="title">
                         {% trans "Recent Activity" %}
                         <c-cf.card.actions>
@@ -69,7 +69,8 @@
                             >{% trans "View All" %}</c-cf.button>
                         </c-cf.card.actions>
                     </c-slot>
-                </c-cf.card.table>
+                    <c-cf.dtable :table="changelog_table" :show_paginator=False />
+                </c-cf.card>
             </c-slot>
         {% endif %}
     </c-cf.layout.panels>

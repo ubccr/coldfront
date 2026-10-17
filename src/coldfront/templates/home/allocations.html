@@ -1,0 +1,68 @@
+{% load i18n %}
+{% load humanize %}
+
+<c-cf.card>
+    <c-cf.card.title>
+        My Allocations
+        <c-slot name="actions">
+            <c-cf.button
+                as="a"
+                :href="{% url 'ras:allocation_list' %}"
+                btnStyle="ghost"
+                variant="secondary"
+                icon.end="tablericon.chevrons-right"
+            >View All</c-cf.button>
+        </c-slot>
+    </c-cf.card.title>
+    {% if allocations|length > 0 %}
+        <c-cf.table size="md" id="my-allocations-table">
+            <thead>
+                <tr>
+                    <th class="text-left">Resource</th>
+                    <th class="text-left">Project</th>
+                    <th class="text-center">Status</th>
+                    <th class="text-right">End Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for allocation in allocations %}
+                    <tr
+                        id="segment-{{ allocation.slug }}"
+                        class="rounded-b-[inherit] hover:bg-base-300{% if allocation.end_date and allocation.expires_in < 60 %} bg-warning/10{% endif %}"
+                    >
+                        <td>
+                            <span class="ml-2 font-bold"><a
+                                    href="{{ allocation.get_absolute_url }}"
+                                >{{ allocation.resource_object }}</a></span>
+                        </td>
+                        <td>
+                            <c-cf.badge
+                                variant="ghost"
+                                icon="heroicon.folder-open"
+                                as="a"
+                                :href="allocation.project.get_absolute_url"
+                            >{{ allocation.project.slug }}</c-cf.badge>
+                        </td>
+                        <td class="text-center">
+                            <c-cf.badge variant="{{ allocation.get_status_color }}">
+                                {{ allocation.status|title }}
+                            </c-cf.badge>
+                        </td>
+                        <td class="text-right">
+                            {% if allocation.end_date and allocation.expires_in < 60 %}<c-cf.badge
+                                    variant="error"
+                                >{{ allocation.end_date|naturaltime }}</c-cf.badge>{% else %}{{ allocation.end_date|isodate|placeholder }}{% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </c-cf.table>
+    {% else %}
+        <c-cf.card.body>
+            <c-cf.blocks.getting-started
+                has_projects="{% if stats.projects > 0 %}True{% endif %}"
+                has_project_users="{% if stats.project_users > 0 %}True{% endif %}"
+            />
+        </c-cf.card.body>
+    {% endif %}
+</c-cf.card>

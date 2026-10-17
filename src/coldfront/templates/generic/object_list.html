@@ -49,7 +49,7 @@ Context:
             {% endif %}
 
             {# Object table controls #}
-            <c-cf.table.controls
+            <c-cf.dtable.controls
                 :table="table"
                 table_modal="ObjectTable_config"
                 :table_configs="table_configs"
@@ -91,7 +91,9 @@ Context:
                     {% endif %}
 
                     {# Objects table #}
-                    <c-cf.card.table :table="table" :actions="actions" :model="model" :id="id" :show_paginator="True" />
+                    <c-cf.card>
+                        <c-cf.dtable :table="table" :id="id" :show_paginator="True" />
+                    </c-cf.card>
                     {# /Objects table #}
 
                     {# Form buttons #}
@@ -122,12 +124,7 @@ Context:
                         >{{ filter_form.changed_data|length }}</c-cf.badge>
                     {% endif %}
                 </c-slot>
-                <c-cf.form method="get" action="." :form="filter_form">
-                    <c-slot name="hidden">
-                        {% if return_url %}
-                            <input type="hidden" name="return_url" value="{{ return_url }}">
-                        {% endif %}
-                    </c-slot>
+                <c-cf.form method="get" action="." :form="filter_form" :return_url="return_url">
                     <c-slot name="buttons">
                         <c-cf.button
                             type="button"

@@ -390,7 +390,13 @@ class StorageQuota(AllocationExtensionMixin, PrimaryModel):
     @classmethod
     def create_for_allocation(cls, allocation, values=None):
         """
-        Create a StorageQuota instance for the given allocation.
+        Create or update a StorageQuota instance for the given allocation.
+
+        Because the ``allocation`` FK is unique (one quota per allocation),
+        this reuses an existing quota for the allocation when one exists and
+        updates only its requestable fields from ``values``.  The auto-computed
+        fields (storage/path/owning_user/owning_group) are only used when
+        creating; on update they are preserved as-is.
         """
         resource = allocation.resource_object
         if not isinstance(resource, StorageResource):
@@ -410,7 +416,13 @@ class StorageQuota(AllocationExtensionMixin, PrimaryModel):
                 if field_name in values:
                     kwargs[field_name] = values[field_name]
 
-        instance = StorageQuota(allocation=allocation, **kwargs)
+        instance = StorageQuota.objects.filter(allocation=allocation).first()
+        if instance is None:
+            instance = StorageQuota(allocation=allocation, **kwargs)
+        else:
+            for field_name, value in kwargs.items():
+                if field_name in cls.requestable_fields():
+                    setattr(instance, field_name, value)
         instance.full_clean()
         instance.save()
         return instance

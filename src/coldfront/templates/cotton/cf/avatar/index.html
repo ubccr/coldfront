@@ -1,0 +1,104 @@
+{% comment %}
+DaisyUI avatar (size, rounded, mask, status, placeholder, ring, ringColor,
+bgColor, src, alt, initials, icon, class). Renders an avatar wrapper that either
+renders custom slot content or an image / placeholder (initials or icon).
+status/placeholder land on the outer wrapper; size/rounded/mask/bgColor/ring on
+the inner content div. Icons render through c-cfi at the avatar's size.
+{% endcomment %}
+
+<c-vars
+    class=""
+    size="md"
+    :sizeClasses="{
+        'xs': 'w-8 text-xs',
+        'sm': 'w-12 text-sm',
+        'md': 'w-12 text-base',
+        'lg': 'w-16 text-lg',
+        'xl': 'w-24 text-xl',
+        '2xl': 'w-32 text-2xl',
+    }"
+    rounded=""
+    :roundedClasses="{
+        'xs': 'rounded-xs',
+        'sm': 'rounded-sm',
+        'md': 'rounded-md',
+        'lg': 'rounded-lg',
+        'xl': 'rounded-xl',
+        'full': 'rounded-full',
+    }"
+    mask=""
+    :maskClasses="{
+        'heart': 'mask mask-heart',
+        'squircle': 'mask mask-squircle',
+        'hexagon-2': 'mask mask-hexagon-2',
+        'triangle': 'mask mask-triangle',
+        'pentagon': 'mask mask-pentagon',
+        'diamond': 'mask mask-diamond',
+        'star': 'mask mask-star',
+    }"
+    status=""
+    placeholder
+    ring
+    ringColor=""
+    :ringColorClasses="{
+        'primary': 'ring-primary ring-offset-base-100',
+        'secondary': 'ring-secondary ring-offset-base-100',
+        'accent': 'ring-accent ring-offset-base-100',
+        'neutral': 'ring-neutral ring-offset-base-100',
+        'info': 'ring-info ring-offset-base-100',
+        'success': 'ring-success ring-offset-base-100',
+        'warning': 'ring-warning ring-offset-base-100',
+        'error': 'ring-error ring-offset-base-100',
+    }"
+    src=""
+    alt="Avatar"
+    initials=""
+    bgColor="neutral"
+    :bgColorClasses="{
+        'neutral': 'bg-neutral text-neutral-content',
+        'primary': 'bg-primary text-primary-content',
+        'secondary': 'bg-secondary text-secondary-content',
+        'accent': 'bg-accent text-accent-content',
+        'info': 'bg-info text-info-content',
+        'success': 'bg-success text-success-content',
+        'warning': 'bg-warning text-warning-content',
+        'error': 'bg-error text-error-content',
+    }"
+/>
+
+{% parse_icon attrs as i %}
+
+<div
+    class="avatar {% if status %}avatar-{{ status }}{% endif %} {% if placeholder %}avatar-placeholder{% endif %} {{ class }}"
+    {{ attrs|strip_icon_attrs }}
+>
+    {% if slot %}
+        {{ slot }}
+    {% else %}
+        <div
+            class="
+                {{ sizeClasses|get_dict_item:size }}
+                {{ roundedClasses|get_dict_item:rounded }}
+                {{ bgColorClasses|get_dict_item:bgColor }}
+                {{ maskClasses|get_dict_item:mask }}
+                {% if ring %}ring-2 ring-offset-2 {{ ringColorClasses|get_dict_item:ringColor }}{% endif %}
+            "
+        >
+            {% if src %}
+                <img src="{{ src }}" alt="{{ alt }}">
+            {% elif placeholder %}
+                {% if i.name %}
+                    <c-cfi
+                        n="{{ i.name }}"
+                        size="{% if i.size %}{{ i.size }}{% else %}{{ size }}{% endif %}"
+                        class="{{ i.css_class }}"
+                    />
+                {% elif initials %}
+                    <span>{{ initials }}</span>
+                {% else %}
+                    <c-cfi n="heroicon.user" size="{{ size }}" />
+                {% endif %}
+            {% endif %}
+        </div>
+    {% endif %}
+</div>

@@ -1,0 +1,11 @@
+{% comment %}
+DaisyUI stat component (class). Renders a single stat block inside a
+c-cf.stat.group. Content is composed with c-cf.stat.title, c-cf.stat.value,
+c-cf.stat.desc, c-cf.stat.figure, and c-cf.stat.actions.
+{% endcomment %}
+
+<c-vars class="" />
+
+<div class="stat {{ class }}" {{ attrs }}>
+    {{ slot }}
+</div>

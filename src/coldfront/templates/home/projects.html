@@ -1,0 +1,174 @@
+{% load i18n %}
+{% load humanize %}
+
+<c-cf.card>
+    <c-cf.card.title>
+        My Projects
+        <c-slot name="actions">
+            <c-cf.button
+                as="a"
+                :href="{% url 'ras:project_list' %}"
+                btnStyle="ghost"
+                variant="secondary"
+                icon.end="tablericon.chevrons-right"
+            >View All</c-cf.button>
+        </c-slot>
+    </c-cf.card.title>
+    <c-cf.card.body>
+        {% if projects|length > 0 %}
+            <c-cf.list as="div" class="mb-2">
+                {% for project in projects %}
+                    <c-cf.list.row as="div">
+                        <c-cf.avatar
+                            class="self-start"
+                            placeholder
+                            ring
+                            ringColor="info"
+                            bgColor="info"
+                            rounded="full"
+                            initials="{{ project.name|initials }}"
+                        />
+                        <div class="flex flex-col gap-1">
+                            <div class="font-semibold">
+                                <a href="{{ project.get_absolute_url }}">{{ project.name }}</a>
+                            </div>
+                            <div class="text-muted">
+                                {{ project.description }}
+                            </div>
+                            <div>
+                                <c-cf.button
+                                    btnStyle="link"
+                                    class="pl-0"
+                                    size="sm"
+                                    icon.size="sm"
+                                    icon="tablericon.user-shield"
+                                    as="a"
+                                    href="{% url 'ras:project_list' %}?owner={{ project.owner.pk }}"
+                                >{{ project.owner }}</c-cf.button>
+                            </div>
+                            <div>
+                                <c-cf.button
+                                    variant="secondary"
+                                    btnStyle="ghost"
+                                    class="sm:hidden"
+                                    icon="heroicon.folder-open"
+                                    popovertarget="r-menu-{{ project.pk }}"
+                                    aria-haspopup="menu"
+                                    aria-label="{{ project.name }}"
+                                >{{ project.slug }}</c-cf.button>
+                                <c-cf.megamenu
+                                    id="r-menu-{{ project.pk }}"
+                                    class="w-full flex-wrap p-2"
+                                    role="region"
+                                    aria-label="Actions for {{ project.name }}"
+                                >
+                                    <c-cf.button
+                                        as="a"
+                                        :href="project.get_absolute_url"
+                                        variant="secondary"
+                                        btnStyle="ghost"
+                                        icon="heroicon.folder-open"
+                                    >{{ project.slug }}</c-cf.button>
+
+                                    {% if stats.project_users > 0 %}
+                                        <c-cf.button
+                                            as="a"
+                                            href="{% url 'ras:project_users' pk=project.pk %}"
+                                            btnStyle="ghost"
+                                            variant="secondary"
+                                            icon="tablericon.users"
+                                        >Users</c-cf.button>
+                                    {% else %}
+                                        <c-cf.aura variant="gold">
+                                            <c-cf.button
+                                                as="a"
+                                                href="{% url 'ras:projectuser_add' %}?project={{ project.pk }}&return_url={% url 'home' %}"
+                                                variant="primary"
+                                                icon="tablericon.users-plus"
+                                            >Add Users</c-cf.button>
+                                        </c-cf.aura>
+                                    {% endif %}
+
+                                    {% if stats.project_users > 0 and perms.ras.request_allocation %}
+                                        {% if stats.allocations > 0 %}
+                                            <c-cf.button
+                                                popovertarget="c-{{ project.pk }}"
+                                                btnStyle="ghost"
+                                                variant="secondary"
+                                                icon="lucideicon.ticket-plus"
+                                                aria-haspopup="menu"
+                                            >Request Allocation</c-cf.button>
+                                        {% else %}
+                                            <c-cf.aura variant="gold">
+                                                <c-cf.button
+                                                    popovertarget="c-{{ project.pk }}"
+                                                    variant="primary"
+                                                    icon="lucideicon.ticket-plus"
+                                                    aria-haspopup="menu"
+                                                >Request Allocation</c-cf.button>
+                                            </c-cf.aura>
+                                        {% endif %}
+                                        <div
+                                            id="c-{{project.pk}}"
+                                            popover
+                                            role="region"
+                                            aria-label="Request allocation for {{ project.name }}"
+                                        >
+                                            <div class="flex max-sm:flex-col items-start">
+                                                <c-cf.menu class="md:menu-horizontal">
+                                                    {% for group in project.owner.requestable_resources_by_group %}
+                                                        <li>
+                                                            <ul>
+                                                                <c-cf.menu.item
+                                                                    type="title"
+                                                                    role="heading"
+                                                                    aria-level="3"
+                                                                    title="{{ group.name|bettertitle }}"
+                                                                />
+                                                                {% for resource in group.resources|slice:":10" %}
+                                                                    <c-cf.menu.item
+                                                                        href="{% url 'ras:allocation_request' %}?project={{ project.pk }}&resource_object={{resource.content_type.id}}:{{ resource.id }}&return_url={% url 'home' %}"
+                                                                        :title="resource.name"
+                                                                    />
+                                                                {% endfor %}
+                                                                {% if group.resources|length > 10 %}
+                                                                    <c-cf.menu.item href="{{ group.link }}">
+                                                                        View all ({{ group.resources|length }})
+                                                                        <c-cfi
+                                                                            n="tablericon.chevrons-right"
+                                                                            size="sm"
+                                                                        />
+                                                                    </c-cf.menu.item>
+                                                                {% endif %}
+                                                            </ul>
+                                                        </li>
+                                                    {% endfor %}
+                                                </c-cf.menu>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </c-cf.megamenu>
+                            </div>
+                        </div>
+                        <div>
+                            {% if project.owner.username == request.user.username %}
+                                <span class="tooltip" data-tip="Owner">
+                                    <c-cf.badge icon="tablericon.user-shield" icon.size="sm" variant="warning" />
+                                </span>
+                            {% endif %}
+                            <c-cf.badge
+                                style="soft"
+                                icon.end="lucideicon.tickets"
+                                as="a"
+                                href="{% url 'ras:project_allocations' pk=project.pk %}"
+                                variant="primary"
+                            >{{ project.allocations.all|length }}</c-cf.badge>
+                        </div>
+                    </c-cf.list.row>
+                {% endfor %}
+            </c-cf.list>
+        {% else %}
+            <c-cf.blocks.getting-started :has_projects="False" />
+        {% endif %}
+    </c-cf.card.body>
+</c-cf.card>

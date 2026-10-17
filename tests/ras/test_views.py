@@ -1037,6 +1037,45 @@ class AllocationWithExtensionTest(ModelViewTestCase):
         self.assertIsNotNone(ext)
         self.assertEqual(ext.allocation_id, int(new_id))
 
+    def test_allocation_edit_updates_existing_extension(self):
+        """
+        Editing an allocation that already has an extension must UPDATE the
+        existing extension instance, not create a duplicate (the allocation FK
+        is unique). Regression for the "Slurm association with this Allocation
+        already exists." bug on edit.
+        """
+        from coldfront.storage.models import StorageQuota, StorageResource
+        from coldfront.users.models import Group
+
+        group = Group.objects.create(name="ext-group-edit")
+        StorageQuota.objects.create(
+            allocation=self.allocation,
+            storage=self.storage_resource,
+            path=f"/home/groups/test/{self.allocation.id}",
+            owning_user=self.user,
+            owning_group=group,
+            hard_limit_bytes=100,
+            soft_limit_bytes=50,
+        )
+
+        edit_url = self._get_url("edit", self.allocation)
+        form_data = {
+            "justification": "Updated resources",
+            "description": "Updated extension",
+            "owner": self.user.pk,
+            "project": self.project.pk,
+            "resource_object": f"{ContentType.objects.get_for_model(StorageResource).pk}:{self.storage_resource.pk}",
+            "ext_storagequota_hard_limit_bytes": 500,
+            "status": AllocationStatusChoices.STATUS_ACTIVE,
+        }
+        response = self.client.post(edit_url, form_data)
+        self.assertHttpStatus(response, 302)
+
+        # Still exactly one extension for the allocation — updated, not duplicated.
+        exts = StorageQuota.objects.filter(allocation=self.allocation)
+        self.assertEqual(exts.count(), 1)
+        self.assertEqual(exts.first().hard_limit_bytes, 500)
+
     def test_allocation_detail_shows_extension_tab(self):
         """
         Verify the allocation detail page shows a tab for the extension.

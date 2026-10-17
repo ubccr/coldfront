@@ -1,0 +1,45 @@
+{% comment %}
+DaisyUI radial-progress component (value, variant, bgVariant, progressSize,
+thickness, class). Circular progress indicator driven by CSS custom
+properties. variant tints the stroke (currentColor, text-*); bgVariant tints
+the track (bg-* text-*-content border-*). Slot holds the label (e.g. "60%").
+{% endcomment %}
+
+<c-vars
+    class=""
+    value="0"
+    variant=""
+    bgVariant=""
+    progressSize=""
+    thickness=""
+    :variantClasses="{
+        'neutral': 'text-neutral',
+        'primary': 'text-primary',
+        'secondary': 'text-secondary',
+        'accent': 'text-accent',
+        'info': 'text-info',
+        'success': 'text-success',
+        'warning': 'text-warning',
+        'error': 'text-error'
+    }"
+    :bgVariantClasses="{
+        'neutral': 'bg-neutral text-neutral-content border-neutral',
+        'primary': 'bg-primary text-primary-content border-primary',
+        'secondary': 'bg-secondary text-secondary-content border-secondary',
+        'accent': 'bg-accent text-accent-content border-accent',
+        'info': 'bg-info text-info-content border-info',
+        'success': 'bg-success text-success-content border-success',
+        'warning': 'bg-warning text-warning-content border-warning',
+        'error': 'bg-error text-error-content border-error'
+    }"
+/>
+
+<div
+    class="radial-progress {{ variantClasses|get_dict_item:variant }} {{ bgVariantClasses|get_dict_item:bgVariant }} {{ class }}"
+    style="--value:{{ value }};{% if progressSize %}--size:{{ progressSize }};{% endif %}{% if thickness %}--thickness:{{ thickness }};{% endif %}"
+    role="progressbar"
+    aria-valuenow="{{ value }}"
+    {{ attrs }}
+>
+    {{ slot }}
+</div>

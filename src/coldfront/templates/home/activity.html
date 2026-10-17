@@ -1,0 +1,81 @@
+{% load i18n %}
+{% load humanize %}
+
+<div class="mb-4 flex items-center gap-3">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-muted">{% trans 'Notifications' %}</h2>
+    <span class="h-px flex-1 bg-base-300"></span>
+    <c-cf.badge
+        style="soft"
+        icon.end="tablericon.chevrons-right"
+        icon.size="xs"
+        variant="primary"
+        as="a"
+        href="{% url 'account:notification_list' %}"
+    >{{ notifications|length }}</c-cf.badge>
+</div>
+
+<c-cf.list>
+    {% for notification in notifications|slice:":10" %}
+        <c-cf.list.row>
+            <c-cf.indicator>
+                {% if not notification.read %}
+                    <c-cf.indicator.item shape="none">
+                        <c-cf.status variant="error" animate="ping" />
+                    </c-cf.indicator.item>
+                {% endif %}
+                <c-cfi n="{% if notification.read %}heroicon.envelope-open{% else %}heroicon.envelope{% endif %}" />
+            </c-cf.indicator>
+            <div>
+                <a href="{% url 'account:notification' pk=notification.id %}">{{ notification.subject }}</a>
+                <div class="text-sm text-muted">{{ notification.text }}</div>
+                <c-cf.badge style="soft" variant="info">{{ notification.notification_type }}</c-cf.badge>
+            </div>
+            <p class="text-muted">{{ notification.added|naturaltime }}</p>
+        </c-cf.list.row>
+    {% empty %}
+        <c-cf.list.row class="flex items-center justify-center gap-2 text-lg">
+            <c-cfi n="tablericon.confetti" size="lg" /> You're all caught up!
+        </c-cf.list.row>
+    {% endfor %}
+</c-cf.list>
+
+{% if stats.comments > 0 %}
+    <div class="mb-4 flex items-center gap-3">
+        <h2 class="text-sm font-semibold uppercase tracking-wide text-muted">{% trans 'Comments' %}</h2>
+        <span class="h-px flex-1 bg-base-300"></span>
+        <c-cf.badge
+            style="soft"
+            icon.end="tablericon.chevrons-right"
+            icon.size="xs"
+            variant="primary"
+            as="a"
+            href="{% url 'core:commententry_list' %}"
+        >{{ stats.comments }}</c-cf.badge>
+    </div>
+    <div class="w-full">
+        {% for comment in comments %}
+            <c-cf.chat
+                placement="{% if comment.created_by.username == request.user.username %}end{% else %}start{% endif %}"
+            >
+                <c-cf.chat.image size="">
+                    <c-cf.avatar
+                        placeholder
+                        bgColor="neutral"
+                        initials="{{ comment.created_by.get_initials }}"
+                    />
+                </c-cf.chat.image>
+                <c-cf.chat.header as="a" :href="comment.assigned_object.get_absolute_url">
+                    {{ comment.assigned_object|meta:"verbose_name"|bettertitle }} -
+                    {{ comment.assigned_object }}
+                </c-cf.chat.header>
+                <c-cf.chat.bubble as="a" :href="comment.get_absolute_url" :variant="comment.kind">
+                    {{ comment.comments }}
+                </c-cf.chat.bubble>
+                <c-cf.chat.footer class="text-muted">
+                    {% if comment.created_by.username == request.user.username %}{% trans 'You' %}{% else %}{{ comment.created_by.username }}{% endif %}
+                    · {{ comment.created|naturaltime }}
+                </c-cf.chat.footer>
+            </c-cf.chat>
+        {% endfor %}
+    </div>
+{% endif %}

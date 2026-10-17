@@ -1,0 +1,21 @@
+{% comment %}
+DaisyUI stat group (direction, class). Renders the .stats container wrapping
+one or more c-cf.stat blocks. Applies the uniform ColdFront look
+(shadow-sm w-full mb-4). direction="vertical" stacks the stats vertically.
+{% endcomment %}
+
+<c-vars
+    class=""
+    direction="horizontal"
+    :directionClasses="{
+        'horizontal': 'stats-horizontal',
+        'vertical': 'stats-vertical'
+    }"
+/>
+
+<div
+    class="stats shadow-sm mb-4 border border-base-content/25 {{ directionClasses|get_dict_item:direction }} {{ class }}"
+    {{ attrs }}
+>
+    {{ slot }}
+</div>

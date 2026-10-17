@@ -1,0 +1,20 @@
+{% comment %}
+DaisyUI timeline middle (class, icon). Central icon/marker area of a timeline
+item. Icons render through c-cfi; content renders alongside or instead.
+{% endcomment %}
+
+<c-vars class="" />
+
+{% parse_icon attrs as i %}
+
+<div class="timeline-middle {{ class }}" {{ attrs|strip_icon_attrs }}>
+    {% if i.name %}
+        <c-cfi
+            n="{{ i.name }}"
+            class="{{ i.css_class }}"
+            variant="{{ i.variant }}"
+            size="{{ i.size }}"
+        />
+    {% endif %}
+    {{ slot }}
+</div>

@@ -48,7 +48,7 @@
 
         <c-slot name="bottom">
             {% querystring embedded=True parent_id=object.pk return_url=request.path as qstring %}
-            <c-cf.card.table link="{% url 'tenancy:tenantgroup_list' %}{{ qstring }}">
+            <c-cf.card>
                 <c-slot name="title">
                     {% trans "Child Groups" %}
                     {% if perms.tenancy.add_tenantgroup %}
@@ -63,7 +63,16 @@
                         </c-cf.card.actions>
                     {% endif %}
                 </c-slot>
-            </c-cf.card.table>
+                <div
+                    class="htmx-container"
+                    hx-get="{% url 'tenancy:tenantgroup_list' %}{{ qstring }}"
+                    hx-target="this"
+                    hx-trigger="load"
+                    hx-select=".htmx-container"
+                    hx-swap="outerHTML"
+                >
+                </div>
+            </c-cf.card>
         </c-slot>
     </c-cf.layout.panels>
 {% endblock %}

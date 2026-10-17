@@ -2,15 +2,10 @@
 {% load i18n %}
 
 {% block form %}
-    <c-cf.form :form="form">
-        <c-slot name="hidden">
-            {% if request.POST.return_url %}
-                <input type="hidden" name="return_url" value="{{ request.POST.return_url }}">
-            {% endif %}
-        </c-slot>
+    <c-cf.form :form="form" :return_url="request.POST.return_url">
         <c-slot name="fields">
             <c-cf.form.fields :form="form" />
-            <c-cf.table.columns-picker :form="form" />
+            <c-cf.dtable.columns-picker :form="form" />
             {% if form.changelog_message %}
                 <c-cf.field :field="form.changelog_message" :form="form" />
             {% endif %}

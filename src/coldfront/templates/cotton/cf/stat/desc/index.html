@@ -1,0 +1,21 @@
+{% comment %}
+DaisyUI stat desc (variant, class). Renders the description/subtitle for a stat
+metric, with an optional color variant.
+{% endcomment %}
+
+<c-vars
+    class=""
+    variant=""
+    :variantClasses="{
+        'primary': 'text-primary',
+        'secondary': 'text-secondary',
+        'accent': 'text-accent',
+        'neutral': 'text-neutral',
+        'info': 'text-info',
+        'success': 'text-success',
+        'warning': 'text-warning',
+        'error': 'text-error'
+    }"
+/>
+
+<div class="stat-desc {{ variantClasses|get_dict_item:variant }} {{ class }}" {{ attrs }}>{{ slot }}</div>

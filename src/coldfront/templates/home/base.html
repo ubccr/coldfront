@@ -1,0 +1,165 @@
+{% extends "generic/base.html" %}
+{% load i18n %}
+
+{% block title %}
+    {% trans "Welcome back," %}
+    {% if user.get_full_name %}
+        {{ user.get_full_name }}
+    {% else %}
+        {{ user.username }}
+    {% endif %}
+{% endblock %}
+
+{% block subtitle %}
+    <div class="text-secondary text-sm">
+        {{ settings.CENTER_NAME }}
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="flex items-center justify-center">
+        <c-cf.stat.group>
+            <c-cf.stat>
+                <c-cf.stat.figure variant="primary" icon="heroicon.folder-open" icon.size="xl" />
+                <c-cf.stat.title>Projects</c-cf.stat.title>
+                <c-cf.stat.value as="a" href="{% url 'ras:project_list' %}">{{ projects|length }}</c-cf.stat.value>
+                <c-cf.stat.desc>
+                    Updated {{ project_last_updated|naturaltime }}
+                </c-cf.stat.desc>
+            </c-cf.stat>
+            <c-cf.stat>
+                <c-cf.stat.figure variant="success" icon="lucideicon.tickets" icon.size="xl" />
+                <c-cf.stat.title>Active Allocations</c-cf.stat.title>
+                <c-cf.stat.value as="a" href="{% url 'ras:allocation_list' %}?status=active">
+                    {{ active_allocations|length }}
+                </c-cf.stat.value>
+                <c-cf.stat.desc class="flex items-center gap-1">
+                    {% if pending_change_requests %}
+                        <c-cf.badge
+                            as="a"
+                            href="{% url 'ras:allocationchangerequest_list' %}?status=requested"
+                            style="soft"
+                            size="xs"
+                            variant="warning"
+                        >
+                            {% blocktrans trimmed count count=pending_change_requests|length %}
+                                {{ count }} Pending Change{% plural %}{{ count }} Pending Changes
+                            {% endblocktrans %}
+                        </c-cf.badge>
+                    {% endif %}
+                    {% if expiring_soon %}
+                        <c-cf.badge
+                            as="a"
+                            href="{% url 'ras:allocation_list' %}?status=active"
+                            variant="error"
+                            style="soft"
+                            size="xs"
+                        >
+                            {% blocktrans trimmed count count=expiring_soon|length %}
+                                {{ count }} Expiring Soon{% plural %}{{ count }} Expiring Soon
+                            {% endblocktrans %}
+                        </c-cf.badge>
+                    {% endif %}
+                </c-cf.stat.desc>
+            </c-cf.stat>
+            <c-cf.stat>
+                <c-cf.stat.figure variant="error" icon="tablericon.server" icon.size="xl" />
+                <c-cf.stat.title>Resources</c-cf.stat.title>
+                <c-cf.stat.value>{{ resource_count }}</c-cf.stat.value>
+                <c-cf.stat.desc>{{ resources.keys|join:", " }}</c-cf.stat.desc>
+            </c-cf.stat>
+            <c-cf.stat>
+                <c-cf.stat.figure variant="primary" icon="heroicon.bell" icon.size="xl" />
+                <c-cf.stat.title>New Notifications</c-cf.stat.title>
+                <c-cf.stat.value
+                    as="a"
+                    href="{% url 'account:notification_list' %}"
+                >{{ unread_notifications_count }}</c-cf.stat.value>
+                <c-cf.stat.desc>{{ read_notifications_count }} of {{ notifications|length }} read</c-cf.stat.desc>
+            </c-cf.stat>
+        </c-cf.stat.group>
+    </div>
+    <c-cf.layout.panels>
+        <c-slot name="left">
+            {% include "home/projects.html" %}
+            {% include "home/allocations.html" %}
+        </c-slot>
+
+        <c-slot name="right">
+            <div class="mb-4 flex items-center gap-3">
+                <h2 class="text-sm font-semibold uppercase tracking-wide text-muted">Notifications</h2>
+                <span class="h-px flex-1 bg-base-300"></span>
+                <c-cf.badge
+                    style="soft"
+                    icon.end="tablericon.chevrons-right"
+                    icon.size="xs"
+                    variant="primary"
+                    as="a"
+                    href="{% url 'account:notification_list' %}"
+                >{{ notifications|length }}</c-cf.badge>
+            </div>
+
+            <c-cf.list>
+                {% for notification in notifications %}
+                    <c-cf.list.row>
+                        <c-cf.indicator>
+                            {% if not notification.read %}
+                                <c-cf.indicator.item shape="none">
+                                    <c-cf.status variant="error" animate="ping" />
+                                </c-cf.indicator.item>
+                            {% endif %}
+                            <c-cfi
+                                n="{% if notification.read %}heroicon.envelope-open{% else %}heroicon.envelope{% endif %}"
+                            />
+                        </c-cf.indicator>
+                        <div>
+                            <a href="{% url 'account:notification' pk=notification.id %}">{{ notification.subject }}</a>
+                            <div class="text-sm text-muted">{{ notification.text }}</div>
+                            <c-cf.badge style="soft" variant="info">{{ notification.notification_type }}</c-cf.badge>
+                        </div>
+                        <p class="text-muted">{{ notification.added|naturaltime }}</p>
+                    </c-cf.list.row>
+                {% endfor %}
+            </c-cf.list>
+
+            <div class="mb-4 flex items-center gap-3">
+                <h2 class="text-sm font-semibold uppercase tracking-wide text-muted">Comments</h2>
+                <span class="h-px flex-1 bg-base-300"></span>
+                <c-cf.badge
+                    style="soft"
+                    icon.end="tablericon.chevrons-right"
+                    icon.size="xs"
+                    variant="primary"
+                    as="a"
+                    href="{% url 'core:commententry_list' %}"
+                >{{ comments|length }}</c-cf.badge>
+            </div>
+            <div class="w-full">
+                {% for comment in comments|slice:":15" %}
+                    <c-cf.chat
+                        placement="{% if comment.created_by.username == request.user.username %}end{% else %}start{% endif %}"
+                    >
+                        <c-cf.chat.image size="">
+                            <c-cf.avatar
+                                placeholder
+                                bgColor="neutral"
+                                initials="{{ comment.created_by.get_initials }}"
+                            />
+                        </c-cf.chat.image>
+                        <c-cf.chat.header as="a" :href="comment.assigned_object.get_absolute_url">
+                            {{ comment.assigned_object|meta:"verbose_name"|bettertitle }} -
+                            {{ comment.assigned_object }}
+                        </c-cf.chat.header>
+                        <c-cf.chat.bubble as="a" :href="comment.get_absolute_url" :variant="comment.kind">
+                            {{ comment.comments }}
+                        </c-cf.chat.bubble>
+                        <c-cf.chat.footer class="text-muted">
+                            {% if comment.created_by.username == request.user.username %}You{% else %}{{ comment.created_by.username }}{% endif %}
+                            · {{ comment.created|naturaltime }}
+                        </c-cf.chat.footer>
+                    </c-cf.chat>
+                {% endfor %}
+            </div>
+        </c-slot>
+    </c-cf.layout.panels>
+{% endblock %}

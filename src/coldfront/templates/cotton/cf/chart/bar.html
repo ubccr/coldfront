@@ -1,0 +1,7 @@
+{% comment %}
+DaisyUI bar chart. Renders a <canvas> via c-cf.chart.instance; charts.ts reads
+the data-cf-chart-* attributes to build a Chart.js bar chart themed to the
+active daisyUI theme.
+{% endcomment %}
+
+<c-cf.chart.instance type="bar" :attrs="attrs" />

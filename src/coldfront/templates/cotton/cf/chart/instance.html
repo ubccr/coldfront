@@ -1,0 +1,25 @@
+{% comment %}
+DaisyUI chart instance — shared proxy for all chart sub-components. Renders a
+wrapper div and a <canvas> carrying the data-cf-chart-* attributes (type,
+legend, data, options) that the frontend charts.ts runtime reads to build a
+Chart.js chart themed to the active daisyUI theme.
+{% endcomment %}
+
+<c-vars
+    type=""
+    height="300"
+    legend="top"
+    data="{}"
+    options="{}"
+    class=""
+/>
+
+<div class="{{ class }}" {{ attrs }}>
+    <canvas
+        data-cf-chart-type="{{ type }}"
+        data-cf-chart-legend="{{ legend }}"
+        data-cf-chart-data="{{ data }}"
+        data-cf-chart-options="{{ options }}"
+        style="height: {{ height }}px; width: 100%"
+    ></canvas>
+</div>
