@@ -68,10 +68,14 @@
                     {{ comment.assigned_object|meta:"verbose_name"|bettertitle }} -
                     {{ comment.assigned_object }}
                 </c-cf.chat.header>
-                <c-cf.chat.bubble as="a" :href="comment.get_absolute_url" :variant="comment.kind">
-                    {{ comment.comments }}
+                <c-cf.chat.bubble as="a" :href="comment.get_absolute_url">
+                    {{ comment.comments|markdown }}
                 </c-cf.chat.bubble>
                 <c-cf.chat.footer class="text-muted">
+                    {% if comment.kind != "info" %}<span class="text-{{ comment.get_kind_color }}"><c-cfi
+                                n="lucideicon.message-circle-warning"
+                                size="sm"
+                            /></span>{% endif %}
                     {% if comment.created_by.username == request.user.username %}{% trans 'You' %}{% else %}{{ comment.created_by.username }}{% endif %}
                     · {{ comment.created|naturaltime }}
                 </c-cf.chat.footer>

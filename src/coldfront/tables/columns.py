@@ -323,7 +323,7 @@ class ActionsColumn(tables.Column):
         model = table.Meta.model
 
         # Skip if no actions or extra buttons are defined
-        if not (self.actions or self.extra_buttons):
+        if not (self.actions or self.extra_buttons or self.extra_actions):
             return ""
         # Skip dummy records (e.g. available VLANs or IP ranges replacing individual IPs)
         if not isinstance(record, model) or not getattr(record, "pk", None):
@@ -356,7 +356,7 @@ class ActionsColumn(tables.Column):
 
         if self.extra_actions:
             if callable(self.extra_actions):
-                extra_actions = self.extra_actions(record, user, request)
+                extra_actions = self.extra_actions(record, table, user, request)
                 if isinstance(extra_actions, (list, tuple)):
                     items.extend(extra_actions)
 

@@ -1,6 +1,12 @@
 {% extends 'core/base.html' %}
 {% load i18n %}
 
+{% block control-buttons %}
+    {% if request.user.is_superuser or request.user == object.created_by %}
+        {{ block.super }}
+    {% endif %}
+{% endblock control-buttons %}
+
 {% block content %}
     <c-cf.layout.panels>
         <c-slot name="left">

@@ -765,10 +765,6 @@ class ObjectCommentsView(LoginRequiredMixin, View):
                 assigned_object_id=obj.pk,
             )
         )
-        commententry_table = tables.CommentEntryTable(commententries)
-        commententry_table.configure(request)
-        commententry_table.columns.hide("assigned_object_type")
-        commententry_table.columns.hide("assigned_object")
 
         if request.user.has_perm("core.add_commententry"):
             form = forms.CommentEntryForm(
@@ -792,7 +788,7 @@ class ObjectCommentsView(LoginRequiredMixin, View):
             {
                 "object": obj,
                 "form": form,
-                "table": commententry_table,
+                "comments": commententries,
                 "base_template": self.base_template,
                 "tab": self.tab,
             },

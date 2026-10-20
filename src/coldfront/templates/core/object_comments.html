@@ -1,23 +1,70 @@
 {% extends base_template %}
 {% load i18n %}
+{% load humanize %}
+
+{% block extra_controls %}
+    {{ block.super }}
+    {% if form %}
+        <c-cf.button
+            variant="primary"
+            icon="heroicon.plus"
+            onclick="document.getElementById('commentModal').showModal()"
+        >{% trans "Add Comment" %}</c-cf.button>
+    {% endif %}
+{% endblock %}
 
 {% block content %}
-    <c-cf.card>
-        <c-cf.dtable :table="table" />
-    </c-cf.card>
+    <div class="space-y-4 max-w-5xl mx-auto">
+        {% for comment in comments %}
+            <c-cf.chat
+                placement="{% if comment.created_by.username == request.user.username %}end{% else %}start{% endif %}"
+            >
+                <c-cf.chat.image size="">
+                    <c-cf.avatar
+                        placeholder
+                        bgColor="neutral"
+                        initials="{{ comment.created_by.get_initials }}"
+                    />
+                </c-cf.chat.image>
+                <c-cf.chat.header as="a" :href="comment.assigned_object.get_absolute_url">
+                    {{ comment.assigned_object|meta:"verbose_name"|bettertitle }} -
+                    {{ comment.assigned_object }}
+                </c-cf.chat.header>
+                <c-cf.chat.bubble as="a" :href="comment.get_absolute_url">
+                    {{ comment.comments|markdown }}
+                </c-cf.chat.bubble>
+                <c-cf.chat.footer class="text-muted">
+                    {% if comment.kind != "info" %}<span class="text-{{ comment.get_kind_color }}"><c-cfi
+                                n="lucideicon.message-circle-warning"
+                                size="sm"
+                            /></span>{% endif %}
+                    {% if comment.created_by.username == request.user.username %}{% trans 'You' %}{% else %}{{ comment.created_by.username }}{% endif %}
+                    · {{ comment.created|naturaltime }}
+                </c-cf.chat.footer>
+            </c-cf.chat>
+        {% empty %}
+            <span class="text-muted">{% trans "None" %}</span>
+        {% endfor %}
+    </div>
+{% endblock %}
+
+{% block modals %}
+    {{ block.super }}
     {% if form %}
-        <c-cf.form :form="form" action="{% url 'core:commententry_add' %}" method="post" wrapper_class="">
-            <c-slot name="buttons">
-                <c-cf.button
-                    as="a"
-                    href="{{ object.get_absolute_url }}"
-                    btnStyle="outline"
-                >{% trans "Cancel" %}</c-cf.button>
-                <c-cf.button
-                    type="submit"
-                    variant="primary"
-                >{% trans "Save" %}</c-cf.button>
-            </c-slot>
-        </c-cf.form>
+        <c-cf.modal id="commentModal" boxClass="max-w-3xl" withCloseBtn>
+            <c-cf.form :form="form" action="{% url 'core:commententry_add' %}" method="post" wrapper_class="">
+                <c-slot name="buttons">
+                    <c-cf.button
+                        type="button"
+                        btnStyle="outline"
+                        onclick="document.getElementById('commentModal').close()"
+                    >{% trans "Cancel" %}</c-cf.button>
+                    <c-cf.button
+                        type="submit"
+                        variant="primary"
+                    >{% trans "Save" %}</c-cf.button>
+                </c-slot>
+            </c-cf.form>
+        </c-cf.modal>
     {% endif %}
 {% endblock %}

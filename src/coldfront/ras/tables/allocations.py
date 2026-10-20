@@ -51,7 +51,7 @@ def _render_table_action_buttons(record, user, request):
     return html
 
 
-def _table_extra_actions(record, user, request):
+def _table_extra_actions(record, table, user, request):
     """
     Render approve/deny/activate actions for an allocation row.
     """

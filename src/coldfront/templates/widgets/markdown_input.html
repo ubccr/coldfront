@@ -37,6 +37,7 @@
             hx-trigger="change"
             hx-target="#{{ widget.name }}-preview"
             hx-swap="innerHTML"
+            hx-include="#{{ widget.name }}-input textarea"
             aria-selected="false"
         >
         {% trans "Preview" %}

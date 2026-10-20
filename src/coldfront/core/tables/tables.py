@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
+from urllib.parse import quote
 
 import django_tables2 as tables
 from django.utils.translation import gettext_lazy as _
@@ -21,6 +22,8 @@ from coldfront.core.models import (
     TaggedItem,
 )
 from coldfront.tables import ColdFrontTable, columns
+from coldfront.users.permissions import get_permission_for_model
+from coldfront.views import get_action_url
 
 from .template_code import OBJECTCHANGE_FULL_NAME, OBJECTCHANGE_OBJECT, OBJECTCHANGE_REQUEST_ID
 
@@ -399,7 +402,40 @@ class CustomLinkTable(ColdFrontTable):
         )
 
 
+def _comments_extra_actions(record, table, user, request):
+    """
+    Override default actions buttons to render edit/delete buttons only if you own the comment.
+    """
+
+    model = table.Meta.model
+
+    return_url = request.GET.get("return_url", request.get_full_path())
+    url_appendix = f"?return_url={quote(return_url)}"
+
+    actions = columns.ActionsColumn.actions
+
+    extra_actions = []
+    permission = get_permission_for_model(model, "change")
+    if user.is_superuser or (user.has_perm(permission) and user == record.created_by):
+        url = get_action_url(model, action="edit", kwargs={"pk": record.pk})
+        for key in actions:
+            extra_actions.append(
+                {
+                    "title": actions[key].title,
+                    "icon": actions[key].icon,
+                    "url": url + url_appendix,
+                    "css_class": actions[key].css_class,
+                }
+            )
+
+    return extra_actions
+
+
 class CommentEntryTable(ColdFrontTable):
+    actions = columns.ActionsColumn(
+        actions=(),
+        extra_actions=_comments_extra_actions,
+    )
     created = columns.DateTimeColumn(
         verbose_name=_("Created"),
         timespec="minutes",
