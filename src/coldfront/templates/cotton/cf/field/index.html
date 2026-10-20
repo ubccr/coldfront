@@ -33,6 +33,7 @@ Error ids follow Django's convention ({ auto_id }_errors); help ids use
     :form="form"
     layout="inline"
     :nullify="False"
+    :compact_field_label="False"
     :show_label="True"
     :show_help="True"
     :show_errors="True"
@@ -51,23 +52,42 @@ Error ids follow Django's convention ({ auto_id }_errors); help ids use
             class="{% if layout == 'stacked' %}form-control w-full mb-4{% else %}grid grid-cols-[12rem_1fr] items-start gap-4 mb-4{% endif %}{{ wrapper_class }}"
             {{ attrs }}
         >
-            {% if show_label and field.label %}
+            {% if compact_field_label %}
                 <c-cf.label
                     :for="field.id_for_label"
-                    label="{% if field.label %}{{ field.label }}{% else %}{{ field.name }}{% endif %}"
-                    :required="field.field.required"
-                    class="{% if layout == 'stacked' %}mb-2 block{% else %}sm:text-right sm:pt-2{% endif %} {{ label_class }}"
-                />
+                    class="input {{ label_class }}"
+                >
+                    <span class="label">{% if field.field.required %}<span class="text-error"> *</span>
+                        {% endif %}{% if field.label %}{{ field.label }}{% else %}{{ field.name }}{% endif %}</span>
+                    <div class="{% if layout == 'stacked' %}w-full{% endif %}{{ control_class }}">
+                        {% render_field_with_aria field show_help=show_help show_errors=show_errors %}
+                        {% if show_help and field.help_text %}
+                            <c-cf.help-text id="{{ help_id }}" content="{{ field.help_text }}" />
+                        {% endif %}
+                        {% if show_errors %}
+                            <c-cf.field-error :field="field" />
+                        {% endif %}
+                    </div>
+                </c-cf.label>
+            {% else %}
+                {% if show_label and field.label %}
+                    <c-cf.label
+                        :for="field.id_for_label"
+                        label="{% if field.label %}{{ field.label }}{% else %}{{ field.name }}{% endif %}"
+                        :required="field.field.required"
+                        class="{% if layout == 'stacked' %}mb-2 block{% else %}sm:text-right sm:pt-2{% endif %} {{ label_class }}"
+                    />
+                {% endif %}
+                <div class="{% if layout == 'stacked' %}w-full{% endif %}{{ control_class }}">
+                    {% render_field_with_aria field show_help=show_help show_errors=show_errors %}
+                    {% if show_help and field.help_text %}
+                        <c-cf.help-text id="{{ help_id }}" content="{{ field.help_text }}" />
+                    {% endif %}
+                    {% if show_errors %}
+                        <c-cf.field-error :field="field" />
+                    {% endif %}
+                </div>
             {% endif %}
-            <div class="{% if layout == 'stacked' %}w-full{% endif %}{{ control_class }}">
-                {% render_field_with_aria field show_help=show_help show_errors=show_errors %}
-                {% if show_help and field.help_text %}
-                    <c-cf.help-text id="{{ help_id }}" content="{{ field.help_text }}" />
-                {% endif %}
-                {% if show_errors %}
-                    <c-cf.field-error :field="field" />
-                {% endif %}
-            </div>
         </div>
     {% endwith %}
 {% endif %}

@@ -1,5 +1,5 @@
 {% load i18n %}
-<c-cf.card title='{% trans "Tags" %}'>
+<c-cf.card title="{% trans 'Tags' %}">
     <c-cf.card.body>
         {% with viewname=object|validated_viewname:"list" %}
             {% for tag in object.tags.all %}

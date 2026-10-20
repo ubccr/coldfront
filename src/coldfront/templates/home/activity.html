@@ -68,7 +68,10 @@
                     {{ comment.assigned_object|meta:"verbose_name"|bettertitle }} -
                     {{ comment.assigned_object }}
                 </c-cf.chat.header>
-                <c-cf.chat.bubble as="a" :href="comment.get_absolute_url">
+                <c-cf.chat.bubble
+                    as="a"
+                    :href="{% action_url comment.assigned_object 'comments' pk=comment.assigned_object.pk %}"
+                >
                     {{ comment.comments|markdown }}
                 </c-cf.chat.bubble>
                 <c-cf.chat.footer class="text-muted">

@@ -43,7 +43,22 @@
                 </c-cf.chat.footer>
             </c-cf.chat>
         {% empty %}
-            <span class="text-muted">{% trans "None" %}</span>
+            <c-cf.hero>
+                <c-cf.hero.content class="text-center">
+                    <div class="max-w-md">
+                        <p class="py-6 text-muted">
+                            Leave a comment regarding this Allocation {{ object }}
+                        </p>
+                        {% if form %}
+                            <c-cf.button
+                                variant="primary"
+                                icon="heroicon.plus"
+                                onclick="document.getElementById('commentModal').showModal()"
+                            >{% trans "Add Comment" %}</c-cf.button>
+                        {% endif %}
+                    </div>
+                </c-cf.hero.content>
+            </c-cf.hero>
         {% endfor %}
     </div>
 {% endblock %}

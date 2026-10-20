@@ -10,7 +10,7 @@
     >
         {# Pages carousel #}
         {% if paginator.num_pages > 1 %}
-            <nav aria-label='{% trans "Page selection" %}'>
+            <nav aria-label="{% trans 'Page selection' %}">
                 <ul class="flex items-center gap-1">
                     {# Previous page #}
                     {% if page.has_previous %}
@@ -107,7 +107,7 @@
         <c-cf.dropdown alignment="end">
             <c-cf.dropdown.trigger
                 class="btn btn-outline btn-sm border-base-content/70"
-                aria-label='{% trans "Per Page" %}'
+                aria-label="{% trans 'Per Page' %}"
             >
                 {% trans "Per Page" %}
                 <c-cfi n="heroicon.chevron-down" size="sm" />

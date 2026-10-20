@@ -46,11 +46,13 @@ class GroupFields:
     Parameters:
         fields: An iterable of form field names to render in the row.
         label: The label text to render for the row (optional).
+        compact_field_labels: Render field labels directly on the input field (default False).
     """
 
-    def __init__(self, *fields, label=None):
+    def __init__(self, *fields, label=None, compact_field_labels=False):
         self.fields = fields
         self.label = label
+        self.compact_field_labels = compact_field_labels
 
 
 class DisplayField:

@@ -81,7 +81,7 @@
                 <c-cf.card.fields.item label="{% trans 'Allowed Groups' %}">
                     {% for group in object.allow_groups.all %}
                         <c-cf.badge
-                            variant="neutral"
+                            variant="primary"
                             style="soft"
                             as="a"
                             href="{{ group.get_absolute_url }}"
@@ -94,7 +94,7 @@
                 <c-cf.card.fields.item label="{% trans 'Allowed Accounts' %}">
                     {% for acct in object.allow_accounts.all %}
                         <c-cf.badge
-                            variant="neutral"
+                            variant="primary"
                             style="soft"
                             as="a"
                             href="{{ acct.get_absolute_url }}"
@@ -107,7 +107,7 @@
                 <c-cf.card.fields.item label="{% trans 'Allow QOS' %}">
                     {% for qos in object.allow_qos.all %}
                         <c-cf.badge
-                            variant="neutral"
+                            variant="primary"
                             style="soft"
                             as="a"
                             href="{{ qos.get_absolute_url }}"

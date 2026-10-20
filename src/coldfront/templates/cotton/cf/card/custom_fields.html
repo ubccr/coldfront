@@ -2,7 +2,7 @@
 
 {% with custom_fields=object.get_custom_fields_by_group %}
     {% if custom_fields %}
-        <c-cf.card title='{% trans "Custom Fields" %}'>
+        <c-cf.card title="{% trans 'Custom Fields' %}">
             <table class="table attr-table">
                 {% for group_name, fields in custom_fields.items %}
                     {% if group_name %}
@@ -15,13 +15,13 @@
                             <th scope="row" {% if group_name %}class="ps-3"{% endif %}>
                                 {{ field }}
                                 {% if field.description %}
-                                    <span class="tooltip" data-tip="{{ field.description|escape }}">
+                                    <c-cf.tooltip tip="{{ field.description|escape }}">
                                         <c-cfi
                                             n="heroicon.information-circle"
                                             size="sm"
                                             class="text-primary align-middle"
                                         />
-                                    </span>
+                                    </c-cf.tooltip>
                                 {% endif %}
                             </th>
                             <td>

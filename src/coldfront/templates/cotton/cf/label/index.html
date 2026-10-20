@@ -14,5 +14,9 @@ the label with a required asterisk.
     {% if for %}for="{{ for }}"{% endif %}
     class="{% if required %}font-semibold {% endif %}text-base-content {{ class }}"
 >
-    {{ label }}{% if required %}<span class="text-error"> *</span>{% endif %}
+    {% if label %}
+        {{ label }}{% if required %}<span class="text-error"> *</span>{% endif %}
+    {% else %}
+        {{ slot }}
+    {% endif %}
 </label>

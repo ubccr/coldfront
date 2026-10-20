@@ -1,0 +1,38 @@
+{% comment %}
+DaisyUI divider component (class, variant, direction, position). Divider line
+to separate content. Slot holds the divider's text content (e.g. "OR").
+variant maps to divider-* color classes; direction to
+divider-horizontal/vertical; position to divider-start/end.
+{% endcomment %}
+
+<c-vars
+    class=""
+    variant=""
+    direction=""
+    position=""
+    :variantClasses="{
+        'neutral': 'divider-neutral',
+        'primary': 'divider-primary',
+        'secondary': 'divider-secondary',
+        'accent': 'divider-accent',
+        'info': 'divider-info',
+        'success': 'divider-success',
+        'warning': 'divider-warning',
+        'error': 'divider-error'
+    }"
+    :directionClasses="{
+        'horizontal': 'divider-horizontal',
+        'vertical': 'divider-vertical'
+    }"
+    :positionClasses="{
+        'start': 'divider-start',
+        'end': 'divider-end'
+    }"
+/>
+
+<div
+    class="divider {{ variantClasses|get_dict_item:variant }} {{ directionClasses|get_dict_item:direction }} {{ positionClasses|get_dict_item:position }} {{ class }}"
+    {{ attrs }}
+>
+    {{ slot }}
+</div>

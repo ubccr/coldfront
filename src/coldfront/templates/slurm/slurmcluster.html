@@ -45,7 +45,7 @@
                 <c-cf.card.fields.item label="{% trans 'QOS List' %}">
                     {% for qos in object.qos_list.all %}
                         <c-cf.badge
-                            variant="neutral"
+                            variant="primary"
                             style="soft"
                             as="a"
                             href="{{ qos.get_absolute_url }}"

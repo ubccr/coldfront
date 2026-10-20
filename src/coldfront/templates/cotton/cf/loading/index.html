@@ -1,0 +1,43 @@
+{% comment %}
+DaisyUI loading component (class, type, size, variant). Loading
+spinner/animation indicator. type maps to loading-* animation classes;
+size to loading-xs..loading-xl; variant to text-* color classes.
+Self-closing span, no slot.
+{% endcomment %}
+
+<c-vars
+    class=""
+    type="spinner"
+    size="md"
+    variant=""
+    :typeClasses="{
+        'spinner': 'loading-spinner',
+        'dots': 'loading-dots',
+        'ring': 'loading-ring',
+        'ball': 'loading-ball',
+        'bars': 'loading-bars',
+        'infinity': 'loading-infinity'
+    }"
+    :sizeClasses="{
+        'xs': 'loading-xs',
+        'sm': 'loading-sm',
+        'md': 'loading-md',
+        'lg': 'loading-lg',
+        'xl': 'loading-xl'
+    }"
+    :variantClasses="{
+        'neutral': 'text-neutral',
+        'primary': 'text-primary',
+        'secondary': 'text-secondary',
+        'accent': 'text-accent',
+        'info': 'text-info',
+        'success': 'text-success',
+        'warning': 'text-warning',
+        'error': 'text-error'
+    }"
+/>
+
+<span
+    class="loading {{ typeClasses|get_dict_item:type }} {{ sizeClasses|get_dict_item:size }} {{ variantClasses|get_dict_item:variant }} {{ class }}"
+    {{ attrs }}
+></span>

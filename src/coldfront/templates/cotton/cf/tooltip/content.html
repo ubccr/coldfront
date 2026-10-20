@@ -1,0 +1,10 @@
+{% comment %}
+DaisyUI tooltip.content component (class). Custom HTML content for a
+tooltip, alternative to the data-tip text. Slot holds the content.
+{% endcomment %}
+
+<c-vars class="" />
+
+<div class="tooltip-content {{ class }}" {{ attrs }}>
+    {{ slot }}
+</div>

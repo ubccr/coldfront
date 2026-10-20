@@ -1,0 +1,10 @@
+{% comment %}
+DaisyUI footer.title component (class, as). Footer section title.
+as switches the HTML tag (span default). Slot holds the title text.
+{% endcomment %}
+
+<c-vars class="" as="span" />
+
+<{{ as }} class="footer-title {{ class }}" {{ attrs }}>
+    {{ slot }}
+</{{ as }}>

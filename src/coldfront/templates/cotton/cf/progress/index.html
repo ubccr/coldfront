@@ -1,0 +1,31 @@
+{% comment %}
+DaisyUI progress component (class, value, max, variant). Progress bar to
+show completion status. variant maps to progress-* color classes.
+value="" omits the value attribute (indeterminate). max defaults to 100.
+Self-closing progress element, no slot.
+{% endcomment %}
+
+<c-vars
+    class=""
+    value=""
+    max="100"
+    variant=""
+    :variantClasses="{
+        'neutral': 'progress-neutral',
+        'primary': 'progress-primary',
+        'secondary': 'progress-secondary',
+        'accent': 'progress-accent',
+        'info': 'progress-info',
+        'success': 'progress-success',
+        'warning': 'progress-warning',
+        'error': 'progress-error'
+    }"
+/>
+
+<progress
+    class="progress {{ variantClasses|get_dict_item:variant }} {{ class }}"
+    {% if value %}value="{{ value }}"{% endif %}
+    max="{{ max }}"
+    {{ attrs }}
+>
+</progress>

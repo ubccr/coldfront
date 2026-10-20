@@ -1,0 +1,24 @@
+{% comment %}
+DaisyUI footer component (class, as, center, direction). Footer component
+for displaying site footer content. as switches the HTML tag
+(footer/div/section). center adds footer-center; direction maps to
+footer-horizontal/vertical. Slot holds footer sections.
+{% endcomment %}
+
+<c-vars
+    class=""
+    as="footer"
+    center=""
+    direction="horizontal"
+    :directionClasses="{
+        'horizontal': 'footer-horizontal',
+        'vertical': 'footer-vertical'
+    }"
+/>
+
+<{{ as }}
+    class="footer {% if center %}footer-center{% endif %} {{ directionClasses|get_dict_item:direction }} {{ class }}"
+    {{ attrs }}
+>
+    {{ slot }}
+</{{ as }}>

@@ -22,6 +22,7 @@ Layout:
     :fields="fields"
     :form="form"
     label=""
+    :compact_field_labels="False"
     layout="inline"
     :nullify="False"
 />
@@ -33,7 +34,13 @@ Layout:
     <div class="flex flex-wrap gap-4">
         {% for field in fields %}
             <div class="flex-1 min-w-0">
-                <c-cf.field :field="field" :form="form" layout="stacked" :nullify="nullify" />
+                <c-cf.field
+                    :field="field"
+                    :form="form"
+                    layout="stacked"
+                    :nullify="nullify"
+                    :compact_field_label="compact_field_labels"
+                />
             </div>
         {% endfor %}
     </div>
@@ -44,7 +51,7 @@ Layout:
                 :for="None"
                 label="{{ label }}"
                 :required="False"
-                class="sm:text-right self-center"
+                class="text-right{% if not compact_field_labels %} self-center{% endif %}"
             />
         {% else %}
             <div></div>
@@ -52,7 +59,13 @@ Layout:
         <div class="flex flex-wrap gap-4">
             {% for field in fields %}
                 <div class="flex-1 min-w-0">
-                    <c-cf.field :field="field" :form="form" layout="stacked" :nullify="nullify" />
+                    <c-cf.field
+                        :field="field"
+                        :form="form"
+                        layout="stacked"
+                        :nullify="nullify"
+                        :compact_field_label="compact_field_labels"
+                    />
                 </div>
             {% endfor %}
         </div>

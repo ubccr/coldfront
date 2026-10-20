@@ -1,0 +1,28 @@
+<c-cf.divider class="mt-10" />
+<c-cf.footer>
+    <aside class="w-full flex items-center justify-between gap-2">
+        <c-cf.button.list>
+            <c-cf.tooltip variant="info" tip="Help Documenation" placement="top">
+                <c-cf.button
+                    as="a"
+                    btnStyle="link"
+                    href="{{ settings.CENTER_HELP_URL }}"
+                    icon="tablericon.help"
+                    size="xl"
+                />
+            </c-cf.tooltip>
+            <c-cf.tooltip variant="info" tip="ColdFront Documenation" placement="top">
+                <c-cf.button
+                    as="a"
+                    btnStyle="link"
+                    href="https://docs.coldfront.dev"
+                    icon="cfi.logo"
+                    size="xl"
+                />
+            </c-cf.tooltip>
+        </c-cf.button.list>
+        <div class="flex gap-2">
+            {% now "Y-m-d h:m:s T" %} · {{ request.get_host }}
+        </div>
+    </aside>
+</c-cf.footer>

@@ -52,6 +52,10 @@ scroll chaining to the page/backdrop.
 
                     {# Modals #}
                     {% block modals %}{% endblock %}
+
+                    {% block footer %}
+                        {% include 'base/footer.html' %}
+                    {% endblock %}
                 </main>
             </c-cf.drawer.content>
         </c-slot>

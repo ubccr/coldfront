@@ -1,7 +1,7 @@
 {% comment %}
 Renders form.fieldsets (a list of FieldSet descriptors) as headed groups of
 items. Each item is normalized by the fieldset_rows filter into a
-(kind, title, items) row and dispatched:
+(kind, title, fields) row and dispatched:
   * 'field'     -> a single field (c-cf.field)
   * 'inline'    -> side-by-side fields (c-cf.field.group)
   * 'display'   -> a read-only instance attribute (c-cf.field.display)
@@ -24,13 +24,20 @@ nullify is on.
                 {{ fieldset.name }}
             </h2>
         {% endif %}
-        {% for kind, title, items in fieldset|fieldset_rows:form %}
+        {% for kind, item, fields in fieldset|fieldset_rows:form %}
             {% if kind == 'field' %}
-                <c-cf.field :field="items.0" :form="form" :layout="layout" :nullify="nullify" />
-            {% elif kind == 'inline' %}
-                <c-cf.field.group :fields="items" :form="form" :label="title" :layout="layout" :nullify="nullify" />
+                <c-cf.field :field="fields.0" :form="form" :layout="layout" :nullify="nullify" />
+            {% elif kind == 'group' %}
+                <c-cf.field.group
+                    :fields="fields"
+                    :form="form"
+                    :label="item.label"
+                    :compact_field_labels="item.compact_field_labels"
+                    :layout="layout"
+                    :nullify="nullify"
+                />
             {% elif kind == 'display' %}
-                <c-cf.field.display :label="title" :value="items.0" :layout="layout" />
+                <c-cf.field.display :label="item.name" :value="fields.0" :layout="layout" />
             {% endif %}
         {% endfor %}
     </div>

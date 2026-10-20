@@ -15,8 +15,8 @@
             name="q"
             id="quicksearch"
             class="w-full"
-            placeholder='{% trans "Quick search" %}'
-            aria-label='{% trans "Quick search" %}'
+            placeholder="{% trans 'Quick search' %}"
+            aria-label="{% trans 'Quick search' %}"
             hx-get="{{ request.full_path }}"
             hx-target="#object_list"
             hx-trigger="keyup changed delay:500ms, search"
@@ -35,7 +35,7 @@
     {% if filter_form %}
         <div class="flex items-center gap-1.5 min-w-64">
             <label for="{{ filter_form.filter_id.id_for_label }}" class="text-base-content/60">
-                <c-cfi n="heroicon.funnel" size="sm" title='{% trans "Saved filter" %}' aria-hidden="true" />
+                <c-cfi n="heroicon.funnel" size="sm" title="{% trans 'Saved filter' %}" aria-hidden="true" />
                 <span class="sr-only">{% trans "Saved filter" %}</span>
             </label>
             {% render_field_with_aria filter_form.filter_id %}
@@ -45,7 +45,7 @@
     {% if request.user.is_authenticated and table_modal %}
         <div class="ms-auto flex items-center gap-1">
             <div class="flex items-center">
-                <div class="join">
+                <c-cf.join role="group" aria-label="{% trans 'Configure Table Actions' %}">
                     <c-cf.button
                         btnStyle="outline"
                         size="sm"
@@ -60,7 +60,7 @@
                         <c-cf.dropdown alignment="end">
                             <c-cf.dropdown.trigger
                                 class="btn btn-outline btn-sm join-item border-base-content/70 border-l-0 rounded-l-none"
-                                aria-label='{% trans "Toggle Dropdown" %}'
+                                aria-label="{% trans 'Toggle Dropdown' %}"
                             >
                                 <c-cfi n="heroicon.chevron-down" />
                             </c-cf.dropdown.trigger>
@@ -85,7 +85,7 @@
                             </c-cf.dropdown.content>
                         </c-cf.dropdown>
                     {% endif %}
-                </div>
+                </c-cf.join>
             </div>
         </div>
     {% endif %}

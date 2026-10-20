@@ -1,0 +1,32 @@
+{% comment %}
+DaisyUI steps.item component (class, variant, content, icon). Individual step
+in a steps sequence. variant maps to step-* marker color classes.
+content sets the data-content marker symbol (replaces default counter).
+icon renders an icon inside the step-icon marker span. Slot holds step label.
+{% endcomment %}
+
+<c-vars
+    class=""
+    variant=""
+    content=""
+    icon=""
+    :variantClasses="{
+        'neutral': 'step-neutral',
+        'primary': 'step-primary',
+        'secondary': 'step-secondary',
+        'accent': 'step-accent',
+        'info': 'step-info',
+        'success': 'step-success',
+        'warning': 'step-warning',
+        'error': 'step-error'
+    }"
+/>
+
+<li
+    class="step {{ variantClasses|get_dict_item:variant }} {{ class }}"
+    {% if content %}data-content="{{ content }}"{% endif %}
+    {{ attrs }}
+>
+    {% if icon %}<span class="step-icon"><c-cfi n="{{ icon }}" size="sm" /></span>{% endif %}
+    {{ slot }}
+</li>

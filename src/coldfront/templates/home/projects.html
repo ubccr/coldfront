@@ -111,6 +111,7 @@
                                         <div
                                             id="c-{{project.pk}}"
                                             popover
+                                            class="border-base-content/70"
                                             role="region"
                                             aria-label="Request allocation for {{ project.name }}"
                                         >
@@ -125,21 +126,12 @@
                                                                     aria-level="3"
                                                                     title="{{ group.name|bettertitle }}"
                                                                 />
-                                                                {% for resource in group.resources|slice:":10" %}
+                                                                {% for resource in group.resources %}
                                                                     <c-cf.menu.item
                                                                         href="{% url 'ras:allocation_request' %}?project={{ project.pk }}&resource_object={{resource.content_type.id}}:{{ resource.id }}&return_url={% url 'home' %}"
                                                                         :title="resource.name"
                                                                     />
                                                                 {% endfor %}
-                                                                {% if group.resources|length > 10 %}
-                                                                    <c-cf.menu.item href="{{ group.link }}">
-                                                                        View all ({{ group.resources|length }})
-                                                                        <c-cfi
-                                                                            n="tablericon.chevrons-right"
-                                                                            size="sm"
-                                                                        />
-                                                                    </c-cf.menu.item>
-                                                                {% endif %}
                                                             </ul>
                                                         </li>
                                                     {% endfor %}
@@ -152,9 +144,9 @@
                         </div>
                         <div>
                             {% if project.owner.username == request.user.username %}
-                                <span class="tooltip" data-tip="Owner">
+                                <c-cf.tooltip tip="Owner">
                                     <c-cf.badge icon="tablericon.user-shield" icon.size="sm" variant="warning" />
-                                </span>
+                                </c-cf.tooltip>
                             {% endif %}
                             <c-cf.badge
                                 style="soft"

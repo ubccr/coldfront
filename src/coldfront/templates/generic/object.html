@@ -85,7 +85,7 @@ Context:
         <c-cf.tabs.tab
             link
             href="{{ object.get_absolute_url }}"
-            title='{{ object|meta:"verbose_name"|title }}'
+            title="{{ object|meta:'verbose_name'|title }}"
             :active="{% if not tab %}True{% else %}False{% endif %}"
         />
 

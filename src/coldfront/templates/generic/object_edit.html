@@ -35,7 +35,7 @@ Context:
                 href="{{ object.docs_url }}"
                 target="_blank"
                 btnStyle="outline"
-                title='{% trans "View model documentation" %}'
+                title="{% trans 'View model documentation' %}"
                 icon="tablericon.lifebuoy"
                 label="{% trans 'Help' %}"
             />
@@ -53,14 +53,14 @@ Context:
                         {% trans "Save" %}
                     </button>
                 {% else %}
-                    <div class="join" role="group" aria-label='{% trans "Actions" %}'>
+                    <c-cf.join role="group" aria-label="{% trans 'Create Actions' %}">
                         <button type="submit" name="_create" class="btn btn-primary join-item">
                             {% trans "Create" %}
                         </button>
                         <button type="submit" name="_addanother" class="btn btn-outline btn-primary join-item">
                             {% trans "Create & Add Another" %}
                         </button>
-                    </div>
+                    </c-cf.join>
                 {% endif %}
             </c-slot>
         </c-cf.form>

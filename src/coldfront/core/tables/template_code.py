@@ -25,7 +25,7 @@ PLUGIN_IS_INSTALLED = """
         <span class="text-success">{% cotton cf.checkmark :value="True" /%}</span>
     {% else %}
         <span class="tooltip" data-tip="Could not load plugin. Version may be incompatible. Min version: {{ record.coldfront_min_version }}, max version: {{ record.coldfront_max_version }}">
-            <span class="text-error">{% cotton cf.cfi n="heroicon.exclamation-triangle" size="sm" /%}</span>
+            <span class="text-error">{% cotton cfi n="heroicon.exclamation-triangle" size="sm" /%}</span>
         </span>
     {% endif %}
 {% else %}
@@ -34,11 +34,5 @@ PLUGIN_IS_INSTALLED = """
 """
 
 PLUGIN_NAME_TEMPLATE = """
-{% load static %}
-{% if record.icon_url %}
-    <img class="plugin-icon" src="{{ record.icon_url }}">
-{% else %}
-    <span>{% cotton cf.cfi n="heroicon.puzzle-piece" size="sm" /%}</span>
-{% endif %}
-<a href="{% url 'core:plugin' record.config_name %}">{{ record.title_long }}</a>
+{% cotton cf.button as="a" btnStyle="link" icon="heroicon.puzzle-piece" href="{% url 'core:plugin' record.config_name %}" %}{{ record.title_long }}{% endcotton %}
 """

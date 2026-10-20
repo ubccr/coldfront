@@ -353,7 +353,7 @@ class AllocationForm(AllocationBaseForm, TenancyForm, PrimaryModelForm):
                 "status",
                 "project",
                 "owner",
-                GroupFields("start_date", "end_date", label="Dates"),
+                GroupFields("start_date", "end_date", label="Date Range", compact_field_labels=True),
                 # "start_date",
                 # "end_date",
                 "description",

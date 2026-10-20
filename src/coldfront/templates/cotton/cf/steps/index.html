@@ -1,0 +1,18 @@
+{% comment %}
+DaisyUI steps component (class, direction). Steps component for showing
+progress through a multi-step process. direction maps to
+steps-horizontal/vertical. Slot holds step items (c-cf.steps.item).
+{% endcomment %}
+
+<c-vars
+    class=""
+    direction="horizontal"
+    :directionClasses="{
+        'horizontal': 'steps-horizontal',
+        'vertical': 'steps-vertical'
+    }"
+/>
+
+<ul class="steps {{ directionClasses|get_dict_item:direction }} {{ class }}" {{ attrs }}>
+    {{ slot }}
+</ul>

@@ -21,8 +21,8 @@ def fieldset_rows(fieldset, form):
     Normalize a FieldSet's items into ``(kind, title, items)`` rows for
     rendering:
       * field name string  -> ('field', None, [bound_field])
-      * GroupFields        -> ('inline', label, [bound_fields])
-      * DisplayField       -> ('display', label, [instance_value])
+      * GroupFields        -> ('group', groupFields, [bound_fields])
+      * DisplayField       -> ('display', displayField, [instance_value])
 
     Fields listed in ``form.meta_fields`` or absent from ``form.fields`` are
     skipped. Empty GroupFields rows (all fields skipped) are dropped.
@@ -37,7 +37,7 @@ def fieldset_rows(fieldset, form):
         if isinstance(item, GroupFields):
             fields = [form[name] for name in item.fields if name in form.fields and name not in meta_fields]
             if fields:
-                rows.append(("inline", item.label, fields))
+                rows.append(("group", item, fields))
         elif isinstance(item, DisplayField):
             instance = getattr(form, "instance", None)
             value = getattr(instance, item.name, None)
@@ -46,7 +46,7 @@ def fieldset_rows(fieldset, form):
             else:
                 label = value._meta.verbose_name if hasattr(value, "_meta") else item.name
                 label = label.title()
-            rows.append(("display", label, [value]))
+            rows.append(("display", item, [value]))
         elif item in form.fields and item not in meta_fields:
             rows.append(("field", None, [form[item]]))
     return rows

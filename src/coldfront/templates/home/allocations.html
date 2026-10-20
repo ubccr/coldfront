@@ -28,7 +28,7 @@
                 {% for allocation in allocations %}
                     <tr
                         id="segment-{{ allocation.slug }}"
-                        class="rounded-b-[inherit] hover:bg-base-300{% if allocation.end_date and allocation.expires_in < 60 %} bg-warning/10{% endif %}"
+                        class="rounded-b-[inherit] hover:bg-base-300{% if allocation.end_date and allocation.expires_in < 60 %} bg-error/10{% endif %}"
                     >
                         <td>
                             <span class="ml-2 font-bold"><a

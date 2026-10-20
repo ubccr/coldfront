@@ -1,0 +1,18 @@
+{% comment %}
+DaisyUI join component (class, direction). Groups multiple items together
+visually. Children apply join-item themselves (e.g. c-cf.button
+class="join-item"). direction maps to join-horizontal/join-vertical.
+{% endcomment %}
+
+<c-vars
+    class=""
+    direction=""
+    :directionClasses="{
+        'horizontal': 'join-horizontal',
+        'vertical': 'join-vertical'
+    }"
+/>
+
+<div class="join {{ directionClasses|get_dict_item:direction }} {{ class }}" {{ attrs }}>
+    {{ slot }}
+</div>

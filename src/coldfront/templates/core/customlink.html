@@ -4,45 +4,45 @@
 {% block content %}
     <c-cf.layout.panels>
         <c-slot name="left">
-            <c-cf.card.fields title='{% trans "Custom Link" %}'>
-                <c-cf.card.fields.item label='{% trans "Name" %}'>
+            <c-cf.card.fields title="{% trans 'Custom Link' %}">
+                <c-cf.card.fields.item label="{% trans 'Name' %}">
                     {{ object.name }}
                 </c-cf.card.fields.item>
 
-                <c-cf.card.fields.item label='{% trans "Enabled" %}'>
+                <c-cf.card.fields.item label="{% trans 'Enabled' %}">
                     <c-cf.checkmark :value="object.enabled" />
                 </c-cf.card.fields.item>
 
-                <c-cf.card.fields.item label='{% trans "Group Name" %}'>
+                <c-cf.card.fields.item label="{% trans 'Group Name' %}">
                     {{ object.group_name|placeholder }}
                 </c-cf.card.fields.item>
 
-                <c-cf.card.fields.item label='{% trans "Weight" %}'>
+                <c-cf.card.fields.item label="{% trans 'Weight' %}">
                     {{ object.weight }}
                 </c-cf.card.fields.item>
 
-                <c-cf.card.fields.item label='{% trans "Button Variant" %}'>
+                <c-cf.card.fields.item label="{% trans 'Button Variant' %}">
                     {{ object.get_button_variant_display }}
                 </c-cf.card.fields.item>
 
-                <c-cf.card.fields.item label='{% trans "New Window" %}'>
+                <c-cf.card.fields.item label="{% trans 'New Window' %}">
                     <c-cf.checkmark :value="object.new_window" />
                 </c-cf.card.fields.item>
             </c-cf.card.fields>
 
-            <c-cf.card.fields title='{% trans "Templates" %}'>
-                <c-cf.card.fields.item label='{% trans "Link Text" %}'>
+            <c-cf.card.fields title="{% trans 'Templates' %}">
+                <c-cf.card.fields.item label="{% trans 'Link Text' %}">
                     <code>{{ object.link_text }}</code>
                 </c-cf.card.fields.item>
 
-                <c-cf.card.fields.item label='{% trans "Link URL" %}'>
+                <c-cf.card.fields.item label="{% trans 'Link URL' %}">
                     <code>{{ object.link_url }}</code>
                 </c-cf.card.fields.item>
             </c-cf.card.fields>
         </c-slot>
 
         <c-slot name="right">
-            <c-cf.card.list title='{% trans "Object Types" %}'>
+            <c-cf.card.list title="{% trans 'Object Types' %}">
                 {% for ct in object.object_types.all %}
                     <c-cf.card.list.item>
                         {{ ct }}

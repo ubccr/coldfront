@@ -10,20 +10,20 @@
 {% block content %}
     <c-cf.layout.panels>
         <c-slot name="left">
-            <c-cf.card.fields title='{% trans "Comment Entry" %}'>
-                <c-cf.card.fields.item label='{% trans "Created" %}'>
+            <c-cf.card.fields title="{% trans 'Comment Entry' %}">
+                <c-cf.card.fields.item label="{% trans 'Created' %}">
                     {{ object.created|isodate }}
                 </c-cf.card.fields.item>
 
-                <c-cf.card.fields.item label='{% trans "Kind" %}'>
+                <c-cf.card.fields.item label="{% trans 'Kind' %}">
                     <c-cf.badge variant="{{ object.get_kind_color }}">{{ object.get_kind_display }}</c-cf.badge>
                 </c-cf.card.fields.item>
 
-                <c-cf.card.fields.item label='{% trans "Created By" %}'>
+                <c-cf.card.fields.item label="{% trans 'Created By' %}">
                     {{ object.created_by|placeholder }}
                 </c-cf.card.fields.item>
 
-                <c-cf.card.fields.item label='{% trans "Assigned Object" %}'>
+                <c-cf.card.fields.item label="{% trans 'Assigned Object' %}">
                     {{ object.assigned_object|linkify }}
                 </c-cf.card.fields.item>
             </c-cf.card.fields>

@@ -188,7 +188,7 @@ class MPTTColumn(tables.TemplateColumn):
 
     template_code = """
         {% if not table.order_by %}
-          {% for i in record.level|as_range %}{% cotton cf.cfi n="tablericon.circle-dot" size="xs" /%}{% endfor %}
+          {% for i in record.level|as_range %}{% cotton cfi n="tablericon.circle-dot" size="xs" /%}{% endfor %}
         {% endif %}
         <a href="{{ record.get_absolute_url }}">{{ record.name }}</a>
     """
@@ -376,6 +376,7 @@ class ActionsColumn(tables.Column):
                 request,
                 "cf.dtable.actions_column",
                 {
+                    "record": record,
                     "items": items,
                     "split_actions": self.split_actions,
                     "extra_buttons": extra_html,

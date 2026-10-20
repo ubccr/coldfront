@@ -37,7 +37,7 @@ Context:
                 <c-slot name="buttons">
                     <c-cf.button
                         as="a"
-                        href='{% if return_url %}{{ return_url }}{% else %}{% action_url model "list" %}{% endif %}'
+                        href="{% if return_url %}{{ return_url }}{% else %}{% action_url model 'list' %}{% endif %}"
                         btnStyle="outline"
                         label="{% trans 'Cancel' %}"
                     />

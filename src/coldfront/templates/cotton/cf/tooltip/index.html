@@ -1,0 +1,44 @@
+{% comment %}
+DaisyUI tooltip component (class, tip, placement, align, variant, open).
+Tooltip that shows text on hover. tip sets data-tip; placement maps to
+tooltip-top/bottom/left/right; align to tooltip-start/center/end;
+variant to tooltip-* color classes; open adds tooltip-open.
+Slot holds the trigger element.
+{% endcomment %}
+
+<c-vars
+    class=""
+    tip=""
+    placement="top"
+    align=""
+    variant=""
+    open=""
+    :placementClasses="{
+        'top': 'tooltip-top',
+        'bottom': 'tooltip-bottom',
+        'left': 'tooltip-left',
+        'right': 'tooltip-right'
+    }"
+    :alignClasses="{
+        'start': 'tooltip-start',
+        'center': 'tooltip-center',
+        'end': 'tooltip-end'
+    }"
+    :variantClasses="{
+        'primary': 'tooltip-primary',
+        'secondary': 'tooltip-secondary',
+        'accent': 'tooltip-accent',
+        'info': 'tooltip-info',
+        'success': 'tooltip-success',
+        'warning': 'tooltip-warning',
+        'error': 'tooltip-error'
+    }"
+/>
+
+<div
+    class="tooltip {{ placementClasses|get_dict_item:placement }} {{ alignClasses|get_dict_item:align }} {{ variantClasses|get_dict_item:variant }} {% if open %}tooltip-open{% endif %} {{ class }}"
+    {% if tip %}data-tip="{{ tip }}"{% endif %}
+    {{ attrs }}
+>
+    {{ slot }}
+</div>

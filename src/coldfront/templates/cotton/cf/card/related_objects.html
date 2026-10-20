@@ -1,6 +1,6 @@
 {% load i18n %}
 
-<c-cf.card.list title='{% trans "Related" %}'>
+<c-cf.card.list title="{% trans 'Related' %}">
     {% for related_object_count in models %}
         {% if related_object_count.queryset.count == 1 %}
             {% with related_object=related_object_count.queryset.first %}

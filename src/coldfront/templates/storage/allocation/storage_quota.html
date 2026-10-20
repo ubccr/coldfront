@@ -17,6 +17,10 @@
                         {{ storage_quota.allocation|linkify }}
                     </c-cf.card.fields.item>
 
+                    <c-cf.card.fields.item label="{% trans 'Storage Quota' %}">
+                        {{ storage_quota|linkify }}
+                    </c-cf.card.fields.item>
+
                     <c-cf.card.fields.item label="{% trans 'Storage Resource' %}">
                         {{ storage_quota.storage|linkify }}
                     </c-cf.card.fields.item>

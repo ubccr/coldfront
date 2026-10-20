@@ -24,7 +24,7 @@
         </c-slot>
 
         <c-slot name="right">
-            <c-cf.card.list title='{% trans "Allowed Object Types" %}'>
+            <c-cf.card.list title="{% trans 'Allowed Object Types' %}">
                 {% for ct in object.object_types.all %}
                     <c-cf.card.list.item>
                         {{ ct }}
@@ -36,7 +36,7 @@
                 {% endfor %}
             </c-cf.card.list>
 
-            <c-cf.card.list title='{% trans "Tagged Item Types" %}'>
+            <c-cf.card.list title="{% trans 'Tagged Item Types' %}">
                 {% for object_type in object_types %}
                     {% action_url object_type.content_type.model_class 'list' as list_url %}
                     <c-cf.card.list.item
@@ -50,7 +50,7 @@
         </c-slot>
 
         <c-slot name="bottom">
-            <c-cf.card title='{% trans "Tagged Objects" %}'>
+            <c-cf.card title="{% trans 'Tagged Objects' %}">
                 <c-cf.dtable :table="taggeditem_table" />
             </c-cf.card>
         </c-slot>

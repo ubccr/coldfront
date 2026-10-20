@@ -22,7 +22,7 @@
                 {# SSO login #}
                 {% if auth_backends %}
                     {% if not login_form_hidden %}
-                        <div class="divider">{% trans "Or" context "Denotes an alternative option" %}</div>
+                        <c-cf.divider>{% trans "Or" context "Denotes an alternative option" %}</c-cf.divider>
                     {% endif %}
                     {% if login_form_hidden %}
                         <h2 class="text-center mb-4 text-lg font-semibold text-base-content">{% trans "Log In" %}</h2>

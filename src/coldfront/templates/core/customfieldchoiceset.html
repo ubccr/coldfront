@@ -38,7 +38,7 @@
                 </c-cf.card.fields.item>
 
                 {% for value in choices %}
-                    <c-cf.card.fields.item label='{{ value|split:":"|last|placeholder }}'>
+                    <c-cf.card.fields.item label="{{ value|split:':'|last|placeholder }}">
                         {{ value|split:":"|first }}
                     </c-cf.card.fields.item>
                 {% endfor %}

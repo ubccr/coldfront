@@ -1,0 +1,33 @@
+{% comment %}
+DaisyUI link component (class, as, href, variant, hover). Link with support
+for href and daisyUI styling. as switches the HTML tag (a/button/span/div).
+variant maps to link-* color classes; hover adds link-hover (underline on
+hover). Callers compose {% url %} into href for Django view links.
+href is only rendered for as="a". Slot holds link content.
+{% endcomment %}
+
+<c-vars
+    class=""
+    as="a"
+    href=""
+    variant=""
+    hover=""
+    :variantClasses="{
+        'neutral': 'link-neutral',
+        'primary': 'link-primary',
+        'secondary': 'link-secondary',
+        'accent': 'link-accent',
+        'info': 'link-info',
+        'success': 'link-success',
+        'warning': 'link-warning',
+        'error': 'link-error'
+    }"
+/>
+
+<{{ as }}
+    class="link {{ variantClasses|get_dict_item:variant }} {% if hover %}link-hover{% endif %} {{ class }}"
+    {% if as == "a" and href %}href="{{ href }}"{% endif %}
+    {{ attrs }}
+>
+    {{ slot }}
+</{{ as }}>

@@ -91,7 +91,7 @@
         </c-slot>
 
         <c-slot name="right">
-            <c-cf.card.list title='{% trans "Object Types" %}'>
+            <c-cf.card.list title="{% trans 'Object Types' %}">
                 {% for ct in object.object_types.all %}
                     <c-cf.card.list.item>
                         {{ ct }}
@@ -117,7 +117,7 @@
                 </c-cf.card.fields.item>
             </c-cf.card.fields>
 
-            <c-cf.card.list title='{% trans "Related Objects" %}'>
+            <c-cf.card.list title="{% trans 'Related Objects' %}">
                 {% for qs in related_models %}
                     <c-cf.card.list.item :count="qs.count">
                         {{ qs.model|meta:"verbose_name_plural"|bettertitle }}

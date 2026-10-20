@@ -1,0 +1,12 @@
+{% comment %}
+DaisyUI hero component (class, overlay). Hero section with content and an
+optional overlay. overlay renders a hero-overlay layer for background images.
+Content composes with c-cf.hero.content.
+{% endcomment %}
+
+<c-vars class="" overlay />
+
+<div class="hero {{ class }}" {{ attrs }}>
+    {% if overlay %}<div class="hero-overlay"></div>{% endif %}
+    {{ slot }}
+</div>
