@@ -8,10 +8,10 @@ from django.db.models import Q
 from django.template import Context, Template
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.models import PrimaryModel
-from coldfront.models.features import AllocatableResourceMixin
+from coldfront.lib.models import PrimaryModel
+from coldfront.lib.models.features import AllocatableResourceMixin
+from coldfront.lib.registry import register_allocation_extension
 from coldfront.ras.models.mixins import AllocationExtensionMixin
-from coldfront.registry import register_allocation_extension
 
 from .choices import StorageShareTypeChoices, StorageSnapshotIntervalChoices
 
@@ -224,7 +224,7 @@ class StorageQuota(AllocationExtensionMixin, PrimaryModel):
         Use ``BytesField`` for byte-size fields so users can input
         human-readable sizes like ``"10 TB"`` instead of raw integers.
         """
-        from coldfront.forms.fields.bytes import BytesField
+        from coldfront.lib.forms.fields import BytesField
 
         return {
             "hard_limit_bytes": BytesField(

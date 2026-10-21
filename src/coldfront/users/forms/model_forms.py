@@ -11,14 +11,14 @@ from django.core.exceptions import FieldError
 from django.utils.translation import gettext_lazy as _
 
 from coldfront.core.models import ObjectType
-from coldfront.forms.fields import (
+from coldfront.lib.forms.fields import (
     ContentTypeMultipleChoiceField,
     DynamicModelMultipleChoiceField,
     JSONField,
 )
-from coldfront.forms.layout import FieldSet
-from coldfront.forms.widgets import CopyWidget
-from coldfront.registry import registry
+from coldfront.lib.forms.layout import FieldSet
+from coldfront.lib.forms.widgets import CopyWidget
+from coldfront.lib.registry import registry
 from coldfront.users.constants import CONSTRAINT_TOKEN_USER, OBJECTPERMISSION_OBJECT_TYPES, RESERVED_ACTIONS
 from coldfront.users.models import Group, ObjectPermission, Role, Token, User
 from coldfront.users.permissions import qs_filter_from_constraints

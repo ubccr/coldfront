@@ -12,9 +12,9 @@ from django.db import migrations, models
 
 import coldfront.core.models.customfields
 import coldfront.core.utils
-import coldfront.models.deletion
-import coldfront.models.fields
-import coldfront.utils.validators
+import coldfront.lib.models.deletion
+import coldfront.lib.models.fields
+import coldfront.lib.utils.validators
 
 
 class Migration(migrations.Migration):
@@ -181,7 +181,7 @@ class Migration(migrations.Migration):
                         blank=True,
                         help_text="Regular expression to enforce on text field values. Use ^ and $ to force matching of entire string. For example, <code>^[A-Z]{3}$</code> will limit values to exactly three uppercase letters.",
                         max_length=500,
-                        validators=[coldfront.utils.validators.validate_regex],
+                        validators=[coldfront.lib.utils.validators.validate_regex],
                         verbose_name="validation regex",
                     ),
                 ),
@@ -230,7 +230,7 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "custom fields",
                 "ordering": ["group_name", "weight", "name"],
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
             managers=[
                 ("objects", coldfront.core.models.customfields.CustomFieldManager()),
             ],
@@ -254,7 +254,7 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "custom field choice sets",
                 "ordering": ("name",),
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
         migrations.CreateModel(
             name="CustomLink",
@@ -281,7 +281,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "button_variant",
-                    coldfront.models.fields.ColorField(
+                    coldfront.lib.models.fields.ColorField(
                         default="secondary",
                         help_text="The variant color of the button. The first link in a group will be used for the dropdown button",
                         max_length=20,
@@ -300,7 +300,7 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "custom links",
                 "ordering": ["group_name", "weight", "name"],
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
         migrations.CreateModel(
             name="Job",
@@ -504,7 +504,7 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "saved filters",
                 "ordering": ("weight", "name"),
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
         migrations.CreateModel(
             name="TableConfig",
@@ -526,7 +526,7 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "table configs",
                 "ordering": ("weight", "name"),
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
         migrations.CreateModel(
             name="Tag",
@@ -536,7 +536,10 @@ class Migration(migrations.Migration):
                 ("created", models.DateTimeField(auto_now_add=True, null=True, verbose_name="created")),
                 ("last_updated", models.DateTimeField(auto_now=True, null=True, verbose_name="last updated")),
                 ("id", models.BigAutoField(primary_key=True, serialize=False)),
-                ("color", coldfront.models.fields.ColorField(default="neutral", max_length=20, verbose_name="color")),
+                (
+                    "color",
+                    coldfront.lib.models.fields.ColorField(default="neutral", max_length=20, verbose_name="color"),
+                ),
                 ("description", models.CharField(blank=True, max_length=200, verbose_name="description")),
                 ("weight", models.PositiveSmallIntegerField(default=1000, verbose_name="weight")),
             ],
@@ -545,7 +548,7 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "tags",
                 "ordering": ("weight", "name"),
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
         migrations.CreateModel(
             name="TaggedItem",
@@ -594,6 +597,6 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "comment entries",
                 "ordering": ("-created",),
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
     ]

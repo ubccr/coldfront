@@ -11,15 +11,15 @@ class CoreConfig(AppConfig):
     def ready(self):
         import django.db.models as dj_models
 
-        from coldfront.constants import COLDFRONT_BLANK_CHOICE_LABEL
+        from coldfront.lib.constants import COLDFRONT_BLANK_CHOICE_LABEL
 
         # Override BLANK_CHOICE_LABEL so every auto-generated ModelChoiceField
         # empty_label (and any get_blank_choice_label() consumer) uses our stock
         # blank label instead.
         dj_models.fields.BLANK_CHOICE_LABEL = COLDFRONT_BLANK_CHOICE_LABEL
 
-        from coldfront import context_processors  # noqa: F401
-        from coldfront.models.features import register_models
+        from coldfront.lib import context_processors  # noqa: F401
+        from coldfront.lib.models.features import register_models
 
         from . import (
             notifications,  # noqa: F401

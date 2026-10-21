@@ -13,7 +13,7 @@ class StorageConfig(AppConfig):
     verbose_name = _("Storage")
 
     def ready(self):
-        from coldfront.models.features import register_models
+        from coldfront.lib.models.features import register_models
         from coldfront.storage.backends.dummy import seed_dummy_backends
         from coldfront.storage.backends.registry import register_backend
 

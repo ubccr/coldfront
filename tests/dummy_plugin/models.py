@@ -5,7 +5,7 @@
 
 from django.db import models
 
-from coldfront.models import ColdFrontModel
+from coldfront.lib.models import ColdFrontModel
 
 
 class DummyModel(models.Model):

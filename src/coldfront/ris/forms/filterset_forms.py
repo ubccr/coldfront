@@ -5,8 +5,8 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.forms import ColdFrontModelFilterSetForm
-from coldfront.forms.layout import FieldSet
+from coldfront.lib.forms import ColdFrontModelFilterSetForm
+from coldfront.lib.forms.layout import FieldSet
 from coldfront.ris.models import Funding, Publication
 from coldfront.ris.providers.local import LocalProvider
 from coldfront.ris.registry import get_providers_for_model

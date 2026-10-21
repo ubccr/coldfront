@@ -7,9 +7,9 @@ import taggit.managers
 from django.db import migrations, models
 
 import coldfront.core.utils
-import coldfront.models.deletion
+import coldfront.lib.models.deletion
+import coldfront.lib.utils.jsonschema
 import coldfront.slurm.models
-import coldfront.utils.jsonschema
 
 
 class Migration(migrations.Migration):
@@ -113,7 +113,7 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "slurm qos",
                 "ordering": ["name"],
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
         migrations.CreateModel(
             name="SlurmUser",
@@ -152,7 +152,7 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "slurm users",
                 "ordering": ["cluster__name", "user__username"],
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
         migrations.CreateModel(
             name="SlurmAccount",
@@ -200,7 +200,7 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "slurm accounts",
                 "ordering": ["cluster__name", "name"],
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
         migrations.CreateModel(
             name="SlurmAssociation",
@@ -316,7 +316,7 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "slurm associations",
                 "ordering": ["allocation__slug"],
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
         migrations.CreateModel(
             name="SlurmCluster",
@@ -334,7 +334,7 @@ class Migration(migrations.Migration):
                     models.JSONField(
                         blank=True,
                         null=True,
-                        validators=[coldfront.utils.jsonschema.validate_schema],
+                        validators=[coldfront.lib.utils.jsonschema.validate_schema],
                         verbose_name="schema",
                     ),
                 ),
@@ -475,7 +475,7 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "slurm clusters",
                 "ordering": ["name"],
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
         migrations.CreateModel(
             name="SlurmAccountUsage",
@@ -612,7 +612,7 @@ class Migration(migrations.Migration):
                     models.JSONField(
                         blank=True,
                         null=True,
-                        validators=[coldfront.utils.jsonschema.validate_schema],
+                        validators=[coldfront.lib.utils.jsonschema.validate_schema],
                         verbose_name="schema",
                     ),
                 ),
@@ -775,6 +775,6 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "slurm partitions",
                 "ordering": ["cluster__name", "name"],
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
     ]

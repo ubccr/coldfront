@@ -6,9 +6,9 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.constants import BOOLEAN_WITH_BLANK_CHOICES
-from coldfront.forms import ColdFrontModelFilterSetForm
-from coldfront.forms.layout import FieldSet
+from coldfront.lib.constants import BOOLEAN_WITH_BLANK_CHOICES
+from coldfront.lib.forms import ColdFrontModelFilterSetForm
+from coldfront.lib.forms.layout import FieldSet
 from coldfront.ras.models import Project
 from coldfront.users.models import Group, ObjectPermission, Role, Token, User
 

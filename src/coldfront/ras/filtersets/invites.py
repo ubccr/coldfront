@@ -5,8 +5,8 @@
 import django_filters
 from django.utils.translation import gettext as _
 
+from coldfront.lib.views.filtersets import ChangeLoggedModelFilterSet
 from coldfront.ras.models import Project, ProjectInvite
-from coldfront.views.filtersets import ChangeLoggedModelFilterSet
 
 __all__ = ("ProjectInviteFilterSet",)
 

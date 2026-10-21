@@ -7,8 +7,8 @@ import taggit.managers
 from django.db import migrations, models
 
 import coldfront.core.utils
-import coldfront.models.deletion
-import coldfront.utils.jsonschema
+import coldfront.lib.models.deletion
+import coldfront.lib.utils.jsonschema
 
 
 class Migration(migrations.Migration):
@@ -36,7 +36,7 @@ class Migration(migrations.Migration):
                     models.JSONField(
                         blank=True,
                         null=True,
-                        validators=[coldfront.utils.jsonschema.validate_schema],
+                        validators=[coldfront.lib.utils.jsonschema.validate_schema],
                         verbose_name="schema",
                     ),
                 ),
@@ -92,7 +92,7 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "storage resources",
                 "ordering": ["name"],
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
         migrations.CreateModel(
             name="StorageSnapshotPolicy",
@@ -132,7 +132,7 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "storage snapshot policies",
                 "ordering": ["cluster__name", "name"],
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
         migrations.CreateModel(
             name="StorageCluster",
@@ -200,7 +200,7 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "storage clusters",
                 "ordering": ["name"],
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
         migrations.CreateModel(
             name="StorageQuota",
@@ -295,6 +295,6 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "storage quotas",
                 "ordering": ["allocation__slug"],
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
     ]

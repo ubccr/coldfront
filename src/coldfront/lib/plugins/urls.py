@@ -1,0 +1,37 @@
+# SPDX-FileCopyrightText: (C) DigitalOcean, LLC
+# SPDX-FileCopyrightText: (C) University at Buffalo
+#
+# SPDX-License-Identifier: Apache-2.0
+
+from importlib import import_module
+
+from django.apps import apps
+from django.urls import include, path
+from django.utils.module_loading import import_string, module_has_submodule
+
+from coldfront.lib.registry import registry
+
+from . import views
+
+plugin_patterns = []
+plugin_api_patterns = [
+    path("", views.PluginsAPIRootView.as_view(), name="api-root"),
+    path("installed-plugins/", views.InstalledPluginsAPIView.as_view(), name="plugins-list"),
+]
+
+# Register base/API URL patterns for each plugin
+for plugin_path in registry["plugins"]["installed"]:
+    plugin = import_module(plugin_path)
+    plugin_name = plugin_path.split(".")[-1]
+    app = apps.get_app_config(plugin_name)
+    base_url = getattr(app, "base_url") or app.label
+
+    # Check if the plugin specifies any base URLs
+    if module_has_submodule(plugin, "urls"):
+        urlpatterns = import_string(f"{plugin_path}.urls.urlpatterns")
+        plugin_patterns.append(path(f"{base_url}/", include((urlpatterns, app.label))))
+
+    # Check if the plugin specifies any API URLs
+    if module_has_submodule(plugin, "api.urls"):
+        urlpatterns = import_string(f"{plugin_path}.api.urls.urlpatterns")
+        plugin_api_patterns.append(path(f"{base_url}/", include((urlpatterns, f"{app.label}-api"))))

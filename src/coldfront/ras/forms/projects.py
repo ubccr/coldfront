@@ -5,18 +5,18 @@
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.forms import (
+from coldfront.lib.forms import (
     OrganizationalModelForm,
     PrimaryModelForm,
     PrimaryModelImportForm,
     TenancyForm,
     TenancyImportForm,
+    get_field_value,
 )
-from coldfront.forms.fields import CSVModelChoiceField, DynamicModelChoiceField
-from coldfront.forms.layout import FieldSet
+from coldfront.lib.forms.fields import CSVModelChoiceField, DynamicModelChoiceField
+from coldfront.lib.forms.layout import FieldSet
 from coldfront.ras.models import Project, ProjectUser
 from coldfront.users.models import Group, User
-from coldfront.utils.forms import get_field_value
 
 
 class ProjectForm(TenancyForm, OrganizationalModelForm):

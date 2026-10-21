@@ -4,7 +4,6 @@
 
 from rest_framework.routers import APIRootView
 
-from coldfront.api.viewsets import ColdFrontModelViewSet
 from coldfront.billing import filtersets
 from coldfront.billing.models import (
     Discount,
@@ -13,6 +12,7 @@ from coldfront.billing.models import (
     InvoiceLineItem,
     Rate,
 )
+from coldfront.lib.api.viewsets import ColdFrontModelViewSet
 
 from . import serializers
 

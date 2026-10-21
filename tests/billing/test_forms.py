@@ -12,7 +12,7 @@ from coldfront.billing.forms import (
     RateForm,
 )
 from coldfront.billing.models import Rate
-from coldfront.registry import get_billing_sources, registry
+from coldfront.lib.registry import get_billing_sources, registry
 from coldfront.storage.models import StorageResource
 from coldfront.users.models import User
 

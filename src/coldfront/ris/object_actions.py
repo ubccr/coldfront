@@ -6,7 +6,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django_cotton import render_component
 
-from coldfront.views.object_actions import ObjectAction
+from coldfront.lib.views.object_actions import ObjectAction
 
 __all__ = ("UnlinkFunding", "UnlinkPublications")
 

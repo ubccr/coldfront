@@ -7,8 +7,8 @@ from django.db.models import Count
 
 from coldfront.core.models import ObjectChange
 from coldfront.core.tables import ObjectChangeTable
-from coldfront.registry import register_model_view
-from coldfront.views import generic
+from coldfront.lib.registry import register_model_view
+from coldfront.lib.views import generic
 
 from . import filtersets, forms, tables
 from .models import Group, ObjectPermission, Role, Token, User

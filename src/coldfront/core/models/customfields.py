@@ -19,7 +19,6 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django_jsonform.models.fields import JSONField
 
-from coldfront.context import query_cache
 from coldfront.core.choices import (
     CustomFieldFilterLogicChoices,
     CustomFieldTypeChoices,
@@ -27,12 +26,11 @@ from coldfront.core.choices import (
     CustomFieldUIVisibleChoices,
 )
 from coldfront.core.templatetags.builtins.filters import render_markdown
-from coldfront.models import ChangeLoggedModel
-from coldfront.models.features import CloningMixin
+from coldfront.lib.context import query_cache
+from coldfront.lib.models import ChangeLoggedModel
+from coldfront.lib.models.features import CloningMixin
+from coldfront.lib.utils.validators import validate_regex
 from coldfront.users.querysets import RestrictedQuerySet
-from coldfront.utils.data import datetime_from_timestamp
-from coldfront.utils.forms import add_blank_choice
-from coldfront.utils.validators import validate_regex
 
 from .object_types import ObjectType
 
@@ -589,8 +587,8 @@ class CustomField(CloningMixin, ChangeLoggedModel):
         for_filterset_form: Return a form field suitable for use in a FilterSet form.
         """
 
-        from coldfront.forms import fields as cf_fields
-        from coldfront.forms.widgets import AlpineMultipleSelectWidget, AlpineSelectWidget
+        from coldfront.lib.forms import fields as cf_fields
+        from coldfront.lib.forms.widgets import AlpineMultipleSelectWidget, AlpineSelectWidget
 
         initial = self.default if set_initial else None
         required = self.required if enforce_required else False
@@ -643,6 +641,8 @@ class CustomField(CloningMixin, ChangeLoggedModel):
             default_choice = self.default if self.default in self.choices else None
 
             if not required or default_choice is None:
+                from coldfront.lib.forms import add_blank_choice
+
                 choices = add_blank_choice(choices)
 
             # Set the initial value to the first available choice (if any)
@@ -846,7 +846,7 @@ class CustomField(CloningMixin, ChangeLoggedModel):
             elif self.type == CustomFieldTypeChoices.TYPE_DATETIME:
                 if type(value) is not datetime:
                     try:
-                        datetime_from_timestamp(value)
+                        datetime.fromisoformat(value)
                     except ValueError:
                         raise ValidationError(
                             _("Date and time values must be in ISO 8601 format (YYYY-MM-DD HH:MM:SS).")

@@ -12,6 +12,8 @@ from rest_framework import status
 
 from coldfront.core.choices import ObjectChangeActionChoices
 from coldfront.core.models import ObjectChange, ObjectType
+from coldfront.lib.testing import APITestCase, APIViewTestCases
+from coldfront.lib.testing.utils import get_random_string
 from coldfront.ras.choices import AllocationStatusChoices, ResourceStatusChoices
 from coldfront.ras.models import (
     Allocation,
@@ -23,8 +25,6 @@ from coldfront.ras.models import (
     ResourceType,
 )
 from coldfront.users.models import ObjectPermission, User
-from coldfront.utils.testing import APITestCase, APIViewTestCases
-from coldfront.utils.testing.utils import get_random_string
 
 
 class AppTest(APITestCase):

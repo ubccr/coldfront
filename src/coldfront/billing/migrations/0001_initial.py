@@ -7,9 +7,9 @@ import djmoney.models.fields
 from django.db import migrations, models
 
 import coldfront.core.utils
-import coldfront.models.deletion
-import coldfront.models.fields
-import coldfront.models.utils
+import coldfront.lib.models.deletion
+import coldfront.lib.models.fields
+import coldfront.lib.models.utils
 
 
 class Migration(migrations.Migration):
@@ -57,7 +57,7 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "discounts",
                 "ordering": ["created"],
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
         migrations.CreateModel(
             name="FreeAllowance",
@@ -108,7 +108,7 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "free allowances",
                 "ordering": ["created"],
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
         migrations.CreateModel(
             name="Invoice",
@@ -123,7 +123,7 @@ class Migration(migrations.Migration):
                 ("description", models.CharField(blank=True, max_length=200, verbose_name="description")),
                 (
                     "slug",
-                    coldfront.models.fields.AutoSlugField(
+                    coldfront.lib.models.fields.AutoSlugField(
                         blank=True,
                         help_text="Unique slug. Leave blank and one will be auto generated.",
                         unique=True,
@@ -146,8 +146,8 @@ class Migration(migrations.Migration):
                 (
                     "payment_amount_currency",
                     djmoney.models.fields.CurrencyField(
-                        choices=coldfront.models.utils.get_currency_choices,
-                        default=coldfront.models.utils.get_default_currency,
+                        choices=coldfront.lib.models.utils.get_currency_choices,
+                        default=coldfront.lib.models.utils.get_default_currency,
                         editable=False,
                         max_length=3,
                         null=True,
@@ -157,9 +157,9 @@ class Migration(migrations.Migration):
                     "payment_amount",
                     djmoney.models.fields.MoneyField(
                         blank=True,
-                        currency_choices=coldfront.models.utils.get_currency_choices,
+                        currency_choices=coldfront.lib.models.utils.get_currency_choices,
                         decimal_places=2,
-                        default_currency=coldfront.models.utils.get_default_currency,
+                        default_currency=coldfront.lib.models.utils.get_default_currency,
                         max_digits=14,
                         null=True,
                         verbose_name="payment amount",
@@ -182,8 +182,8 @@ class Migration(migrations.Migration):
                 (
                     "subtotal_currency",
                     djmoney.models.fields.CurrencyField(
-                        choices=coldfront.models.utils.get_currency_choices,
-                        default=coldfront.models.utils.get_default_currency,
+                        choices=coldfront.lib.models.utils.get_currency_choices,
+                        default=coldfront.lib.models.utils.get_default_currency,
                         editable=False,
                         max_length=3,
                         null=True,
@@ -193,9 +193,9 @@ class Migration(migrations.Migration):
                     "subtotal",
                     djmoney.models.fields.MoneyField(
                         blank=True,
-                        currency_choices=coldfront.models.utils.get_currency_choices,
+                        currency_choices=coldfront.lib.models.utils.get_currency_choices,
                         decimal_places=2,
-                        default_currency=coldfront.models.utils.get_default_currency,
+                        default_currency=coldfront.lib.models.utils.get_default_currency,
                         max_digits=14,
                         null=True,
                         verbose_name="subtotal",
@@ -204,8 +204,8 @@ class Migration(migrations.Migration):
                 (
                     "allowance_total_currency",
                     djmoney.models.fields.CurrencyField(
-                        choices=coldfront.models.utils.get_currency_choices,
-                        default=coldfront.models.utils.get_default_currency,
+                        choices=coldfront.lib.models.utils.get_currency_choices,
+                        default=coldfront.lib.models.utils.get_default_currency,
                         editable=False,
                         max_length=3,
                         null=True,
@@ -215,9 +215,9 @@ class Migration(migrations.Migration):
                     "allowance_total",
                     djmoney.models.fields.MoneyField(
                         blank=True,
-                        currency_choices=coldfront.models.utils.get_currency_choices,
+                        currency_choices=coldfront.lib.models.utils.get_currency_choices,
                         decimal_places=2,
-                        default_currency=coldfront.models.utils.get_default_currency,
+                        default_currency=coldfront.lib.models.utils.get_default_currency,
                         max_digits=14,
                         null=True,
                         verbose_name="allowance total",
@@ -226,8 +226,8 @@ class Migration(migrations.Migration):
                 (
                     "discount_total_currency",
                     djmoney.models.fields.CurrencyField(
-                        choices=coldfront.models.utils.get_currency_choices,
-                        default=coldfront.models.utils.get_default_currency,
+                        choices=coldfront.lib.models.utils.get_currency_choices,
+                        default=coldfront.lib.models.utils.get_default_currency,
                         editable=False,
                         max_length=3,
                         null=True,
@@ -237,9 +237,9 @@ class Migration(migrations.Migration):
                     "discount_total",
                     djmoney.models.fields.MoneyField(
                         blank=True,
-                        currency_choices=coldfront.models.utils.get_currency_choices,
+                        currency_choices=coldfront.lib.models.utils.get_currency_choices,
                         decimal_places=2,
-                        default_currency=coldfront.models.utils.get_default_currency,
+                        default_currency=coldfront.lib.models.utils.get_default_currency,
                         max_digits=14,
                         null=True,
                         verbose_name="discount total",
@@ -248,8 +248,8 @@ class Migration(migrations.Migration):
                 (
                     "grand_total_currency",
                     djmoney.models.fields.CurrencyField(
-                        choices=coldfront.models.utils.get_currency_choices,
-                        default=coldfront.models.utils.get_default_currency,
+                        choices=coldfront.lib.models.utils.get_currency_choices,
+                        default=coldfront.lib.models.utils.get_default_currency,
                         editable=False,
                         max_length=3,
                         null=True,
@@ -259,9 +259,9 @@ class Migration(migrations.Migration):
                     "grand_total",
                     djmoney.models.fields.MoneyField(
                         blank=True,
-                        currency_choices=coldfront.models.utils.get_currency_choices,
+                        currency_choices=coldfront.lib.models.utils.get_currency_choices,
                         decimal_places=2,
-                        default_currency=coldfront.models.utils.get_default_currency,
+                        default_currency=coldfront.lib.models.utils.get_default_currency,
                         max_digits=14,
                         null=True,
                         verbose_name="grand total",
@@ -279,7 +279,7 @@ class Migration(migrations.Migration):
                     ("void_invoice", "Void invoice"),
                 ),
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
         migrations.CreateModel(
             name="InvoiceLineItem",
@@ -350,8 +350,8 @@ class Migration(migrations.Migration):
                 (
                     "unit_price_currency",
                     djmoney.models.fields.CurrencyField(
-                        choices=coldfront.models.utils.get_currency_choices,
-                        default=coldfront.models.utils.get_default_currency,
+                        choices=coldfront.lib.models.utils.get_currency_choices,
+                        default=coldfront.lib.models.utils.get_default_currency,
                         editable=False,
                         max_length=3,
                         null=True,
@@ -361,9 +361,9 @@ class Migration(migrations.Migration):
                     "unit_price",
                     djmoney.models.fields.MoneyField(
                         blank=True,
-                        currency_choices=coldfront.models.utils.get_currency_choices,
+                        currency_choices=coldfront.lib.models.utils.get_currency_choices,
                         decimal_places=2,
-                        default_currency=coldfront.models.utils.get_default_currency,
+                        default_currency=coldfront.lib.models.utils.get_default_currency,
                         max_digits=14,
                         null=True,
                         verbose_name="unit price",
@@ -372,8 +372,8 @@ class Migration(migrations.Migration):
                 (
                     "amount_currency",
                     djmoney.models.fields.CurrencyField(
-                        choices=coldfront.models.utils.get_currency_choices,
-                        default=coldfront.models.utils.get_default_currency,
+                        choices=coldfront.lib.models.utils.get_currency_choices,
+                        default=coldfront.lib.models.utils.get_default_currency,
                         editable=False,
                         max_length=3,
                         null=True,
@@ -383,9 +383,9 @@ class Migration(migrations.Migration):
                     "amount",
                     djmoney.models.fields.MoneyField(
                         blank=True,
-                        currency_choices=coldfront.models.utils.get_currency_choices,
+                        currency_choices=coldfront.lib.models.utils.get_currency_choices,
                         decimal_places=2,
-                        default_currency=coldfront.models.utils.get_default_currency,
+                        default_currency=coldfront.lib.models.utils.get_default_currency,
                         max_digits=14,
                         null=True,
                         verbose_name="amount",
@@ -397,7 +397,7 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "invoice line items",
                 "ordering": ["invoice", "id"],
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
         migrations.CreateModel(
             name="Rate",
@@ -437,8 +437,8 @@ class Migration(migrations.Migration):
                 (
                     "amount_currency",
                     djmoney.models.fields.CurrencyField(
-                        choices=coldfront.models.utils.get_currency_choices,
-                        default=coldfront.models.utils.get_default_currency,
+                        choices=coldfront.lib.models.utils.get_currency_choices,
+                        default=coldfront.lib.models.utils.get_default_currency,
                         editable=False,
                         max_length=3,
                     ),
@@ -446,9 +446,9 @@ class Migration(migrations.Migration):
                 (
                     "amount",
                     djmoney.models.fields.MoneyField(
-                        currency_choices=coldfront.models.utils.get_currency_choices,
+                        currency_choices=coldfront.lib.models.utils.get_currency_choices,
                         decimal_places=2,
-                        default_currency=coldfront.models.utils.get_default_currency,
+                        default_currency=coldfront.lib.models.utils.get_default_currency,
                         help_text="Price per billing unit.",
                         max_digits=14,
                         verbose_name="amount",
@@ -471,6 +471,6 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "rates",
                 "ordering": ["created"],
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
     ]

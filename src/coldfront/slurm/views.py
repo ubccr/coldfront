@@ -7,8 +7,12 @@ from django.db.models import Sum
 from django.http import HttpResponse
 from django.utils.translation import gettext_lazy as _
 
+from coldfront.lib.registry import register_model_view
+from coldfront.lib.utils.query import count_related
+from coldfront.lib.views import ViewTab, generic, get_action_url
+from coldfront.lib.views.mixins import GetRelatedModelsMixin
+from coldfront.lib.views.object_actions import BulkExport, EditObject
 from coldfront.ras.models import Allocation
-from coldfront.registry import register_model_view
 from coldfront.slurm import filtersets, forms, tables
 from coldfront.slurm.export import generate_association_dump, generate_partition_config
 from coldfront.slurm.models import (
@@ -20,11 +24,6 @@ from coldfront.slurm.models import (
     SlurmQOS,
     SlurmUser,
 )
-from coldfront.utils.query import count_related
-from coldfront.views import generic
-from coldfront.views.mixins import GetRelatedModelsMixin
-from coldfront.views.object_actions import BulkExport, EditObject
-from coldfront.views.utils import ViewTab, get_action_url
 
 #
 # Slurm QOS

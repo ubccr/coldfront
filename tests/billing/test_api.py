@@ -22,9 +22,9 @@ from coldfront.billing.models import (
     InvoiceLineItem,
     Rate,
 )
+from coldfront.lib.testing import APIViewTestCases
 from coldfront.ras.models import Resource, ResourceType
 from coldfront.users.models import User
-from coldfront.utils.testing import APIViewTestCases
 
 
 class InvoiceTest(APIViewTestCases.APIViewTestCase):

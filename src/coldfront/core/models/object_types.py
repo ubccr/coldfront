@@ -13,10 +13,10 @@ from django.db.models import ManyToOneRel, Q
 from django.db.models.fields.json import KT
 from django.utils.translation import gettext as _
 
-from coldfront.constants import CORE_APPS
-from coldfront.plugins import PluginConfig
-from coldfront.registry import registry
-from coldfront.utils.strings import title
+from coldfront.lib.constants import CORE_APPS
+from coldfront.lib.plugins import PluginConfig
+from coldfront.lib.registry import registry
+from coldfront.lib.utils.strings import title
 
 __all__ = (
     "ObjectType",

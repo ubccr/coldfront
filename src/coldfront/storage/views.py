@@ -12,8 +12,14 @@ from django.core.exceptions import PermissionDenied
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from coldfront.lib.registry import register_model_view
+from coldfront.lib.utils.data import shallow_compare_dict
+from coldfront.lib.utils.query import count_related
+from coldfront.lib.utils.serialization import serialize_object
+from coldfront.lib.views import ViewTab, generic, get_action_url
+from coldfront.lib.views.mixins import GetRelatedModelsMixin
+from coldfront.lib.views.object_actions import EditObject
 from coldfront.ras.models import Allocation
-from coldfront.registry import register_model_view
 from coldfront.storage import filtersets, forms, tables
 from coldfront.storage.backends.base import ErrNotFound
 from coldfront.storage.backends.registry import get_backend, get_backend_choices
@@ -25,12 +31,6 @@ from coldfront.storage.models import (
 )
 from coldfront.storage.object_actions import SyncQuotaAction
 from coldfront.storage.sync import sync_storage_quota
-from coldfront.utils.data import shallow_compare_dict
-from coldfront.utils.query import count_related
-from coldfront.utils.serialization import serialize_object
-from coldfront.views import ViewTab, generic, get_action_url
-from coldfront.views.mixins import GetRelatedModelsMixin
-from coldfront.views.object_actions import EditObject
 
 #
 # Storage Resources

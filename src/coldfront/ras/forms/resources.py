@@ -5,7 +5,7 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.forms import (
+from coldfront.lib.forms import (
     NestedGroupModelForm,
     NestedGroupModelImportForm,
     OrganizationalModelForm,
@@ -13,8 +13,8 @@ from coldfront.forms import (
     TenancyForm,
     TenancyImportForm,
 )
-from coldfront.forms.fields import CSVModelChoiceField, DynamicModelChoiceField, JSONField, SlugField
-from coldfront.forms.layout import FieldSet
+from coldfront.lib.forms.fields import CSVModelChoiceField, DynamicModelChoiceField, JSONField, SlugField
+from coldfront.lib.forms.layout import FieldSet
 from coldfront.ras.models import Resource, ResourceType
 
 

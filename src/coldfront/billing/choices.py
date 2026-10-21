@@ -4,7 +4,7 @@
 
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.choices import ChoiceSet
+from coldfront.lib.choices import ChoiceSet
 
 
 class InvoiceStatusChoices(ChoiceSet):

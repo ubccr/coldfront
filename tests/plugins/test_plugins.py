@@ -11,10 +11,10 @@ from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from coldfront.core.models import ObjectType
-from coldfront.plugins.navigation import PluginMenu, PluginMenuItem, PluginMenuItemButton
-from coldfront.plugins.utils import get_plugin_config
-from coldfront.registry import registry
-from coldfront.utils.testing import APITestCase
+from coldfront.lib.plugins.navigation import PluginMenu, PluginMenuItem, PluginMenuItemButton
+from coldfront.lib.plugins.utils import get_plugin_config
+from coldfront.lib.registry import registry
+from coldfront.lib.testing import APITestCase
 from tests.dummy_plugin import config as dummy_config
 
 

@@ -7,9 +7,9 @@ from django.db.models import Q
 from django.utils.translation import gettext as _
 
 from coldfront.core.models import ObjectType
+from coldfront.lib.views.filtersets import AttributeFilterSetMixin, PrimaryModelFilterSet
 from coldfront.ras.models import Allocation, Project
 from coldfront.tenancy.filtersets import TenancyFilterSet
-from coldfront.views.filtersets import AttributeFilterSetMixin, PrimaryModelFilterSet
 
 
 class AllocationFilterSet(AttributeFilterSetMixin, TenancyFilterSet, PrimaryModelFilterSet):

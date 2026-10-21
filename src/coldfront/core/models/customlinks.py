@@ -12,11 +12,11 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from coldfront.core.choices import ColorChoices
-from coldfront.models import ChangeLoggedModel
-from coldfront.models.features import CloningMixin
-from coldfront.models.fields import ColorField
-from coldfront.utils.html import clean_html
-from coldfront.utils.jinja2 import render_jinja2
+from coldfront.lib.models import ChangeLoggedModel
+from coldfront.lib.models.features import CloningMixin
+from coldfront.lib.models.fields import ColorField
+from coldfront.lib.utils.html import clean_html
+from coldfront.lib.utils.jinja2 import render_jinja2
 
 
 class CustomLink(CloningMixin, ChangeLoggedModel):

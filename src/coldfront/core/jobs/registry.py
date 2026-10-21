@@ -5,7 +5,7 @@
 import croniter
 from django.core.exceptions import ImproperlyConfigured
 
-from coldfront.registry import registry
+from coldfront.lib.registry import registry
 
 __all__ = (
     "system_job",

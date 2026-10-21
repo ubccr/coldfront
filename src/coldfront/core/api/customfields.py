@@ -9,10 +9,10 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework.fields import Field
 from rest_framework.serializers import ValidationError
 
-from coldfront.api.utils import get_serializer_for_model
-from coldfront.constants import CUSTOMFIELD_EMPTY_VALUES
 from coldfront.core.choices import CustomFieldTypeChoices
 from coldfront.core.models import CustomField
+from coldfront.lib.api.utils import get_serializer_for_model
+from coldfront.lib.constants import CUSTOMFIELD_EMPTY_VALUES
 
 #
 # Custom fields

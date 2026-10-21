@@ -3,9 +3,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from coldfront.registry import register_model_view
-from coldfront.views import generic
-from coldfront.views.mixins import GetRelatedModelsMixin
+from coldfront.lib.registry import register_model_view
+from coldfront.lib.views import generic
+from coldfront.lib.views.mixins import GetRelatedModelsMixin
 
 from . import filtersets, forms, tables
 from .models import Tenant, TenantGroup

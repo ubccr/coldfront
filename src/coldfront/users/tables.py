@@ -6,7 +6,7 @@
 import django_tables2 as tables
 from django.utils.translation import gettext as _
 
-from coldfront.tables import ColdFrontTable, columns
+from coldfront.lib.tables import ColdFrontTable, columns
 
 from .models import Group, ObjectPermission, Role, Token, User
 

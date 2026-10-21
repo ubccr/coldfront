@@ -7,10 +7,14 @@ from django.db.models import Q
 from django.utils.translation import gettext as _
 
 from coldfront.core.choices import ColorChoices
+from coldfront.lib.views.filtersets import (
+    AttributeFilterSetMixin,
+    NestedGroupModelFilterSet,
+    OrganizationalModelFilterSet,
+)
 from coldfront.ras.choices import ResourceStatusChoices
 from coldfront.ras.models import Resource, ResourceType
 from coldfront.tenancy.filtersets import TenancyFilterSet
-from coldfront.views.filtersets import AttributeFilterSetMixin, NestedGroupModelFilterSet, OrganizationalModelFilterSet
 
 
 class ResourceTypeFilterSet(OrganizationalModelFilterSet):

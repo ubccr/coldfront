@@ -14,7 +14,7 @@ import logging
 
 from django.db.models import F
 
-from coldfront.flows import register_target_callback
+from coldfront.lib.flows import register_target_callback
 from coldfront.ras.choices import AllocationStatusChoices
 from coldfront.ras.flows import AllocationStatusFlow
 from coldfront.storage.models import StorageCluster, StorageQuota, StorageResource

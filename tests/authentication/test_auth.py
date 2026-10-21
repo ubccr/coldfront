@@ -12,11 +12,11 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 
 from coldfront.core.models import ObjectType
+from coldfront.lib.testing import APITestCase, TestCase
 from coldfront.ras.models import Project
 from coldfront.tenancy.models import Tenant
 from coldfront.users.constants import TOKEN_PREFIX
 from coldfront.users.models import Group, ObjectPermission, Token, User
-from coldfront.utils.testing import APITestCase, TestCase
 
 
 class TokenAuthenticationTestCase(APITestCase):

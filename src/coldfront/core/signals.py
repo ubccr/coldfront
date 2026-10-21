@@ -10,11 +10,11 @@ from django.db.models.fields.reverse_related import ManyToManyRel, ManyToOneRel
 from django.db.models.signals import m2m_changed, post_migrate, post_save, pre_delete
 from django.dispatch import Signal, receiver
 
-from coldfront.context import current_request, signals_received
 from coldfront.core.choices import ObjectChangeActionChoices
 from coldfront.core.events import OBJECT_CREATED, OBJECT_DELETED, OBJECT_UPDATED
 from coldfront.core.models import CustomField, ObjectChange, ObjectType, Tag
-from coldfront.models.features import ChangeLoggingMixin
+from coldfront.lib.context import current_request, signals_received
+from coldfront.lib.models.features import ChangeLoggingMixin
 
 # Job lifecycle signals
 job_start = Signal()

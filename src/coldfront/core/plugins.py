@@ -9,8 +9,8 @@ from dataclasses import dataclass, field
 
 from django.conf import settings
 
-from coldfront.plugins import PluginConfig
-from coldfront.registry import registry
+from coldfront.lib.plugins import PluginConfig
+from coldfront.lib.registry import registry
 
 
 @dataclass

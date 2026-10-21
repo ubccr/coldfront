@@ -9,9 +9,9 @@ from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _
 
 from coldfront.core.choices import ColorChoices
-from coldfront.models import NestedGroupModel, OrganizationalModel
-from coldfront.models.features import AllocatableResourceMixin
-from coldfront.models.fields import ColorField
+from coldfront.lib.models import NestedGroupModel, OrganizationalModel
+from coldfront.lib.models.features import AllocatableResourceMixin
+from coldfront.lib.models.fields import ColorField
 from coldfront.ras.choices import ResourceStatusChoices
 
 from . import Allocation

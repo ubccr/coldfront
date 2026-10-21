@@ -20,12 +20,10 @@ from coldfront.billing.models import (
     InvoiceLineItem,
     Rate,
 )
-from coldfront.forms import ColdFrontModelBulkEditForm, PrimaryModelBulkEditForm
-from coldfront.forms.fields import MoneyField
-from coldfront.forms.fields.bytes import BytesField
-from coldfront.forms.layout import FieldSet
+from coldfront.lib.forms import ColdFrontModelBulkEditForm, PrimaryModelBulkEditForm, add_blank_choice
+from coldfront.lib.forms.fields import BytesField, MoneyField
+from coldfront.lib.forms.layout import FieldSet
 from coldfront.users.models import User
-from coldfront.utils.forms import add_blank_choice
 
 __all__ = (
     "DiscountBulkEditForm",

@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from coldfront.api.serializers import AllocatableResourceModelSerializer, PrimaryModelSerializer
-from coldfront.api.serializers.fields import RelatedObjectCountField
+from coldfront.lib.api.serializers import AllocatableResourceModelSerializer, PrimaryModelSerializer
+from coldfront.lib.api.serializers.fields import RelatedObjectCountField
 from coldfront.storage.models import (
     StorageCluster,
     StorageQuota,

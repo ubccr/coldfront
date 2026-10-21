@@ -6,7 +6,7 @@
 from django import forms
 from django.utils.translation import gettext as _
 
-from coldfront.forms import CSVModelForm
+from coldfront.lib.forms import CSVModelForm
 from coldfront.users.models import Group, Role, Token, User
 
 __all__ = (

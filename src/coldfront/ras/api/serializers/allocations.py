@@ -5,11 +5,11 @@
 from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
 
-from coldfront.api.serializers import (
+from coldfront.lib.api.serializers import (
     CustomAttributeModelSerializer,
     PrimaryModelSerializer,
 )
-from coldfront.api.serializers.fields import ContentTypeField
+from coldfront.lib.api.serializers.fields import ContentTypeField
 from coldfront.ras.models import Allocation
 from coldfront.users.api.serializers import UserSerializer
 

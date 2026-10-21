@@ -9,7 +9,7 @@ from django.urls import reverse
 
 from coldfront.core.choices import ColorChoices
 from coldfront.core.models import CustomLink
-from coldfront.utils.testing import ViewTestCases
+from coldfront.lib.testing import ViewTestCases
 
 
 class CustomLinkTestCase(ViewTestCases.PrimaryObjectViewTestCase):

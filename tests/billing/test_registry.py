@@ -8,9 +8,9 @@ import pytest
 from django.core.exceptions import ImproperlyConfigured
 
 from coldfront.billing.models import Invoice
+from coldfront.lib.registry import get_billing_source, register_billing_source, registry
 from coldfront.ras.choices import AllocationStatusChoices
 from coldfront.ras.models import Allocation, Project
-from coldfront.registry import get_billing_source, register_billing_source, registry
 from coldfront.slurm.models import SlurmAccount, SlurmAccountUsage, SlurmAssociation, SlurmCluster, SlurmQOS
 from coldfront.storage.models import StorageCluster, StorageQuota, StorageResource
 from coldfront.users.models import User

@@ -6,21 +6,21 @@ from django.test import TestCase
 from django.urls import reverse
 
 from coldfront.account.models import ThirdPartyAccount
-from coldfront.registry import get_thirdparty_account, get_thirdparty_accounts, register_thirdparty_account
-from coldfront.utils.testing import TestCase as ColdFrontTestCase
+from coldfront.lib.registry import get_thirdparty_account, get_thirdparty_accounts, register_thirdparty_account
+from coldfront.lib.testing import TestCase as ColdFrontTestCase
 
 
 class ThirdPartyAccountRegistryTestCase(TestCase):
     """Tests for the third-party account registry."""
 
     def setUp(self):
-        from coldfront.registry import registry
+        from coldfront.lib.registry import registry
 
         self._original = dict(registry["third_party_accounts"])
         registry["third_party_accounts"].clear()
 
     def tearDown(self):
-        from coldfront.registry import registry
+        from coldfront.lib.registry import registry
 
         registry["third_party_accounts"].clear()
         registry["third_party_accounts"].update(self._original)
@@ -72,13 +72,13 @@ class ThirdPartyAccountsViewTestCase(ColdFrontTestCase):
 
     def setUp(self):
         super().setUp()
-        from coldfront.registry import registry
+        from coldfront.lib.registry import registry
 
         self._original = dict(registry["third_party_accounts"])
         registry["third_party_accounts"].clear()
 
     def tearDown(self):
-        from coldfront.registry import registry
+        from coldfront.lib.registry import registry
 
         registry["third_party_accounts"].clear()
         registry["third_party_accounts"].update(self._original)

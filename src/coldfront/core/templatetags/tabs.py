@@ -7,8 +7,8 @@ from django import template
 from django.urls.exceptions import NoReverseMatch
 from django.utils.module_loading import import_string
 
-from coldfront.registry import registry
-from coldfront.views import get_action_url
+from coldfront.lib.registry import registry
+from coldfront.lib.views import get_action_url
 
 register = template.Library()
 

@@ -6,7 +6,7 @@ import django_tables2 as tables
 from django.utils.translation import gettext_lazy as _
 from generic_notifications.models import Notification as GenericNotification
 
-from coldfront.tables import ColdFrontTable, columns
+from coldfront.lib.tables import ColdFrontTable, columns
 from coldfront.users.tables import TokenTable
 
 from .models import UserToken

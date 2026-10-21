@@ -6,8 +6,8 @@ import djmoney.models.fields
 from django.db import migrations, models
 
 import coldfront.core.utils
-import coldfront.models.deletion
-import coldfront.models.utils
+import coldfront.lib.models.deletion
+import coldfront.lib.models.utils
 
 
 class Migration(migrations.Migration):
@@ -32,8 +32,8 @@ class Migration(migrations.Migration):
                 (
                     "amount_awarded_currency",
                     djmoney.models.fields.CurrencyField(
-                        choices=coldfront.models.utils.get_currency_choices,
-                        default=coldfront.models.utils.get_default_currency,
+                        choices=coldfront.lib.models.utils.get_currency_choices,
+                        default=coldfront.lib.models.utils.get_default_currency,
                         editable=False,
                         max_length=3,
                         null=True,
@@ -43,9 +43,9 @@ class Migration(migrations.Migration):
                     "amount_awarded",
                     djmoney.models.fields.MoneyField(
                         blank=True,
-                        currency_choices=coldfront.models.utils.get_currency_choices,
+                        currency_choices=coldfront.lib.models.utils.get_currency_choices,
                         decimal_places=2,
-                        default_currency=coldfront.models.utils.get_default_currency,
+                        default_currency=coldfront.lib.models.utils.get_default_currency,
                         max_digits=14,
                         null=True,
                     ),
@@ -77,7 +77,7 @@ class Migration(migrations.Migration):
                 "ordering": ("award_number",),
                 "permissions": (("unlink", "Can unlink funding from projects"),),
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
         migrations.CreateModel(
             name="Publication",
@@ -131,6 +131,6 @@ class Migration(migrations.Migration):
                 "ordering": ("doi",),
                 "permissions": (("unlink", "Can unlink publications from projects"),),
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
     ]

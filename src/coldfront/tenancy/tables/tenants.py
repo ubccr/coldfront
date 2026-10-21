@@ -6,7 +6,7 @@
 import django_tables2 as tables
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.tables import NestedGroupModelTable, PrimaryModelTable, columns
+from coldfront.lib.tables import NestedGroupModelTable, PrimaryModelTable, columns
 from coldfront.tenancy.models import Tenant, TenantGroup
 
 

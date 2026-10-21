@@ -12,7 +12,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.models import ChangeLoggedModel
+from coldfront.lib.models import ChangeLoggedModel
 from coldfront.users.querysets import RestrictedQuerySet
 
 

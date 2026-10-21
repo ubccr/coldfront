@@ -7,17 +7,17 @@ from django.core.validators import EMPTY_VALUES
 from django.utils.translation import gettext_lazy as _
 
 from coldfront.core.models import ObjectType
-from coldfront.forms import PrimaryModelForm
-from coldfront.forms.fields import CommentField
-from coldfront.forms.layout import FieldSet
-from coldfront.forms.mixins import AllocationExtensionFormMixin
-from coldfront.forms.widgets import RefreshSelectWidget
+from coldfront.lib.forms import PrimaryModelForm
+from coldfront.lib.forms.fields import CommentField
+from coldfront.lib.forms.layout import FieldSet
+from coldfront.lib.forms.mixins import AllocationExtensionFormMixin
+from coldfront.lib.forms.widgets import RefreshSelectWidget
+from coldfront.lib.utils.jsonschema import JSONSchemaProperty
 from coldfront.ras.models import Allocation
 from coldfront.ras.models.change_requests import (
     AllocationChangeRequest,
 )
 from coldfront.users.permissions import get_permission_for_model
-from coldfront.utils.jsonschema import JSONSchemaProperty
 
 
 class AllocationChangeRequestForm(AllocationExtensionFormMixin, PrimaryModelForm):

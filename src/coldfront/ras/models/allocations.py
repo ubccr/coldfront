@@ -11,11 +11,11 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from jsonschema.exceptions import ValidationError as JSONValidationError
 
-from coldfront.models import PrimaryModel
-from coldfront.models.features import CommentingMixin
-from coldfront.models.fields import AutoSlugField
+from coldfront.lib.models import PrimaryModel
+from coldfront.lib.models.features import CommentingMixin
+from coldfront.lib.models.fields import AutoSlugField
+from coldfront.lib.utils.strings import title
 from coldfront.ras.choices import AllocationStatusChoices
-from coldfront.utils.strings import title
 
 
 class Allocation(CommentingMixin, PrimaryModel):

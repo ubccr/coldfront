@@ -7,8 +7,8 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 from generic_notifications.registry import registry
 
-from coldfront.forms.fields.dynamic import DynamicModelMultipleChoiceField
-from coldfront.forms.layout import FieldSet
+from coldfront.lib.forms.fields import DynamicModelMultipleChoiceField
+from coldfront.lib.forms.layout import FieldSet
 from coldfront.users.models import Group, User
 
 

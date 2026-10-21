@@ -5,7 +5,7 @@
 from django import template
 from django.urls import reverse
 
-from coldfront.registry import get_thirdparty_accounts as get_registered_thirdparty_accounts
+from coldfront.lib.registry import get_thirdparty_accounts as get_registered_thirdparty_accounts
 
 register = template.Library()
 

@@ -11,7 +11,7 @@ the provider classes that serve it. Providers subclass
 via the ``register_research_work_provider`` decorator.
 
 This is intentionally a module-level registry rather than the global
-``coldfront.registry`` store: the global ``Registry`` forbids adding new stores
+``coldfront.lib.registry`` store: the global ``Registry`` forbids adding new stores
 after initialization, and ris owns this registry as its own seam for
 research-work providers.
 """

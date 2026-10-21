@@ -5,10 +5,10 @@
 from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.choices import ChoiceSet
 from coldfront.core.models import ObjectType
+from coldfront.lib.choices import ChoiceSet
+from coldfront.lib.forms import add_blank_choice
 from coldfront.users.querysets import RestrictedQuerySet
-from coldfront.utils.forms import add_blank_choice
 
 
 class ResourceStatusChoices(ChoiceSet):

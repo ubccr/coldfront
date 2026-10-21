@@ -19,9 +19,9 @@ from django.utils.timezone import localtime
 from markdown import markdown
 from markdown.extensions.tables import TableExtension
 
-from coldfront.utils.html import clean_html, foreground_color
-from coldfront.utils.strings import title
-from coldfront.views import get_viewname
+from coldfront.lib.utils.html import clean_html, foreground_color
+from coldfront.lib.utils.strings import title
+from coldfront.lib.views import get_viewname
 
 register = template.Library()
 

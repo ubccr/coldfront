@@ -4,8 +4,8 @@
 
 from django.db.models import Sum
 
+from coldfront.lib.registry import register_billing_source
 from coldfront.ras.choices import AllocationStatusChoices
-from coldfront.registry import register_billing_source
 from coldfront.slurm.models import SlurmAccount, SlurmAccountUsage, SlurmCluster, SlurmQOS
 
 

@@ -15,15 +15,14 @@ from django.utils.translation import gettext as _
 from django.views.generic import View
 from django_cotton import render_component
 
-from coldfront.registry import register_model_view
-from coldfront.tables.paginator import EnhancedPaginator, get_paginate_count
+from coldfront.lib.registry import register_model_view
+from coldfront.lib.tables.paginator import EnhancedPaginator, get_paginate_count
+from coldfront.lib.utils.data import shallow_compare_dict
+from coldfront.lib.utils.query import count_related
+from coldfront.lib.views import ViewTab, generic, get_action_url
+from coldfront.lib.views.htmx import htmx_partial
+from coldfront.lib.views.object_actions import BulkDelete, BulkEdit, BulkExport, BulkImport, DeleteObject
 from coldfront.users.models import User
-from coldfront.utils.data import shallow_compare_dict
-from coldfront.utils.query import count_related
-from coldfront.views import generic
-from coldfront.views.htmx import htmx_partial
-from coldfront.views.object_actions import BulkDelete, BulkEdit, BulkExport, BulkImport, DeleteObject
-from coldfront.views.utils import ViewTab, get_action_url
 
 from . import (
     filtersets,

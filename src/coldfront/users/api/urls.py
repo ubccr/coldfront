@@ -5,7 +5,7 @@
 
 from django.urls import include, path
 
-from coldfront.api.routers import ColdFrontRouter
+from coldfront.lib.api.routers import ColdFrontRouter
 
 from . import views
 

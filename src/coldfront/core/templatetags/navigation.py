@@ -5,7 +5,7 @@
 
 from django import template
 
-from coldfront.navigation.menu import get_menus
+from coldfront.lib.navigation.menu import get_menus
 
 __all__ = ("nav",)
 

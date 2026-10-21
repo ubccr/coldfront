@@ -5,7 +5,7 @@
 
 from rest_framework import serializers
 
-from coldfront.api.serializers import WritableNestedSerializer
+from coldfront.lib.api.serializers import WritableNestedSerializer
 from coldfront.ras import models
 
 __all__ = ("NestedResourceSerializer",)

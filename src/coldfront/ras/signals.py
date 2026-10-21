@@ -11,9 +11,9 @@ from django.dispatch import Signal, receiver
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.context import current_request
+from coldfront.lib.context import current_request
+from coldfront.lib.utils.email import send_email_template
 from coldfront.ras.models import Project, ProjectInvite, ProjectUser
-from coldfront.utils.email import send_email_template
 
 logger = logging.getLogger(__name__)
 

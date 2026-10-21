@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from coldfront.api.routers import ColdFrontRouter
+from coldfront.lib.api.routers import ColdFrontRouter
 
 from . import views
 

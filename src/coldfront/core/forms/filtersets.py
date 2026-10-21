@@ -5,7 +5,6 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.constants import BOOLEAN_WITH_BLANK_CHOICES
 from coldfront.core.choices import (
     CommentKindChoices,
     CustomFieldTypeChoices,
@@ -26,15 +25,15 @@ from coldfront.core.models import (
     TableConfig,
     Tag,
 )
-from coldfront.forms import PrimaryModelFilterSetForm
-from coldfront.forms.fields import (
+from coldfront.lib.constants import BOOLEAN_WITH_BLANK_CHOICES
+from coldfront.lib.forms import PrimaryModelFilterSetForm, add_blank_choice
+from coldfront.lib.forms.fields import (
     ContentTypeChoiceField,
     ContentTypeMultipleChoiceField,
     DynamicModelMultipleChoiceField,
 )
-from coldfront.forms.layout import FieldSet
+from coldfront.lib.forms.layout import FieldSet
 from coldfront.users.models import User
-from coldfront.utils.forms import add_blank_choice
 
 
 class SavedFilterFilterForm(PrimaryModelFilterSetForm):

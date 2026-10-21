@@ -5,7 +5,7 @@
 
 from django.utils.translation import gettext as _
 
-from coldfront.plugins.navigation import PluginMenu, PluginMenuItem, PluginMenuItemButton
+from coldfront.lib.plugins.navigation import PluginMenu, PluginMenuItem, PluginMenuItemButton
 
 items = (
     PluginMenuItem(

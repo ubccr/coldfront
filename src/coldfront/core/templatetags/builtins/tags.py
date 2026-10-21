@@ -15,7 +15,7 @@ from django.utils.translation import gettext_lazy as _
 from coldfront.core.choices import CustomFieldTypeChoices
 from coldfront.core.models import ObjectType
 from coldfront.core.utils import ActionURLNode
-from coldfront.forms import TableConfigForm
+from coldfront.lib.forms import TableConfigForm
 from coldfront.users.permissions import get_permission_for_model
 
 register = template.Library()

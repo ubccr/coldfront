@@ -8,12 +8,12 @@ from unittest import mock
 from django.urls import reverse
 
 from coldfront.account.models import ThirdPartyAccount
+from coldfront.lib.testing import TestCase as ColdFrontTestCase
+from coldfront.lib.testing import ViewTestCases
+from coldfront.lib.testing.utils import disable_warnings
 from coldfront.ras.models import Project
 from coldfront.ris.models import Funding, Publication
 from coldfront.users.models import User
-from coldfront.utils.testing import TestCase as ColdFrontTestCase
-from coldfront.utils.testing import ViewTestCases
-from coldfront.utils.testing.utils import disable_warnings
 
 
 class PublicationViewTestCase(ViewTestCases.PrimaryObjectViewTestCase):

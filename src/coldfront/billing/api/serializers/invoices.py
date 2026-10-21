@@ -5,8 +5,6 @@
 from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
 
-from coldfront.api.serializers import ChangeLogMessageSerializer, PrimaryModelSerializer, ValidatedModelSerializer
-from coldfront.api.serializers.fields import ChoiceField, ContentTypeField, MoneyField
 from coldfront.billing.choices import (
     InvoiceLineTypeChoices,
     InvoiceStatusChoices,
@@ -14,6 +12,8 @@ from coldfront.billing.choices import (
     UnitFormatChoiceSet,
 )
 from coldfront.billing.models import Invoice, InvoiceLineItem
+from coldfront.lib.api.serializers import ChangeLogMessageSerializer, PrimaryModelSerializer, ValidatedModelSerializer
+from coldfront.lib.api.serializers.fields import ChoiceField, ContentTypeField, MoneyField
 from coldfront.users.api.serializers import UserSerializer
 
 from .nested import NestedInvoiceSerializer

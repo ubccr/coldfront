@@ -6,8 +6,8 @@ import django_tables2 as tables
 from django.utils.html import format_html
 from django.utils.translation import gettext as _
 
+from coldfront.lib.tables import ColdFrontTable, columns
 from coldfront.ras.models import ProjectInvite
-from coldfront.tables import ColdFrontTable, columns
 
 
 class ProjectInviteStatusColumn(tables.Column):

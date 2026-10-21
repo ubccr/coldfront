@@ -4,8 +4,8 @@
 
 from rest_framework import serializers
 
-from coldfront.api.serializers import PrimaryModelSerializer
-from coldfront.api.serializers.fields import MoneyField
+from coldfront.lib.api.serializers import PrimaryModelSerializer
+from coldfront.lib.api.serializers.fields import MoneyField
 from coldfront.ras.api.serializers import ProjectSerializer
 from coldfront.ris.models import Funding, Publication
 

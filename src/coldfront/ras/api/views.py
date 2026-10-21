@@ -4,8 +4,8 @@
 
 from rest_framework.routers import APIRootView
 
-from coldfront.api.viewsets import ColdFrontModelViewSet
-from coldfront.api.viewsets.mixins import WorkflowViewSetMixin
+from coldfront.lib.api.viewsets import ColdFrontModelViewSet
+from coldfront.lib.api.viewsets.mixins import WorkflowViewSetMixin
 from coldfront.ras import filtersets
 from coldfront.ras.flows import AllocationStatusFlow
 from coldfront.ras.models import (

@@ -5,9 +5,9 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.forms import ColdFrontModelFilterSetForm, CSVModelForm, PrimaryModelForm
-from coldfront.forms.fields import CSVModelChoiceField
-from coldfront.forms.layout import FieldSet
+from coldfront.lib.forms import ColdFrontModelFilterSetForm, CSVModelForm, PrimaryModelForm
+from coldfront.lib.forms.fields import CSVModelChoiceField
+from coldfront.lib.forms.layout import FieldSet
 from coldfront.ras.models import Project, ProjectInvite
 
 __all__ = (

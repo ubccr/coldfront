@@ -10,27 +10,27 @@ from django.utils.translation import gettext_lazy as _
 
 from coldfront.core.choices import CommentKindChoices
 from coldfront.core.models import CommentEntry, ObjectType
-from coldfront.forms import (
+from coldfront.lib.forms import (
     PrimaryModelForm,
     PrimaryModelImportForm,
     TenancyForm,
     TenancyImportForm,
+    get_field_value,
 )
-from coldfront.forms.fields import (
+from coldfront.lib.forms.fields import (
     CommentField,
     CSVContentTypeObjectField,
     CSVModelChoiceField,
     DynamicModelChoiceField,
 )
-from coldfront.forms.layout import DisplayField, FieldSet, GroupFields
-from coldfront.forms.mixins import AllocationExtensionFormMixin
-from coldfront.forms.widgets import RefreshSelectWidget
+from coldfront.lib.forms.layout import DisplayField, FieldSet, GroupFields
+from coldfront.lib.forms.mixins import AllocationExtensionFormMixin
+from coldfront.lib.forms.widgets import RefreshSelectWidget
+from coldfront.lib.utils.jsonschema import JSONSchemaProperty
 from coldfront.ras.choices import get_resource_object_choices
 from coldfront.ras.models import Allocation, Project
 from coldfront.users.models import User
 from coldfront.users.permissions import get_permission_for_model
-from coldfront.utils.forms import get_field_value
-from coldfront.utils.jsonschema import JSONSchemaProperty
 
 
 class AllocationBaseForm(AllocationExtensionFormMixin, PrimaryModelForm):

@@ -3,9 +3,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from coldfront.api.serializers import ChangeLogMessageSerializer, ValidatedModelSerializer
-from coldfront.api.serializers.fields import ContentTypeField
 from coldfront.core.models import ObjectType, SavedFilter
+from coldfront.lib.api.serializers import ChangeLogMessageSerializer, ValidatedModelSerializer
+from coldfront.lib.api.serializers.fields import ContentTypeField
 
 __all__ = ("SavedFilterSerializer",)
 

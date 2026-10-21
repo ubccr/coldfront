@@ -9,9 +9,9 @@ import string
 from django.http import HttpResponse
 from django.views.generic import View
 
+from coldfront.lib.registry import register_model_view
+from coldfront.lib.views import generic
 from coldfront.ras.models import Project
-from coldfront.registry import register_model_view
-from coldfront.views import generic
 
 from .models import DummyColdFrontModel, DummyModel
 

@@ -4,8 +4,8 @@
 
 from django.test import RequestFactory, TestCase
 
-from coldfront.auth.mixins import ObjectPermissionMixin, ObjectPermissionRequiredMixin
 from coldfront.core.models import ObjectType
+from coldfront.lib.auth.mixins import ObjectPermissionMixin, ObjectPermissionRequiredMixin
 from coldfront.ras.models import Allocation
 from coldfront.users.constants import CONSTRAINT_TOKEN_USER
 from coldfront.users.models import Group, ObjectPermission, User

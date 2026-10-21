@@ -16,10 +16,10 @@ from django.views.generic import TemplateView
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
 from coldfront.account.views import ColdFrontLoginView, HtmxLogoutView
-from coldfront.api.views import APIRootView, AuthenticationCheckView, StatusView
 from coldfront.config.env import ENV, PROJECT_ROOT
-from coldfront.plugins.urls import plugin_api_patterns, plugin_patterns
-from coldfront.views import HomeView, ObjectSelectorView
+from coldfront.lib.api.views import APIRootView, AuthenticationCheckView, StatusView
+from coldfront.lib.plugins.urls import plugin_api_patterns, plugin_patterns
+from coldfront.lib.views import HomeView, ObjectSelectorView
 
 admin.site.site_header = "ColdFront Administration"
 admin.site.site_title = "ColdFront Administration"

@@ -5,22 +5,27 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.forms import PrimaryModelForm, PrimaryModelImportForm, TenancyForm, TenancyImportForm
-from coldfront.forms.fields import (
+from coldfront.lib.forms import (
+    PrimaryModelForm,
+    PrimaryModelImportForm,
+    TenancyForm,
+    TenancyImportForm,
+    add_blank_choice,
+)
+from coldfront.lib.forms.fields import (
     CSVChoiceField,
     CSVModelChoiceField,
     CSVModelMultipleChoiceField,
     CSVMultipleChoiceField,
     JSONField,
 )
-from coldfront.forms.layout import FieldSet
+from coldfront.lib.forms.layout import FieldSet
 from coldfront.slurm.choices import (
     SlurmPriorityFlagsChoices,
     SlurmPriorityTypeChoices,
     SlurmPriorityUsageResetPeriodChoices,
 )
 from coldfront.slurm.models import SlurmAccount, SlurmAssociation, SlurmCluster, SlurmPartition, SlurmQOS, SlurmUser
-from coldfront.utils.forms import add_blank_choice
 
 
 class SlurmQOSForm(PrimaryModelForm):

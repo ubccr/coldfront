@@ -19,11 +19,10 @@ from coldfront.core.models import (
     TableConfig,
     Tag,
 )
-from coldfront.forms import ColdFrontModelBulkEditForm
-from coldfront.forms.fields import ColorChoiceField, CommentField
-from coldfront.forms.layout import FieldSet
-from coldfront.forms.widgets.select import BulkEditNullBooleanSelect
-from coldfront.utils.forms import add_blank_choice
+from coldfront.lib.forms import ColdFrontModelBulkEditForm, add_blank_choice
+from coldfront.lib.forms.fields import ColorChoiceField, CommentField
+from coldfront.lib.forms.layout import FieldSet
+from coldfront.lib.forms.widgets import BulkEditNullBooleanSelect
 
 #
 # Custom Field Choice Sets

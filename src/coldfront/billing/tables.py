@@ -12,7 +12,7 @@ from coldfront.billing.models import (
     InvoiceLineItem,
     Rate,
 )
-from coldfront.tables import ColdFrontTable, PrimaryModelTable, columns
+from coldfront.lib.tables import ColdFrontTable, PrimaryModelTable, columns
 
 __all__ = (
     "DiscountTable",

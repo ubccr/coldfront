@@ -5,9 +5,9 @@
 from django.db import migrations, models
 
 import coldfront.core.utils
-import coldfront.models.deletion
-import coldfront.models.fields
-import coldfront.utils.jsonschema
+import coldfront.lib.models.deletion
+import coldfront.lib.models.fields
+import coldfront.lib.utils.jsonschema
 
 
 class Migration(migrations.Migration):
@@ -28,7 +28,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "slug",
-                    coldfront.models.fields.AutoSlugField(
+                    coldfront.lib.models.fields.AutoSlugField(
                         blank=True,
                         help_text="Unique slug. Leave blank and one will be auto generated.",
                         unique=True,
@@ -73,7 +73,7 @@ class Migration(migrations.Migration):
                     ("renew", "Renew allocation"),
                 ),
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
         migrations.CreateModel(
             name="AllocationChangeRequest",
@@ -87,7 +87,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "slug",
-                    coldfront.models.fields.AutoSlugField(
+                    coldfront.lib.models.fields.AutoSlugField(
                         blank=True,
                         help_text="Unique slug. Leave blank and one will be auto generated.",
                         unique=True,
@@ -166,7 +166,7 @@ class Migration(migrations.Migration):
                     ("apply", "Apply change"),
                 ),
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
         migrations.CreateModel(
             name="Project",
@@ -182,7 +182,7 @@ class Migration(migrations.Migration):
                 ("description", models.CharField(blank=True, max_length=200, verbose_name="description")),
                 (
                     "slug",
-                    coldfront.models.fields.AutoSlugField(
+                    coldfront.lib.models.fields.AutoSlugField(
                         blank=True,
                         help_text="Unique slug. Leave blank and one will be auto generated.",
                         unique=True,
@@ -195,7 +195,7 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "projects",
                 "ordering": ["name"],
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
         migrations.CreateModel(
             name="ProjectInvite",
@@ -221,7 +221,7 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "project invites",
                 "ordering": ["created"],
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
         migrations.CreateModel(
             name="ProjectUser",
@@ -239,7 +239,7 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "project users",
                 "ordering": ["id"],
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
         migrations.CreateModel(
             name="Resource",
@@ -256,7 +256,7 @@ class Migration(migrations.Migration):
                     models.JSONField(
                         blank=True,
                         null=True,
-                        validators=[coldfront.utils.jsonschema.validate_schema],
+                        validators=[coldfront.lib.utils.jsonschema.validate_schema],
                         verbose_name="schema",
                     ),
                 ),
@@ -296,7 +296,7 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "generic resources",
                 "ordering": ["name"],
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
         migrations.CreateModel(
             name="ResourceType",
@@ -311,13 +311,16 @@ class Migration(migrations.Migration):
                 ("name", models.CharField(max_length=100, unique=True, verbose_name="name")),
                 ("description", models.CharField(blank=True, max_length=200, verbose_name="description")),
                 ("slug", models.SlugField(max_length=100, unique=True, verbose_name="slug")),
-                ("color", coldfront.models.fields.ColorField(default="neutral", max_length=20, verbose_name="color")),
+                (
+                    "color",
+                    coldfront.lib.models.fields.ColorField(default="neutral", max_length=20, verbose_name="color"),
+                ),
             ],
             options={
                 "verbose_name": "resource type",
                 "verbose_name_plural": "resource types",
                 "ordering": ["name"],
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
     ]

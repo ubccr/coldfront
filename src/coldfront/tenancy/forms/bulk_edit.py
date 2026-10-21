@@ -5,11 +5,11 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.forms import (
+from coldfront.lib.forms import (
     OrganizationalModelBulkEditForm,
     PrimaryModelBulkEditForm,
 )
-from coldfront.forms.layout import FieldSet
+from coldfront.lib.forms.layout import FieldSet
 from coldfront.tenancy.models import Tenant, TenantGroup
 
 #

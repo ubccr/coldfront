@@ -120,9 +120,9 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django_htmx.middleware.HtmxMiddleware",
-    "coldfront.auth.middleware.RemoteUserMiddleware",
-    "coldfront.middleware.ColdFrontMiddleware",
-    "coldfront.auth.middleware.HtmxAuthRedirectMiddleware",
+    "coldfront.lib.auth.middleware.RemoteUserMiddleware",
+    "coldfront.lib.middleware.ColdFrontMiddleware",
+    "coldfront.lib.auth.middleware.HtmxAuthRedirectMiddleware",
 ]
 
 # ------------------------------------------------------------------------------
@@ -209,9 +209,9 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                "coldfront.context_processors.settings",
-                "coldfront.context_processors.registry",
-                "coldfront.context_processors.unread_notifications_count",
+                "coldfront.lib.context_processors.settings",
+                "coldfront.lib.context_processors.registry",
+                "coldfront.lib.context_processors.unread_notifications_count",
             ],
         },
     },

@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from coldfront.api.serializers import WritableNestedSerializer
 from coldfront.billing import models
+from coldfront.lib.api.serializers import WritableNestedSerializer
 
 __all__ = (
     "NestedDiscountSerializer",

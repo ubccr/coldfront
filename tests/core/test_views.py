@@ -6,8 +6,8 @@ from django.contrib.messages import get_messages
 from django.urls import reverse
 
 from coldfront.core.models import ObjectType, SavedFilter, TableConfig, Tag
+from coldfront.lib.testing import ViewTestCases
 from coldfront.tenancy.models import Tenant
-from coldfront.utils.testing import ViewTestCases
 
 
 class SavedFilterTestCase(ViewTestCases.PrimaryObjectViewTestCase):

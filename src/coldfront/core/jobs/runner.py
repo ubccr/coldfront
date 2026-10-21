@@ -212,7 +212,7 @@ class JobRunner(ABC):
                     # This branch is limited to system jobs because generic recurring jobs
                     # (e.g., scheduled scripts) may have multiple legitimate schedules sharing
                     # the same runner/object/schedule but differing in their runtime kwargs.
-                    from coldfront.constants import LOCK_KEYS
+                    from coldfront.lib.constants import LOCK_KEYS
 
                     # Dedupe on the schedule type the job actually uses.
                     schedule_filter = (
@@ -284,7 +284,7 @@ class JobRunner(ABC):
             interval: Recurrence interval (in minutes)
             cron_schedule: Cron schedule (e.g. "0 9 * * *") evaluated in the default timezone
         """
-        from coldfront.constants import LOCK_KEYS
+        from coldfront.lib.constants import LOCK_KEYS
 
         with cls._redis_lock(LOCK_KEYS["job-schedules"]):
             job = (

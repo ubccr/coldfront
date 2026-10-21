@@ -8,7 +8,7 @@ from django.core.management.utils import get_random_secret_key
 
 from coldfront.config.base import AUTHENTICATION_BACKENDS, DEBUG
 from coldfront.config.env import ENV
-from coldfront.utils.security import validate_peppers
+from coldfront.lib.security import validate_peppers
 
 # ------------------------------------------------------------------------------
 # ColdFront default authentication settings
@@ -53,7 +53,7 @@ else:
 # ------------------------------------------------------------------------------
 # The remote authentication backend to use
 # ------------------------------------------------------------------------------
-REMOTE_AUTH_BACKEND = ENV.str("REMOTE_AUTH_BACKEND", default="coldfront.auth.RemoteUserBackend")
+REMOTE_AUTH_BACKEND = ENV.str("REMOTE_AUTH_BACKEND", default="coldfront.lib.auth.RemoteUserBackend")
 
 # ------------------------------------------------------------------------------
 # ColdFront RemoteUserBackend settings
@@ -111,7 +111,7 @@ if type(REMOTE_AUTH_BACKEND) not in (list, tuple):
 
 AUTHENTICATION_BACKENDS += [
     *REMOTE_AUTH_BACKEND,
-    "coldfront.auth.backends.ObjectPermissionBackend",
+    "coldfront.lib.auth.backends.ObjectPermissionBackend",
 ]
 
 # ------------------------------------------------------------------------------
@@ -122,13 +122,13 @@ SOCIAL_AUTH_PIPELINE = (
     "social_core.pipeline.social_auth.social_uid",
     "social_core.pipeline.social_auth.social_user",
     "social_core.pipeline.user.get_username",
-    "coldfront.auth.backends.social_auth.match_user_by_username",
+    "coldfront.lib.auth.backends.social_auth.match_user_by_username",
     "social_core.pipeline.user.create_user",
     "social_core.pipeline.social_auth.associate_user",
-    "coldfront.auth.backends.social_auth.user_default_groups_handler",
+    "coldfront.lib.auth.backends.social_auth.user_default_groups_handler",
     "social_core.pipeline.social_auth.load_extra_data",
     "social_core.pipeline.user.user_details",
-    "coldfront.auth.backends.social_auth.sync_user_groups",
+    "coldfront.lib.auth.backends.social_auth.sync_user_groups",
 )
 
 SOCIAL_AUTH_JSONFIELD_ENABLED = True

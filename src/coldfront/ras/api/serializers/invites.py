@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from coldfront.api.serializers import ChangeLogMessageSerializer, ValidatedModelSerializer
+from coldfront.lib.api.serializers import ChangeLogMessageSerializer, ValidatedModelSerializer
 from coldfront.ras.models import ProjectInvite
 from coldfront.users.api.serializers import UserSerializer
 

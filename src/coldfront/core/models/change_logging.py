@@ -15,7 +15,7 @@ from mptt.models import MPTTModel
 
 from coldfront.core.choices import ObjectChangeActionChoices
 from coldfront.core.querysets import ObjectChangeQuerySet
-from coldfront.utils.data import shallow_compare_dict
+from coldfront.lib.utils.data import shallow_compare_dict
 
 from .object_types import ObjectType
 

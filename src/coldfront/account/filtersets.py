@@ -8,7 +8,7 @@ from django.utils.translation import gettext as _
 from generic_notifications.models import Notification
 from generic_notifications.utils import get_notifications
 
-from coldfront.views.filtersets import BaseFilterSet
+from coldfront.lib.views.filtersets import BaseFilterSet
 
 
 class NotificationFilterSet(BaseFilterSet):

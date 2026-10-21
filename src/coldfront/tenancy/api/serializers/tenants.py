@@ -5,8 +5,8 @@
 
 from rest_framework import serializers
 
-from coldfront.api.serializers import NestedGroupModelSerializer, PrimaryModelSerializer
-from coldfront.api.serializers.fields import RelatedObjectCountField
+from coldfront.lib.api.serializers import NestedGroupModelSerializer, PrimaryModelSerializer
+from coldfront.lib.api.serializers.fields import RelatedObjectCountField
 from coldfront.tenancy.models import Tenant, TenantGroup
 
 from .nested import NestedTenantGroupSerializer

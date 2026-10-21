@@ -15,8 +15,8 @@ from django.utils.translation import gettext_lazy as _
 from jsonschema.exceptions import ValidationError as JSONValidationError
 from viewflow import fsm, this
 
-from coldfront.exceptions import AbortRequest
-from coldfront.flows import ColdFrontFlow
+from coldfront.lib.exceptions import AbortRequest
+from coldfront.lib.flows import ColdFrontFlow
 from coldfront.ras import object_actions as actions
 from coldfront.ras.choices import AllocationChangeRequestStatusChoices
 from coldfront.ras.models.change_requests import (

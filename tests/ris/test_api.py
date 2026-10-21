@@ -7,10 +7,10 @@ from decimal import Decimal
 
 from djmoney.money import Money
 
+from coldfront.lib.testing import APIViewTestCases
 from coldfront.ras.models import Project
 from coldfront.ris.models import Funding, Publication
 from coldfront.users.models import User
-from coldfront.utils.testing import APIViewTestCases
 
 
 class PublicationTest(APIViewTestCases.APIViewTestCase):

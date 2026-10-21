@@ -10,9 +10,9 @@ from django.utils.translation import gettext as _
 
 from coldfront.core.choices import CommentKindChoices, JobStatusChoices
 from coldfront.core.models import CommentEntry, CustomLink, Job
+from coldfront.lib.views.filters import ContentTypeFilter
+from coldfront.lib.views.filtersets import BaseFilterSet, ChangeLoggedModelFilterSet
 from coldfront.users.models import User
-from coldfront.views.filters import ContentTypeFilter
-from coldfront.views.filtersets import BaseFilterSet, ChangeLoggedModelFilterSet
 
 from .choices import CustomFieldTypeChoices
 from .models import (

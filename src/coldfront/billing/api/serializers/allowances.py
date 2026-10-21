@@ -5,10 +5,10 @@
 from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
 
-from coldfront.api.serializers import PrimaryModelSerializer
-from coldfront.api.serializers.fields import ChoiceField, ContentTypeField
 from coldfront.billing.choices import DiscountTypeChoices, UnitFormatChoiceSet
 from coldfront.billing.models import Discount, FreeAllowance
+from coldfront.lib.api.serializers import PrimaryModelSerializer
+from coldfront.lib.api.serializers.fields import ChoiceField, ContentTypeField
 from coldfront.users.api.serializers import UserSerializer
 
 __all__ = ("DiscountSerializer", "FreeAllowanceSerializer")

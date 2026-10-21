@@ -3,13 +3,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from coldfront.lib.registry import register_model_view
+from coldfront.lib.views import generic
+from coldfront.lib.views.mixins import GetRelatedModelsMixin
 from coldfront.ras import filtersets, flows, forms, tables
 from coldfront.ras import object_actions as actions
 from coldfront.ras.flows import get_permitted_transition_actions
 from coldfront.ras.models import Allocation
-from coldfront.registry import register_model_view
-from coldfront.views import generic
-from coldfront.views.mixins import GetRelatedModelsMixin
 
 #
 # Allocations

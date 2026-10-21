@@ -12,7 +12,7 @@ class BillingConfig(AppConfig):
     verbose_name = _("Billing")
 
     def ready(self):
-        from coldfront.models.features import register_models
+        from coldfront.lib.models.features import register_models
 
         register_models(*self.get_models())
 

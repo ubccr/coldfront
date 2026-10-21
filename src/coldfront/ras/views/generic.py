@@ -5,7 +5,7 @@
 from django.core.exceptions import PermissionDenied
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.views.generic import ObjectEditView
+from coldfront.lib.views.generic import ObjectEditView
 
 
 class AllocatableResourceRequestView(ObjectEditView):

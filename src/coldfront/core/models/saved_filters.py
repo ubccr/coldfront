@@ -9,9 +9,9 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from coldfront.core.models import ObjectType
-from coldfront.models import ChangeLoggedModel
-from coldfront.models.features import CloningMixin
-from coldfront.utils.querydict import dict_to_querydict
+from coldfront.lib.models import ChangeLoggedModel
+from coldfront.lib.models.features import CloningMixin
+from coldfront.lib.utils.querydict import dict_to_querydict
 
 __all__ = ("SavedFilter",)
 

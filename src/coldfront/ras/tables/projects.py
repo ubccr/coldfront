@@ -5,8 +5,8 @@
 import django_tables2 as tables
 from django.utils.translation import gettext_lazy as _
 
+from coldfront.lib.tables import OrganizationalModelTable, PrimaryModelTable, columns
 from coldfront.ras.models import Project, ProjectUser
-from coldfront.tables import OrganizationalModelTable, PrimaryModelTable, columns
 from coldfront.tenancy.tables import TenancyColumnsMixin
 
 

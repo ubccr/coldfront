@@ -4,7 +4,7 @@
 
 from django.db import migrations, models
 
-import coldfront.models.deletion
+import coldfront.lib.models.deletion
 
 
 class Migration(migrations.Migration):
@@ -61,6 +61,6 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "third-party accounts",
                 "ordering": ("provider",),
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
     ]

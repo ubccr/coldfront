@@ -5,8 +5,8 @@
 
 
 from coldfront.core.models import ObjectType
+from coldfront.lib.testing import ViewTestCases
 from coldfront.users.models import Group, ObjectPermission, Token, User
-from coldfront.utils.testing import ViewTestCases
 
 
 class UserTestCase(

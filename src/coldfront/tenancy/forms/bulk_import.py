@@ -5,11 +5,11 @@
 
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.forms import (
+from coldfront.lib.forms import (
     NestedGroupModelImportForm,
     PrimaryModelImportForm,
 )
-from coldfront.forms.fields import CSVModelChoiceField, SlugField
+from coldfront.lib.forms.fields import CSVModelChoiceField, SlugField
 from coldfront.tenancy.models import Tenant, TenantGroup
 
 

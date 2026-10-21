@@ -7,9 +7,9 @@ from django.test import override_settings
 from django.urls import reverse
 
 from coldfront.core.models import ObjectType
+from coldfront.lib.testing import APITestCase, APIViewTestCases, create_test_user
 from coldfront.users.constants import TOKEN_DEFAULT_LENGTH
 from coldfront.users.models import Group, ObjectPermission, Token, User
-from coldfront.utils.testing import APITestCase, APIViewTestCases, create_test_user
 
 
 class AppTest(APITestCase):

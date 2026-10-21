@@ -21,8 +21,8 @@ from coldfront.core.models import (
     TableConfig,
     Tag,
 )
-from coldfront.forms import ColdFrontModelForm
-from coldfront.forms.fields import (
+from coldfront.lib.forms import ColdFrontModelForm, get_field_value
+from coldfront.lib.forms.fields import (
     CommentField,
     ContentTypeChoiceField,
     ContentTypeMultipleChoiceField,
@@ -31,10 +31,9 @@ from coldfront.forms.fields import (
     SimpleArrayField,
     SlugField,
 )
-from coldfront.forms.layout import FieldSet
-from coldfront.forms.mixins import ChangelogMessageMixin
-from coldfront.tables.utils import get_table_for_model
-from coldfront.utils.forms import get_field_value
+from coldfront.lib.forms.layout import FieldSet
+from coldfront.lib.forms.mixins import ChangelogMessageMixin
+from coldfront.lib.tables.utils import get_table_for_model
 
 
 class TableConfigForm(ChangelogMessageMixin, forms.ModelForm):

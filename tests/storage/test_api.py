@@ -2,13 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from coldfront.lib.testing import APIViewTestCases, create_tags
 from coldfront.storage.models import (
     StorageCluster,
     StorageQuota,
     StorageResource,
     StorageSnapshotPolicy,
 )
-from coldfront.utils.testing import APIViewTestCases, create_tags
 
 
 class StorageSnapshotPolicyAPITestCase(APIViewTestCases.APIViewTestCase):

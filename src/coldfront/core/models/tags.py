@@ -10,9 +10,9 @@ from django.utils.translation import gettext_lazy as _
 from taggit.models import GenericTaggedItemBase, TagBase
 
 from coldfront.core.choices import ColorChoices
-from coldfront.models import ChangeLoggedModel
-from coldfront.models.features import CloningMixin
-from coldfront.models.fields import ColorField
+from coldfront.lib.models import ChangeLoggedModel
+from coldfront.lib.models.features import CloningMixin
+from coldfront.lib.models.fields import ColorField
 from coldfront.users.querysets import RestrictedQuerySet
 
 

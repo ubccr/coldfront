@@ -5,17 +5,17 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.forms import (
+from coldfront.lib.forms import (
     AllocatableResourceBulkEditForm,
     OrganizationalModelBulkEditForm,
     PrimaryModelBulkEditForm,
+    add_blank_choice,
 )
-from coldfront.forms.fields import ColorChoiceField
-from coldfront.forms.layout import FieldSet
+from coldfront.lib.forms.fields import ColorChoiceField
+from coldfront.lib.forms.layout import FieldSet
 from coldfront.ras.choices import AllocationStatusChoices, ResourceStatusChoices
 from coldfront.ras.models import Allocation, Project, ProjectUser, Resource, ResourceType
 from coldfront.users.models import Group, User
-from coldfront.utils.forms import add_blank_choice
 
 #
 # Resource Types

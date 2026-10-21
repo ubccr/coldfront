@@ -3,8 +3,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from coldfront.lib.testing import ViewTestCases, create_tags
 from coldfront.tenancy.models import Tenant, TenantGroup
-from coldfront.utils.testing import ViewTestCases, create_tags
 
 
 class TenantGroupTestCase(ViewTestCases.OrganizationalObjectViewTestCase):

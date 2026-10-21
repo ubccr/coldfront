@@ -8,10 +8,10 @@ from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.routers import APIRootView
 
-from coldfront.api.metadata import ContentTypeMetadata
-from coldfront.api.viewsets import BaseViewSet, ColdFrontModelViewSet
 from coldfront.core import filtersets
 from coldfront.core.models import CustomField, CustomFieldChoiceSet, SavedFilter, TableConfig, Tag, TaggedItem
+from coldfront.lib.api.metadata import ContentTypeMetadata
+from coldfront.lib.api.viewsets import BaseViewSet, ColdFrontModelViewSet
 
 from . import serializers
 

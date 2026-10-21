@@ -8,9 +8,9 @@ import django_tables2 as tables
 from django.utils.translation import gettext_lazy as _
 from django_cotton import render_component
 
+from coldfront.lib.tables import PrimaryModelTable, columns
 from coldfront.ras.flows import get_permitted_transition_actions
 from coldfront.ras.models import Allocation
-from coldfront.tables import PrimaryModelTable, columns
 from coldfront.tenancy.tables import TenancyColumnsMixin
 
 ALLOWED_TABLE_BUTTONS = {"approve", "deny", "activate"}

@@ -8,8 +8,6 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from coldfront.api.serializers import ChangeLogMessageSerializer, ValidatedModelSerializer
-from coldfront.api.serializers.fields import ChoiceField, ContentTypeField
 from coldfront.core.choices import (
     CustomFieldFilterLogicChoices,
     CustomFieldTypeChoices,
@@ -17,6 +15,8 @@ from coldfront.core.choices import (
     CustomFieldUIVisibleChoices,
 )
 from coldfront.core.models import CustomField, CustomFieldChoiceSet, ObjectType
+from coldfront.lib.api.serializers import ChangeLogMessageSerializer, ValidatedModelSerializer
+from coldfront.lib.api.serializers.fields import ChoiceField, ContentTypeField
 
 __all__ = (
     "CustomFieldChoiceSetSerializer",

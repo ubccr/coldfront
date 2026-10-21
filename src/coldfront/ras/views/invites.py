@@ -9,11 +9,11 @@ from django.shortcuts import get_object_or_404, render
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import View
 
+from coldfront.lib.registry import register_model_view
+from coldfront.lib.views import ViewTab, generic
+from coldfront.lib.views.object_actions import AddObject, BulkDelete, BulkExport, DeleteObject
 from coldfront.ras import filtersets, forms, tables
 from coldfront.ras.models import Project, ProjectInvite
-from coldfront.registry import register_model_view
-from coldfront.views import ViewTab, generic
-from coldfront.views.object_actions import AddObject, BulkDelete, BulkExport, DeleteObject
 
 #
 # Project Invites

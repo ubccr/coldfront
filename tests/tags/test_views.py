@@ -6,8 +6,8 @@
 from django.contrib.contenttypes.models import ContentType
 
 from coldfront.core.models import Tag
+from coldfront.lib.testing import ViewTestCases
 from coldfront.tenancy.models import Tenant
-from coldfront.utils.testing import ViewTestCases
 
 
 class TagTestCase(ViewTestCases.PrimaryObjectViewTestCase):

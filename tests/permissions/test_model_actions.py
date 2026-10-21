@@ -5,7 +5,7 @@
 from django.test import TestCase
 
 from coldfront.core.models import ObjectType
-from coldfront.registry import registry
+from coldfront.lib.registry import registry
 from coldfront.tenancy.models import Tenant, TenantGroup
 from coldfront.users.forms.model_forms import ObjectPermissionForm
 from coldfront.users.models import ObjectPermission

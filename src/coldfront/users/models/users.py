@@ -151,13 +151,13 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     @cached_property
     def requestable_resources_by_group(self):
-        from coldfront.models.utils import get_requestable_resources_by_group
+        from coldfront.lib.models.utils import get_requestable_resources_by_group
 
         return get_requestable_resources_by_group(self)
 
     @cached_property
     def requestable_resources(self):
-        from coldfront.models.utils import get_requestable_resources
+        from coldfront.lib.models.utils import get_requestable_resources
 
         return get_requestable_resources(self)
 

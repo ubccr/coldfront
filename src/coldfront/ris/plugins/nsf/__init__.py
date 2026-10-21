@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from coldfront.plugins import PluginConfig
+from coldfront.lib.plugins import PluginConfig
 
 
 class NSFConfig(PluginConfig):

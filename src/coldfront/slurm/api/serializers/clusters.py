@@ -4,8 +4,8 @@
 
 from rest_framework import serializers
 
-from coldfront.api.serializers import AllocatableResourceModelSerializer, PrimaryModelSerializer
-from coldfront.api.serializers.fields import RelatedObjectCountField
+from coldfront.lib.api.serializers import AllocatableResourceModelSerializer, PrimaryModelSerializer
+from coldfront.lib.api.serializers.fields import RelatedObjectCountField
 from coldfront.slurm.models import (
     SlurmAccount,
     SlurmAssociation,

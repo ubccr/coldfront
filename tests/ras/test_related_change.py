@@ -218,7 +218,7 @@ def test_serializer_rejects_related_key_when_target_unset():
 
 @pytest.mark.django_db
 def test_apply_aborts_when_related_target_unset():
-    from coldfront.exceptions import AbortRequest
+    from coldfront.lib.exceptions import AbortRequest
 
     user = User.objects.create(username="su_apply_none_user")
     project = Project.objects.create(name="SU Apply None Project", owner=user)

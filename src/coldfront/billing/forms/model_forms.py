@@ -24,24 +24,29 @@ from coldfront.billing.models import (
 )
 from coldfront.core.choices import CommentKindChoices
 from coldfront.core.models import CommentEntry, ObjectType
-from coldfront.forms import ColdFrontModelImportForm, PrimaryModelForm, PrimaryModelImportForm
-from coldfront.forms.fields import (
+from coldfront.lib.forms import (
+    ColdFrontModelImportForm,
+    PrimaryModelForm,
+    PrimaryModelImportForm,
+    add_blank_choice,
+    get_field_value,
+)
+from coldfront.lib.forms.fields import (
+    BytesField,
     CommentField,
+    ContentTypeChoiceField,
+    CSVChoiceField,
     CSVContentTypeObjectField,
     CSVModelChoiceField,
     CSVMoneyField,
     DynamicModelChoiceField,
     MoneyField,
 )
-from coldfront.forms.fields.bytes import BytesField
-from coldfront.forms.fields.content_types import ContentTypeChoiceField
-from coldfront.forms.fields.csv import CSVChoiceField
-from coldfront.forms.layout import FieldSet
-from coldfront.forms.widgets import RefreshSelectWidget
-from coldfront.registry import billing_scope_types, get_billing_sources
+from coldfront.lib.forms.layout import FieldSet
+from coldfront.lib.forms.widgets import RefreshSelectWidget
+from coldfront.lib.registry import billing_scope_types, get_billing_sources
 from coldfront.users.models import User
 from coldfront.users.querysets import RestrictedQuerySet
-from coldfront.utils.forms import add_blank_choice, get_field_value
 
 __all__ = (
     "DiscountForm",

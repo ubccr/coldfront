@@ -6,10 +6,10 @@ import django_filters
 from django.db.models import Q
 from django.utils.translation import gettext as _
 
+from coldfront.lib.views.filtersets import OrganizationalModelFilterSet, PrimaryModelFilterSet
 from coldfront.ras.models import Project, ProjectUser
 from coldfront.tenancy.filtersets import TenancyFilterSet
 from coldfront.users.models import Group, User
-from coldfront.views.filtersets import OrganizationalModelFilterSet, PrimaryModelFilterSet
 
 
 class ProjectFilterSet(OrganizationalModelFilterSet, TenancyFilterSet):

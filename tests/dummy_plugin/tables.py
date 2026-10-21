@@ -5,8 +5,8 @@
 
 import django_tables2 as tables
 
+from coldfront.lib.tables import register_table_column
 from coldfront.ras.tables import ProjectTable
-from coldfront.tables import register_table_column
 
 mycol = tables.Column(
     verbose_name="My column",

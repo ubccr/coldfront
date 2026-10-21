@@ -7,15 +7,15 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.forms import BulkDeleteForm
+from coldfront.lib.forms import BulkDeleteForm
+from coldfront.lib.registry import register_model_view
+from coldfront.lib.utils.query import count_related
+from coldfront.lib.views import ViewTab, generic
+from coldfront.lib.views.mixins import GetRelatedModelsMixin
+from coldfront.lib.views.object_actions import BulkDelete, BulkExport
 from coldfront.ras import filtersets, forms, tables
 from coldfront.ras.models import Allocation, Project, ProjectUser
-from coldfront.registry import register_model_view
 from coldfront.users.permissions import get_permission_for_model
-from coldfront.utils.query import count_related
-from coldfront.views import ViewTab, generic
-from coldfront.views.mixins import GetRelatedModelsMixin
-from coldfront.views.object_actions import BulkDelete, BulkExport
 
 
 def _sync_add_member(project, user):

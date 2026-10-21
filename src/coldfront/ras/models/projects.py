@@ -6,8 +6,8 @@ from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.models import ColdFrontModel, OrganizationalModel
-from coldfront.models.fields import AutoSlugField
+from coldfront.lib.models import ColdFrontModel, OrganizationalModel
+from coldfront.lib.models.fields import AutoSlugField
 
 
 class Project(OrganizationalModel):

@@ -10,8 +10,8 @@ from coldfront.core.choices import (
     CustomFieldUIVisibleChoices,
 )
 from coldfront.core.models import CustomField, CustomFieldChoiceSet, ObjectType
+from coldfront.lib.testing import ViewTestCases
 from coldfront.tenancy.models import Tenant
-from coldfront.utils.testing import ViewTestCases
 
 
 class CustomFieldChoiceSetTestCase(ViewTestCases.PrimaryObjectViewTestCase):

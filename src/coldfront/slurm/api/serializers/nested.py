@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from coldfront.api.serializers import WritableNestedSerializer
+from coldfront.lib.api.serializers import WritableNestedSerializer
 from coldfront.slurm import models
 
 __all__ = (

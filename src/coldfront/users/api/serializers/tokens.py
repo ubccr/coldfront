@@ -7,7 +7,7 @@ from django.contrib.auth import authenticate
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
 
-from coldfront.api.serializers import ValidatedModelSerializer
+from coldfront.lib.api.serializers import ValidatedModelSerializer
 from coldfront.users.models import Token
 
 from .users import UserSerializer

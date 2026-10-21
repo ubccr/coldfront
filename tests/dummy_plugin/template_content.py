@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from coldfront.plugins.templates import PluginTemplateExtension
+from coldfront.lib.plugins.templates import PluginTemplateExtension
 
 
 class GlobalContent(PluginTemplateExtension):

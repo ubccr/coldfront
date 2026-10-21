@@ -20,8 +20,8 @@ from coldfront.billing.models import (
     InvoiceLineItem,
     Rate,
 )
+from coldfront.lib.views.filtersets import ChangeLoggedModelFilterSet, PrimaryModelFilterSet
 from coldfront.users.models import User
-from coldfront.views.filtersets import ChangeLoggedModelFilterSet, PrimaryModelFilterSet
 
 
 class InvoiceFilterSet(PrimaryModelFilterSet):

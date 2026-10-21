@@ -15,8 +15,8 @@ from coldfront.billing.choices import (
     InvoiceStatusChoices,
 )
 from coldfront.billing.models import Discount, FreeAllowance, Invoice, InvoiceLineItem, Rate
-from coldfront.models.utils import get_default_currency
-from coldfront.registry import get_billing_sources
+from coldfront.lib.models.utils import get_default_currency
+from coldfront.lib.registry import get_billing_sources
 
 __all__ = ("BillingConfigurationError", "finalize_invoice", "generate_invoice")
 

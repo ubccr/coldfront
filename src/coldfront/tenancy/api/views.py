@@ -5,7 +5,7 @@
 
 from rest_framework.routers import APIRootView
 
-from coldfront.api.viewsets import ColdFrontModelViewSet
+from coldfront.lib.api.viewsets import ColdFrontModelViewSet
 from coldfront.tenancy import filtersets
 from coldfront.tenancy.models import Tenant, TenantGroup
 

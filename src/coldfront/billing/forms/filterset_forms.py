@@ -19,9 +19,9 @@ from coldfront.billing.models import (
     InvoiceLineItem,
     Rate,
 )
-from coldfront.forms import ColdFrontModelFilterSetForm, PrimaryModelFilterSetForm
-from coldfront.forms.fields import DynamicModelMultipleChoiceField, TagFilterField
-from coldfront.forms.layout import FieldSet
+from coldfront.lib.forms import ColdFrontModelFilterSetForm, PrimaryModelFilterSetForm
+from coldfront.lib.forms.fields import DynamicModelMultipleChoiceField, TagFilterField
+from coldfront.lib.forms.layout import FieldSet
 from coldfront.ras.models import Project
 from coldfront.users.models import User
 

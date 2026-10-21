@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from coldfront.lib.registry import register_billing_source
 from coldfront.ras.choices import AllocationStatusChoices
-from coldfront.registry import register_billing_source
 from coldfront.storage.models import StorageQuota, StorageResource
 
 

@@ -12,9 +12,9 @@ from django.core.exceptions import ImproperlyConfigured
 import coldfront
 from coldfront.config.base import INSTALLED_APPS, MIDDLEWARE
 from coldfront.config.env import ENV
-from coldfront.exceptions import IncompatiblePluginError
-from coldfront.plugins import PluginConfig
-from coldfront.registry import registry
+from coldfront.lib.exceptions import IncompatiblePluginError
+from coldfront.lib.plugins import PluginConfig
+from coldfront.lib.registry import registry
 
 PLUGINS = ENV.list("PLUGINS", default=[])
 PLUGINS_CONFIG = ENV.dict("PLUGINS_CONFIG", default={})

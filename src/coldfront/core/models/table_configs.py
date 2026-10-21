@@ -10,9 +10,9 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from coldfront.core.models import ObjectType
-from coldfront.models import ChangeLoggedModel
-from coldfront.models.features import CloningMixin
-from coldfront.tables.utils import get_table_for_model
+from coldfront.lib.models import ChangeLoggedModel
+from coldfront.lib.models.features import CloningMixin
+from coldfront.lib.tables.utils import get_table_for_model
 
 __all__ = ("TableConfig",)
 

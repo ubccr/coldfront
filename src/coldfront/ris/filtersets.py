@@ -6,8 +6,8 @@ import django_filters
 from django.db.models import Q
 from django.utils.translation import gettext as _
 
+from coldfront.lib.views.filtersets import ColdFrontModelFilterSet
 from coldfront.ris.models import Funding, Publication
-from coldfront.views.filtersets import ColdFrontModelFilterSet
 
 __all__ = ("FundingFilterSet", "PublicationFilterSet")
 

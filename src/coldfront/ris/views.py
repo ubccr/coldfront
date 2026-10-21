@@ -10,17 +10,17 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django_cotton import render_component
 
+from coldfront.lib.registry import register_model_view
+from coldfront.lib.views import ViewTab, generic
+from coldfront.lib.views.generic.base import BaseObjectView
+from coldfront.lib.views.htmx import htmx_partial
+from coldfront.lib.views.object_actions import BulkExport
 from coldfront.ras.models import Project
 from coldfront.ras.views.projects import ProjectBulkUnlinkView
-from coldfront.registry import register_model_view
 from coldfront.ris import filtersets, forms, tables
 from coldfront.ris.models import Funding, Publication
 from coldfront.ris.providers.local import LocalProvider
 from coldfront.users.permissions import get_permission_for_model
-from coldfront.views import ViewTab, generic
-from coldfront.views.generic.base import BaseObjectView
-from coldfront.views.htmx import htmx_partial
-from coldfront.views.object_actions import BulkExport
 
 from .object_actions import UnlinkFunding, UnlinkPublications
 from .registry import get_providers_for_model

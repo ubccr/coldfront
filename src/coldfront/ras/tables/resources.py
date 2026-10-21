@@ -5,8 +5,8 @@
 import django_tables2 as tables
 from django.utils.translation import gettext_lazy as _
 
+from coldfront.lib.tables import NestedGroupModelTable, OrganizationalModelTable, columns
 from coldfront.ras.models import Resource, ResourceType
-from coldfront.tables import NestedGroupModelTable, OrganizationalModelTable, columns
 from coldfront.tenancy.tables import TenancyColumnsMixin
 
 from .template_code import CUSTOM_ATTRIBUTES

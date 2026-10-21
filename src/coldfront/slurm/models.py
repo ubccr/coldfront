@@ -13,10 +13,10 @@ from django.db.models import Sum
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.models import BaseModel, OrganizationalModel, PrimaryModel
-from coldfront.models.features import AllocatableResourceMixin
+from coldfront.lib.models import BaseModel, OrganizationalModel, PrimaryModel
+from coldfront.lib.models.features import AllocatableResourceMixin
+from coldfront.lib.registry import register_allocation_extension
 from coldfront.ras.models.mixins import AllocationExtensionMixin
-from coldfront.registry import register_allocation_extension
 from coldfront.slurm.choices import (
     SlurmAdminLevelChoices,
     SlurmBillingModeChoices,

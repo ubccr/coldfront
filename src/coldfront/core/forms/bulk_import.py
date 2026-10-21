@@ -22,8 +22,8 @@ from coldfront.core.models import (
     SavedFilter,
     Tag,
 )
-from coldfront.forms import CSVModelForm
-from coldfront.forms.fields import (
+from coldfront.lib.forms import CSVModelForm
+from coldfront.lib.forms.fields import (
     CSVChoiceField,
     CSVContentTypeField,
     CSVModelChoiceField,

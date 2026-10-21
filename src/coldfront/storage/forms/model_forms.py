@@ -7,10 +7,15 @@ from django.core.exceptions import ValidationError
 from django.db.models import Sum
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.forms import PrimaryModelForm, PrimaryModelImportForm, TenancyForm, TenancyImportForm
-from coldfront.forms.fields import CSVModelChoiceField, CSVModelMultipleChoiceField, DynamicModelChoiceField, JSONField
-from coldfront.forms.fields.bytes import BytesField
-from coldfront.forms.layout import FieldSet
+from coldfront.lib.forms import PrimaryModelForm, PrimaryModelImportForm, TenancyForm, TenancyImportForm
+from coldfront.lib.forms.fields import (
+    BytesField,
+    CSVModelChoiceField,
+    CSVModelMultipleChoiceField,
+    DynamicModelChoiceField,
+    JSONField,
+)
+from coldfront.lib.forms.layout import FieldSet
 from coldfront.ras.models import Allocation
 from coldfront.storage.models import StorageCluster, StorageQuota, StorageResource, StorageSnapshotPolicy
 from coldfront.users.models import Group, User

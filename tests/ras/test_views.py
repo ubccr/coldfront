@@ -12,6 +12,9 @@ from django.utils import timezone
 
 from coldfront.core.choices import CommentKindChoices
 from coldfront.core.models import CommentEntry, ObjectType
+from coldfront.lib.testing import ViewTestCases, create_tags
+from coldfront.lib.testing.utils import disable_warnings
+from coldfront.lib.testing.views import ModelViewTestCase
 from coldfront.ras.choices import AllocationChangeRequestStatusChoices, AllocationStatusChoices, ResourceStatusChoices
 from coldfront.ras.models import (
     Allocation,
@@ -26,9 +29,6 @@ from coldfront.ras.models.change_requests import (
 )
 from coldfront.tenancy.models import Tenant
 from coldfront.users.models import ObjectPermission, User
-from coldfront.utils.testing import ViewTestCases, create_tags
-from coldfront.utils.testing.utils import disable_warnings
-from coldfront.utils.testing.views import ModelViewTestCase
 
 
 class ProjectTestCase(ViewTestCases.OrganizationalObjectViewTestCase):

@@ -6,8 +6,8 @@ import django_filters
 from django.db.models import Q
 from django.utils.translation import gettext as _
 
-from coldfront.views.filters import TreeNodeMultipleChoiceFilter
-from coldfront.views.filtersets import NestedGroupModelFilterSet, PrimaryModelFilterSet
+from coldfront.lib.views.filters import TreeNodeMultipleChoiceFilter
+from coldfront.lib.views.filtersets import NestedGroupModelFilterSet, PrimaryModelFilterSet
 
 from .models import Tenant, TenantGroup
 

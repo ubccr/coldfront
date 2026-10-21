@@ -6,11 +6,11 @@
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from coldfront.api.exceptions import SerializerNotFound
-from coldfront.api.serializers import BaseModelSerializer, ChangeLogMessageSerializer, ValidatedModelSerializer
-from coldfront.api.serializers.fields import ContentTypeField, RelatedObjectCountField
-from coldfront.api.utils import get_serializer_for_model
 from coldfront.core.models import ObjectType, Tag, TaggedItem
+from coldfront.lib.api.exceptions import SerializerNotFound
+from coldfront.lib.api.serializers import BaseModelSerializer, ChangeLogMessageSerializer, ValidatedModelSerializer
+from coldfront.lib.api.serializers.fields import ContentTypeField, RelatedObjectCountField
+from coldfront.lib.api.utils import get_serializer_for_model
 
 __all__ = (
     "TagSerializer",

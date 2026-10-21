@@ -5,14 +5,14 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.forms import (
+from coldfront.lib.forms import (
     AllocatableResourceBulkEditForm,
     OrganizationalModelBulkEditForm,
     PrimaryModelBulkEditForm,
 )
-from coldfront.forms.fields import JSONField
-from coldfront.forms.layout import FieldSet
-from coldfront.forms.widgets import BulkEditNullBooleanSelect
+from coldfront.lib.forms.fields import JSONField
+from coldfront.lib.forms.layout import FieldSet
+from coldfront.lib.forms.widgets import BulkEditNullBooleanSelect
 from coldfront.slurm.choices import (
     SlurmAdminLevelChoices,
     SlurmPartitionStateChoices,

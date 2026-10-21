@@ -15,11 +15,11 @@ from rest_framework.status import HTTP_201_CREATED
 from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
 
-from coldfront.api.viewsets import ColdFrontModelViewSet
+from coldfront.lib.api.viewsets import ColdFrontModelViewSet
+from coldfront.lib.utils.data import deepmerge
 from coldfront.users import filtersets
 from coldfront.users.models import Group, ObjectPermission, Role, Token, User, UserConfig
 from coldfront.users.querysets import RestrictedQuerySet
-from coldfront.utils.data import deepmerge
 
 from . import serializers
 

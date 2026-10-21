@@ -8,8 +8,8 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from coldfront.api.serializers import ValidatedModelSerializer
-from coldfront.api.serializers.fields import SerializedPKRelatedField
+from coldfront.lib.api.serializers import ValidatedModelSerializer
+from coldfront.lib.api.serializers.fields import SerializedPKRelatedField
 from coldfront.users.models import Group, ObjectPermission, Role, User
 
 from .permissions import ObjectPermissionSerializer

@@ -8,6 +8,16 @@ from django.core.exceptions import PermissionDenied
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from coldfront.lib.registry import get_allocation_extensions, register_model_view
+from coldfront.lib.utils.data import shallow_compare_dict
+from coldfront.lib.views import ViewTab, generic
+from coldfront.lib.views.object_actions import (
+    AddObject,
+    BulkDelete,
+    BulkExport,
+    CloneObject,
+    EditObject,
+)
 from coldfront.ras import filtersets, forms, tables
 from coldfront.ras import object_actions as actions
 from coldfront.ras.choices import AllocationChangeRequestStatusChoices
@@ -17,16 +27,6 @@ from coldfront.ras.flows.change_requests import (
 )
 from coldfront.ras.models import Allocation
 from coldfront.ras.models.change_requests import AllocationChangeRequest
-from coldfront.registry import get_allocation_extensions, register_model_view
-from coldfront.utils.data import shallow_compare_dict
-from coldfront.views import ViewTab, generic
-from coldfront.views.object_actions import (
-    AddObject,
-    BulkDelete,
-    BulkExport,
-    CloneObject,
-    EditObject,
-)
 
 #
 # AllocationChangeRequest list + detail

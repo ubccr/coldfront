@@ -6,11 +6,11 @@ import django_filters
 from django.db.models import Q
 from django.utils.translation import gettext as _
 
+from coldfront.lib.views.filtersets import PrimaryModelFilterSet
 from coldfront.ras.models import Allocation
 from coldfront.storage.choices import StorageShareTypeChoices
 from coldfront.storage.models import StorageCluster, StorageQuota, StorageResource, StorageSnapshotPolicy
 from coldfront.tenancy.filtersets import TenancyFilterSet
-from coldfront.views.filtersets import PrimaryModelFilterSet
 
 
 class StorageResourceFilterSet(TenancyFilterSet, PrimaryModelFilterSet):

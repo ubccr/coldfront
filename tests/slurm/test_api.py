@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from coldfront.lib.testing import APIViewTestCases, create_tags
 from coldfront.slurm.models import (
     SlurmAccount,
     SlurmAssociation,
@@ -11,7 +12,6 @@ from coldfront.slurm.models import (
     SlurmUser,
 )
 from coldfront.users.models import User
-from coldfront.utils.testing import APIViewTestCases, create_tags
 
 
 class SlurmQOSAPITestCase(APIViewTestCases.APIViewTestCase):

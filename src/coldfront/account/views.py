@@ -27,9 +27,9 @@ from social_core.backends.utils import load_backends
 from coldfront.account.models import UserToken
 from coldfront.core.models import ObjectChange
 from coldfront.core.tables import ObjectChangeTable
-from coldfront.registry import get_thirdparty_accounts, register_model_view
+from coldfront.lib.registry import get_thirdparty_accounts, register_model_view
+from coldfront.lib.views import ViewTab, generic
 from coldfront.users import forms
-from coldfront.views import ViewTab, generic
 
 from .filtersets import NotificationFilterSet
 from .forms import PasswordChangeForm
@@ -60,7 +60,7 @@ class ColdFrontLoginView(LoginView):
 
     def form_valid(self, form):
         """Security check complete. Log the user in."""
-        logger = logging.getLogger("coldfront.auth.login")
+        logger = logging.getLogger("coldfront.lib.auth.login")
         auth_login(self.request, form.get_user())
 
         logger.info(f"User {self.request.user} successfully authenticated")
@@ -106,7 +106,7 @@ class HtmxLogoutView(LogoutView):
     """
 
     def post(self, request, *args, **kwargs):
-        logger = logging.getLogger("coldfront.auth.logout")
+        logger = logging.getLogger("coldfront.lib.auth.logout")
         auth_logout(request)
         logger.info(f"User {request.user} has logged out")
         messages.info(request, _("You have logged out."))
@@ -191,7 +191,7 @@ class ChangePasswordView(LoginRequiredMixin, View):
 class ThirdPartyAccountsView(LoginRequiredMixin, View):
     """
     Shared "Third-Party Accounts" page. Loops over the registered third-party
-    account providers (see ``coldfront.registry``) and renders, for each
+    account providers (see ``coldfront.lib.registry``) and renders, for each
     provider, either a Link button or the linked account plus an Unlink button.
     """
 

@@ -8,6 +8,8 @@ from django.db.models import Sum
 from django.test import TestCase
 from django.urls import reverse
 
+from coldfront.lib.testing import TestCase as ColdFrontTestCase
+from coldfront.lib.testing import ViewTestCases, create_tags
 from coldfront.slurm.filtersets import SlurmAccountUsageFilterSet
 from coldfront.slurm.models import (
     SlurmAccount,
@@ -20,8 +22,6 @@ from coldfront.slurm.models import (
 )
 from coldfront.slurm.tables import SlurmAccountTable, SlurmAccountUsageTable
 from coldfront.users.models import User
-from coldfront.utils.testing import TestCase as ColdFrontTestCase
-from coldfront.utils.testing import ViewTestCases, create_tags
 
 
 class SlurmQOSTestCase(ViewTestCases.PrimaryObjectViewTestCase):

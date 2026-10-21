@@ -12,7 +12,7 @@ from django.urls import NoReverseMatch
 from django.utils.html import conditional_escape
 from taggit.managers import _TaggableManager
 
-from coldfront.views import get_action_url
+from coldfront.lib.views import get_action_url
 
 
 class JobLogDecoder(json.JSONDecoder):

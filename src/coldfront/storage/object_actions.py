@@ -5,7 +5,7 @@
 
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.views.object_actions import ObjectAction
+from coldfront.lib.views.object_actions import ObjectAction
 
 
 class SyncQuotaAction(ObjectAction):

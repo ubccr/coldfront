@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import coldfront
-from coldfront.choices import parse_choices_from_env
 from coldfront.config.env import ENV
+from coldfront.lib.choices import parse_choices_from_env
 
 # ------------------------------------------------------------------------------
 # Advanced ColdFront configurations
@@ -66,7 +66,7 @@ ALLOCATION_EXTENSION_CHANGEABLE_FIELDS = ENV.dict(
     default={},
 )
 FIELD_CHOICES = ENV.dict("FIELD_CHOICES", cast={"value": parse_choices_from_env}, default={})
-AUTO_SLUG_FUNC = ENV.str("AUTO_SLUG_FUNC", default="coldfront.models.utils.auto_generate_slug")
+AUTO_SLUG_FUNC = ENV.str("AUTO_SLUG_FUNC", default="coldfront.lib.models.utils.auto_generate_slug")
 # ------------------------------------------------------------------------------
 # System notifications
 # ------------------------------------------------------------------------------
@@ -184,22 +184,22 @@ REST_FRAMEWORK = {
     "COERCE_DECIMAL_TO_STRING": False,
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework.authentication.SessionAuthentication",
-        "coldfront.api.authentication.TokenAuthentication",
+        "coldfront.lib.api.authentication.TokenAuthentication",
     ),
     "DEFAULT_FILTER_BACKENDS": (
         "django_filters.rest_framework.DjangoFilterBackend",
         "rest_framework.filters.OrderingFilter",
     ),
-    "DEFAULT_METADATA_CLASS": "coldfront.api.metadata.BulkOperationMetadata",
-    "DEFAULT_PAGINATION_CLASS": "coldfront.api.paginator.OptionalLimitOffsetPagination",
+    "DEFAULT_METADATA_CLASS": "coldfront.lib.api.metadata.BulkOperationMetadata",
+    "DEFAULT_PAGINATION_CLASS": "coldfront.lib.api.paginator.OptionalLimitOffsetPagination",
     "DEFAULT_PARSER_CLASSES": (
         "rest_framework.parsers.JSONParser",
         "rest_framework.parsers.MultiPartParser",
     ),
-    "DEFAULT_PERMISSION_CLASSES": ("coldfront.api.authentication.TokenPermissions",),
+    "DEFAULT_PERMISSION_CLASSES": ("coldfront.lib.api.authentication.TokenPermissions",),
     "DEFAULT_RENDERER_CLASSES": (
         "rest_framework.renderers.JSONRenderer",
-        "coldfront.api.renderers.FormlessBrowsableAPIRenderer",
+        "coldfront.lib.api.renderers.FormlessBrowsableAPIRenderer",
     ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_VERSION": REST_FRAMEWORK_VERSION,
@@ -211,7 +211,7 @@ REST_FRAMEWORK = {
         # Custom operations
         #        'bulk_destroy': 'bulk_delete',
     },
-    "VIEW_NAME_FUNCTION": "coldfront.api.utils.get_view_name",
+    "VIEW_NAME_FUNCTION": "coldfront.lib.api.utils.get_view_name",
 }
 
 #

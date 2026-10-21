@@ -7,10 +7,10 @@ from django.test import TestCase, override_settings
 
 from coldfront.core.choices import CommentKindChoices
 from coldfront.core.models import CommentEntry
+from coldfront.lib.testing import ViewTestCases
 from coldfront.ras.models import Allocation, Project, Resource, ResourceType
 from coldfront.tenancy.models import Tenant
 from coldfront.users.models import User
-from coldfront.utils.testing import ViewTestCases
 
 
 class CommentEntryTestCase(ViewTestCases.PrimaryObjectViewTestCase):

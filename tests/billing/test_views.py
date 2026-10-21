@@ -18,10 +18,10 @@ from coldfront.billing.models import (
     InvoiceLineItem,
     Rate,
 )
+from coldfront.lib.testing import ViewTestCases
 from coldfront.ras.models import Project, Resource, ResourceType
 from coldfront.storage.models import StorageResource
 from coldfront.users.models import User
-from coldfront.utils.testing import ViewTestCases
 
 
 class InvoiceTestCase(ViewTestCases.PrimaryObjectViewTestCase):

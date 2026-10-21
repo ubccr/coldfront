@@ -11,9 +11,9 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from coldfront.core.choices import CommentKindChoices
-from coldfront.models import ChangeLoggedModel
-from coldfront.models.features import CustomFieldsMixin, TagsMixin
-from coldfront.registry import registry
+from coldfront.lib.models import ChangeLoggedModel
+from coldfront.lib.models.features import CustomFieldsMixin, TagsMixin
+from coldfront.lib.registry import registry
 
 
 class CommentEntry(CustomFieldsMixin, TagsMixin, ChangeLoggedModel):

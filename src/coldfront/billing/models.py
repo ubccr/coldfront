@@ -18,10 +18,10 @@ from coldfront.billing.choices import (
     PaymentMethodChoices,
     UnitFormatChoiceSet,
 )
-from coldfront.models import ChangeLoggedModel, PrimaryModel
-from coldfront.models.features import CommentingMixin
-from coldfront.models.fields import AutoSlugField
-from coldfront.models.utils import get_currency_choices, get_default_currency
+from coldfront.lib.models import ChangeLoggedModel, PrimaryModel
+from coldfront.lib.models.features import CommentingMixin
+from coldfront.lib.models.fields import AutoSlugField
+from coldfront.lib.models.utils import get_currency_choices, get_default_currency
 
 __all__ = (
     "Discount",

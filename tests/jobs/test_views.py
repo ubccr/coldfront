@@ -11,9 +11,9 @@ from django.test import override_settings
 
 from coldfront.core.choices import JobStatusChoices
 from coldfront.core.models import Job, ObjectType
+from coldfront.lib.testing import TestCase
+from coldfront.lib.testing.utils import disable_warnings
 from coldfront.users.models import ObjectPermission
-from coldfront.utils.testing import TestCase
-from coldfront.utils.testing.utils import disable_warnings
 
 
 class JobListViewTestCase(TestCase):

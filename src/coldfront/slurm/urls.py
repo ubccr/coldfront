@@ -4,7 +4,7 @@
 
 from django.urls import include, path
 
-from coldfront.registry import get_model_urls
+from coldfront.lib.registry import get_model_urls
 
 from . import views  # noqa F401
 

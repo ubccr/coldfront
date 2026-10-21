@@ -5,8 +5,8 @@
 import django_tables2 as tables
 from django.utils.translation import gettext_lazy as _
 
+from coldfront.lib.tables import PrimaryModelTable, columns
 from coldfront.ras.models.change_requests import AllocationChangeRequest
-from coldfront.tables import PrimaryModelTable, columns
 
 
 class AllocationChangeRequestTable(PrimaryModelTable):

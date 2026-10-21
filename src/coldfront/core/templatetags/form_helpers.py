@@ -5,7 +5,7 @@
 
 from django import forms, template
 
-from coldfront.constants import COLDFRONT_BLANK_CHOICE_LABEL
+from coldfront.lib.constants import COLDFRONT_BLANK_CHOICE_LABEL
 
 register = template.Library()
 
@@ -27,9 +27,9 @@ def fieldset_rows(fieldset, form):
     Fields listed in ``form.meta_fields`` or absent from ``form.fields`` are
     skipped. Empty GroupFields rows (all fields skipped) are dropped.
     """
-    # Imported lazily to avoid pulling in the whole coldfront.forms package
+    # Imported lazily to avoid pulling in the whole coldfront.lib.forms package
     # (which imports every form module) at template-load time.
-    from coldfront.forms.layout import DisplayField, GroupFields
+    from coldfront.lib.forms.layout import DisplayField, GroupFields
 
     meta_fields = getattr(form, "meta_fields", ())
     rows = []

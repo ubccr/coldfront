@@ -6,8 +6,8 @@ import django_tables2 as tables
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
+from coldfront.lib.tables import ColdFrontTable, columns
 from coldfront.ris.models import Funding, Publication
-from coldfront.tables import ColdFrontTable, columns
 
 __all__ = (
     "FundingAddTable",

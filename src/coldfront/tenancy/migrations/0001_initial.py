@@ -8,7 +8,7 @@ import taggit.managers
 from django.db import migrations, models
 
 import coldfront.core.utils
-import coldfront.models.deletion
+import coldfront.lib.models.deletion
 
 
 class Migration(migrations.Migration):
@@ -61,7 +61,7 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "tenant groups",
                 "ordering": ["name"],
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
         migrations.CreateModel(
             name="Tenant",
@@ -119,6 +119,6 @@ class Migration(migrations.Migration):
                     ),
                 ],
             },
-            bases=(coldfront.models.deletion.DeleteMixin, models.Model),
+            bases=(coldfront.lib.models.deletion.DeleteMixin, models.Model),
         ),
     ]

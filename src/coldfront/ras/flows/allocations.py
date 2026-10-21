@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from generic_notifications import send_notification
 from viewflow import fsm, this
 
-from coldfront.flows import ColdFrontFlow
+from coldfront.lib.flows import ColdFrontFlow
 from coldfront.ras import object_actions as actions
 from coldfront.ras.choices import AllocationStatusChoices
 from coldfront.ras.models import Allocation

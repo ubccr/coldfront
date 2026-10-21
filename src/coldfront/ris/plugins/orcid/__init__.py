@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from coldfront.plugins import PluginConfig
+from coldfront.lib.plugins import PluginConfig
 
 
 class OrcidConfig(PluginConfig):
@@ -26,7 +26,7 @@ class OrcidConfig(PluginConfig):
         super().ready()
 
         # Register the ORCID third-party account link flow with the account app.
-        from coldfront.registry import register_thirdparty_account
+        from coldfront.lib.registry import register_thirdparty_account
 
         register_thirdparty_account(
             "orcid",

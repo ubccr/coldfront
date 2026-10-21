@@ -20,7 +20,7 @@ affected users.
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
-from coldfront.flows import register_target_callback, register_transition_permission_callback
+from coldfront.lib.flows import register_target_callback, register_transition_permission_callback
 from coldfront.ras.choices import AllocationStatusChoices
 from coldfront.ras.flows import AllocationStatusFlow
 from coldfront.ras.models import Allocation, ProjectUser

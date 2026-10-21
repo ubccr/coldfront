@@ -12,7 +12,7 @@ from coldfront.billing.choices import InvoiceStatusChoices
 from coldfront.billing.generation import finalize_invoice, generate_invoice
 from coldfront.billing.models import Invoice
 from coldfront.billing.notifications import InvoiceNotificationType
-from coldfront.flows import ColdFrontFlow
+from coldfront.lib.flows import ColdFrontFlow
 from coldfront.users.permissions import get_permission_for_model
 
 

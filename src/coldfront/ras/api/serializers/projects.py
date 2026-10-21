@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from coldfront.api.serializers import OrganizationalModelSerializer, PrimaryModelSerializer
-from coldfront.api.serializers.fields import RelatedObjectCountField
+from coldfront.lib.api.serializers import OrganizationalModelSerializer, PrimaryModelSerializer
+from coldfront.lib.api.serializers.fields import RelatedObjectCountField
 from coldfront.ras.models import Project, ProjectUser
 from coldfront.tenancy.api.serializers import TenantSerializer
 from coldfront.users.api.serializers import GroupSerializer, UserSerializer

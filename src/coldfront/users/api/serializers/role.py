@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from coldfront.api.serializers import ValidatedModelSerializer
-from coldfront.api.serializers.fields import SerializedPKRelatedField
+from coldfront.lib.api.serializers import ValidatedModelSerializer
+from coldfront.lib.api.serializers.fields import SerializedPKRelatedField
 from coldfront.users.models import Group, ObjectPermission, Role, User
 
 from .nested import NestedGroupSerializer, NestedUserSerializer

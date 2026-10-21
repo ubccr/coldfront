@@ -7,8 +7,8 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from djmoney.models.fields import MoneyField
 
-from coldfront.models import ColdFrontModel
-from coldfront.models.utils import get_currency_choices, get_default_currency
+from coldfront.lib.models import ColdFrontModel
+from coldfront.lib.models.utils import get_currency_choices, get_default_currency
 
 __all__ = ("Funding", "Publication")
 

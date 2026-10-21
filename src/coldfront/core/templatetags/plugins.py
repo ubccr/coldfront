@@ -7,8 +7,8 @@ from django import template as template_
 from django.conf import settings
 from django.utils.safestring import mark_safe
 
-from coldfront.plugins import PluginTemplateExtension
-from coldfront.registry import registry
+from coldfront.lib.plugins import PluginTemplateExtension
+from coldfront.lib.registry import registry
 
 register = template_.Library()
 

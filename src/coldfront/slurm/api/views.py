@@ -6,7 +6,7 @@ from django.http import HttpResponse
 from rest_framework.decorators import action
 from rest_framework.routers import APIRootView
 
-from coldfront.api.viewsets import ColdFrontModelViewSet
+from coldfront.lib.api.viewsets import ColdFrontModelViewSet
 from coldfront.slurm import filtersets
 from coldfront.slurm.export import generate_association_dump
 from coldfront.slurm.models import (

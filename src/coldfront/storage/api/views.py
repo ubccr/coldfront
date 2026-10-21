@@ -4,7 +4,7 @@
 
 from rest_framework.routers import APIRootView
 
-from coldfront.api.viewsets import ColdFrontModelViewSet
+from coldfront.lib.api.viewsets import ColdFrontModelViewSet
 from coldfront.storage import filtersets
 from coldfront.storage.models import (
     StorageCluster,

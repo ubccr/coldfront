@@ -4,12 +4,12 @@
 
 from rest_framework import serializers
 
-from coldfront.api.serializers import PrimaryModelSerializer
+from coldfront.lib.api.serializers import PrimaryModelSerializer
+from coldfront.lib.registry import get_allocation_extensions
 from coldfront.ras.models import (
     Allocation,
     AllocationChangeRequest,
 )
-from coldfront.registry import get_allocation_extensions
 from coldfront.users.api.serializers import UserSerializer
 
 

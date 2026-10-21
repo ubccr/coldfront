@@ -4,9 +4,9 @@
 
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.forms import NestedGroupModelForm, PrimaryModelForm
-from coldfront.forms.fields import DynamicModelChoiceField, SlugField
-from coldfront.forms.layout import FieldSet
+from coldfront.lib.forms import NestedGroupModelForm, PrimaryModelForm
+from coldfront.lib.forms.fields import DynamicModelChoiceField, SlugField
+from coldfront.lib.forms.layout import FieldSet
 from coldfront.tenancy.models import Tenant, TenantGroup
 
 __all__ = ("TenantGroupForm", "TenantForm")

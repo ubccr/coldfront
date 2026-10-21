@@ -4,7 +4,7 @@
 
 from django.contrib.auth.forms import PasswordChangeForm as _PasswordChangeForm
 
-from coldfront.forms.layout import FieldSet
+from coldfront.lib.forms.layout import FieldSet
 
 
 class PasswordChangeForm(_PasswordChangeForm):

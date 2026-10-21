@@ -5,12 +5,12 @@
 
 from django.db.models import Count
 
+from coldfront.lib.registry import register_model_view
+from coldfront.lib.utils.query import count_related
+from coldfront.lib.views import generic
+from coldfront.lib.views.mixins import GetRelatedModelsMixin
 from coldfront.ras import filtersets, forms, tables
 from coldfront.ras.models import Resource, ResourceType
-from coldfront.registry import register_model_view
-from coldfront.utils.query import count_related
-from coldfront.views import generic
-from coldfront.views.mixins import GetRelatedModelsMixin
 
 #
 # Resource types

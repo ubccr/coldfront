@@ -7,9 +7,9 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.models import ColdFrontModel
-from coldfront.models.features import CommentingMixin
-from coldfront.models.fields import AutoSlugField
+from coldfront.lib.models import ColdFrontModel
+from coldfront.lib.models.features import CommentingMixin
+from coldfront.lib.models.fields import AutoSlugField
 from coldfront.ras.choices import AllocationChangeRequestStatusChoices
 
 

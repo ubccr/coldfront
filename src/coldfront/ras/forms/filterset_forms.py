@@ -7,13 +7,13 @@ from django.utils.translation import gettext_lazy as _
 
 from coldfront.core.choices import ColorChoices
 from coldfront.core.models import ObjectType
-from coldfront.forms import OrganizationalModelFilterSetForm, PrimaryModelFilterSetForm
-from coldfront.forms.fields import (
+from coldfront.lib.forms import OrganizationalModelFilterSetForm, PrimaryModelFilterSetForm
+from coldfront.lib.forms.fields import (
     ContentTypeChoiceField,
     DynamicModelMultipleChoiceField,
     TagFilterField,
 )
-from coldfront.forms.layout import FieldSet
+from coldfront.lib.forms.layout import FieldSet
 from coldfront.ras.choices import AllocationChangeRequestStatusChoices, AllocationStatusChoices, ResourceStatusChoices
 from coldfront.ras.models import (
     Allocation,

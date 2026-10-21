@@ -4,6 +4,7 @@
 
 from django.test import TestCase
 
+from coldfront.lib.testing import ViewTestCases, create_tags
 from coldfront.storage.forms import StorageResourceForm
 from coldfront.storage.models import (
     StorageCluster,
@@ -11,7 +12,6 @@ from coldfront.storage.models import (
     StorageResource,
     StorageSnapshotPolicy,
 )
-from coldfront.utils.testing import ViewTestCases, create_tags
 
 DEFAULT_PATH_TEMPLATE = "/home/groups/{project.slug}/{allocation.id}"
 

@@ -4,8 +4,8 @@
 
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.forms import ColdFrontModelImportForm
-from coldfront.forms.fields import CSVModelChoiceField, CSVModelMultipleChoiceField, CSVMoneyField
+from coldfront.lib.forms import ColdFrontModelImportForm
+from coldfront.lib.forms.fields import CSVModelChoiceField, CSVModelMultipleChoiceField, CSVMoneyField
 from coldfront.ras.models import Project
 from coldfront.ris.models import Funding, Publication
 from coldfront.users.models import User

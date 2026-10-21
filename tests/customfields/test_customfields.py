@@ -9,9 +9,9 @@ from django.core.exceptions import ValidationError
 
 from coldfront.core.choices import CustomFieldFilterLogicChoices, CustomFieldTypeChoices
 from coldfront.core.models import CustomField, CustomFieldChoiceSet, ObjectType
+from coldfront.lib.testing import TestCase
 from coldfront.tenancy.filtersets import TenantFilterSet
 from coldfront.tenancy.models import Tenant, TenantGroup
-from coldfront.utils.testing import TestCase
 
 
 class CustomFieldTest(TestCase):

@@ -5,8 +5,8 @@
 
 from django.urls import reverse
 
+from coldfront.lib.testing import APITestCase, APIViewTestCases
 from coldfront.tenancy.models import Tenant, TenantGroup
-from coldfront.utils.testing import APITestCase, APIViewTestCases
 
 
 class AppTest(APITestCase):

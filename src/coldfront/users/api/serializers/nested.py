@@ -6,7 +6,7 @@
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 
-from coldfront.api.serializers import WritableNestedSerializer
+from coldfront.lib.api.serializers import WritableNestedSerializer
 from coldfront.users import models
 
 __all__ = (

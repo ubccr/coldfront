@@ -9,7 +9,7 @@ class AccountConfig(AppConfig):
     name = "coldfront.account"
 
     def ready(self):
-        from coldfront.models.features import register_models
+        from coldfront.lib.models.features import register_models
 
         # Register models
         register_models(*self.get_models())

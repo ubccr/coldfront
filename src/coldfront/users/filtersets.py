@@ -11,10 +11,10 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 
 from coldfront.core.models import ObjectType
+from coldfront.lib.views.filters import ContentTypeFilter
+from coldfront.lib.views.filtersets import BaseFilterSet
 from coldfront.ras.models import Allocation, Project
 from coldfront.users.models import Group, ObjectPermission, Role, Token, User
-from coldfront.views.filters import ContentTypeFilter
-from coldfront.views.filtersets import BaseFilterSet
 
 __all__ = (
     "GroupFilterSet",

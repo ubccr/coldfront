@@ -4,7 +4,7 @@
 
 from rest_framework.routers import APIRootView
 
-from coldfront.api.viewsets import ColdFrontModelViewSet
+from coldfront.lib.api.viewsets import ColdFrontModelViewSet
 from coldfront.ris import filtersets
 from coldfront.ris.models import Funding, Publication
 

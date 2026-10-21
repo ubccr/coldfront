@@ -5,6 +5,7 @@
 import django_tables2 as tables
 from django.utils.translation import gettext_lazy as _
 
+from coldfront.lib.tables import PrimaryModelTable, columns
 from coldfront.slurm.models import (
     SlurmAccount,
     SlurmAccountUsage,
@@ -14,7 +15,6 @@ from coldfront.slurm.models import (
     SlurmQOS,
     SlurmUser,
 )
-from coldfront.tables import PrimaryModelTable, columns
 from coldfront.tenancy.tables.columns import TenancyColumnsMixin
 
 

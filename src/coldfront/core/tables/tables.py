@@ -21,9 +21,9 @@ from coldfront.core.models import (
     Tag,
     TaggedItem,
 )
-from coldfront.tables import ColdFrontTable, columns
+from coldfront.lib.tables import ColdFrontTable, columns
+from coldfront.lib.views import get_action_url
 from coldfront.users.permissions import get_permission_for_model
-from coldfront.views import get_action_url
 
 from .template_code import OBJECTCHANGE_FULL_NAME, OBJECTCHANGE_OBJECT, OBJECTCHANGE_REQUEST_ID
 

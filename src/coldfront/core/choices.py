@@ -5,8 +5,8 @@
 
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.choices import ChoiceSet
-from coldfront.constants import CSV_DELIMITERS
+from coldfront.lib.choices import ChoiceSet
+from coldfront.lib.constants import CSV_DELIMITERS
 
 
 class ObjectChangeActionChoices(ChoiceSet):

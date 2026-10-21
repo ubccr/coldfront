@@ -16,9 +16,9 @@ from coldfront.billing.models import (
     Rate,
 )
 from coldfront.billing.pdf import render_invoice_pdf
-from coldfront.registry import get_billing_sources, register_model_view
-from coldfront.views import generic
-from coldfront.views.mixins import GetRelatedModelsMixin
+from coldfront.lib.registry import get_billing_sources, register_model_view
+from coldfront.lib.views import generic
+from coldfront.lib.views.mixins import GetRelatedModelsMixin
 
 __all__ = (
     "DiscountBulkDeleteView",

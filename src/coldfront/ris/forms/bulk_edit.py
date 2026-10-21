@@ -5,9 +5,9 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from coldfront.forms import ColdFrontModelBulkEditForm
-from coldfront.forms.fields import MoneyField
-from coldfront.forms.layout import FieldSet
+from coldfront.lib.forms import ColdFrontModelBulkEditForm
+from coldfront.lib.forms.fields import MoneyField
+from coldfront.lib.forms.layout import FieldSet
 from coldfront.ras.models import Project
 from coldfront.ris.models import Funding, Publication
 
