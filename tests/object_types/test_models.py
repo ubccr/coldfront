@@ -70,3 +70,24 @@ class ObjectTypeTest(TestCase):
         public_ots = ObjectType.objects.public()
         self.assertIn(ObjectType.objects.get_by_natural_key("users", "user"), public_ots)
         self.assertNotIn(ObjectType.objects.get_by_natural_key("auth", "permission"), public_ots)
+
+    def test_with_feature(self):
+        """
+        Test with_feature() returns only ObjectTypes whose ``features``
+        JSON dict has the given feature set to ``True``.
+
+        Exercises the ``KT`` / JSON-extraction path, which must translate the
+        stored JSON boolean to the Python string 'true' consistently across
+        backends (sqlite/postgres/mariadb). Rows with the feature ``False``,
+        absent, or ``None`` must be excluded.
+        """
+        ot_true = ObjectType.objects.create(app_label="probe_a", model="m", features={"cloning": True})
+        ot_false = ObjectType.objects.create(app_label="probe_b", model="m", features={"cloning": False})
+        ot_absent = ObjectType.objects.create(app_label="probe_c", model="m", features={})
+        ot_none = ObjectType.objects.create(app_label="probe_d", model="m", features={"cloning": None})
+
+        result = ObjectType.objects.with_feature("cloning")
+        self.assertIn(ot_true, result)
+        self.assertNotIn(ot_false, result)
+        self.assertNotIn(ot_absent, result)
+        self.assertNotIn(ot_none, result)
