@@ -9,20 +9,20 @@
     {% else %}
         {{ user.username }}
     {% endif %}
-{% endblock %}
+{% endblock title %}
 {% block subtitle %}
     <div class="text-secondary text-sm">
         {{ settings.CENTER_NAME }}
     </div>
-{% endblock %}
+{% endblock subtitle %}
 
 {% block controls %}
-{% endblock %}
+{% endblock controls %}
 
 {% block content %}
     {% block stats %}
         {% include 'home/stats.html' %}
-    {% endblock %}
+    {% endblock stats %}
     <c-cf.layout.panels>
         <c-slot name="left">
             {% include "home/content.html" %}
@@ -32,4 +32,4 @@
             {% include 'home/activity.html' %}
         </c-slot>
     </c-cf.layout.panels>
-{% endblock %}
+{% endblock content %}

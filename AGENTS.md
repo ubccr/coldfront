@@ -98,7 +98,7 @@ uv run ruff check
 uv run ruff format --check
 
 # Django template formatting
-uv run djangofmt src/coldfront/
+uv run djangofmt check src/coldfront/
 
 # Frontend TypeScript/CSS (Biome)
 bun run check --cwd src/frontend
@@ -116,6 +116,7 @@ uv run coldfront makemigrations --check
 uv run ruff check --fix
 uv run ruff format
 uv run djangofmt src/coldfront/
+uv run djangofmt check --fix src/coldfront/
 bun run --cwd src/frontend format
 ```
 

@@ -581,7 +581,7 @@
                                                 </table>
                                                 <p style="font-size: 16px; line-height: 1.625; color: #51545e; margin: 0.4em 0 1.1875em">
                                                     {% block attribute_message %}For reference, here's the related
-                                                        information:{% endblock %}
+                                                        information:{% endblock attribute_message %}
                                                 </p>
                                                 <table
                                                     class="attributes"
@@ -621,7 +621,8 @@
                                                 </table>
                                                 <p style="font-size: 16px; line-height: 1.625; color: #51545e; margin: 0.4em 0 1.1875em">
                                                     {% block footer_message %}If you were not expecting this message,
-                                                        please ignore this email.{% endblock %} Feel free to <a
+                                                        please ignore this email.{% endblock footer_message %} Feel free
+                                                    to <a
                                                         href="mailto:{{ settings.SUPPORT_EMAIL }}"
                                                         style="color: #3869d4"
                                                     >contact support</a> or check out our <a
@@ -645,8 +646,8 @@
                                                                 class="f-fallback sub"
                                                                 style="font-size: 13px; line-height: 1.625; color: #51545e; margin: 0.4em 0 1.1875em"
                                                             >
-                                                                If you’re having trouble with the button above, copy
-                                                                and paste the URL below into your web browser.
+                                                                If you’re having trouble with the button above, copy and
+                                                                paste the URL below into your web browser.
                                                             </p>
                                                             <p
                                                                 class="f-fallback sub"

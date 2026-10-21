@@ -4,22 +4,22 @@
 
 {% block header %}
     Project Invite
-{% endblock %}
+{% endblock header %}
 
 {% block message %}
     {% blocktrans trimmed with project_name=project.name center_name=settings.CENTER_NAME %}You have been invited to
         join the project
         {{ project_name }} at {{ center_name }}. To accept this invitation, click the link below and login:
     {% endblocktrans %}
-{% endblock %}
+{% endblock message %}
 
 {% block button_text %}
     {% trans "Accept Invitation" %}
-{% endblock %}
+{% endblock button_text %}
 
 {% block footer_message %}
     {% blocktrans trimmed with expire=expire_date|naturaltime %}
         This invitation will expire {{ expire }}. If you were not expecting this invitation, you can safely ignore this
         email.
     {% endblocktrans %}
-{% endblock %}
+{% endblock footer_message %}

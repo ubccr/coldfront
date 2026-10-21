@@ -11,7 +11,7 @@
             onclick="document.getElementById('commentModal').showModal()"
         >{% trans "Add Comment" %}</c-cf.button>
     {% endif %}
-{% endblock %}
+{% endblock extra_controls %}
 
 {% block content %}
     <div class="space-y-4 max-w-5xl mx-auto">
@@ -61,7 +61,7 @@
             </c-cf.hero>
         {% endfor %}
     </div>
-{% endblock %}
+{% endblock content %}
 
 {% block modals %}
     {{ block.super }}
@@ -82,4 +82,4 @@
             </c-cf.form>
         </c-cf.modal>
     {% endif %}
-{% endblock %}
+{% endblock modals %}

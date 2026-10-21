@@ -21,12 +21,17 @@ You can download ColdFront releases from:
 
 ## Install ColdFront
 
-### Install with uv (recommended)
+### Install from source
 
 The recommended way to install ColdFront is with [uv](https://docs.astral.sh/uv/):
 
 ```
-$ uv tool install coldfront
+$ git clone https://github.com/coldfront/coldfront.git
+$ cd coldfront
+$ git checkout dev/2.0.x
+
+# Add any extra's depending on your needs
+$ uv sync --extra pg --extra mysql
 ```
 
 ### Install with pip
@@ -38,17 +43,6 @@ $ python3 -m venv venv
 $ source venv/bin/activate
 $ pip install --upgrade pip
 $ pip install coldfront
-```
-
-### Install from source
-
-If you want to work on the ColdFront source code, clone the repository and
-install the dependencies:
-
-```
-$ git clone https://github.com/coldfront/coldfront.git
-$ cd coldfront
-$ uv sync
 ```
 
 !!! tip "Use a tagged release"

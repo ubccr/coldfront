@@ -16,7 +16,7 @@ Context:
 
 {% block title %}
     {% trans "Remove" %} {{ table.rows|length }} {{ model|meta:"verbose_name_plural"|bettertitle }} from this project?
-{% endblock %}
+{% endblock title %}
 
 {% block content %}
     <c-cf.tabs name="unlink-tabs" role="group">

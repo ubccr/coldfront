@@ -2,13 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from django import forms as django_forms
-from django.shortcuts import get_object_or_404
 
 from coldfront.ras import filtersets, flows, forms, tables
 from coldfront.ras import object_actions as actions
 from coldfront.ras.flows import get_permitted_transition_actions
-from coldfront.ras.models import Allocation, Project
+from coldfront.ras.models import Allocation
 from coldfront.registry import register_model_view
 from coldfront.views import generic
 from coldfront.views.mixins import GetRelatedModelsMixin
@@ -89,27 +87,6 @@ class BaseAllocationFlowView(generic.ObjectFlowView):
     queryset = Allocation.objects.all()
     form = forms.AllocationReviewForm
     flow = flows.AllocationStatusFlow
-
-
-# Allocations requested from a project
-@register_model_view(Project, "allocationrequest", path="allocation-request")
-class ProjectAllocationRequestView(BaseAllocationFlowView):
-    template_name = "ras/project/allocation_request.html"
-    form = forms.AllocationRequestForm
-    action = actions.RequestObject
-
-    def get_object(self, **kwargs):
-        project = get_object_or_404(Project.objects.all(), **kwargs)
-        return Allocation(project=project, tenant=project.tenant)
-
-    def alter_form(self, form, obj, request):
-        form.fields["project"].widget = django_forms.HiddenInput()
-        form.fields["project"].required = False
-        return form
-
-    def alter_object(self, obj, request, url_args, url_kwargs):
-        obj.owner = request.user
-        return obj
 
 
 @register_model_view(Allocation, "request", detail=False)

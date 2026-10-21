@@ -18,7 +18,7 @@
     {% else %}
         <c-cf.breadcrumbs.item>{{ object.object_repr }}</c-cf.breadcrumbs.item>
     {% endif %}
-{% endblock %}
+{% endblock breadcrumbs %}
 
 {# ObjectChange does not support the default add/edit/delete controls #}
 {% block control-buttons %}{% endblock %}
@@ -200,4 +200,4 @@
             </c-cf.card>
         </c-cf.layout.col>
     </c-cf.layout.row>
-{% endblock %}
+{% endblock content %}

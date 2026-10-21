@@ -8,7 +8,7 @@
             href="{% url 'tenancy:tenantgroup_list' %}?parent_id={{ tenantgroup.pk }}"
         >{{ tenantgroup }}</c-cf.breadcrumbs.item>
     {% endfor %}
-{% endblock %}
+{% endblock breadcrumbs %}
 
 {% block extra_controls %}
     {% if perms.tenancy.add_tenant %}
@@ -75,4 +75,4 @@
             </c-cf.card>
         </c-slot>
     </c-cf.layout.panels>
-{% endblock %}
+{% endblock content %}

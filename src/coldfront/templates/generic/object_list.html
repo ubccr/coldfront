@@ -75,8 +75,8 @@ Context:
                         >
                             <span>
                                 {% blocktrans trimmed with model=model|meta:"verbose_name" prerequisite_model=prerequisite_model|meta:"verbose_name" %}
-                                    Before you can add a {{ model }} you must first create a <strong
-                                    >{{ prerequisite_model }}</strong>.
+                                    Before you can add a {{ model }} you must first create a
+                                    <strong>{{ prerequisite_model }}</strong>.
                                 {% endblocktrans %}
                             </span>
                             <c-slot name="actions">
@@ -104,7 +104,7 @@ Context:
                                     {% action_buttons actions model multi=True %}
                                 </div>
                             {% endif %}
-                        {% endblock %}
+                        {% endblock bulk_buttons %}
                     </div>
                     {# /Form buttons #}
                 </div>

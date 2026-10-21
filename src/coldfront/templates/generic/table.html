@@ -78,8 +78,8 @@ no HTMX requests are ever issued for them.
                         </thead>
                     {% endif %}
                 {% endblock table.thead %}
-                {% block table.tbody %}{{ block.super }}{% endblock table.tbody %}
-                {% block table.tfoot %}{{ block.super }}{% endblock table.tfoot %}
+                {% block table.tbody %}{{ block.super }}{% endblock %}
+                {% block table.tfoot %}{{ block.super }}{% endblock %}
             </table>
         </div>
     {% endblock table %}

@@ -19,7 +19,7 @@
     >Allocations</c-cf.breadcrumbs.item>
     <c-cf.breadcrumbs.item href="{% url 'ras:allocation_change_requests' pk=object.allocation.pk %}"
     >Change Requests</c-cf.breadcrumbs.item>
-{% endblock %}
+{% endblock breadcrumbs %}
 
 {% block extra_controls %}
     {% if transitions %}
@@ -102,4 +102,4 @@
             </c-cf.card>
         </c-cf.layout.col>
     </c-cf.layout.row>
-{% endblock %}
+{% endblock content %}

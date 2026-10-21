@@ -1,6 +1,6 @@
 {% load i18n %}
 
-<form method="post" action="{% url 'login' %}?next={{request.GET.next}}">
+<form method="post" action="{% url 'login' %}?next={{ request.GET.next }}">
     {% csrf_token %}
     <c-cf.form.fields :form="form" layout="stacked" />
     <c-cf.button

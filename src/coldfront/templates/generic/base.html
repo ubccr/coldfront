@@ -8,7 +8,7 @@
             <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 {# Title #}
                 <div class="min-w-0 break-words flex-1">
-                    <h1 class="text-2xl font-semibold text-base-content">{% block title %}{% endblock title %}</h1>
+                    <h1 class="text-2xl font-semibold text-base-content">{% block title %}{% endblock %}</h1>
                     {% block subtitle %}{% endblock %}
                 </div>
 
@@ -21,7 +21,7 @@
                     {% endblock controls %}
                 </div>
             </div>
-        {% endblock %}
+        {% endblock page-header %}
 
         {# Tabs #}
         <div class="mt-3">

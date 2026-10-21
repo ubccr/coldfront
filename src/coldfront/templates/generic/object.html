@@ -50,9 +50,9 @@ Context:
 
 {% block subtitle %}
     <div class="text-secondary text-sm">
-        Created <span title="{{ object.created | naturaltime }}">{{ object.created | date:'Y-m-d' }}</span>
+        Created <span title="{{ object.created|naturaltime }}">{{ object.created|date:'Y-m-d' }}</span>
         <span class="mx-1 text-base-content/40">·</span>
-        Updated <span title="{{ object.last_updated | naturaltime }}">{{ object.last_updated | date:'Y-m-d' }}</span>
+        Updated <span title="{{ object.last_updated|naturaltime }}">{{ object.last_updated|date:'Y-m-d' }}</span>
     </div>
 {% endblock subtitle %}
 
@@ -63,7 +63,7 @@ Context:
         {# Add/edit/delete/etc. buttons #}
         {% block control-buttons %}
             {# Extra buttons #}
-            {% block extra_controls %}{% endblock extra_controls %}
+            {% block extra_controls %}{% endblock %}
 
             {# Default buttons #}
             {% action_buttons actions object %}
@@ -96,7 +96,7 @@ Context:
 
 {% block modals %}
     <c-cf.modal.htmx boxClass="max-w-3xl" />
-{% endblock %}
+{% endblock modals %}
 
 {% block alerts %}
     {% plugin_alerts object %}

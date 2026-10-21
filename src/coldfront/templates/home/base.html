@@ -8,13 +8,13 @@
     {% else %}
         {{ user.username }}
     {% endif %}
-{% endblock %}
+{% endblock title %}
 
 {% block subtitle %}
     <div class="text-secondary text-sm">
         {{ settings.CENTER_NAME }}
     </div>
-{% endblock %}
+{% endblock subtitle %}
 
 {% block content %}
     <div class="flex items-center justify-center">
@@ -162,4 +162,4 @@
             </div>
         </c-slot>
     </c-cf.layout.panels>
-{% endblock %}
+{% endblock content %}

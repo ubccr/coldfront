@@ -13,4 +13,4 @@
     <c-cf.breadcrumbs.item href="{{ object.project.get_absolute_url }}">{{ object.project }}</c-cf.breadcrumbs.item>
     <c-cf.breadcrumbs.item href="{% url 'ras:project_allocations' pk=object.project.pk %}"
     >Allocations</c-cf.breadcrumbs.item>
-{% endblock %}
+{% endblock breadcrumbs %}

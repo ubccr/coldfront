@@ -325,7 +325,7 @@ class ActionsColumn(tables.Column):
         # Skip if no actions or extra buttons are defined
         if not (self.actions or self.extra_buttons or self.extra_actions):
             return ""
-        # Skip dummy records (e.g. available VLANs or IP ranges replacing individual IPs)
+        # Skip dummy records
         if not isinstance(record, model) or not getattr(record, "pk", None):
             return ""
 

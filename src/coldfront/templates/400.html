@@ -3,14 +3,16 @@
 
 {% block title %}
     ColdFront - Bad Request
-{% endblock %}
+{% endblock title %}
 
-{% block layout %}
-    <div class="flex justify-center">
-        <div class="w-full max-w-md">
-            <c-cf.alert variant="error" icon="heroicon.lock-closed">
-                Oops! Invalid request
-            </c-cf.alert>
-        </div>
-    </div>
-{% endblock %}
+{% block page %}
+    <c-cf.hero>
+        <c-cf.hero.content class="text-center">
+            <div class="w-full max-w-md">
+                <c-cf.alert variant="error" icon="heroicon.lock-closed">
+                    Oops! Invalid request
+                </c-cf.alert>
+            </div>
+        </c-cf.hero.content>
+    </c-cf.hero>
+{% endblock page %}

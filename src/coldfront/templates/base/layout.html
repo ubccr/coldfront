@@ -4,7 +4,7 @@
 
 {% block head %}
     {% plugin_head %}
-{% endblock %}
+{% endblock head %}
 
 {% block layout %}
     {# App shell: drawer — sidebar pinned open on desktop, toggled on mobile #}
@@ -20,9 +20,9 @@ height so it scrolls independently of the sidebar; `overscroll-contain` stops
 scroll chaining to the page/backdrop.
         {% endcomment %}
         <c-slot name="content">
-            <c-cf.drawer.content class="h-dvh overflow-auto overscroll-contain">
+            <c-cf.drawer.content class="flex h-dvh flex-col overflow-auto overscroll-contain">
                 {# Main content landmark — skip-link target, one <main> per page #}
-                <main id="main-content" tabindex="-1" class="mx-auto max-w-12xl px-4 py-6 sm:px-6 lg:px-8">
+                <main id="main-content" tabindex="-1" class="flex-1">
                     {# Top bar — mobile toggle + plugin navbar (header chrome moved to sidebar footer) #}
                     <div class="sticky top-0 z-30 mb-6 flex items-center justify-between gap-3 bg-base-100">
                         <c-cf.drawer.toggle for="sidenav" class="btn btn-ghost btn-square lg:hidden">
@@ -34,12 +34,12 @@ scroll chaining to the page/backdrop.
                         </div>
                     </div>
 
-                    {# Page header #}
-                    {% block header %}{% endblock header %}
+                    <div class="space-y-4 px-4 py-6 sm:px-6 lg:px-8">
+                        {# Page header #}
+                        {% block header %}{% endblock %}
 
-                    {# Page body #}
-                    {% block page %}
-                        <div class="space-y-4">
+                        {# Page body #}
+                        {% block page %}
                             {# Page alerts #}
                             {% block alerts %}{% endblock %}
                             {# /Page alerts #}
@@ -47,16 +47,15 @@ scroll chaining to the page/backdrop.
                             {# Page content #}
                             {% block content %}{% endblock %}
                             {# /Page content #}
-                        </div>
-                    {% endblock page %}
+                        {% endblock page %}
+                    </div>
 
                     {# Modals #}
                     {% block modals %}{% endblock %}
-
-                    {% block footer %}
-                        {% include 'base/footer.html' %}
-                    {% endblock %}
                 </main>
+                {% block footer %}
+                    {% include 'base/footer.html' %}
+                {% endblock footer %}
             </c-cf.drawer.content>
         </c-slot>
     </c-cf.drawer>

@@ -7,7 +7,7 @@
             as="a"
             variant="primary"
             icon="lucideicon.ticket-plus"
-            href="{% url 'ras:project_allocationrequest' pk=object.pk %}?return_url={% url 'ras:project_allocations' pk=object.pk %}"
+            href="{% url 'ras:allocation_request' %}?project={{ object.pk }}&return_url={% url 'ras:project_allocations' pk=object.pk %}"
         >{% trans "Request Allocation" %}</c-cf.button>
     {% endif %}
 {% endblock extra_controls %}

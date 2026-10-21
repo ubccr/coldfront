@@ -2,14 +2,16 @@
 
 {% block title %}
     ColdFront - Unauthorized
-{% endblock %}
+{% endblock title %}
 
-{% block layout %}
-    <div class="flex justify-center">
-        <div class="w-full max-w-md">
-            <c-cf.alert variant="error" icon="heroicon.lock-closed">
-                You are not authorized to view this page.
-            </c-cf.alert>
-        </div>
-    </div>
-{% endblock %}
+{% block page %}
+    <c-cf.hero>
+        <c-cf.hero.content class="text-center">
+            <div class="w-full max-w-md">
+                <c-cf.alert variant="error" icon="heroicon.lock-closed">
+                    You are not authorized to view this page.
+                </c-cf.alert>
+            </div>
+        </c-cf.hero.content>
+    </c-cf.hero>
+{% endblock page %}

@@ -16,7 +16,7 @@ Context:
 
 {% block title %}
     {% trans "Delete" %} {{ table.rows|length }} {{ model|meta:"verbose_name_plural"|bettertitle }}?
-{% endblock %}
+{% endblock title %}
 
 {% block content %}
     <c-cf.tabs name="delete-tabs" role="group">
