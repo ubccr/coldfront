@@ -25,8 +25,26 @@ export function initCollapse() {
   }
 }
 
+export function initFilterAccordionIcon() {
+  // The list pages (project, archived-project, allocation, resource)
+  // render the filter accordion's plus/minus icon server-side, once.
+  // Toggle it from the panel's collapse events so it stays in sync with
+  // the panel's state however the panel is toggled.
+  const collapse = document.getElementById('collapseOne');
+  const icon = document.getElementById('plus_minus');
+  if (collapse === null || icon === null) {
+    return;
+  }
+  collapse.addEventListener('show.bs.collapse', () => {
+    icon.classList.replace('fa-plus', 'fa-minus');
+  });
+  collapse.addEventListener('hide.bs.collapse', () => {
+    icon.classList.replace('fa-minus', 'fa-plus');
+  });
+}
+
 export function initBootstrap(): void {
-  for (const func of [initTooltips, initPopovers]) {
+  for (const func of [initTooltips, initPopovers, initFilterAccordionIcon]) {
     func();
   }
 }
