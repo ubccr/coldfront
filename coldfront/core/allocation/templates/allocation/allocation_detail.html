@@ -324,9 +324,11 @@ Allocation Detail
                   {% else %}
                     <td></td>
                   {% endif %}
-                  {% if can_edit_allocation_changes %}
-                    <td><a href="{% url 'allocation-change-detail' change_request.pk %}"><i class="far fa-edit" aria-hidden="true"></i><span class="visually-hidden">Edit</span></a></td>
-                  {% endif %}
+                  <td>
+                    {% if can_edit_allocation_changes %}
+                      <a href="{% url 'allocation-change-detail' change_request.pk %}"><i class="far fa-edit" aria-hidden="true"></i><span class="visually-hidden">Edit</span></a>
+                    {% endif %}
+                  </td>
                 </tr>
             {% endfor %}
           </tbody>
